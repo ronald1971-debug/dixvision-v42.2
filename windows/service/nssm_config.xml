@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- DIX VISION v42.2 NSSM Service Configuration -->
+<!-- Install: nssm install DIX_VISION -->
+<service>
+  <name>DIX_VISION</name>
+  <displayName>DIX VISION v42.2 Trading Engine</displayName>
+  <description>Autonomous trading system — Janus-Sentinel</description>
+  <executable>python.exe</executable>
+  <arguments>windows\service\service_wrapper.py</arguments>
+  <startmode>Automatic</startmode>
+  <recovery>
+    <action>Restart</action>
+    <delay>5000</delay>
+  </recovery>
+</service>

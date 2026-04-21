@@ -1,0 +1,47 @@
+# fly.io one-click deploy -- ~$5/mo, 24/7.
+#
+#   fly launch --copy-config --name dix-vision-$(whoami)
+#   fly deploy
+#   fly volumes create dix_data --size 1
+#
+app = "dix-vision"
+primary_region = "iad"
+kill_signal = "SIGTERM"
+kill_timeout = 30
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  DIX_MODE = "cloud"
+  DIX_BIND_HOST = "0.0.0.0"
+  DIX_PORT = "8765"
+
+[[mounts]]
+  source = "dix_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8765
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 100
+    hard_limit = 200
+
+[[http_service.checks]]
+  interval = "30s"
+  timeout = "3s"
+  grace_period = "15s"
+  method = "GET"
+  path = "/health"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512

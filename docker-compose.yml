@@ -1,0 +1,64 @@
+# Single-command 24/7 stack.
+#
+#   docker compose up -d            # cockpit + worker on loopback
+#   docker compose --profile tls up # + Caddy TLS reverse proxy on 443
+#
+# Data persists in the `dix-data` named volume; blow it away with
+# `docker volume rm dix-vision_dix-data` if you want a fresh birth-clock.
+services:
+  cockpit:
+    build: .
+    image: dix-vision:42.2
+    container_name: dix-vision-cockpit
+    restart: unless-stopped
+    environment:
+      DIX_MODE: cloud
+      DIX_BIND_HOST: 0.0.0.0
+      DIX_PORT: 8765
+      DIX_PUBLIC_URL: ${DIX_PUBLIC_URL:-}
+      DIX_ALLOWED_ORIGINS: ${DIX_ALLOWED_ORIGINS:-}
+    ports:
+      - "127.0.0.1:8765:8765"
+    volumes:
+      - dix-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://127.0.0.1:8765/health\", timeout=2)'"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  worker:
+    image: dix-vision:42.2
+    container_name: dix-vision-worker
+    restart: unless-stopped
+    command: ["python", "-m", "cockpit", "--mode", "worker"]
+    environment:
+      DIX_MODE: worker
+      DIX_WORKER_INTERVAL_SEC: "60"
+    volumes:
+      - dix-data:/data
+    depends_on:
+      cockpit:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2
+    container_name: dix-vision-caddy
+    restart: unless-stopped
+    profiles: ["tls"]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./cloud/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      DIX_HOSTNAME: ${DIX_HOSTNAME:-cockpit.localhost}
+    depends_on:
+      - cockpit
+
+volumes:
+  dix-data:
+  caddy-data:
+  caddy-config:

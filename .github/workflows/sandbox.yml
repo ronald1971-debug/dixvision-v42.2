@@ -1,0 +1,35 @@
+name: sandbox
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  sandbox-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: sandbox pipeline (mandatory)
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1 || true
+          python -m governance.patch_pipeline --check-pr \
+            --base origin/${{ github.base_ref }}
+
+      - name: authority lint (defense-in-depth)
+        run: python tools/authority_lint.py

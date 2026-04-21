@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: dix-vision
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /health
+    disk:
+      name: dix-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DIX_MODE
+        value: cloud
+      - key: DIX_BIND_HOST
+        value: 0.0.0.0
+      - key: DIX_PORT
+        value: "8765"
+      - key: DIX_COCKPIT_TOKEN
+        generateValue: true
+
+  - type: worker
+    name: dix-vision-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    dockerCommand: python -m cockpit --mode worker
+    envVars:
+      - key: DIX_MODE
+        value: worker
+      - key: DIX_WORKER_INTERVAL_SEC
+        value: "60"

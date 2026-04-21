@@ -1,0 +1,2 @@
+-- DIX VISION v42.2 safety axioms (Lean4)
+-- TODO: encode governance axioms as formal proofs

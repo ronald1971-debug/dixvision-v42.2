@@ -1,0 +1,29 @@
+[Unit]
+Description=DIX VISION v42.2 cockpit (24/7)
+Documentation=https://github.com/your-org/dix-vision
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dix
+Group=dix
+WorkingDirectory=/opt/dix-vision
+Environment=DIX_MODE=cloud
+Environment=DIX_BIND_HOST=127.0.0.1
+Environment=DIX_PORT=8765
+Environment=DIX_COCKPIT_TOKEN_FILE=/var/lib/dix-vision/cockpit_token.txt
+Environment=DIX_PAIRING_DB=/var/lib/dix-vision/pairing.sqlite
+ExecStart=/opt/dix-vision/.venv/bin/python -m cockpit
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/dix-vision
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target

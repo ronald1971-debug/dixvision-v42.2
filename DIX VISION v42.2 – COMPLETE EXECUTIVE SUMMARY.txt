@@ -1,0 +1,324 @@
+=============================================================================
+DIX VISION v42.2 – COMPLETE EXECUTIVE SUMMARY
+(FULL CANONICAL ARCHITECTURE, NO OMISSIONS)
+=============================================================================
+
+version: 42.2.0
+codename: "Janus-Sentinel"
+system: DIX_VISION_WINDOWS_PRODUCTION
+status: PRODUCTION_READY_DEPLOYABLE
+integrity: LEAN4_VERIFIED_HASH_LOCKED
+architecture: Contract-First + Dual-Domain Split Authority + Event-Sourced Ledger + Governance Firewall + Hazard Injection Model
+platform: Windows 10/11 (64-bit only)
+deployment: PowerShell + NSSM + Python venv + Tray Service
+root: C:\dix_vision_v42_2\
+
+=============================================================================
+0. CORE ARCHITECTURAL TRUTH (LOCKED PRINCIPLE)
+=============================================================================
+
+The system operates under strict domain separation:
+
+INDIRA (MARKET DOMAIN)
+Market intelligence
+Signal generation
+Trade execution
+API calls to exchanges (trading only)
+Order lifecycle management
+DYON (SYSTEM DOMAIN)
+Infrastructure monitoring
+System maintenance
+Health observation
+Patch lifecycle management
+Fault detection
+SYSTEM_HAZARD detection + reporting
+GOVERNANCE (AUTHORITY LAYER)
+Final decision authority for ALL actions
+Validates:
+trades (Indira)
+system changes (Dyon)
+hazard responses (Dyon → escalation path)
+Produces final EXECUTION_REQUEST events
+=============================================================================
+1. IMMUTABLE GOVERNANCE AXIOMS (LEAN4 VERIFIED)
+=============================================================================
+
+max_drawdown = 4% (hard stop, operator override ≤ 15%)
+max_loss_per_trade = 1%
+fail_closed = true
+credentials never leave machine
+all actions are event-sourced + hash chained
+
+forbidden:
+
+martingale systems
+unbounded leverage
+runtime core mutation
+unsupervised external execution
+silent state changes
+
+required:
+
+deterministic replay
+full attribution trail
+governance pre-approval for execution
+immutable ledger logging
+=============================================================================
+2. DOMAIN AUTHORITY MODEL (CORRECTED FINAL VERSION)
+=============================================================================
+2.1 INDIRA – MARKET EXECUTION AUTHORITY
+
+Indira is the ONLY entity that can:
+
+✔ Analyze markets
+✔ Generate trading signals
+✔ Execute trades
+✔ Call exchange APIs (trading endpoints only)
+✔ Place/modify/cancel orders
+✔ Manage portfolio state
+✔ Execute real-world financial actions
+
+Indira NEVER:
+
+modifies system infrastructure
+changes runtime services
+performs system patching
+touches OS-level components
+2.2 DYON – SYSTEM + SENSOR + MAINTENANCE ENGINE
+
+Dyon is responsible for system intelligence and operational health.
+
+Dyon CAN:
+
+✔ Monitor system health
+✔ Detect anomalies
+✔ Detect system hazards (NEW v42.2)
+✔ Manage services (NSSM, runtime, logs)
+✔ Apply validated patches
+✔ Restart services
+✔ Trigger backups/recovery
+
+Dyon CANNOT:
+execute trades
+make financial decisions
+interact with exchange trading APIs
+override governance financial decisions
+2.3 NEW CRITICAL ADDITION (v42.2): SYSTEM_HAZARD MODEL
+Problem Solved:
+
+Dyon detects infrastructure failures but does NOT have execution authority.
+
+Solution:
+
+Dyon now emits:
+
+SYSTEM_HAZARD_EVENT
+
+Examples:
+
+exchange websocket timeout
+data feed silence > threshold
+execution lag spike
+ledger corruption suspicion
+API connectivity failure
+NEW FLOW (CRITICAL)
+Dyon detects hazard
+Dyon emits:
+SYSTEM_HAZARD_EVENT
+Governance evaluates hazard
+Governance transforms into:
+EXECUTION_REQUEST (if required)
+Indira OR system layer executes:
+CANCEL_ALL_ORDERS
+PAUSE_TRADING
+ENTER_SAFE_MODE
+KEY PRINCIPLE:
+
+Dyon NEVER executes financial or system-impacting actions directly.
+
+Dyon only:
+
+senses + reports + escalates
+
+=============================================================================
+3. GOVERNANCE LAYER (UPDATED v42.2)
+=============================================================================
+
+governance/kernel.py
+
+Now handles 3 input classes:
+
+A. MARKET INTENTS (from Indira)
+
+→ approve/reject/modify trades
+
+B. SYSTEM INTENTS (from Dyon)
+
+→ approve/reject/patch/system actions
+
+C. SYSTEM_HAZARD EVENTS (NEW)
+
+→ escalated risk evaluation
+
+Outputs:
+EXECUTION_APPROVED
+EXECUTION_REJECTED
+EXECUTION_MODIFIED
+SYSTEM_SAFE_MODE_TRIGGERED
+=============================================================================
+4. EVENT-SOURCED LEDGER (EXPANDED)
+=============================================================================
+
+state/ledger/event_store.py
+
+Stores:
+
+MARKET EVENTS:
+
+trades
+orders
+fills
+portfolio updates
+
+SYSTEM EVENTS:
+
+service restarts
+patch updates
+logs
+system metrics
+
+HAZARD EVENTS (NEW):
+
+SYSTEM_HAZARD_EVENT
+GOVERNANCE_RESPONSE
+SAFE_MODE_TRANSITIONS
+
+All events:
+
+hash chained
+immutable
+replayable
+=============================================================================
+5. ORCHESTRATION GRAPH (UPDATED FLOW MODEL)
+=============================================================================
+
+MARKET FLOW:
+Market Data → Indira → Governance → Execution → Ledger
+
+SYSTEM FLOW:
+Telemetry → Dyon → Governance → System Action → Ledger
+
+HAZARD FLOW (NEW):
+Dyon → SYSTEM_HAZARD_EVENT → Governance → Risk Decision → Indira/System Action → Ledger
+
+=============================================================================
+6. INDIRA – MARKET EXECUTION ENGINE
+=============================================================================
+
+Indira responsibilities:
+
+✔ Market analysis
+✔ Signal generation
+✔ Trade execution
+✔ Exchange API calls (trading endpoints only)
+✔ Order lifecycle control
+✔ Portfolio optimization
+
+Indira is the ONLY trading executor.
+
+=============================================================================
+7. DYON – SYSTEM SENSOR + MAINTENANCE ENGINE
+=============================================================================
+
+Dyon responsibilities:
+
+✔ system monitoring
+✔ anomaly detection
+✔ service lifecycle control
+✔ patch validation
+✔ runtime repair
+✔ hazard detection (NEW)
+✔ escalation to governance
+
+=============================================================================
+8. ENFORCEMENT SYSTEM
+=============================================================================
+
+enforcement/runtime_guardian.py
+enforcement/policy_enforcer.py
+enforcement/resource_enforcer.py
+
+Enforces:
+
+execution safety
+domain separation (Indira ≠ Dyon)
+hazard escalation rules
+compute budgets
+fail-closed behavior
+=============================================================================
+9. TRANSLATION SYSTEM (STRICT SCHEMA)
+=============================================================================
+
+translation/validator.py
+
+Rules:
+
+no free-text execution
+all intents are typed enums
+SYSTEM_HAZARD_EVENT is first-class type
+governance required for all execution transitions
+=============================================================================
+10. OBSERVABILITY
+=============================================================================
+structured JSON logs
+trace_id propagation
+Prometheus metrics:
+trade_latency_ms
+hazard_detection_time_ms
+governance_decision_time_ms
+full audit trace
+=============================================================================
+11. SECURITY MODEL
+=============================================================================
+DPAPI / OS keyring secrets
+encrypted API keys
+immutable audit logs
+no secret leakage into logs
+domain-isolated execution contexts
+=============================================================================
+12. KEY DATABASES
+=============================================================================
+
+audit.db
+trade_events.db
+system_state.db
+incident.db
+ledger.db
+attribution.db
+snapshot.db
+
+NEW:
+system_hazards.db
+
+=============================================================================
+13. FINAL ARCHITECTURAL GUARANTEE (v42.2)
+=============================================================================
+
+✔ Indira executes ALL trades
+✔ Indira calls ALL trading APIs
+✔ Dyon NEVER touches trading execution
+✔ Dyon ONLY detects system hazards + maintains infrastructure
+✔ Governance controls all transitions
+✔ SYSTEM_HAZARD model enables safe fail-closed behavior
+✔ Ledger records everything immutably
+
+=============================================================================
+FINAL STATEMENT
+=============================================================================
+
+Indira acts in the market.
+Dyon senses the system.
+Governance decides everything.
+The ledger remembers all truth.
+
+Even failure is structured.

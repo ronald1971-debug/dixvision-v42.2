@@ -1,0 +1,7 @@
+{
+  "_comment": "DIX VISION v42.2 genesis record",
+  "version": "42.2.0",
+  "codename": "Janus-Sentinel",
+  "axioms_verified": true,
+  "foundation_hash": "RUN_scripts/generate_hash.py"
+}

@@ -1,0 +1,44 @@
+{
+  "name": "DIX VISION Cockpit",
+  "short_name": "DIX VISION",
+  "description": "DIX VISION v42.2 operator cockpit \u2014 four-voice trading system dashboard.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0f14",
+  "theme_color": "#0b0f14",
+  "lang": "en",
+  "categories": ["finance", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Chat",
+      "url": "/?tab=chat",
+      "description": "Talk to INDIRA / DYON / GOVERNANCE / DEVIN"
+    },
+    {
+      "name": "Wallet",
+      "url": "/?tab=wallet",
+      "description": "Wallet policy + registered wallets"
+    },
+    {
+      "name": "Safety",
+      "url": "/?tab=safety",
+      "description": "Dead-man switch + latency guard"
+    }
+  ]
+}

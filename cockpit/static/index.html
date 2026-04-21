@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>DIX VISION Cockpit v42.2</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#0b0f14"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="DIX VISION"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<link rel="manifest" href="/static/manifest.webmanifest"/>
+<link rel="icon" href="/static/icon-192.png"/>
+<link rel="apple-touch-icon" href="/static/icon-192.png"/>
+<style>
+  :root { --bg:#0b0f14; --fg:#d8e0ea; --mut:#8a94a3; --line:#1c2733;
+          --accent:#7fd0ff; --ok:#8de0a8; --warn:#ffcf6a; --err:#ff7a7a;
+          --card:#101820; --safe-top:env(safe-area-inset-top);
+          --safe-bot:env(safe-area-inset-bottom); }
+  * { box-sizing: border-box; }
+  html, body { overscroll-behavior: none; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font-family: ui-sans-serif, system-ui, "Segoe UI", Arial, sans-serif;
+         font-size: 14px;
+         padding: var(--safe-top) 0 var(--safe-bot); }
+  header { display:flex; align-items:center; justify-content:space-between;
+           padding:10px 16px; border-bottom:1px solid var(--line);
+           position:sticky; top:0; background:var(--bg); z-index:20; gap:8px; }
+  header h1 { margin:0; font-size:16px; font-weight:600; letter-spacing:.04em; }
+  header small { color:var(--mut); }
+  nav.tabs { display:flex; gap:4px; padding:6px 16px; border-bottom:1px solid var(--line);
+             overflow-x:auto; background:var(--bg); position:sticky; top:44px; z-index:10; }
+  nav.tabs button { background:#0a121a; color:var(--mut); border:1px solid var(--line);
+                    padding:6px 10px; border-radius:16px; font-size:12px;
+                    white-space:nowrap; cursor:pointer; }
+  nav.tabs button.active { color:var(--accent); border-color:var(--accent); }
+  main { padding:12px; display:grid; gap:12px; }
+  @media (min-width: 960px) {
+    main { grid-template-columns: 1fr 400px; }
+    nav.tabs { display:none; }
+    .tab-panel { display:block !important; }
+  }
+  section.panel { background:var(--card); border:1px solid var(--line);
+                  border-radius:10px; padding:12px; }
+  section.panel h2 { margin:0 0 10px; font-size:12px; text-transform:uppercase;
+                     color:var(--mut); letter-spacing:.06em; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .pill { background:#0f1a24; border:1px solid var(--line); padding:2px 8px;
+          border-radius:12px; font-size:12px; color:var(--accent); }
+  .pill.ok { color:var(--ok); }
+  .pill.warn { color:var(--warn); }
+  .pill.err { color:var(--err); }
+  .bar { height:6px; background:#0a121a; border:1px solid var(--line);
+         border-radius:3px; overflow:hidden; }
+  .bar > span { display:block; height:100%; background:var(--accent); }
+  .bar.warn > span { background:var(--warn); }
+  .bar.err > span { background:var(--err); }
+  .chat { display:flex; flex-direction:column;
+          min-height: 60vh; height: calc(100vh - 220px); }
+  .chat .log { flex:1; overflow-y:auto; padding:8px; border:1px solid var(--line);
+               border-radius:6px; background:#0a121a; }
+  .chat .turn { margin:6px 0; white-space:pre-wrap; }
+  .chat .turn .who { color:var(--accent); font-weight:600; margin-right:6px; }
+  .chat .turn.user .who { color:var(--warn); }
+  .chat form { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .chat input, .chat select, .chat button, .search input, .search button {
+    background:#0a121a; color:var(--fg); border:1px solid var(--line);
+    padding:8px 10px; border-radius:6px; font-size:14px;
+    -webkit-appearance:none; appearance:none;
+  }
+  .chat input { flex:1; min-width:180px; }
+  .chat button, .search button { cursor:pointer; color:var(--accent);
+                                 min-height:38px; }
+  .chat button:hover, .search button:hover { background:#152230; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  td, th { padding:4px 6px; border-bottom:1px solid var(--line);
+           text-align:left; vertical-align:top; }
+  th { color:var(--mut); font-weight:500; }
+  .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+  @media (max-width: 600px) { .grid2 { grid-template-columns: 1fr; } }
+  .scroll { max-height:260px; overflow-y:auto; -webkit-overflow-scrolling: touch; }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+  .kv { display:grid; grid-template-columns: 140px 1fr; gap:6px 10px; font-size:12px; }
+  .kv .k { color:var(--mut); }
+  #status-pill { cursor:pointer; }
+  .install-banner { display:none; padding:8px 12px; background:#152230;
+                    border-bottom:1px solid var(--line); text-align:center;
+                    font-size:13px; }
+  .install-banner.show { display:block; }
+  .install-banner button { margin-left:8px; background:var(--accent);
+                           color:#041420; border:0; padding:4px 10px;
+                           border-radius:4px; font-weight:600; cursor:pointer; }
+</style>
+</head>
+<body>
+<div id="install-banner" class="install-banner">
+  <span data-i18n="install_prompt">Install DIX VISION on this device</span>
+  <button id="install-btn">install</button>
+  <button id="install-close" style="background:transparent;color:var(--mut)">&times;</button>
+</div>
+<header>
+  <h1 data-i18n="title">DIX VISION Cockpit</h1>
+  <div class="row">
+    <span class="pill mono" id="status-pill" title="tap to ping heartbeat">loading&hellip;</span>
+    <select id="locale-select" title="UI language"></select>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="chat" class="active">Chat</button>
+  <button data-tab="overview">Overview</button>
+  <button data-tab="voices">Voices</button>
+  <button data-tab="ai">AI</button>
+  <button data-tab="sources">Sources</button>
+  <button data-tab="risk">Risk</button>
+  <button data-tab="wallet">Wallet</button>
+  <button data-tab="strategies">Strategies</button>
+  <button data-tab="safety">Safety</button>
+  <button data-tab="traders">Traders</button>
+</nav>
+
+<main>
+  <div>
+    <section class="panel tab-panel" data-panel="voices">
+      <h2 data-i18n="charters">Voice charters</h2>
+      <div id="charters"></div>
+    </section>
+    <section class="panel tab-panel" data-panel="ai">
+      <h2 data-i18n="ai">AI providers</h2>
+      <table id="ai-tbl"><thead><tr>
+        <th>Model</th><th>Role</th><th>Status</th><th>Cost/1k</th>
+      </tr></thead><tbody></tbody></table>
+    </section>
+    <section class="panel tab-panel" data-panel="sources">
+      <h2 data-i18n="sources">Data sources</h2>
+      <div class="scroll"><table id="src-tbl"><thead><tr>
+        <th>Name</th><th>Kind</th><th>Status</th>
+      </tr></thead><tbody></tbody></table></div>
+    </section>
+    <section class="panel tab-panel" data-panel="risk">
+      <h2 data-i18n="risk">Risk cache</h2>
+      <pre class="mono" id="risk"></pre>
+    </section>
+    <section class="panel tab-panel" data-panel="wallet">
+      <h2 data-i18n="wallet_policy">Wallet policy</h2>
+      <div class="kv" id="wallet-policy"></div>
+      <div style="margin-top:8px">
+        <span class="k" data-i18n="wallet_phase_progress">Phase progress</span>
+        <div class="bar"><span id="phase-bar" style="width:0%"></span></div>
+      </div>
+      <h2 style="margin-top:14px" data-i18n="wallets">Wallets</h2>
+      <div class="scroll"><table id="wallets-tbl"><thead><tr>
+        <th>Label</th><th>Chain</th><th>Backend</th><th>Addr</th><th>Live</th>
+      </tr></thead><tbody></tbody></table></div>
+    </section>
+    <section class="panel tab-panel" data-panel="strategies">
+      <h2 data-i18n="strategies">Strategies</h2>
+      <table id="strategies-tbl"><thead><tr>
+        <th>Name</th><th>n</th><th>&micro; reward</th><th>Status</th>
+      </tr></thead><tbody></tbody></table>
+    </section>
+    <section class="panel tab-panel" data-panel="safety">
+      <h2 data-i18n="safety">Safety</h2>
+      <div class="kv" id="safety"></div>
+      <button id="hb-btn" style="margin-top:10px;background:#0a121a;color:var(--accent);border:1px solid var(--line);padding:8px 12px;border-radius:6px"
+              data-i18n="send_heartbeat">Send heartbeat</button>
+    </section>
+    <section class="panel tab-panel" data-panel="traders">
+      <h2 data-i18n="traders">Trader knowledge</h2>
+      <form id="trader-form" class="row search">
+        <input id="q" placeholder="name or style (e.g. buffett, quant, asia)" />
+        <button>search</button>
+        <span id="trader-count" class="pill mono"></span>
+      </form>
+      <div class="scroll"><table id="trader-tbl"><thead><tr>
+        <th>Name</th><th>Era</th><th>Region</th><th>Style</th>
+      </tr></thead><tbody></tbody></table></div>
+    </section>
+    <section class="panel tab-panel" data-panel="overview">
+      <h2 data-i18n="overview">Overview</h2>
+      <div class="kv" id="overview-kv"></div>
+    </section>
+  </div>
+
+  <div>
+    <section class="panel chat tab-panel active" data-panel="chat">
+      <h2 data-i18n="chat">Chat &mdash; talk to DIX</h2>
+      <div class="log" id="chat-log"></div>
+      <form id="chat-form">
+        <select id="voice">
+          <option value="">AUTO</option>
+          <option value="indira">INDIRA</option>
+          <option value="dyon">DYON</option>
+          <option value="governance">GOVERNANCE</option>
+          <option value="devin">DEVIN</option>
+        </select>
+        <input id="msg" placeholder="ask &lsquo;what / how / why&rsquo; or issue a command&hellip;" autocomplete="off"/>
+        <button>send</button>
+      </form>
+    </section>
+  </div>
+</main>
+
+<script src="/static/app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/static/service-worker.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>

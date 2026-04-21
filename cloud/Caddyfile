@@ -1,0 +1,19 @@
+# Caddy TLS reverse proxy in front of the DIX VISION cockpit.
+# Let's Encrypt certs provisioned automatically; requires DNS pointing at this host.
+#
+# Set the DIX_HOSTNAME env var (see docker-compose.yml) to your domain.
+{$DIX_HOSTNAME} {
+    encode zstd gzip
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy no-referrer
+        -Server
+    }
+    reverse_proxy cockpit:8765 {
+        header_up X-Forwarded-Proto {scheme}
+        health_uri /health
+        health_interval 15s
+    }
+}

@@ -1,0 +1,24 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '^(DIX VISION v42\.2.*\.txt|data/)'
+      - id: end-of-file-fixer
+        exclude: '^(DIX VISION v42\.2.*\.txt|core/contracts/|data/)'
+      - id: check-yaml
+        exclude: '^cloud/k8s/'       # multi-document manifests
+      - id: check-toml
+      - id: check-added-large-files
+      - id: debug-statements
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        # Ruff runs against the modules this PR introduces. The rest of the
+        # tree (bootstrap_kernel, pre-existing contracts, etc.) is migrated
+        # module-by-module through the sandbox patch pipeline
+        # (see docs/SANDBOX.md). Adding a new file here MUST keep it clean.
+        files: '^(cockpit/(launcher|pairing|qr|__main__)\.py|tools/sandbox_runner\.py|governance/(patch_pipeline|__init__)\.py|windows/launcher_entry\.py)$'

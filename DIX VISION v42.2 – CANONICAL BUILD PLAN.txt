@@ -1,0 +1,262 @@
+=============================================================================
+DIX VISION v42.2 – CANONICAL BUILD PLAN
+=============================================================================
+
+version: 42.2.0
+architecture: Dual-Domain (Indira / Dyon) + Governance Firewall + SYSTEM_HAZARD Layer + Event-Sourced Ledger
+goal: Production-grade deterministic trading + system orchestration platform
+deployment: Windows 10/11 (NSSM + PowerShell + Python venv)
+
+=============================================================================
+0. BUILD PHILOSOPHY (NON-NEGOTIABLE DESIGN RULES)
+=============================================================================
+Everything is event-sourced (no hidden state)
+Authority is strictly separated:
+Indira → market execution
+Dyon → system infrastructure + hazard detection
+Governance → all decision translation
+SYSTEM_HAZARD is the only emergency signal channel
+No component can directly bypass Governance
+Ledger is the single source of truth
+=============================================================================
+1. PHASE 0 – BOOTSTRAP & CONTRACT LOCK (WEEK 1–2)
+=============================================================================
+Goal:
+
+Create immutable foundation and enforce architectural boundaries.
+
+Build Tasks:
+1.1 Immutable Core
+safety_axioms.lean
+hazard_axioms.lean (NEW)
+system_identity.py
+kill_switch.py
+foundation.hash verification system
+1.2 Contract System
+core/contracts/*
+include:
+execution contract
+governance contract
+risk contract (SYSTEM_HAZARD schema)
+observability contract
+1.3 Registry System
+lazy DI registry
+post-bootstrap lock mechanism
+enforce no runtime binding changes
+1.4 Bootstrap Kernel
+verifies hash integrity
+loads registry
+locks system state
+starts event ledger
+=============================================================================
+2. PHASE 1 – EVENT LEDGER & MEMORY SYSTEM (WEEK 3–4)
+=============================================================================
+Goal:
+
+Build immutable system memory backbone.
+
+Build Tasks:
+2.1 Event Store
+append-only event_store.py
+SHA-256 hash chaining
+atomic writes
+2.2 SYSTEM_HAZARD STREAM (NEW)
+hazard_stream.py
+risk_resolution_log.py
+hazard classification tagging
+2.3 Projectors (Memory Views)
+market_state projector
+system_state projector
+governance_state projector
+hazard_state projector
+2.4 Snapshot System
+10k-event checkpoints
+background snapshot worker
+replay engine
+=============================================================================
+3. PHASE 2 – INDIRA MARKET ENGINE (WEEK 5–6)
+=============================================================================
+Goal:
+
+Build market intelligence + execution authority layer.
+
+Build Tasks:
+3.1 Core Engine
+mind/engine.py
+intent_producer.py
+signal generation pipeline
+3.2 Market Execution System
+trade execution module
+exchange API adapters
+order lifecycle manager
+3.3 Intelligence Plugins
+macro
+sentiment
+liquidity
+technical
+arbitrage
+3.4 RULE:
+
+Indira is the ONLY entity allowed to:
+
+execute trades
+call trading APIs
+place or modify orders
+=============================================================================
+4. PHASE 3 – DYON SYSTEM ENGINE (WEEK 7–8)
+=============================================================================
+Goal:
+
+Build infrastructure intelligence + hazard detection.
+
+Build Tasks:
+4.1 System Engine
+execution/engine.py
+runtime_monitor.py
+4.2 SYSTEM_HAZARD EMITTER (CRITICAL)
+hazard_emitter.py
+detects:
+feed loss
+latency spikes
+API disconnects
+ledger inconsistency
+4.3 Infrastructure Control
+service lifecycle manager
+NSSM integration
+watchdog system
+recovery engine
+RULE:
+
+Dyon can:
+
+detect system failures
+emit SYSTEM_HAZARD
+execute GOVERNANCE-approved system actions
+
+Dyon cannot:
+
+decide trades
+interpret market signals
+=============================================================================
+5. PHASE 4 – GOVERNANCE FIREWALL (WEEK 9–10)
+=============================================================================
+Goal:
+
+Create deterministic arbitration layer.
+
+Build Tasks:
+5.1 Governance Kernel
+kernel.py
+oracle (multi-tier reasoning)
+5.2 SYSTEM_HAZARD ROUTER (NEW CORE)
+hazard_router.py
+hazard_classifier.py
+escalation_matrix.py
+5.3 Execution Mapping Engine
+
+Transforms:
+SYSTEM_HAZARD → EXECUTION_REQUEST
+
+Examples:
+
+MARKET_DATA_TIMEOUT → CANCEL_ALL_OPEN_ORDERS
+EXCHANGE_UNREACHABLE → HALT_TRADING
+LATENCY_BREACH → REDUCE_EXPOSURE
+5.4 Mode Manager
+normal
+degraded
+safe mode
+emergency halt
+=============================================================================
+6. PHASE 5 – TRANSLATION & EXECUTION PIPELINE (WEEK 11)
+=============================================================================
+Goal:
+
+Ensure deterministic intent → execution transformation.
+
+Build Tasks:
+translation/validator.py
+intent_models.py
+round_trip validation system
+governance pre-check enforcement
+RULE:
+
+No free-text execution exists.
+Everything must be schema-validated.
+
+=============================================================================
+7. PHASE 6 – ENFORCEMENT SYSTEM (WEEK 12)
+=============================================================================
+Goal:
+
+Hard safety guarantees at runtime.
+
+Build Tasks:
+runtime_guardian.py
+policy_enforcer.py
+resource_enforcer.py
+hazard_guard.py (NEW)
+Enforcement Rules:
+fail closed on error
+no unverified execution
+no cross-domain authority leaks
+all actions logged
+=============================================================================
+8. PHASE 7 – OBSERVABILITY & LEDGER VISUALIZATION
+=============================================================================
+Goal:
+
+Full system introspection.
+
+Build Tasks:
+structured logging (JSON trace_id)
+Prometheus metrics
+anomaly detection
+cockpit dashboard
+hazard visualization stream
+=============================================================================
+9. PHASE 8 – WINDOWS PRODUCTION LAYER
+=============================================================================
+Goal:
+
+Deploy as real Windows service.
+
+Build Tasks:
+NSSM service wrapper
+PowerShell installer
+tray application
+watchdog recovery system
+auto-updater
+=============================================================================
+10. CRITICAL INTEGRATION TESTS
+=============================================================================
+Required System Tests:
+Market execution correctness (Indira)
+SYSTEM_HAZARD injection + resolution (Dyon → Governance)
+Exchange disconnect simulation
+Ledger replay consistency
+Kill switch activation
+Governance override enforcement
+Cross-domain isolation validation
+=============================================================================
+11. FINAL SYSTEM GUARANTEE
+=============================================================================
+
+✔ Indira executes market trades
+✔ Dyon detects system hazards
+✔ Governance translates ALL actions
+✔ SYSTEM_HAZARD is enforced as safety channel
+✔ Ledger records all events immutably
+✔ No authority bypass exists
+
+=============================================================================
+FINAL BUILD OUTCOME
+=============================================================================
+
+This architecture produces:
+
+Deterministic trading system
+Fault-tolerant infrastructure layer
+Formal hazard-driven safety model
+Fully auditable execution chain
+Strict domain isolation without operational fragility

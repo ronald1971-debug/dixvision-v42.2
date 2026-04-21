@@ -1,0 +1,18 @@
+# DIX VISION v42.2 -- Production dependencies
+pydantic>=2.0
+pyyaml>=6.0
+python-dotenv>=1.0
+aiosqlite>=0.19
+prometheus-client>=0.20
+numpy>=1.26
+# Cockpit HTTP stack (required for `python -m cockpit`)
+fastapi>=0.110
+uvicorn[standard]>=0.29
+# Windows-only helpers
+pywin32>=306; sys_platform == "win32"
+pystray>=0.19; sys_platform == "win32"
+Pillow>=10.0
+# Dev
+pytest>=8.0
+mypy>=1.9
+import-linter>=2.1

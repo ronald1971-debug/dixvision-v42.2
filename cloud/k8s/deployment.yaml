@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dix-vision
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dix-data
+  namespace: dix-vision
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dix-vision-cockpit
+  namespace: dix-vision
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: dix-vision
+      component: cockpit
+  template:
+    metadata:
+      labels:
+        app: dix-vision
+        component: cockpit
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+        - name: cockpit
+          image: dix-vision:42.2
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DIX_MODE
+              value: "cloud"
+            - name: DIX_BIND_HOST
+              value: "0.0.0.0"
+            - name: DIX_PORT
+              value: "8765"
+          ports:
+            - containerPort: 8765
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: dix-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dix-vision
+  namespace: dix-vision
+spec:
+  selector:
+    app: dix-vision
+    component: cockpit
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8765
+  type: ClusterIP
