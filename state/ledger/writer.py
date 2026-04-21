@@ -55,6 +55,22 @@ class AsyncWriter:
             self._append_and_route(job)
             return True
 
+    def append_event(
+        self,
+        *,
+        stream: str,
+        kind: str,
+        payload: dict[str, Any] | None = None,
+        source: str = "system",
+    ) -> bool:
+        """Convenience alias using (stream, kind) naming.
+
+        Maps to :meth:`write` as event_type=stream, sub_type=kind. Keeps
+        callers in governance + pairing + worker from having to know the
+        lower-level event_type/sub_type vocabulary.
+        """
+        return self.write(stream, kind, source, payload or {})
+
     def _loop(self) -> None:
         while not self._stop.is_set():
             try:

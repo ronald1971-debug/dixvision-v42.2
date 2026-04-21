@@ -71,13 +71,11 @@ class HazardEmitter:
                          {"details": details})
 
 
-_emitter: HazardEmitter | None = None
-_lock = __import__("threading").Lock()
-
 def get_hazard_emitter(source: str = "dyon") -> HazardEmitter:
-    global _emitter
-    if _emitter is None:
-        with _lock:
-            if _emitter is None:
-                _emitter = HazardEmitter(source)
-    return _emitter
+    """Return a :class:`HazardEmitter` bound to ``source``.
+
+    A new emitter is constructed per call so every component's ledger events
+    are correctly attributed (the class itself is cheap and stateless beyond
+    the source string).
+    """
+    return HazardEmitter(source)

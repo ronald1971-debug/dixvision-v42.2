@@ -472,7 +472,7 @@ def seed_into(kb) -> int:
     """Upsert all seeds into a TraderKnowledge instance. Returns count."""
     n = 0
     for t in _SEED:
-        kb.upsert_trader(
+        trader_id = kb.upsert_trader(
             t.name,
             era=t.era, region=t.region,
             style_tags=",".join([t.style, *t.strategies]),
@@ -483,8 +483,13 @@ def seed_into(kb) -> int:
         )
         if t.signature:
             try:
-                kb.add_statement(t.name, t.signature,
-                                 lang="en", source_url=t.source)
+                kb.add_statement(
+                    trader_id=trader_id,
+                    kind="signature",
+                    text=t.signature,
+                    lang="en",
+                    source_url=t.source,
+                )
             except Exception:
                 pass
         n += 1

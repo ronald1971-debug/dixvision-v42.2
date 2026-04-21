@@ -22,13 +22,15 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-PUBLIC_PATHS = (
+PUBLIC_PATHS_EXACT = frozenset({
+    "/",            # SPA shell: JS loads and uses its own stored token
     "/health",
     "/favicon.ico",
-    "/static/",
-    "/",            # SPA shell: JS loads and uses its own stored token
     "/pair",        # device pairing landing page (token-guarded by pairing)
     "/api/pair/claim",  # pairing claim uses its own one-time token
+})
+PUBLIC_PATH_PREFIXES = (
+    "/static/",
 )
 
 
@@ -88,7 +90,9 @@ class TokenAuthMiddleware:
             await self._app(scope, receive, send)
             return
         path: str = scope.get("path", "")
-        if any(path == p or path.startswith(p) for p in PUBLIC_PATHS):
+        if path in PUBLIC_PATHS_EXACT or any(
+            path.startswith(p) for p in PUBLIC_PATH_PREFIXES
+        ):
             await self._app(scope, receive, send)
             return
         request = Request(scope, receive=receive)
