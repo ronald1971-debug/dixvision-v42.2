@@ -44,8 +44,14 @@ class SandboxResult:
 _DEFAULT_TIMEOUT = 60
 _DEFAULT_MEM_MB = 512
 
+# Top-level directories whose .py files are not production library code;
+# CI runs pytest / build steps separately and these are skipped by the
+# per-file SANDBOX_IMPORT stage.
+_SKIP_TOP_DIRS = frozenset({"tests", "docs", "scripts", "mobile",
+                            "windows", "cloud"})
 
-def _base_env() -> dict:
+
+def _base_env(pypath: str | None = None) -> dict:
     env = {
         "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
         # Block outbound HTTP in sandbox:
@@ -55,17 +61,20 @@ def _base_env() -> dict:
         # Keep DB writes inside sandbox dir:
         "DIX_SANDBOX": "1",
     }
+    if pypath:
+        env["PYTHONPATH"] = pypath
     if sys.platform == "win32":
         env["SYSTEMROOT"] = os.environ.get("SYSTEMROOT", r"C:\Windows")
     return env
 
 
-def _run(args: list[str], cwd: str, timeout: int) -> SandboxResult:
+def _run(args: list[str], cwd: str, timeout: int,
+         pypath: str | None = None) -> SandboxResult:
     try:
         proc = subprocess.run(                                                  # noqa: S603
             args,
             cwd=cwd,
-            env=_base_env(),
+            env=_base_env(pypath or cwd),
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -94,29 +103,43 @@ def sandbox_import(module_path: Path, repo_root: Path,
         return SandboxResult(ok=False, stage="missing",
                              stdout="", stderr=f"no such file: {module_path}",
                              returncode=2)
+    rel = module_path.relative_to(repo_root)
+    if rel.parts and rel.parts[0] in _SKIP_TOP_DIRS:
+        return SandboxResult(ok=True, stage="skipped",
+                             stdout=f"skipped {rel}", stderr="", returncode=0)
+    if rel.name.endswith(("_test.py", "test_", "conftest.py")):
+        return SandboxResult(ok=True, stage="skipped",
+                             stdout=f"skipped {rel}", stderr="", returncode=0)
     with tempfile.TemporaryDirectory(prefix="dix-sandbox-") as tmp:
         dst_root = Path(tmp) / "repo"
         shutil.copytree(repo_root, dst_root,
                         ignore=shutil.ignore_patterns(
                             ".git", ".github", ".venv", "venv", "__pycache__",
                             ".pytest_cache", ".mypy_cache", "node_modules",
-                            "dist", "build", "data", "mobile", "windows"))
-        rel = module_path.relative_to(repo_root)
+                            "dist", "build", "data", "mobile"))
         mod = str(rel.with_suffix("")).replace(os.sep, ".")
         script = (
-            "import importlib, sys, json;\n"
-            f"m=importlib.import_module({mod!r});\n"
-            "print(json.dumps({'module': m.__name__}));\n"
+            "import sys, importlib, json, os\n"
+            "sys.path.insert(0, os.getcwd())\n"
+            f"m = importlib.import_module({mod!r})\n"
+            "print(json.dumps({'module': m.__name__}))\n"
         )
-        return _run([sys.executable, "-I", "-S", "-W", "error", "-c", script],
-                    cwd=str(dst_root), timeout=timeout)
+        # Use -E (ignore stray PYTHON* env) + -s (no user site) instead of
+        # -I, so that the PYTHONPATH we inject survives into the child. We
+        # keep site.py ON so third-party deps from requirements.txt (Starlette
+        # etc.) are importable during SANDBOX_IMPORT.
+        return _run([sys.executable, "-E", "-s", "-W", "error",
+                     "-c", script],
+                    cwd=str(dst_root), timeout=timeout,
+                    pypath=str(dst_root))
 
 
 def sandbox_authority_lint(repo_root: Path,
                            timeout: int = _DEFAULT_TIMEOUT) -> SandboxResult:
     """Run tools/authority_lint.py; pipeline fails if any violation is found."""
-    return _run([sys.executable, "-I", "tools/authority_lint.py"],
-                cwd=str(repo_root), timeout=timeout)
+    return _run([sys.executable, "-E", "-s", "tools/authority_lint.py"],
+                cwd=str(repo_root), timeout=timeout,
+                pypath=str(repo_root))
 
 
 def sandbox_unit_tests(repo_root: Path, pattern: str | None = None,

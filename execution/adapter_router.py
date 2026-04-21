@@ -44,6 +44,17 @@ class AdapterRouter:
         with self._lock:
             return [e.name for e in self._entries]
 
+    def get_by_name(self, name: str) -> BaseAdapter | None:
+        with self._lock:
+            for e in self._entries:
+                if e.name == name:
+                    return e.adapter
+        return None
+
+    def entries(self) -> list[AdapterEntry]:
+        with self._lock:
+            return list(self._entries)
+
 
 _router: AdapterRouter | None = None
 _lock = threading.Lock()

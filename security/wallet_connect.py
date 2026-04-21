@@ -35,7 +35,6 @@ def utc_now_iso() -> str:
 
 _DB_PATH = Path(__file__).resolve().parent.parent / "data" / "wallets.sqlite"
 _lock = threading.RLock()
-_writer = get_writer()
 
 
 class Backend(str, Enum):
@@ -135,27 +134,46 @@ def get_wallet(chain: Chain, address: str) -> WalletRecord | None:
 
 def connect_wallet(*, label: str, chain: Chain, backend: Backend,
                    address: str, notes: str = "") -> WalletRecord:
-    """Register a wallet. Default is watch-only. Signing remains disabled."""
+    """Register a wallet. Default is watch-only. Signing remains disabled.
+
+    If a wallet with ``(chain, address)`` already exists, only mutable
+    descriptive fields (label, backend, notes) are updated and the
+    existing signing-authorization columns (live_signing_allowed,
+    last_approved_by, approval_expires_utc) are preserved. Authorization
+    state must never change without an explicit governance event.
+    """
     if backend is Backend.LOCAL_SIGNER and len(address) < 10:
         raise ValueError("address too short")
     with _lock, _connect() as c:
         now = utc_now_iso()
-        c.execute(
-            "INSERT OR REPLACE INTO wallets "
-            "(label, chain, backend, address, added_utc, "
-            "live_signing_allowed, last_approved_by, "
-            "approval_expires_utc, last_used_utc, notes) "
-            "VALUES (?, ?, ?, ?, ?, 0, '', '', '', ?)",
-            (label, chain.value, backend.value, address, now, notes),
-        )
+        existing = c.execute(
+            "SELECT id FROM wallets WHERE chain=? AND address=?",
+            (chain.value, address),
+        ).fetchone()
+        if existing is None:
+            c.execute(
+                "INSERT INTO wallets "
+                "(label, chain, backend, address, added_utc, "
+                "live_signing_allowed, last_approved_by, "
+                "approval_expires_utc, last_used_utc, notes) "
+                "VALUES (?, ?, ?, ?, ?, 0, '', '', '', ?)",
+                (label, chain.value, backend.value, address, now, notes),
+            )
+        else:
+            c.execute(
+                "UPDATE wallets SET label=?, backend=?, notes=? "
+                "WHERE chain=? AND address=?",
+                (label, backend.value, notes, chain.value, address),
+            )
         c.commit()
         row = c.execute("SELECT * FROM wallets WHERE chain=? AND address=?",
                         (chain.value, address)).fetchone()
-    _writer.write("SECURITY", "WALLET_CONNECTED", "DYON", {
+    get_writer().write("SECURITY", "WALLET_CONNECTED", "DYON", {
         "chain": chain.value, "backend": backend.value,
         "address_masked": address[:6] + "\u2026" + address[-4:]
         if len(address) > 12 else address,
-        "live_signing_allowed": False,
+        "live_signing_allowed": bool(row["live_signing_allowed"]),
+        "updated_existing": existing is not None,
     })
     return _row(row)
 
@@ -167,7 +185,7 @@ def disconnect_wallet(chain: Chain, address: str) -> bool:
         c.commit()
         ok = cur.rowcount > 0
     if ok:
-        _writer.write("SECURITY", "WALLET_DISCONNECTED", "DYON", {
+        get_writer().write("SECURITY", "WALLET_DISCONNECTED", "DYON", {
             "chain": chain.value,
             "address_masked": address[:6] + "\u2026" + address[-4:]
             if len(address) > 12 else address,
@@ -198,7 +216,7 @@ def approve_live_signing(chain: Chain, address: str, *,
             (approved_by, expires_utc, chain.value, address),
         )
         c.commit()
-    _writer.write("GOVERNANCE", "WALLET_SIGN_APPROVED", "GOVERNANCE", {
+    get_writer().write("GOVERNANCE", "WALLET_SIGN_APPROVED", "GOVERNANCE", {
         "chain": chain.value,
         "address_masked": w.mask(),
         "approved_by": approved_by,
@@ -216,8 +234,8 @@ def revoke_live_signing(chain: Chain, address: str) -> WalletRecord | None:
             (chain.value, address),
         )
         c.commit()
-    _writer.write("GOVERNANCE", "WALLET_SIGN_REVOKED", "GOVERNANCE",
-                  {"chain": chain.value, "address": address[:6] + "..."})
+    get_writer().write("GOVERNANCE", "WALLET_SIGN_REVOKED", "GOVERNANCE",
+                       {"chain": chain.value, "address": address[:6] + "..."})
     return get_wallet(chain, address)
 
 
@@ -247,8 +265,8 @@ def store_encrypted_key(key_env_name: str, key_value: str) -> None:
     if not key_value:
         raise ValueError("empty key")
     store_secret(key_env_name, key_value)
-    _writer.write("SECURITY", "SECRET_STORED", "DYON",
-                  {"key_env": key_env_name})
+    get_writer().write("SECURITY", "SECRET_STORED", "DYON",
+                       {"key_env": key_env_name})
 
 
 __all__ = [

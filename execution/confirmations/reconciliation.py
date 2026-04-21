@@ -44,12 +44,9 @@ class Reconciliation:
     def run_once(self) -> dict[str, float]:
         router = get_adapter_router()
         report: dict[str, float] = {}
-        for name in router.registered():
-            adapter = router.route("")  # may return highest-prio adapter
-            if adapter is None:
-                continue
+        for entry in router.entries():
             try:
-                report[name] = float(adapter.get_balance("USDT"))
+                report[entry.name] = float(entry.adapter.get_balance("USDT"))
             except Exception:
                 continue
         # diff

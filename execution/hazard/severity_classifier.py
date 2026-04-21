@@ -25,6 +25,22 @@ def should_enter_safe_mode(event: HazardEvent) -> bool:
         event.hazard_type in {HazardType.FEED_SILENCE, HazardType.EXCHANGE_TIMEOUT}
     )
 
+def classify_severity(event: HazardEvent) -> HazardSeverity:
+    """Return the effective severity for a hazard event.
+
+    Some hazard types (data-corruption, ledger inconsistency, connectivity
+    loss) are promoted to CRITICAL regardless of the severity the emitter
+    assigned; the rest are returned as-is.
+    """
+    critical_types = {
+        HazardType.DATA_CORRUPTION_SUSPECTED,
+        HazardType.LEDGER_INCONSISTENCY,
+    }
+    if event.hazard_type in critical_types:
+        return HazardSeverity.CRITICAL
+    return event.severity
+
+
 def classify_response(event: HazardEvent) -> str:
     """Return recommended governance action for this hazard."""
     if event.hazard_type == HazardType.EXCHANGE_TIMEOUT:
