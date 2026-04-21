@@ -469,7 +469,13 @@ def all_seeds() -> tuple[SeedTrader, ...]:
 
 
 def seed_into(kb) -> int:
-    """Upsert all seeds into a TraderKnowledge instance. Returns count."""
+    """Upsert all seeds into a TraderKnowledge instance. Idempotent.
+
+    Safe to call at every boot: ``upsert_trader`` is unique-by-name, and
+    each trader's signature statement is only inserted when no existing
+    statement with the same ``text`` is already attached to that trader.
+    Returns the count of traders processed.
+    """
     n = 0
     for t in _SEED:
         trader_id = kb.upsert_trader(
@@ -482,16 +488,18 @@ def seed_into(kb) -> int:
             source_url=t.source,
         )
         if t.signature:
-            try:
-                kb.add_statement(
-                    trader_id=trader_id,
-                    kind="signature",
-                    text=t.signature,
-                    lang="en",
-                    source_url=t.source,
-                )
-            except Exception:
-                pass
+            existing = kb.statements_for(trader_id, limit=200)
+            if not any(s.text == t.signature for s in existing):
+                try:
+                    kb.add_statement(
+                        trader_id=trader_id,
+                        kind="signature",
+                        text=t.signature,
+                        lang="en",
+                        source_url=t.source,
+                    )
+                except Exception:
+                    pass
         n += 1
     return n
 

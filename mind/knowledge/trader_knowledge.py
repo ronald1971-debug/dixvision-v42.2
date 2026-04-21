@@ -260,20 +260,17 @@ def get_trader_knowledge() -> TraderKnowledge:
 
 
 def seed_default(kb: TraderKnowledge | None = None) -> dict[str, int]:
-    """Populate the curated worldwide roster. Idempotent."""
-    from mind.knowledge.trader_seed import CURATED_STRATEGIES, CURATED_TRADERS
+    """Populate the curated worldwide roster. Idempotent.
+
+    Delegates to ``mind.knowledge.seed_traders.seed_into`` which owns the
+    canonical roster (~100 traders across classical/value/macro/quant/
+    crypto/cautionary categories) declared as frozen ``SeedTrader``
+    dataclasses.  Each trader's ``philosophy`` is inserted as a single
+    quote statement.
+    """
+    from mind.knowledge.seed_traders import seed_into
     kb = kb or get_trader_knowledge()
-    for s in CURATED_STRATEGIES:
-        kb.upsert_strategy(**s)
-    for t in CURATED_TRADERS:
-        # Do NOT mutate the curated module-level dict; idempotency requires
-        # the list to be re-readable across calls.  Copy, then split off the
-        # statements key from the copy.
-        trader = dict(t)
-        statements = trader.pop("statements", [])
-        tid = kb.upsert_trader(**trader)
-        for st in statements:
-            kb.add_statement(trader_id=tid, **st)
+    seed_into(kb)
     return kb.count()
 
 
