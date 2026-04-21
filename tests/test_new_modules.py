@@ -288,6 +288,133 @@ def test_core_bootstrap_and_runtime():
     assert isinstance(tid, str) and tid
 
 
+def test_dead_man_status_is_pure():
+    """Reading status() must never trip the switch or halt trading.
+
+    Regression test for Devin Review round 6: GET /api/safety must
+    not become the call that halts trading.  Only the background
+    check() may mutate.
+    """
+    import time
+
+    from system.fast_risk_cache import get_risk_cache
+    from system_monitor.dead_man import DeadManSwitch
+
+    rc = get_risk_cache()
+    rc.resume_trading()
+    dm = DeadManSwitch(timeout_sec=0.001)
+    dm.heartbeat(source="test")
+    time.sleep(0.05)
+    allowed_before = rc.get().trading_allowed
+    s = dm.status()
+    allowed_after = rc.get().trading_allowed
+    assert not s.tripped
+    assert allowed_before == allowed_after, "status() mutated risk cache"
+
+    s2 = dm.check()
+    assert s2.tripped
+    assert not rc.get().trading_allowed, "check() did not halt trading"
+    rc.resume_trading()
+
+
+def test_risk_constraints_enforces_max_order_size_usd():
+    """A large absolute notional on a huge portfolio must still fail."""
+    from system.fast_risk_cache import RiskConstraints
+
+    rc = RiskConstraints(
+        max_order_size_usd=1_000.0,
+        circuit_breaker_loss_pct=0.01,
+    )
+    ok, reason = rc.allows_trade(size_usd=9_999.0, portfolio_usd=10_000_000.0)
+    assert not ok and "exceeds_max" in reason
+    ok, _ = rc.allows_trade(size_usd=500.0, portfolio_usd=100_000.0)
+    assert ok
+
+
+def test_wallet_connect_expiry_uses_datetime_parse():
+    """ISO approval-expiry must be parsed, not string-compared.
+
+    Mixed Z / +00:00 / bare suffixes break lexicographic ordering;
+    datetime parse normalises them.
+    """
+    from security.wallet_connect import _expiry_reached
+
+    assert not _expiry_reached("")
+    assert not _expiry_reached("2099-01-01T00:00:00Z")
+    assert not _expiry_reached("2099-01-01T00:00:00+00:00")
+    assert _expiry_reached("2000-01-01T00:00:00Z")
+    assert _expiry_reached("2000-01-01T00:00:00+00:00")
+    assert not _expiry_reached("not-a-date")
+
+
+def test_wallet_policy_check_and_consume_is_atomic():
+    """Concurrent callers must not exceed the daily cap.
+
+    Regression test for Devin Review round 6 TOCTOU bug: 20 threads
+    each try to spend $20 against a $100 system cap; exactly 5 may
+    succeed and the recorded spend must equal the cap.
+    """
+    import threading
+    from datetime import timedelta, timezone
+
+    from security import wallet_policy as wp
+    from system.time_source import utc_now
+
+    with wp._lock:
+        c = wp._connect()
+        row = c.execute(
+            "SELECT v FROM policy_meta WHERE k=?", (wp._BIRTH_KEY,)
+        ).fetchone()
+        original_birth = row["v"] if row else None
+        past = utc_now() - timedelta(days=35)
+        if past.tzinfo is None:
+            past = past.replace(tzinfo=timezone.utc)
+        c.execute(
+            "INSERT OR REPLACE INTO policy_meta(k,v) VALUES (?,?)",
+            (wp._BIRTH_KEY, past.isoformat()),
+        )
+        c.execute("DELETE FROM policy_spend")
+        c.commit()
+
+    try:
+        results: list[tuple[bool, str]] = []
+
+        def worker() -> None:
+            results.append(
+                wp.check_and_consume(
+                    "ethereum",
+                    "0xABCDEFabcdef0000000000000000000000000000",
+                    usd_notional=20.0,
+                )
+            )
+
+        ts = [threading.Thread(target=worker) for _ in range(20)]
+        for t in ts:
+            t.start()
+        for t in ts:
+            t.join()
+        ok_count = sum(1 for ok, _ in results if ok)
+        assert ok_count == 5, f"TOCTOU race: {ok_count} succeeded (expected 5)"
+        s = wp.snapshot()
+        assert s.spent_system_24h_usd <= 100.0
+    finally:
+        # Restore prior state so the WARMUP test in test_tier_a_b.py
+        # still sees a brand-new-policy snapshot.
+        with wp._lock:
+            c = wp._connect()
+            c.execute("DELETE FROM policy_spend")
+            if original_birth is not None:
+                c.execute(
+                    "INSERT OR REPLACE INTO policy_meta(k,v) VALUES (?,?)",
+                    (wp._BIRTH_KEY, original_birth),
+                )
+            else:
+                c.execute(
+                    "DELETE FROM policy_meta WHERE k=?", (wp._BIRTH_KEY,)
+                )
+            c.commit()
+
+
 if __name__ == "__main__":  # pragma: no cover
     import sys
 

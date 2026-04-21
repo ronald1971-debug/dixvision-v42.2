@@ -50,6 +50,10 @@ class HeartbeatMonitor:
         self._stop.set()
 
     def _loop(self) -> None:
+        # Lazy import to avoid a circular dependency at module load:
+        # dead_man imports fast_risk_cache; heartbeat_monitor is one of
+        # the first things the cockpit constructs.
+        from system_monitor.dead_man import get_dead_man
         while not self._stop.is_set():
             now = time.monotonic()
             with self._lock:
@@ -60,6 +64,13 @@ class HeartbeatMonitor:
                     self._emitter.api_failure(name, f"no_heartbeat_{silence:.1f}s")
                     with self._lock:
                         st.misses += 1
+            # Drive the dead-man switch from a single background thread.
+            # status() is a pure read; check() is the only path that
+            # may trip the switch and halt trading (see DeadManSwitch).
+            try:
+                get_dead_man().check()
+            except Exception:
+                pass
             time.sleep(1.0)
 
 

@@ -90,14 +90,34 @@ class PolicySnapshot:
 
 _lock = threading.RLock()
 
+# Cached sqlite connection. Opened lazily once under _lock; every
+# subsequent call reuses the same handle so we do NOT re-run the 3
+# CREATE TABLE + 3 CREATE INDEX schema statements on every read.
+# Access goes through ``_conn()`` which is serialized by ``_lock``
+# (sqlite3 connections are not thread-safe by default), so the
+# single-connection design also gives us a natural atomicity boundary
+# for the TOCTOU-free ``check_and_consume`` below.
+_conn_cached: sqlite3.Connection | None = None
+
 
 def _connect() -> sqlite3.Connection:
-    _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    c = sqlite3.connect(str(_DB_PATH))
-    c.executescript(_SCHEMA)
-    c.row_factory = sqlite3.Row
-    c.execute("PRAGMA journal_mode=WAL;")
-    return c
+    """Return the cached connection, opening it on first use.
+
+    Callers MUST already hold ``_lock``.  The connection has
+    ``check_same_thread=False`` because ``_lock`` gives us mutual
+    exclusion across threads; WAL journaling lets concurrent
+    ``sqlite3`` readers in other processes continue while we hold the
+    lock for writes.
+    """
+    global _conn_cached
+    if _conn_cached is None:
+        _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        c = sqlite3.connect(str(_DB_PATH), check_same_thread=False)
+        c.executescript(_SCHEMA)
+        c.row_factory = sqlite3.Row
+        c.execute("PRAGMA journal_mode=WAL;")
+        _conn_cached = c
+    return _conn_cached
 
 
 def _wkey(chain: str, address: str) -> str:
@@ -150,7 +170,8 @@ def _effective_cap(c: sqlite3.Connection, wallet_key: str) -> float:
 
 
 def snapshot() -> PolicySnapshot:
-    with _lock, _connect() as c:
+    with _lock:
+        c = _connect()
         birth = _get_birth(c)
         now = _now_utc()
         phase, day = _phase_for(birth, now)
@@ -171,41 +192,73 @@ def snapshot() -> PolicySnapshot:
         )
 
 
-def can_sign(chain: str, address: str, *, usd_notional: float) -> tuple[bool, str]:
-    """Primary gate. INDIRA must call this before any signer."""
+def _check_locked(c: sqlite3.Connection, chain: str, address: str,
+                  usd_notional: float) -> tuple[bool, str, str, float]:
+    """Core gate logic. Caller MUST already hold ``_lock``.
+
+    Returns ``(ok, reason, wallet_key, wallet_cap)`` so
+    ``check_and_consume`` can re-use the computed cap without a
+    second DB round-trip.
+    """
     if usd_notional < 0:
-        return False, "negative_notional"
-    with _lock, _connect() as c:
-        birth = _get_birth(c)
-        now = _now_utc()
-        phase, _ = _phase_for(birth, now)
-        if phase is Phase.WARMUP:
-            return False, "warmup_period"
-        wk = _wkey(chain, address)
-        cap_wallet = _effective_cap(c, wk)
-        spent_wallet = _spent_24h(c, wk)
-        if spent_wallet + usd_notional > cap_wallet:
-            return False, f"wallet_cap_exhausted:{spent_wallet:.2f}/{cap_wallet:.2f}"
-        spent_sys = _spent_24h(c)
-        if spent_sys + usd_notional > _SYSTEM_DAILY_CAP_USD:
-            return False, f"system_cap_exhausted:{spent_sys:.2f}/{_SYSTEM_DAILY_CAP_USD:.2f}"
-        return True, "ok"
-
-
-def consume(chain: str, address: str, *, usd_notional: float,
-            ref: str = "") -> None:
-    """Record a successful live-signing notional. Emits DAILY_CAP_TRIPPED on exhaust."""
-    if usd_notional <= 0:
-        return
+        return False, "negative_notional", "", 0.0
+    birth = _get_birth(c)
+    now = _now_utc()
+    phase, _ = _phase_for(birth, now)
+    if phase is Phase.WARMUP:
+        return False, "warmup_period", "", 0.0
     wk = _wkey(chain, address)
-    with _lock, _connect() as c:
-        c.execute("INSERT INTO policy_spend(wallet_key, ts_utc, usd, ref) "
-                  "VALUES (?, ?, ?, ?)",
-                  (wk, _now_utc().isoformat(), float(usd_notional), ref))
+    cap_wallet = _effective_cap(c, wk)
+    spent_wallet = _spent_24h(c, wk)
+    if spent_wallet + usd_notional > cap_wallet:
+        return (False,
+                f"wallet_cap_exhausted:{spent_wallet:.2f}/{cap_wallet:.2f}",
+                wk, cap_wallet)
+    spent_sys = _spent_24h(c)
+    if spent_sys + usd_notional > _SYSTEM_DAILY_CAP_USD:
+        return (False,
+                f"system_cap_exhausted:{spent_sys:.2f}/{_SYSTEM_DAILY_CAP_USD:.2f}",
+                wk, cap_wallet)
+    return True, "ok", wk, cap_wallet
+
+
+def can_sign(chain: str, address: str, *, usd_notional: float) -> tuple[bool, str]:
+    """Read-only gate for callers that only want to preview intent.
+
+    Prefer :func:`check_and_consume` on the real execution path to
+    avoid a TOCTOU race between the check and the spend record.
+    """
+    with _lock:
+        c = _connect()
+        ok, reason, _, _ = _check_locked(c, chain, address, usd_notional)
+        return ok, reason
+
+
+def check_and_consume(chain: str, address: str, *,
+                      usd_notional: float, ref: str = "") -> tuple[bool, str]:
+    """Atomic check + record in a single lock-held transaction.
+
+    INDIRA's live-signing path calls this exactly once per trade.
+    Under the single-connection cache, ``_lock`` serialises both the
+    per-wallet and per-system budget evaluation AND the INSERT that
+    records the spend, closing the check→consume race that existed
+    when they were separate functions.
+    """
+    with _lock:
+        c = _connect()
+        ok, reason, wk, cap_wallet = _check_locked(c, chain, address, usd_notional)
+        if not ok:
+            return ok, reason
+        c.execute(
+            "INSERT INTO policy_spend(wallet_key, ts_utc, usd, ref) "
+            "VALUES (?, ?, ?, ?)",
+            (wk, _now_utc().isoformat(), float(usd_notional), ref),
+        )
         c.commit()
         spent_wallet = _spent_24h(c, wk)
         spent_sys = _spent_24h(c)
-        cap_wallet = _effective_cap(c, wk)
+    # Ledger writes go out OUTSIDE the lock (the writer is async) so
+    # a slow writer cannot back-pressure the signing path.
     if spent_wallet >= cap_wallet:
         get_writer().write("GOVERNANCE", "DAILY_CAP_TRIPPED", "GOVERNANCE", {
             "scope": "wallet", "wallet_key": wk,
@@ -217,6 +270,22 @@ def consume(chain: str, address: str, *, usd_notional: float,
             "scope": "system", "spent_usd": round(spent_sys, 2),
             "cap_usd": _SYSTEM_DAILY_CAP_USD,
         })
+    return True, "ok"
+
+
+def consume(chain: str, address: str, *, usd_notional: float,
+            ref: str = "") -> None:
+    """Legacy shim — prefer :func:`check_and_consume` on new code.
+
+    Retained for callers that already observed a successful sign and
+    only need to record the notional.  The check still runs inside
+    the same lock-held transaction so two racing ``consume`` calls
+    cannot blow past the cap on the same connection.
+    """
+    if usd_notional <= 0:
+        return
+    check_and_consume(chain, address,
+                      usd_notional=usd_notional, ref=ref)
 
 
 def set_wallet_cap(chain: str, address: str, *,
@@ -225,7 +294,8 @@ def set_wallet_cap(chain: str, address: str, *,
     s = snapshot()
     if s.phase is not Phase.OPERATOR_SET:
         raise PermissionError(f"cap change blocked in phase {s.phase.value}")
-    with _lock, _connect() as c:
+    with _lock:
+        c = _connect()
         c.execute("INSERT OR REPLACE INTO policy_caps"
                   "(wallet_key, daily_cap_usd, updated_utc, approved_by) "
                   "VALUES (?, ?, ?, ?)",
@@ -241,7 +311,8 @@ def set_wallet_cap(chain: str, address: str, *,
 
 def wallet_status(chain: str, address: str) -> dict[str, object]:
     wk = _wkey(chain, address)
-    with _lock, _connect() as c:
+    with _lock:
+        c = _connect()
         cap = _effective_cap(c, wk)
         spent = _spent_24h(c, wk)
     return {
@@ -254,5 +325,6 @@ def wallet_status(chain: str, address: str) -> dict[str, object]:
 
 __all__ = [
     "Phase", "PolicySnapshot", "snapshot",
-    "can_sign", "consume", "set_wallet_cap", "wallet_status",
+    "can_sign", "check_and_consume", "consume",
+    "set_wallet_cap", "wallet_status",
 ]

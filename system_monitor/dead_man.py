@@ -62,22 +62,53 @@ class DeadManSwitch:
                 get_risk_cache().resume_trading()
 
     def status(self) -> DeadManStatus:
+        """Pure read: report the current state without side effects.
+
+        Side-effecting trip logic lives in :meth:`check`, which the
+        background heartbeat monitor calls on a timer.  Callers that
+        only want to observe (``/api/safety``, health probes, tests)
+        use this method and will never trigger a halt.
+        """
+        with self._lock:
+            if self._last is None:
+                return DeadManStatus("", 0.0, self._timeout, self._tripped)
+            age = (self._now() - self._last).total_seconds()
+            return DeadManStatus(
+                last_beat_utc=self._last.isoformat(),
+                age_sec=age, timeout_sec=self._timeout,
+                tripped=self._tripped,
+            )
+
+    def check(self) -> DeadManStatus:
+        """Evaluate the timeout and trip if exceeded.
+
+        This is the ONLY mutating path.  Called by the heartbeat monitor
+        thread on a periodic timer.  Returns the status AFTER the
+        evaluation so that the monitor can log the transition.
+        Swallows ledger-write errors so a transient DB failure cannot
+        keep the switch from tripping.
+        """
         with self._lock:
             if self._last is None:
                 return DeadManStatus("", 0.0, self._timeout, self._tripped)
             age = (self._now() - self._last).total_seconds()
             if not self._tripped and age > self._timeout:
                 self._tripped = True
-                get_writer().write("SYSTEM", "DEAD_MAN_TRIPPED", "GOVERNANCE",
-                                   {"age_sec": round(age, 1),
-                                    "timeout_sec": self._timeout})
-                # Halt trading via the fast-risk cache.  This is the
-                # canonical "stop signing" path used by every other
-                # governance halt (safe mode, emergency mode).  We do
-                # NOT call immutable_core.kill_switch.trigger_kill_switch
-                # here because that would os._exit() the process and
-                # prevent the cockpit from ever re-arming.
-                get_risk_cache().halt_trading(reason="dead_man")
+                try:
+                    get_writer().write(
+                        "SYSTEM", "DEAD_MAN_TRIPPED", "GOVERNANCE",
+                        {"age_sec": round(age, 1),
+                         "timeout_sec": self._timeout},
+                    )
+                except Exception:
+                    pass
+                # Halt trading via the fast-risk cache regardless of
+                # whether the ledger write succeeded: the safety
+                # invariant must hold even if the ledger is down.
+                try:
+                    get_risk_cache().halt_trading(reason="dead_man")
+                except Exception:
+                    pass
             return DeadManStatus(
                 last_beat_utc=self._last.isoformat(),
                 age_sec=age, timeout_sec=self._timeout,

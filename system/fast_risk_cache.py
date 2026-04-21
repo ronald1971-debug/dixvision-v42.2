@@ -37,6 +37,14 @@ class RiskConstraints:
         # silently skipping the percentage check.
         if portfolio_usd <= 0:
             return False, "portfolio_usd_required"
+        # Absolute per-order cap governance sets via ConstraintCompiler.
+        # Checked BEFORE the percentage rule so a large absolute size
+        # on a very large portfolio still gets rejected.
+        if size_usd > self.max_order_size_usd:
+            return False, (
+                f"size_usd_{size_usd:.2f}_exceeds_max_"
+                f"{self.max_order_size_usd:.2f}"
+            )
         pct = size_usd / portfolio_usd
         if pct > self.circuit_breaker_loss_pct:
             return False, f"size_pct_{pct:.4f}_exceeds_limit_{self.circuit_breaker_loss_pct}"

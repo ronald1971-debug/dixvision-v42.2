@@ -22,6 +22,7 @@ from __future__ import annotations
 import sqlite3
 import threading
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 
@@ -239,6 +240,33 @@ def revoke_live_signing(chain: Chain, address: str) -> WalletRecord | None:
     return get_wallet(chain, address)
 
 
+def _expiry_reached(expires_utc: str) -> bool:
+    """Compare an ISO-formatted expiry to ``utc_now()`` safely.
+
+    String comparison of ISO timestamps is incorrect when the two
+    strings use different timezone suffix formats (``Z`` vs
+    ``+00:00`` vs bare).  Parse both into timezone-aware
+    ``datetime`` objects before comparing, and treat any
+    unparseable value as NOT expired so a malformed record cannot
+    silently keep an unexpired approval from signing.
+    """
+    if not expires_utc:
+        return False
+    try:
+        s = expires_utc
+        if s.endswith("Z"):
+            s = s[:-1] + "+00:00"
+        exp = datetime.fromisoformat(s)
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        now = utc_now()
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
+        return exp <= now
+    except Exception:
+        return False
+
+
 def can_sign(chain: Chain, address: str, *,
              usd_notional: float = 0.0) -> bool:
     """Runtime gate. INDIRA must call this before any sign attempt.
@@ -252,7 +280,7 @@ def can_sign(chain: Chain, address: str, *,
         return False
     if not w.live_signing_allowed:
         return False
-    if w.approval_expires_utc and w.approval_expires_utc < utc_now_iso():
+    if _expiry_reached(w.approval_expires_utc):
         return False
     from security import wallet_policy as _wp
     ok, _ = _wp.can_sign(chain.value, address, usd_notional=float(usd_notional))
