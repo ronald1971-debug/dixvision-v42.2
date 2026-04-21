@@ -26,6 +26,7 @@ from dataclasses import dataclass
 from core.authority import Domain, scope
 from execution.adapter_router import get_adapter_router
 from state.ledger.writer import get_writer
+from system.autonomy import get_autonomy
 from system.fast_risk_cache import get_risk_cache
 from system.metrics import get_metrics
 
@@ -84,6 +85,20 @@ def fast_execute_trade(
             return FastExecuteResult(False, reason, "", None,
                                      time.perf_counter_ns() - t0)
 
+        # Autonomy gate (orthogonal to the health-mode state machine).
+        # USER_CONTROLLED blocks everything; SEMI_AUTO enforces a
+        # per-mode envelope (size, rate, new-asset rule).  If the gate
+        # rejects, the trade is staged as awaiting operator approval
+        # in the ledger and the operator can approve it from the
+        # cockpit.  Reads are in-memory only — no DB, no allocation,
+        # so the <5 ms hot-path budget is preserved.
+        auton = get_autonomy()
+        auto_ok, auto_reason = auton.allows_auto(size_usd=size_usd)
+        if not auto_ok:
+            _stage_pending_operator(asset, side, size_usd, auto_reason)
+            return FastExecuteResult(False, f"awaiting_operator:{auto_reason}",
+                                     "", None, time.perf_counter_ns() - t0)
+
         adapter = get_adapter_router().route(asset)
         if adapter is None:
             _audit_reject(asset, side, size_usd, "no_adapter")
@@ -115,6 +130,14 @@ def fast_execute_trade(
         except Exception:
             pass
 
+        # Record the auto-trade against the per-mode rate limit only
+        # AFTER a successful fill; rejected / failed orders should not
+        # consume the hourly budget.
+        try:
+            get_autonomy().record_auto_trade()
+        except Exception:
+            pass
+
         return FastExecuteResult(
             ok=True,
             reason="ok",
@@ -131,6 +154,27 @@ def _audit_reject(asset: str, side: str, size_usd: float, reason: str) -> None:
             "ORDER_REJECTED",
             "mind.fast_execute",
             {"asset": asset, "side": side, "size_usd": size_usd, "reason": reason},
+        )
+    except Exception:
+        pass
+
+
+def _stage_pending_operator(asset: str, side: str, size_usd: float,
+                            reason: str) -> None:
+    """Stage a pending-operator-approval event so the cockpit can
+    surface the blocked signal and the operator can approve or deny.
+
+    Writes to the async ledger writer only — never synchronous I/O on
+    the hot path.  Swallows all errors so the fast-execute return
+    remains deterministic.
+    """
+    try:
+        get_writer().write(
+            "MARKET",
+            "ORDER_AWAITING_OPERATOR",
+            "mind.fast_execute",
+            {"asset": asset, "side": side, "size_usd": size_usd,
+             "reason": reason},
         )
     except Exception:
         pass

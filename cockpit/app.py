@@ -35,16 +35,20 @@ from cockpit.chat import get_chat
 from cockpit.llm import get_router as get_llm_router
 from cockpit.qr import qr_png_bytes
 from core.charter import Voice, all_charters
+from mind import custom_strategies as _cs
 from mind.knowledge.trader_knowledge import get_trader_knowledge
 from mind.sources.providers import bootstrap_all_providers, provider_summary
 from mind.strategy_arbiter import get_arbiter
+from security import operator as _op
 from security import wallet_connect as _wc
 from security import wallet_policy as _wp
 from state.episodic_memory import get_episodic_memory
 from state.ledger.writer import get_writer
+from system.autonomy import AutonomyMode, get_autonomy
 from system.fast_risk_cache import get_risk_cache
 from system.locale import current as current_locale
 from system.locale import set_override, supported_ui_languages
+from system_monitor import weekly_scout as _scout
 from system_monitor.dead_man import get_dead_man
 from system_monitor.latency_guard import get_latency_guard
 
@@ -77,6 +81,34 @@ if _FASTAPI_OK:
     class PairingClaimIn(BaseModel):
         token: str
         device: str = "unknown"
+
+    class AutonomyModeIn(BaseModel):
+        mode: str
+        operator_id: str = "operator"
+        reason: str = ""
+
+    class ApprovalRequestIn(BaseModel):
+        kind: str
+        subject: str
+        payload: dict | None = None
+        ttl_sec: int = 24 * 3600
+        requested_by: str = "cockpit"
+
+    class ApprovalActionIn(BaseModel):
+        request_id: str
+        operator_id: str = "operator"
+        reason: str = ""
+
+    class CustomStrategyIn(BaseModel):
+        name: str
+        source: str
+        author: str = "operator"
+        language: str = "python"
+
+    class CustomStrategyActionIn(BaseModel):
+        strategy_id: str
+        operator_id: str = "operator"
+        reason: str = ""
 
 
 def _charters_payload() -> list[dict[str, object]]:
@@ -365,6 +397,158 @@ def create_app() -> FastAPI:
         payload = f"{base}/pair?t={t}"
         return Response(content=qr_png_bytes(payload, module_px=8),
                         media_type="image/png")
+
+    # ---------- autonomy modes --------------------------------------
+
+    @app.get("/api/autonomy")
+    async def autonomy_status() -> JSONResponse:
+        return JSONResponse(get_autonomy().status().as_dict())
+
+    @app.post("/api/autonomy/mode")
+    async def autonomy_set_mode(body: AutonomyModeIn) -> JSONResponse:
+        try:
+            mode = AutonomyMode(body.mode.upper())
+        except Exception:
+            raise HTTPException(status_code=400, detail="unknown_mode")
+        try:
+            status = get_autonomy().transition(
+                mode, operator_id=body.operator_id, reason=body.reason,
+            )
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc))
+        return JSONResponse(status.as_dict())
+
+    # ---------- operator-above-all approvals -----------------------
+
+    @app.get("/api/operator/pending")
+    async def operator_pending() -> JSONResponse:
+        return JSONResponse({"pending": [r.as_dict() for r in _op.pending()]})
+
+    @app.get("/api/operator/history")
+    async def operator_history(limit: int = 100) -> JSONResponse:
+        return JSONResponse({
+            "history": [r.as_dict() for r in _op.history(limit=limit)],
+        })
+
+    @app.post("/api/operator/request")
+    async def operator_request(body: ApprovalRequestIn) -> JSONResponse:
+        try:
+            kind = _op.ApprovalKind(body.kind.upper())
+        except Exception:
+            raise HTTPException(status_code=400, detail="unknown_kind")
+        r = _op.request_approval(
+            kind, subject=body.subject, payload=body.payload or {},
+            ttl_sec=int(body.ttl_sec), requested_by=body.requested_by,
+        )
+        return JSONResponse(r.as_dict())
+
+    @app.post("/api/operator/approve")
+    async def operator_approve(body: ApprovalActionIn) -> JSONResponse:
+        try:
+            r = _op.approve(body.request_id, operator_id=body.operator_id)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        return JSONResponse(r.as_dict())
+
+    @app.post("/api/operator/deny")
+    async def operator_deny(body: ApprovalActionIn) -> JSONResponse:
+        try:
+            r = _op.deny(body.request_id, operator_id=body.operator_id,
+                         reason=body.reason)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        return JSONResponse(r.as_dict())
+
+    @app.post("/api/operator/revoke")
+    async def operator_revoke(body: ApprovalActionIn) -> JSONResponse:
+        try:
+            r = _op.revoke(body.request_id, operator_id=body.operator_id)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        return JSONResponse(r.as_dict())
+
+    # ---------- custom strategies ---------------------------------
+
+    @app.get("/api/custom-strategies")
+    async def custom_strategies_list() -> JSONResponse:
+        return JSONResponse({
+            "strategies": [s.as_dict() for s in _cs.list_strategies()],
+        })
+
+    @app.post("/api/custom-strategies")
+    async def custom_strategies_submit(body: CustomStrategyIn) -> JSONResponse:
+        try:
+            s = _cs.submit(name=body.name, source=body.source,
+                           author=body.author, language=body.language)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        return JSONResponse(s.as_dict())
+
+    @app.post("/api/custom-strategies/sandbox")
+    async def custom_strategies_sandbox(body: CustomStrategyActionIn) -> JSONResponse:
+        try:
+            s = _cs.run_sandbox(body.strategy_id)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        return JSONResponse(s.as_dict())
+
+    @app.post("/api/custom-strategies/shadow")
+    async def custom_strategies_shadow(body: CustomStrategyActionIn) -> JSONResponse:
+        try:
+            s = _cs.promote_shadow(body.strategy_id)
+        except (LookupError, RuntimeError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+        return JSONResponse(s.as_dict())
+
+    @app.post("/api/custom-strategies/canary")
+    async def custom_strategies_canary(body: CustomStrategyActionIn) -> JSONResponse:
+        try:
+            s = _cs.promote_canary(body.strategy_id)
+        except (LookupError, RuntimeError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+        return JSONResponse(s.as_dict())
+
+    @app.post("/api/custom-strategies/request-live")
+    async def custom_strategies_request_live(body: CustomStrategyActionIn) -> JSONResponse:
+        try:
+            req = _cs.request_go_live(body.strategy_id,
+                                      operator_id=body.operator_id)
+        except (LookupError, RuntimeError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+        return JSONResponse(req)
+
+    @app.post("/api/custom-strategies/live")
+    async def custom_strategies_live(body: CustomStrategyActionIn) -> JSONResponse:
+        try:
+            s = _cs.promote_live(body.strategy_id)
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc))
+        except (LookupError, RuntimeError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+        return JSONResponse(s.as_dict())
+
+    @app.post("/api/custom-strategies/retire")
+    async def custom_strategies_retire(body: CustomStrategyActionIn) -> JSONResponse:
+        try:
+            s = _cs.retire(body.strategy_id, reason=body.reason)
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc))
+        return JSONResponse(s.as_dict())
+
+    # ---------- DYON weekly scout ---------------------------------
+
+    @app.get("/api/scout")
+    async def scout_status() -> JSONResponse:
+        tick = _scout.last_tick()
+        return JSONResponse(tick.as_dict() if tick is not None else {
+            "started_utc": "", "finished_utc": "",
+            "candidates": [], "errors": [],
+        })
+
+    @app.post("/api/scout/run")
+    async def scout_run() -> JSONResponse:
+        tick = _scout.run_once()
+        return JSONResponse(tick.as_dict())
 
     @app.get("/api/chat/history")
     async def chat_history(limit: int = 50) -> JSONResponse:

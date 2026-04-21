@@ -27,7 +27,12 @@ class ConstraintCompiler:
     ) -> CompiledConstraints:
         max_loss_pct = AXIOMS.MAX_LOSS_PER_TRADE_FLOOR_PCT / 100.0  # 0.01
         max_drawdown = AXIOMS.MAX_DRAWDOWN_FLOOR_PCT / 100.0        # 0.04
-        effective_drawdown = max(0.0, min(1.0, drawdown_pct)) or max_drawdown
+        # Clamp to [0, max_drawdown] and fall back to the axiom floor
+        # when the caller passes zero/negative. The manifest (§1) binds
+        # the drawdown ceiling to 4 %; no caller, accidental or
+        # adversarial, may raise it above that.
+        clamped = max(0.0, min(1.0, drawdown_pct))
+        effective_drawdown = min(clamped or max_drawdown, max_drawdown)
 
         c = RiskConstraints(
             max_position_pct=1.0,

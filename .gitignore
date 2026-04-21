@@ -28,6 +28,9 @@ data/cockpit_token.txt
 data/cockpit_token
 !data/**/.gitkeep
 
+# Custom strategy sandbox staging (transient files)
+mind/custom_submissions/_cs_*.py
+
 # Release artifacts
 release/
 dist/DIX-VISION.exe
