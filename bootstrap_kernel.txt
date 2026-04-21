@@ -1,2 +1,0 @@
-# Full Bootstrap Kernel
-Content related to the full bootstrap kernel goes here.
