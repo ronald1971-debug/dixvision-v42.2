@@ -122,23 +122,30 @@ def claim_pairing(token: str, *, bearer_token: str,
     """Consume a pairing token; return the cockpit bearer token on success.
 
     The bearer token (cockpit auth) is passed in by the caller so pairing.py
-    stays independent of cockpit.auth's token storage."""
+    stays independent of cockpit.auth's token storage.
+
+    Single-use is enforced by a conditional UPDATE whose WHERE clause
+    includes every validity condition: only one of N racing writers can
+    set consumed_utc from NULL, and SQLite's UPDATE rowcount tells us
+    whether we won.  This holds across processes / async workers, not
+    only within a single process — so the previous SELECT-then-UPDATE
+    TOCTOU window is closed.
+    """
+    now = _utcnow_iso()
     with _LOCK, _connect() as con:
-        row = con.execute(
-            "SELECT expires_utc,consumed_utc,revoked_utc FROM pairings WHERE token=?",
-            (token,),
-        ).fetchone()
-        if not row:
-            return None
-        expires_utc, consumed_utc, revoked_utc = row
-        if consumed_utc or revoked_utc:
-            return None
-        if _utcnow_iso() >= expires_utc:
-            return None
-        con.execute(
-            "UPDATE pairings SET consumed_utc=?, device_fingerprint=? WHERE token=?",
-            (_utcnow_iso(), device_fingerprint.strip()[:80], token),
+        cur = con.execute(
+            """
+            UPDATE pairings
+               SET consumed_utc = ?, device_fingerprint = ?
+             WHERE token = ?
+               AND consumed_utc IS NULL
+               AND revoked_utc IS NULL
+               AND expires_utc > ?
+            """,
+            (now, device_fingerprint.strip()[:80], token, now),
         )
+        if cur.rowcount <= 0:
+            return None
     get_writer().append_event(stream="SECURITY", kind="PAIRING_CLAIMED",
                               payload={"token_prefix": token[:6],
                                        "device": device_fingerprint[:20]})

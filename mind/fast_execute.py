@@ -51,6 +51,11 @@ def fast_execute_trade(
 
     Caller is Indira (market domain). Governance is NOT consulted here;
     it has already shaped the risk constraints that the cache exposes.
+
+    ``portfolio_usd`` MUST be a positive value. If the caller cannot
+    supply a current portfolio value, trading is refused (fail-closed
+    per manifest: a missing portfolio size means the per-trade
+    circuit breaker cannot be enforced).
     """
     t0 = time.perf_counter_ns()
     with scope(Domain.MARKET):
@@ -64,6 +69,13 @@ def fast_execute_trade(
         if rc.safe_mode:
             _audit_reject(asset, side, size_usd, "safe_mode")
             return FastExecuteResult(False, "safe_mode", "", None,
+                                     time.perf_counter_ns() - t0)
+
+        # Fail-closed on missing portfolio size: without it the
+        # per-trade loss cap cannot be evaluated, so we refuse the trade.
+        if portfolio_usd <= 0:
+            _audit_reject(asset, side, size_usd, "portfolio_usd_required")
+            return FastExecuteResult(False, "portfolio_usd_required", "", None,
                                      time.perf_counter_ns() - t0)
 
         ok, reason = rc.allows_trade(size_usd=size_usd, portfolio_usd=portfolio_usd)

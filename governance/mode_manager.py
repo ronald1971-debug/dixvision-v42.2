@@ -65,9 +65,12 @@ class ModeManager:
                                trading_allowed=False)
 
 _mgr: ModeManager | None = None
+_mgr_lock = threading.Lock()
 
 def get_mode_manager() -> ModeManager:
     global _mgr
     if _mgr is None:
-        _mgr = ModeManager()
+        with _mgr_lock:
+            if _mgr is None:
+                _mgr = ModeManager()
     return _mgr

@@ -8,6 +8,7 @@ from __future__ import annotations
 import threading
 
 from execution.adapter_router import get_adapter_router
+from execution.hazard.async_bus import HazardSeverity, HazardType
 from execution.hazard.event_emitter import get_hazard_emitter
 from state.ledger.writer import get_writer
 
@@ -63,9 +64,8 @@ class Reconciliation:
                 "drift_pct": drift, "report": report,
             })
             self._emitter.emit(
-                type(self._emitter).emit.__annotations__.get("hazard_type", None) or
-                __import__("execution.hazard.async_bus", fromlist=["HazardType"]).HazardType.DATA_CORRUPTION_SUSPECTED,
-                __import__("execution.hazard.async_bus", fromlist=["HazardSeverity"]).HazardSeverity.HIGH,
+                HazardType.DATA_CORRUPTION_SUSPECTED,
+                HazardSeverity.HIGH,
                 {"drift": drift},
             )
         self._last_report = report

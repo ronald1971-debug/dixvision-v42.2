@@ -266,8 +266,12 @@ def seed_default(kb: TraderKnowledge | None = None) -> dict[str, int]:
     for s in CURATED_STRATEGIES:
         kb.upsert_strategy(**s)
     for t in CURATED_TRADERS:
-        statements = t.pop("statements", [])
-        tid = kb.upsert_trader(**t)
+        # Do NOT mutate the curated module-level dict; idempotency requires
+        # the list to be re-readable across calls.  Copy, then split off the
+        # statements key from the copy.
+        trader = dict(t)
+        statements = trader.pop("statements", [])
+        tid = kb.upsert_trader(**trader)
         for st in statements:
             kb.add_statement(trader_id=tid, **st)
     return kb.count()

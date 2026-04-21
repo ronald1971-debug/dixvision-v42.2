@@ -32,10 +32,14 @@ class RiskConstraints:
             return False, "trading_not_allowed"
         if self.safe_mode:
             return False, "safe_mode_active"
-        if portfolio_usd > 0:
-            pct = size_usd / portfolio_usd
-            if pct > self.circuit_breaker_loss_pct:
-                return False, f"size_pct_{pct:.4f}_exceeds_limit_{self.circuit_breaker_loss_pct}"
+        # Fail-closed: if we don't know the portfolio size we cannot
+        # enforce the per-trade circuit breaker, so refuse rather than
+        # silently skipping the percentage check.
+        if portfolio_usd <= 0:
+            return False, "portfolio_usd_required"
+        pct = size_usd / portfolio_usd
+        if pct > self.circuit_breaker_loss_pct:
+            return False, f"size_pct_{pct:.4f}_exceeds_limit_{self.circuit_breaker_loss_pct}"
         return True, "ok"
 
 
