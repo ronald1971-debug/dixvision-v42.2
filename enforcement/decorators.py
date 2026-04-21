@@ -39,22 +39,23 @@ def enforce_full(fn: Callable) -> Callable:
         if not state.trading_allowed:
             raise RuntimeError("Trading not allowed: risk cache or safe mode")
         trade_size_pct = float(kwargs.get("trade_size_pct", 0.0) or 0.0)
-        size_usd = float(kwargs.get("size_usd", 0.0) or 0.0)
-        portfolio_usd = float(kwargs.get("portfolio_usd", 0.0) or 0.0)
-        # Forward the absolute sizing fields so the governance kernel
-        # can exercise the full risk-cache gate (max_order_size_usd +
-        # circuit-breaker percentage). Passing only trade_size_pct lets
-        # the absolute USD cap default to zero, which is a silent
-        # no-op. Manifest §1 requires every MARKET action to honour
-        # the USD-denominated floor.
+        # Forward the absolute sizing fields only when the caller
+        # actually supplied them, so the governance kernel's own
+        # portfolio_usd fallback (100_000) kicks in for callers that
+        # only specify a percentage. Explicitly passing 0 here would
+        # trigger fast_risk_cache.allows_trade's "portfolio_usd_required"
+        # fail-closed and reject every percentage-only trade.
+        payload: dict[str, Any] = {
+            "kwargs": {"trade_size_pct": trade_size_pct},
+            "trade_size_pct": trade_size_pct,
+        }
+        if "size_usd" in kwargs and kwargs["size_usd"] is not None:
+            payload["size_usd"] = float(kwargs["size_usd"])
+        if "portfolio_usd" in kwargs and kwargs["portfolio_usd"] is not None:
+            payload["portfolio_usd"] = float(kwargs["portfolio_usd"])
         request = ActionRequest(
             action=fn.__name__, domain="MARKET",
-            payload={
-                "kwargs": {"trade_size_pct": trade_size_pct},
-                "trade_size_pct": trade_size_pct,
-                "size_usd": size_usd,
-                "portfolio_usd": portfolio_usd,
-            },
+            payload=payload,
         )
         decision = get_kernel().evaluate(request)
         if not decision.allowed:

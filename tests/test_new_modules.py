@@ -605,6 +605,27 @@ def test_constraint_compiler_caps_drawdown_at_axiom():
     assert compiled0.constraints.circuit_breaker_drawdown == 0.04
 
 
+def test_enforce_full_percentage_only_caller_is_allowed():
+    """Regression: round-7 fix explicitly wrote portfolio_usd=0 into the
+    governance payload for every decorated call, which caused
+    ``fast_risk_cache.allows_trade`` to short-circuit with
+    ``portfolio_usd_required`` — blocking every percentage-only trade
+    that goes through ``@enforce_full``.  The decorator now only
+    forwards the absolute sizing fields when the caller supplied them,
+    so the kernel's own 100_000 portfolio fallback is used."""
+    from enforcement.decorators import enforce_full
+    from system.state import get_state_manager
+
+    get_state_manager().update(trading_allowed=True)
+
+    @enforce_full
+    def _fn(*, trade_size_pct: float) -> str:
+        return "ok"
+
+    # 0.5% of an implicit 100 000 portfolio = $500 — under both caps.
+    assert _fn(trade_size_pct=0.5) == "ok"
+
+
 if __name__ == "__main__":  # pragma: no cover
     import sys
 

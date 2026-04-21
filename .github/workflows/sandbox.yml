@@ -26,10 +26,12 @@ jobs:
           pip install -r requirements.txt
 
       - name: sandbox pipeline (mandatory)
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          git fetch origin ${{ github.base_ref }} --depth=1 || true
+          git fetch origin "${BASE_REF}" --depth=1 || true
           python -m governance.patch_pipeline --check-pr \
-            --base origin/${{ github.base_ref }}
+            --base "origin/${BASE_REF}"
 
       - name: authority lint (defense-in-depth)
         run: python tools/authority_lint.py
