@@ -88,21 +88,20 @@ class EventStore:
 
     def append(self, event_type: str, sub_type: str, source: str,
                payload: dict[str, Any]) -> LedgerEvent:
-        ts = now()
         import uuid
-        event = LedgerEvent(
-            event_id=str(uuid.uuid4()),
-            event_type=event_type,
-            sub_type=sub_type,
-            source=source,
-            payload=payload,
-            timestamp_utc=ts.utc_time.isoformat(),
-            sequence=ts.sequence,
-            prev_hash=self._prev_hash,
-        )
-        event.event_hash = event.compute_hash()
-
         with self._lock:
+            ts = now()
+            event = LedgerEvent(
+                event_id=str(uuid.uuid4()),
+                event_type=event_type,
+                sub_type=sub_type,
+                source=source,
+                payload=payload,
+                timestamp_utc=ts.utc_time.isoformat(),
+                sequence=ts.sequence,
+                prev_hash=self._prev_hash,
+            )
+            event.event_hash = event.compute_hash()
             self._conn.execute("""
                 INSERT INTO events
                 (event_id, event_type, sub_type, source, payload,

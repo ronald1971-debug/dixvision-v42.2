@@ -52,8 +52,7 @@ _engine = PolicyEngine()
 _engine.register(
     PolicyRule(
         name="deny_martingale",
-        predicate=lambda ctx: bool(ctx.get("strategy", "")).__eq__(True)
-        and str(ctx.get("strategy", "")).lower() == "martingale",
+        predicate=lambda ctx: str(ctx.get("strategy", "")).lower() == "martingale",
         reason="martingale_forbidden_axiom",
     )
 )

@@ -61,9 +61,18 @@ def estimate(*, qty: float, adv_qty: float, spread_bps: float,
     )
 
 
-def min_acceptable_price(*, mid: float, side: str, exp_slip_bps: float,
-                         max_extra_bps: float = 20.0) -> float:
-    """Derive a minAcceptable (for buys) / maxAcceptable (for sells) price."""
+def worst_acceptable_price(*, mid: float, side: str, exp_slip_bps: float,
+                           max_extra_bps: float = 20.0) -> float:
+    """Return the worst price at which a fill is still acceptable.
+
+    For a buy, slippage pushes fills above mid, so the worst (highest) price
+    we will still accept is ``mid + shift``.  For a sell, slippage pushes
+    fills below mid, so the worst (lowest) price is ``mid - shift``.
+
+    Callers using this as an absolute price guard (e.g. ``limit=price_limit``
+    on a market order, or ``minOut`` for a swap) should pass the returned
+    value as the **ceiling** for buys and **floor** for sells.
+    """
     if mid <= 0:
         return 0.0
     bps_total = exp_slip_bps + max_extra_bps
@@ -71,4 +80,15 @@ def min_acceptable_price(*, mid: float, side: str, exp_slip_bps: float,
     return mid + shift if side.lower() == "buy" else mid - shift
 
 
-__all__ = ["SlippageEstimate", "estimate", "min_acceptable_price"]
+# Backward-compatibility alias. Semantics are identical to
+# ``worst_acceptable_price``; kept so existing call sites keep working while
+# new code moves to the clearer name.
+min_acceptable_price = worst_acceptable_price
+
+
+__all__ = [
+    "SlippageEstimate",
+    "estimate",
+    "worst_acceptable_price",
+    "min_acceptable_price",
+]

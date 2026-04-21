@@ -151,10 +151,8 @@ class GovernanceKernel:
 
             if should_halt_trading(event):
                 self._risk_cache.halt_trading(reason=event.hazard_type.value)
-                self._state_mgr.update(
-                    trading_allowed=False,
-                    active_hazards=self._state_mgr.get().active_hazards + 1,
-                )
+                self._state_mgr.update(trading_allowed=False)
+                self._state_mgr.increment("active_hazards", 1)
                 decision_type = GovernanceOutcome.HALT
             elif should_enter_safe_mode(event):
                 self._risk_cache.enter_safe_mode()

@@ -33,6 +33,19 @@ class StateManager:
             self._state = replace(self._state, **valid)
             return self._state
 
+    def increment(self, field: str, delta: int = 1) -> SystemState:
+        """Atomic read-modify-write for a single integer field.
+
+        Use this instead of `update(field=get().field + 1)`; the separate
+        get/update sequence races under concurrent writers.
+        """
+        with self._lock:
+            if field not in SystemState.__dataclass_fields__:
+                return self._state
+            current = getattr(self._state, field)
+            self._state = replace(self._state, **{field: current + delta})
+            return self._state
+
     def set_mode(self, mode: str) -> SystemState:
         return self.update(mode=mode)
 
