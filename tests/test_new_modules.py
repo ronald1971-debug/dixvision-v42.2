@@ -605,6 +605,55 @@ def test_constraint_compiler_caps_drawdown_at_axiom():
     assert compiled0.constraints.circuit_breaker_drawdown == 0.04
 
 
+def test_enforce_full_positional_args_not_bypassed():
+    """Regression: prior decorator read sizing from **kwargs only, so
+    ``place_trade("BTC", 5.0)`` (positional) saw trade_size_pct=0 and
+    skipped the 1% circuit-breaker.  Now resolved via
+    ``inspect.signature.bind_partial`` so positional values are
+    correctly captured."""
+    from enforcement.decorators import enforce_full
+    from system.state import get_state_manager
+
+    get_state_manager().update(trading_allowed=True)
+
+    @enforce_full
+    def _pos(symbol: str, trade_size_pct: float) -> str:
+        return "ok"
+
+    # 5% trade size MUST be rejected by the 1% circuit breaker, regardless
+    # of whether the caller passed it positionally.
+    raised = False
+    try:
+        _pos("BTCUSDT", 5.0)
+    except RuntimeError as e:
+        raised = True
+        assert "trade_size_pct" in str(e) or "exceeds" in str(e)
+    assert raised, "5% positional trade should be blocked by governance"
+
+
+def test_logger_flush_does_not_hang():
+    """Regression: ``Logger._flush`` joined the queue but ``_run`` never
+    called ``task_done``, so atexit blocked forever on shutdown."""
+    import tempfile
+    import threading
+    import uuid as _u
+    from system.logger import Logger
+
+    with tempfile.TemporaryDirectory() as td:
+        lg = Logger(f"t_{_u.uuid4().hex[:6]}", log_dir=td)
+        for i in range(10):
+            lg.info(f"msg {i}")
+        done = threading.Event()
+
+        def _flush() -> None:
+            lg._flush()
+            done.set()
+
+        t = threading.Thread(target=_flush, daemon=True)
+        t.start()
+        assert done.wait(timeout=2.0), "Logger._flush hung (task_done missing)"
+
+
 def test_enforce_full_percentage_only_caller_is_allowed():
     """Regression: round-7 fix explicitly wrote portfolio_usd=0 into the
     governance payload for every decorated call, which caused

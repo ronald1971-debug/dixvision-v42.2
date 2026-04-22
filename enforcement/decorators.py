@@ -9,19 +9,39 @@ DIX VISION v42.2 — Enforcement Decorators
 """
 from __future__ import annotations
 
+import inspect
 from collections.abc import Callable
 from functools import wraps
 from typing import Any
+
+
+def _bind_arguments(fn: Callable, args: tuple, kwargs: dict) -> dict[str, Any]:
+    """Resolve positional + keyword args against ``fn``'s signature.
+
+    Without this, ``@enforce_full`` / ``@enforce_governance`` read the
+    sizing fields exclusively from ``**kwargs`` and callers that pass
+    them positionally (e.g. ``place_trade("BTCUSDT", 5.0)``) bypass the
+    governance check silently.
+    """
+    try:
+        sig = inspect.signature(fn)
+        bound = sig.bind_partial(*args, **kwargs)
+        bound.apply_defaults()
+        return dict(bound.arguments)
+    except (TypeError, ValueError):
+        # Fallback: callee has *args / **kwargs only; use kwargs as-is
+        return dict(kwargs)
 
 
 def enforce_governance(fn: Callable) -> Callable:
     @wraps(fn)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
         from governance.kernel import ActionRequest, get_kernel
+        bound = _bind_arguments(fn, args, kwargs)
         request = ActionRequest(
             action=fn.__name__,
-            domain=kwargs.get("_domain", "MARKET"),
-            payload={"kwargs": {k: str(v) for k, v in kwargs.items()
+            domain=bound.get("_domain", kwargs.get("_domain", "MARKET")),
+            payload={"kwargs": {k: str(v) for k, v in bound.items()
                                 if not k.startswith("_")}},
         )
         decision = get_kernel().evaluate(request)
@@ -38,7 +58,8 @@ def enforce_full(fn: Callable) -> Callable:
         state = get_state()
         if not state.trading_allowed:
             raise RuntimeError("Trading not allowed: risk cache or safe mode")
-        trade_size_pct = float(kwargs.get("trade_size_pct", 0.0) or 0.0)
+        bound = _bind_arguments(fn, args, kwargs)
+        trade_size_pct = float(bound.get("trade_size_pct", 0.0) or 0.0)
         # Forward the absolute sizing fields only when the caller
         # actually supplied them, so the governance kernel's own
         # portfolio_usd fallback (100_000) kicks in for callers that
@@ -49,10 +70,10 @@ def enforce_full(fn: Callable) -> Callable:
             "kwargs": {"trade_size_pct": trade_size_pct},
             "trade_size_pct": trade_size_pct,
         }
-        if "size_usd" in kwargs and kwargs["size_usd"] is not None:
-            payload["size_usd"] = float(kwargs["size_usd"])
-        if "portfolio_usd" in kwargs and kwargs["portfolio_usd"] is not None:
-            payload["portfolio_usd"] = float(kwargs["portfolio_usd"])
+        if bound.get("size_usd") is not None:
+            payload["size_usd"] = float(bound["size_usd"])
+        if bound.get("portfolio_usd") is not None:
+            payload["portfolio_usd"] = float(bound["portfolio_usd"])
         request = ActionRequest(
             action=fn.__name__, domain="MARKET",
             payload=payload,

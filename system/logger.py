@@ -30,14 +30,19 @@ class Logger:
     def _run(self) -> None:
         while True:
             rec = self._q.get()
-            if rec is None:
-                break
-            line = json.dumps(rec, default=str)
-            print(line)
-            self._f.write(line + "\n")
-            self._f.flush()
+            try:
+                if rec is None:
+                    break
+                line = json.dumps(rec, default=str)
+                print(line)
+                self._f.write(line + "\n")
+                self._f.flush()
+            finally:
+                self._q.task_done()
 
     def _flush(self) -> None:
+        # Pair every ``put()`` with a ``task_done()`` in ``_run`` so
+        # ``join()`` cannot block indefinitely on shutdown.
         self._q.join()
 
     def _emit(self, level: str, msg: str, **kw: Any) -> None:
