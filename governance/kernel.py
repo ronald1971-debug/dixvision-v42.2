@@ -156,7 +156,11 @@ class GovernanceKernel:
 
             if should_halt_trading(event):
                 self._risk_cache.halt_trading(reason=event.hazard_type.value)
-                self._state_mgr.update(trading_allowed=False)
+                # Keep trading_allowed + governance_mode consistent so the
+                # cockpit and ModeManager.current_mode() don't report NORMAL
+                # while trading is actually halted.
+                self._state_mgr.update(trading_allowed=False,
+                                       governance_mode="EMERGENCY_HALT")
                 self._state_mgr.increment("active_hazards", 1)
                 decision_type = GovernanceOutcome.HALT
             elif should_enter_safe_mode(event):

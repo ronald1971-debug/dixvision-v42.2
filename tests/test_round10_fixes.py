@@ -53,6 +53,66 @@ def test_system_state_governance_mode_defaults_init():
     assert SystemState().governance_mode == "INIT"
 
 
+def test_mode_manager_halt_emits_ledger_event():
+    """halt() must write GOVERNANCE/MODE_CHANGE to the ledger (manifest §7)."""
+    from unittest.mock import patch
+
+    from governance.mode_manager import ModeManager, SystemMode
+    from system.fast_risk_cache import get_risk_cache
+    from system.state import StateManager
+
+    mgr = ModeManager.__new__(ModeManager)
+    mgr._state_mgr = StateManager()
+    mgr._cache = get_risk_cache()
+    import threading
+    mgr._lock = threading.Lock()
+
+    events: list[tuple] = []
+
+    def fake_append(et, st, src, payload):
+        events.append((et, st, src, payload))
+
+    with patch("governance.mode_manager.append_event", fake_append):
+        mgr.halt(reason="dead_man_trip")
+
+    assert any(et == "GOVERNANCE" and st == "MODE_CHANGE"
+               and p.get("to") == SystemMode.EMERGENCY_HALT.value
+               and p.get("reason") == "dead_man_trip"
+               and p.get("forced") is True
+               for et, st, _src, p in events)
+
+
+def test_governance_kernel_halt_updates_governance_mode():
+    """Hazard-triggered halt must set governance_mode=EMERGENCY_HALT so the
+    cockpit doesn't show NORMAL while trading_allowed is False."""
+    from unittest.mock import MagicMock, patch
+
+    from governance.kernel import GovernanceKernel
+    from system.fast_risk_cache import get_risk_cache
+    from system.state import StateManager
+
+    k = GovernanceKernel.__new__(GovernanceKernel)
+    k._risk_cache = get_risk_cache()
+    k._state_mgr = StateManager()
+    k._listeners = []
+    import threading
+    k._lock = threading.Lock()
+
+    event = MagicMock()
+    event.hazard_type = MagicMock(value="DISK_EXHAUSTION")
+    event.severity = MagicMock(value="CRITICAL")
+
+    with patch("governance.kernel.should_halt_trading", return_value=True), \
+         patch("governance.kernel.should_enter_safe_mode", return_value=False), \
+         patch("governance.kernel.classify_response", return_value="HALT"), \
+         patch("governance.kernel.append_event"):
+        k._on_hazard(event)
+
+    state = k._state_mgr.get()
+    assert state.trading_allowed is False
+    assert state.governance_mode == "EMERGENCY_HALT"
+
+
 def test_mode_manager_init_to_normal_transition_succeeds():
     """transition(NORMAL, 'boot_complete') must return True on a fresh state."""
     from governance.mode_manager import ModeManager, SystemMode
