@@ -104,6 +104,17 @@ def run(env: str = "dev", verify_only: bool = False) -> None:
     dyon.start()
     log.info("[BOOT] Dyon system engine started")
 
+    # Step 11: Lock the component registry. After every factory has been
+    # resolved, no further ``registry.register(...)`` calls are permitted
+    # — this is Phase 0 Build Plan §1.3 (contract lock) and closes the
+    # post-boot injection gap a rogue component could otherwise exploit.
+    try:
+        from core.registry import get_registry
+        get_registry().lock()
+        log.info("[BOOT] Component registry LOCKED — post-boot registration denied")
+    except Exception as e:  # fail-open on lock itself — never block boot
+        log.warning(f"[BOOT] Registry lock warning: {e}")
+
     state_mgr.set_mode("NORMAL")
     log.info("[BOOT] System ONLINE — all services running")
     audit.log("SYSTEM", "bootstrap", {"event": "BOOT_COMPLETE", "mode": "NORMAL"})
