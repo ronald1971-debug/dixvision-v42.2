@@ -37,6 +37,15 @@ def utc_now_iso() -> str:
 _DB_PATH = Path(__file__).resolve().parent.parent / "data" / "wallets.sqlite"
 _lock = threading.RLock()
 
+# Cached sqlite connection. Opened lazily once under ``_lock``; every
+# subsequent call reuses the same handle so we do NOT re-run the
+# CREATE TABLE + CREATE INDEX schema on every wallet read/write.
+# Mirrors the pattern in ``security.wallet_policy`` and
+# ``cockpit.pairing``. Serialised by ``_lock``; WAL journaling keeps
+# external readers (other processes) non-blocking.
+_conn_cached: sqlite3.Connection | None = None
+_conn_path: Path | None = None
+
 
 class Backend(str, Enum):
     WATCH_ONLY = "watch_only"
@@ -96,10 +105,33 @@ CREATE INDEX IF NOT EXISTS wallets_chain_idx ON wallets(chain);
 
 
 def _connect() -> sqlite3.Connection:
+    """Return the cached sqlite connection, opening it on first use.
+
+    Callers MUST already hold ``_lock``. ``check_same_thread=False``
+    is safe because every caller serialises access through ``_lock``.
+    WAL journaling is enabled so concurrent reader processes never
+    block writers.
+
+    If ``_DB_PATH`` changes between calls (tests do this by monkey-
+    patching the module), we re-open against the new path rather
+    than silently reading the previous database.
+    """
+    global _conn_cached, _conn_path
+    if _conn_cached is not None and _conn_path == _DB_PATH:
+        return _conn_cached
+    if _conn_cached is not None:
+        try:
+            _conn_cached.close()
+        except Exception:
+            pass
+        _conn_cached = None
     _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    c = sqlite3.connect(str(_DB_PATH))
-    c.executescript(_SCHEMA)
+    c = sqlite3.connect(str(_DB_PATH), check_same_thread=False)
     c.row_factory = sqlite3.Row
+    c.executescript(_SCHEMA)
+    c.execute("PRAGMA journal_mode=WAL;")
+    _conn_cached = c
+    _conn_path = _DB_PATH
     return c
 
 

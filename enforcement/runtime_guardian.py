@@ -39,8 +39,16 @@ class RuntimeGuardian:
 
     def stop(self) -> None:
         self._stop.set()
-        if self._thread:
-            self._thread.join(timeout=5.0)
+        thread = self._thread
+        if thread:
+            thread.join(timeout=5.0)
+        # Reset restart state under the same lock as ``start`` so a
+        # subsequent ``start()`` actually spawns a new loop instead of
+        # silently returning because the old flag is still set.
+        with self._lock:
+            self._started = False
+            self._thread = None
+            self._stop.clear()
 
     def _loop(self) -> None:
         while not self._stop.is_set():

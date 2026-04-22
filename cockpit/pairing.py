@@ -26,6 +26,13 @@ _DEFAULT_DB = "data/pairing.sqlite"
 _LOCK = threading.Lock()
 _DEFAULT_TTL_SEC = 900                                                          # 15 min
 
+# Cached sqlite connection. Opened lazily once under ``_LOCK``; every
+# subsequent call reuses the same handle so we do NOT re-run the
+# PRAGMA + CREATE TABLE statements on every pairing operation. Mirrors
+# the cached-connection pattern in ``security.wallet_policy``.
+_conn_cached: sqlite3.Connection | None = None
+_conn_path: Path | None = None
+
 
 def _db_path() -> Path:
     return Path(os.environ.get(_DB_PATH_ENV, _DEFAULT_DB))
@@ -36,7 +43,25 @@ def _utcnow_iso() -> str:
 
 
 def _connect() -> sqlite3.Connection:
+    """Return the cached sqlite connection, opening it on first use.
+
+    Callers MUST already hold ``_LOCK``. ``check_same_thread=False``
+    is safe because every caller serialises access through ``_LOCK``.
+
+    If ``DIX_PAIRING_DB`` changes between calls (tests do this), we
+    re-open against the new path rather than silently reading the
+    previous database.
+    """
+    global _conn_cached, _conn_path
     p = _db_path()
+    if _conn_cached is not None and _conn_path == p:
+        return _conn_cached
+    if _conn_cached is not None:
+        try:
+            _conn_cached.close()
+        except Exception:
+            pass
+        _conn_cached = None
     p.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(str(p), timeout=5.0, isolation_level=None,
                           check_same_thread=False)
@@ -55,6 +80,8 @@ def _connect() -> sqlite3.Connection:
         )
         """
     )
+    _conn_cached = con
+    _conn_path = p
     return con
 
 
