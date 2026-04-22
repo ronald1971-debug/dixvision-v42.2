@@ -165,7 +165,16 @@ class GovernanceKernel:
                 decision_type = GovernanceOutcome.HALT
             elif should_enter_safe_mode(event):
                 self._risk_cache.enter_safe_mode()
-                self._state_mgr.update(governance_mode="SAFE_MODE")
+                # Mirror the halt branch: when the risk cache flips to
+                # safe-mode (trading_allowed=False internally), the
+                # StateManager's ``trading_allowed`` flag and the hazard
+                # counter MUST follow. Otherwise the cockpit's
+                # ``/api/status`` reports ``trading_allowed: true`` while
+                # the cache is actually blocking every trade, and the
+                # ``enforce_full`` fast-reject path never trips.
+                self._state_mgr.update(trading_allowed=False,
+                                       governance_mode="SAFE_MODE")
+                self._state_mgr.increment("active_hazards", 1)
                 decision_type = GovernanceOutcome.SAFE_MODE
             else:
                 decision_type = GovernanceOutcome.APPROVED  # observe only

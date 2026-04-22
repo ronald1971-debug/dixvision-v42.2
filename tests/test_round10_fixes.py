@@ -113,6 +113,43 @@ def test_governance_kernel_halt_updates_governance_mode():
     assert state.governance_mode == "EMERGENCY_HALT"
 
 
+def test_governance_kernel_safe_mode_updates_trading_allowed_and_hazards():
+    """Hazard-triggered SAFE_MODE must mirror the halt branch: set
+    ``trading_allowed=False``, bump ``active_hazards``, and flip
+    ``governance_mode`` to SAFE_MODE atomically, so the cockpit and
+    enforce_full fast path stay consistent with the risk cache."""
+    from unittest.mock import MagicMock, patch
+
+    from governance.kernel import GovernanceKernel
+    from system.fast_risk_cache import get_risk_cache
+    from system.state import StateManager
+
+    k = GovernanceKernel.__new__(GovernanceKernel)
+    k._risk_cache = get_risk_cache()
+    k._state_mgr = StateManager()
+    k._listeners = []
+    import threading
+    k._lock = threading.Lock()
+
+    event = MagicMock()
+    event.hazard_type = MagicMock(value="MEMORY_PRESSURE")
+    event.severity = MagicMock(value="HIGH")
+
+    before = k._state_mgr.get().active_hazards
+    with patch("governance.kernel.should_halt_trading", return_value=False), \
+         patch("governance.kernel.should_enter_safe_mode", return_value=True), \
+         patch("governance.kernel.classify_response", return_value="SAFE_MODE"), \
+         patch("governance.kernel.append_event"):
+        k._on_hazard(event)
+
+    state = k._state_mgr.get()
+    assert state.trading_allowed is False, \
+        "safe_mode must flip trading_allowed=False (cockpit consistency)"
+    assert state.governance_mode == "SAFE_MODE"
+    assert state.active_hazards == before + 1, \
+        "safe_mode must increment active_hazards like halt does"
+
+
 def test_mode_manager_init_to_normal_transition_succeeds():
     """transition(NORMAL, 'boot_complete') must return True on a fresh state."""
     from governance.mode_manager import ModeManager, SystemMode
