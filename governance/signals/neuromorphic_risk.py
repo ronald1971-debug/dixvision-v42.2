@@ -54,6 +54,9 @@ class NeuromorphicRisk:
     heartbeat_interval: float = 2.0     # seconds — N5 dead-man
 
     def __init__(self) -> None:
+        # ``_last_tick_seen`` = proof-of-life (updated on every eval).
+        # ``_last_emission`` = diagnostic only.
+        self._last_tick_seen = time.monotonic()
         self._last_emission = time.monotonic()
 
     def evaluate(self, features: dict[str, Any]) -> RiskSignalEvent | None:
@@ -65,6 +68,9 @@ class NeuromorphicRisk:
           - strategy_pnl_dispersion: float    cross-strategy stddev
           - avg_cross_correlation: float      mean pairwise abs corr
         """
+        # N5 dead-man: every call is proof-of-life. Calm risk conditions
+        # (no threshold crossed) must not falsely trip the dead-man.
+        self._last_tick_seen = time.monotonic()
         dd_v = float(features.get("drawdown_velocity", 0.0))
         if dd_v > 0.4:
             return self._emit("RISK_ACCELERATION",
@@ -100,8 +106,13 @@ class NeuromorphicRisk:
         return None
 
     def check_self(self) -> bool:
-        """N5 dead-man — advisory sensor must prove it's alive."""
-        return (time.monotonic() - self._last_emission) < (self.heartbeat_interval * 3)
+        """N5 dead-man — advisory sensor must prove it's alive.
+
+        Liveness tracks the last ``evaluate()`` call, not the last
+        emission — so a calm market with no risk signals still proves
+        the sensor is running.
+        """
+        return (time.monotonic() - self._last_tick_seen) < (self.heartbeat_interval * 3)
 
     # ── internals ────────────────────────────────────────────────────
     def _emit(self, kind: str, *, severity: float, confidence: float,
@@ -113,6 +124,7 @@ class NeuromorphicRisk:
             context=context, timestamp_utc=ts, details=details,
         )
         self._last_emission = time.monotonic()
+        self._last_tick_seen = self._last_emission
         try:
             append_event("NEUROMORPHIC", kind, self.name, {
                 "severity": severity, "confidence": confidence,

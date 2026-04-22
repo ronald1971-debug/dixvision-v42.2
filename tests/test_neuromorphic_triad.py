@@ -104,6 +104,40 @@ def test_detector_check_self_fresh_instance_is_alive() -> None:
     assert NeuromorphicDetector().check_self() is True
 
 
+# ── N5 regression: calm-market dead-man must NOT falsely trip ──────────
+def test_signal_plugin_deadman_survives_calm_market(monkeypatch) -> None:
+    """Reg for Devin Review BUG_0001 — calm market evaluate() calls must
+    keep the dead-man alive even though no spike emits."""
+    plugin = NeuromorphicSignalPlugin()
+
+    t0 = plugin._last_tick_seen
+    # Simulate a calm-market evaluate() call 4× the heartbeat interval
+    # later (6s > 3×1.0s window). Without the fix, check_self() → False.
+    monkeypatch.setattr("mind.plugins.neuromorphic_signal.time.monotonic",
+                        lambda: t0 + 4.0 * plugin.heartbeat_interval)
+    with patch("mind.plugins.neuromorphic_signal.append_event"):
+        plugin.evaluate({"venue": "binance.btcusdt"})    # no threshold
+    # Same monotonic clock → check_self still passes.
+    assert plugin.check_self() is True, (
+        "N5 regression: calm-market evaluate() must keep dead-man alive"
+    )
+
+
+def test_risk_sensor_deadman_survives_calm_conditions(monkeypatch) -> None:
+    """Reg for Devin Review BUG_0002 — calm risk-feature evaluate()
+    must keep the dead-man alive."""
+    import governance.signals.neuromorphic_risk as nr
+    r = nr.NeuromorphicRisk()
+
+    t0 = r._last_tick_seen
+    monkeypatch.setattr(nr.time, "monotonic",
+                        lambda: t0 + 10.0 * r.heartbeat_interval)
+    r.evaluate({"drawdown_velocity": 0.0})      # no threshold
+    assert r.check_self() is True, (
+        "N5 regression: calm risk eval() must keep dead-man alive"
+    )
+
+
 # ── N1 + N6: no forbidden imports (static AST scan) ────────────────────
 def test_neuromorphic_modules_do_not_import_decision_surfaces() -> None:
     import ast

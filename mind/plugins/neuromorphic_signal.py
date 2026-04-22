@@ -62,6 +62,10 @@ class NeuromorphicSignalPlugin(_BasePlugin):
     heartbeat_interval: float = 1.0     # seconds
 
     def __init__(self) -> None:
+        # ``_last_tick_seen`` proves the sensor is *alive* (called every
+        # evaluation). ``_last_emission`` is kept for diagnostics — an
+        # emission also counts as a tick for the dead-man.
+        self._last_tick_seen = time.monotonic()
         self._last_emission = time.monotonic()
         self._seq = 0
 
@@ -75,6 +79,10 @@ class NeuromorphicSignalPlugin(_BasePlugin):
           - liquidity_delta: float  book depth change ratio
           - venue: str
         """
+        # N5 dead-man: every evaluation is proof-of-life, regardless of
+        # whether a spike threshold is crossed. A calm market must not
+        # trip the dead-man.
+        self._last_tick_seen = time.monotonic()
         venue = str(data.get("venue", "unknown"))
         vol = float(data.get("volatility", 0.0))
         ofi = float(data.get("ofi", 0.0))
@@ -129,8 +137,12 @@ class NeuromorphicSignalPlugin(_BasePlugin):
 
         Governance / system dead-man reads this; if False beyond the
         operator grace window, trading halts fail-closed.
+
+        Liveness is proven by *any* ``evaluate()`` call, not just by
+        spike emission — otherwise a calm market (no threshold crossed)
+        would falsely trip the dead-man.
         """
-        return (time.monotonic() - self._last_emission) < (self.heartbeat_interval * 3)
+        return (time.monotonic() - self._last_tick_seen) < (self.heartbeat_interval * 3)
 
     # ── internals ────────────────────────────────────────────────────
     def _spike(self, kind: str, *, intensity: float, direction: str,
@@ -147,6 +159,7 @@ class NeuromorphicSignalPlugin(_BasePlugin):
             details=details,
         )
         self._last_emission = time.monotonic()
+        self._last_tick_seen = self._last_emission
         # N4: every emission writes a ledger row — replayable.
         try:
             append_event("NEUROMORPHIC", kind, self.name, {
