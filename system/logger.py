@@ -4,6 +4,9 @@ DIX VISION v42.2 — Structured Async JSON Logger
 
 Non-blocking queue-based. UTC + monotonic seq on every record.
 Writes to stdout AND data/logs/system.log.
+
+All ``Logger`` instances share a single file handle + write lock to
+prevent file-descriptor proliferation and to serialise writes.
 """
 from __future__ import annotations
 
@@ -12,17 +15,51 @@ import json
 from pathlib import Path
 from queue import Queue
 from threading import RLock, Thread
-from typing import Any
+from typing import Any, IO
 
 from system.time_source import now
+
+_FILE_LOCK = RLock()
+_SHARED_FILE: IO[str] | None = None
+_SHARED_FILE_PATH: Path | None = None
+
+
+def _get_shared_file(log_dir: str) -> IO[str]:
+    """Return a process-wide append-mode handle to ``<log_dir>/system.log``.
+
+    Opened exactly once per process; subsequent calls return the same
+    file object.  A single write lock (``_FILE_LOCK``) serialises
+    writes so concurrent Logger threads do not interleave bytes.
+    """
+    global _SHARED_FILE, _SHARED_FILE_PATH
+    with _FILE_LOCK:
+        if _SHARED_FILE is None:
+            Path(log_dir).mkdir(parents=True, exist_ok=True)
+            _SHARED_FILE_PATH = Path(log_dir) / "system.log"
+            _SHARED_FILE = open(_SHARED_FILE_PATH, "a", encoding="utf-8")
+            atexit.register(_close_shared_file)
+        return _SHARED_FILE
+
+
+def _close_shared_file() -> None:
+    global _SHARED_FILE
+    with _FILE_LOCK:
+        if _SHARED_FILE is not None:
+            try:
+                _SHARED_FILE.flush()
+                _SHARED_FILE.close()
+            except Exception:
+                pass
+            _SHARED_FILE = None
 
 
 class Logger:
     def __init__(self, name: str, log_dir: str = "data/logs") -> None:
         self.name = name
         self._q: Queue = Queue()
-        Path(log_dir).mkdir(parents=True, exist_ok=True)
-        self._f = open(Path(log_dir) / "system.log", "a", encoding="utf-8")
+        # Share one file handle + write lock across all Logger
+        # instances to avoid fd proliferation and interleaved writes.
+        self._f = _get_shared_file(log_dir)
         self._t = Thread(target=self._run, daemon=True, name=f"Logger-{name}")
         self._t.start()
         atexit.register(self._flush)
@@ -35,8 +72,9 @@ class Logger:
                     break
                 line = json.dumps(rec, default=str)
                 print(line)
-                self._f.write(line + "\n")
-                self._f.flush()
+                with _FILE_LOCK:
+                    self._f.write(line + "\n")
+                    self._f.flush()
             finally:
                 self._q.task_done()
 

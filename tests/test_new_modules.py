@@ -675,6 +675,147 @@ def test_enforce_full_percentage_only_caller_is_allowed():
     assert _fn(trade_size_pct=0.5) == "ok"
 
 
+def test_hazard_bus_restart():
+    """Regression: ``HazardBus`` held a single Thread object in
+    ``__init__``; calling ``start()`` after ``stop()`` raised
+    ``RuntimeError: threads can only be started once``.  The bus now
+    mints a fresh Thread on every ``start()``."""
+    from execution.hazard.async_bus import HazardBus
+
+    bus = HazardBus()
+    bus.start()
+    bus.stop()
+    # Must not raise.
+    bus.start()
+    bus.stop()
+
+
+def test_dyon_engine_thread_restart():
+    """Regression: ``DyonEngine`` held a single Thread object in
+    ``__init__``; restart after stop() raised RuntimeError."""
+    from execution.engine import DyonEngine
+
+    eng = DyonEngine()
+    eng.start()
+    eng.stop()
+    # Must not raise.
+    eng.start()
+    eng.stop()
+
+
+def test_pairing_active_parses_expiry():
+    """Regression: ``Pairing.active`` compared ISO strings lexically;
+    the property now parses both sides to tz-aware datetimes."""
+    from datetime import datetime, timedelta, timezone
+
+    from cockpit.pairing import Pairing
+
+    past = (datetime.now(timezone.utc) - timedelta(hours=1))\
+        .replace(microsecond=0).isoformat()
+    future = (datetime.now(timezone.utc) + timedelta(hours=1))\
+        .replace(microsecond=0).isoformat()
+
+    expired = Pairing(token="t", label="l", created_utc=past,
+                      expires_utc=past, consumed_utc=None,
+                      revoked_utc=None, device_fingerprint=None)
+    live = Pairing(token="t", label="l", created_utc=past,
+                   expires_utc=future, consumed_utc=None,
+                   revoked_utc=None, device_fingerprint=None)
+    assert expired.active is False
+    assert live.active is True
+
+    # ``Z`` suffix must also parse correctly.
+    future_z = future.replace("+00:00", "Z")
+    live_z = Pairing(token="t", label="l", created_utc=past,
+                     expires_utc=future_z, consumed_utc=None,
+                     revoked_utc=None, device_fingerprint=None)
+    assert live_z.active is True
+
+
+def test_logger_shares_single_file_handle():
+    """Regression: every ``Logger`` instance opened its own file
+    descriptor on the same ``system.log`` path, proliferating fds and
+    allowing interleaved writes.  A module-level shared handle is now
+    used across all Logger instances."""
+    import tempfile
+    from system import logger as _logger
+
+    with tempfile.TemporaryDirectory() as td:
+        # Reset any previously-opened shared handle so the test is
+        # deterministic regardless of earlier tests.
+        _logger._close_shared_file()
+        a = _logger.Logger("a_share", log_dir=td)
+        b = _logger.Logger("b_share", log_dir=td)
+        assert a._f is b._f, "Logger instances must share one file handle"
+
+
+def test_logger_concurrent_writes_do_not_interleave():
+    """Regression: concurrent writes from multiple Logger threads
+    must produce whole JSON lines, not interleaved bytes."""
+    import json
+    import tempfile
+    import threading
+    from pathlib import Path
+
+    from system import logger as _logger
+
+    with tempfile.TemporaryDirectory() as td:
+        _logger._close_shared_file()
+        loggers = [_logger.Logger(f"c{i}", log_dir=td) for i in range(4)]
+
+        def _spam(lg: _logger.Logger, idx: int) -> None:
+            for j in range(50):
+                lg.info(f"m-{idx}-{j}", k="v" * 40)
+
+        threads = [threading.Thread(target=_spam, args=(lg, i))
+                   for i, lg in enumerate(loggers)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        for lg in loggers:
+            lg._flush()
+
+        log_path = Path(td) / "system.log"
+        lines = [ln for ln in log_path.read_text(encoding="utf-8").splitlines() if ln]
+        # Every line must be a complete JSON object.
+        for ln in lines:
+            json.loads(ln)
+        assert len(lines) == 4 * 50
+
+
+def test_wallet_policy_birth_single_clock_read():
+    """Regression: ``_get_birth`` called ``utc_now()`` three times in
+    one expression; the tz-awareness branch could operate on a
+    different timestamp than was tested.  A single call is now used."""
+    import sqlite3
+    import tempfile
+    from pathlib import Path
+
+    from security import wallet_policy as _wp
+
+    with tempfile.TemporaryDirectory() as td:
+        db = Path(td) / "wp.sqlite3"
+        con = sqlite3.connect(db)
+        con.row_factory = sqlite3.Row
+        con.execute("CREATE TABLE IF NOT EXISTS policy_meta("
+                    "k TEXT PRIMARY KEY, v TEXT)")
+        calls = {"n": 0}
+        _orig = _wp.utc_now
+
+        def _counting() -> "datetime":  # type: ignore[name-defined]
+            calls["n"] += 1
+            return _orig()
+
+        _wp.utc_now = _counting  # type: ignore[assignment]
+        try:
+            b = _wp._get_birth(con)
+        finally:
+            _wp.utc_now = _orig  # type: ignore[assignment]
+        assert b.tzinfo is not None, "birth must be tz-aware"
+        assert calls["n"] == 1, f"_get_birth called utc_now {calls['n']}x"
+
+
 if __name__ == "__main__":  # pragma: no cover
     import sys
 

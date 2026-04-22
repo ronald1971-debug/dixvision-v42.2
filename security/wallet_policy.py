@@ -128,7 +128,11 @@ def _get_birth(c: sqlite3.Connection) -> datetime:
     row = c.execute("SELECT v FROM policy_meta WHERE k = ?", (_BIRTH_KEY,)).fetchone()
     if row and row["v"]:
         return datetime.fromisoformat(row["v"])
-    b = utc_now().replace(tzinfo=timezone.utc) if utc_now().tzinfo is None else utc_now()
+    # Single utc_now() call so the stored birth value is exactly the
+    # one we tested for tz-awareness.
+    b = utc_now()
+    if b.tzinfo is None:
+        b = b.replace(tzinfo=timezone.utc)
     c.execute("INSERT OR REPLACE INTO policy_meta(k, v) VALUES (?, ?)",
               (_BIRTH_KEY, b.isoformat()))
     c.commit()

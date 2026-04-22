@@ -325,14 +325,17 @@ def _call_gemini(p: Provider, prompt: str, system: str,
     import json
     import urllib.request
     key = get_secret(p.env_key, default="")
-    url = f"{p.endpoint}/models/{p.model}:generateContent?key={key}"
+    # Use the x-goog-api-key header rather than ?key= so the secret
+    # never appears in HTTP access / proxy / CDN logs.
+    url = f"{p.endpoint}/models/{p.model}:generateContent"
     payload = {
         "system_instruction": {"parts": [{"text": system}]},
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.2},
     }
     req = urllib.request.Request(url, data=json.dumps(payload).encode(),
-                                 headers={"Content-Type": "application/json"})
+                                 headers={"Content-Type": "application/json",
+                                          "x-goog-api-key": key})
     with urllib.request.urlopen(req, timeout=30.0) as r:
         body = json.loads(r.read().decode("utf-8"))
     text = body["candidates"][0]["content"]["parts"][0]["text"]

@@ -34,14 +34,18 @@ class DyonEngine:
         self._detector = get_hazard_detector()
         self._emitter = get_hazard_emitter("dyon.engine")
         self._running = False
-        self._thread = threading.Thread(
-            target=self._loop, daemon=True, name="Dyon-Engine"
-        )
+        self._thread: threading.Thread | None = None
 
     def start(self) -> None:
         self._detector.start()
         self._running = True
-        self._thread.start()
+        # ``Thread`` objects cannot be restarted; re-create on every
+        # ``start()`` so graceful restart (stop → start) works.
+        if self._thread is None or not self._thread.is_alive():
+            self._thread = threading.Thread(
+                target=self._loop, daemon=True, name="Dyon-Engine"
+            )
+            self._thread.start()
         self._log.info("Dyon system engine started")
         self._audit.log("SYSTEM", "dyon.engine", {"event": "ENGINE_START"})
 

@@ -60,12 +60,17 @@ class HazardBus:
         self._q: queue.Queue[HazardEvent] = queue.Queue(maxsize=maxsize)
         self._handlers: list[Callable[[HazardEvent], None]] = []
         self._lock = threading.Lock()
-        self._worker = threading.Thread(target=self._dispatch_loop,
-                                        daemon=True, name="HazardBus")
+        self._worker: threading.Thread | None = None
         self._running = False
 
     def start(self) -> None:
+        # ``Thread`` objects cannot be restarted, so mint a fresh one
+        # every time ``start()`` is called after ``stop()``.
         self._running = True
+        if self._worker is not None and self._worker.is_alive():
+            return
+        self._worker = threading.Thread(target=self._dispatch_loop,
+                                        daemon=True, name="HazardBus")
         self._worker.start()
 
     def stop(self) -> None:

@@ -22,9 +22,7 @@ class HazardDetector:
         self._emitter = get_hazard_emitter("dyon.detector")
         self._health = get_health_monitor()
         self._running = False
-        self._thread = threading.Thread(
-            target=self._loop, daemon=True, name="HazardDetector"
-        )
+        self._thread: threading.Thread | None = None
         self._last_feed_ts: dict = {}
         self._check_interval = float(get_config("hazard.check_interval_seconds", 1.0))
         self._feed_silence_threshold = float(
@@ -35,8 +33,14 @@ class HazardDetector:
         )
 
     def start(self) -> None:
+        # ``Thread`` objects cannot be restarted; re-create on every
+        # ``start()`` so graceful restart (stop → start) works.
         self._running = True
-        self._thread.start()
+        if self._thread is None or not self._thread.is_alive():
+            self._thread = threading.Thread(
+                target=self._loop, daemon=True, name="HazardDetector"
+            )
+            self._thread.start()
 
     def stop(self) -> None:
         self._running = False

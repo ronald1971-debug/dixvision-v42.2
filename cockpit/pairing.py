@@ -72,7 +72,16 @@ class Pairing:
     def active(self) -> bool:
         if self.consumed_utc or self.revoked_utc:
             return False
-        return _utcnow_iso() < self.expires_utc
+        # Parse both timestamps into tz-aware datetimes so comparison
+        # is timezone-correct regardless of isoformat suffix quirks
+        # (``Z`` vs ``+00:00``) or a manually-inserted expiry string.
+        try:
+            exp = datetime.fromisoformat(self.expires_utc.replace("Z", "+00:00"))
+        except ValueError:
+            return False
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        return datetime.now(timezone.utc) < exp
 
 
 def issue_pairing(label: str, ttl_sec: int = _DEFAULT_TTL_SEC) -> Pairing:
