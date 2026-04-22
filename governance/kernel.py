@@ -99,9 +99,14 @@ class GovernanceKernel:
         if not ok:
             decision = GovernanceDecision(GovernanceOutcome.REJECTED, reason)
         else:
-            # Check trade size floor (1%) — convert from string if needed
-            raw_size = kwargs.get("trade_size_pct", payload.get("trade_size_pct", 0.0))
-            size_pct = float(raw_size) if raw_size else 0.0
+            # Check trade size floor (1%) — convert from string if needed.
+            # Use ``is not None`` so a missing key (defaulted to ``None``)
+            # is NOT silently treated the same as an explicit ``0``,
+            # which would let a trade with no ``trade_size_pct`` field
+            # slip past the 1% circuit-breaker check.
+            raw_size = kwargs.get("trade_size_pct",
+                                  payload.get("trade_size_pct", None))
+            size_pct = float(raw_size) if raw_size is not None else 0.0
             if size_pct > constraints.circuit_breaker_loss_pct * 100:
                 decision = GovernanceDecision(
                     GovernanceOutcome.REJECTED,

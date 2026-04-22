@@ -127,7 +127,15 @@ def _wkey(chain: str, address: str) -> str:
 def _get_birth(c: sqlite3.Connection) -> datetime:
     row = c.execute("SELECT v FROM policy_meta WHERE k = ?", (_BIRTH_KEY,)).fetchone()
     if row and row["v"]:
-        return datetime.fromisoformat(row["v"])
+        # Normalise on the read path: a stored value with no tz suffix
+        # (older rows, manual edits, migrations, Python-version quirks
+        # in ``fromisoformat``) would otherwise flow into ``_phase_for``
+        # and crash the whole wallet-policy system with
+        # "can't subtract offset-naive and offset-aware datetimes".
+        birth = datetime.fromisoformat(row["v"])
+        if birth.tzinfo is None:
+            birth = birth.replace(tzinfo=timezone.utc)
+        return birth
     # Single utc_now() call so the stored birth value is exactly the
     # one we tested for tz-awareness.
     b = utc_now()
@@ -294,7 +302,16 @@ def consume(chain: str, address: str, *, usd_notional: float,
 
 def set_wallet_cap(chain: str, address: str, *,
                    daily_cap_usd: float, approved_by: str) -> None:
-    """Phase OPERATOR_SET only. Raises in WARMUP/SUPERVISED."""
+    """Phase OPERATOR_SET only. Raises in WARMUP/SUPERVISED.
+
+    A negative ``daily_cap_usd`` is rejected up-front: writing it would
+    silently put the wallet into an unrecoverable deny-all state
+    (``spent + notional > negative_cap`` is always true for any
+    non-negative spend) that the cockpit currently cannot diagnose.
+    """
+    if daily_cap_usd < 0:
+        raise ValueError(
+            f"daily_cap_usd must be non-negative, got {daily_cap_usd}")
     s = snapshot()
     if s.phase is not Phase.OPERATOR_SET:
         raise PermissionError(f"cap change blocked in phase {s.phase.value}")
