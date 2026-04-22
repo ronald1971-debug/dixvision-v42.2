@@ -16,7 +16,7 @@ class SystemState:
     drawdown_pct: float = 0.0
     active_hazards: int = 0
     trading_allowed: bool = True
-    governance_mode: str = "NORMAL"
+    governance_mode: str = "INIT"
 
 class StateManager:
     def __init__(self) -> None:

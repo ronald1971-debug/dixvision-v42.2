@@ -279,19 +279,30 @@ def encode_qr(text: str) -> tuple[int, list[list[int]]]:
     bits = _bits_from_bytes(data, version)
     bits = _pad_bits(bits, total_data)
     data_codewords = _bits_to_bytes(bits)
-    # split into blocks
-    per_block = total_data // n_blocks
-    blocks = []
-    ec_blocks = []
+    # Split data codewords into two groups per QR spec (ISO/IEC 18004 §6.5.1):
+    # group 1 has `n_short` blocks of `short_len` codewords; group 2 has `n_long`
+    # blocks of `short_len + 1` codewords. short_len = total_data // n_blocks;
+    # n_long = total_data % n_blocks. For v10-L this is 2×68 + 2×69 = 274.
+    short_len = total_data // n_blocks
+    n_long = total_data % n_blocks
+    n_short = n_blocks - n_long
+    blocks: list[list[int]] = []
+    ec_blocks: list[list[int]] = []
+    cursor = 0
     for b in range(n_blocks):
-        blk = data_codewords[b * per_block:(b + 1) * per_block]
+        blen = short_len if b < n_short else short_len + 1
+        blk = data_codewords[cursor:cursor + blen]
+        cursor += blen
         blocks.append(blk)
         ec_blocks.append(_rs_encode(blk, ec_per_block))
-    # interleave
+    # Interleave data codewords column-wise. Shorter blocks contribute nothing
+    # to the final column (spec §6.5.2).
+    max_data = max(len(b) for b in blocks)
     interleaved: list[int] = []
-    for i in range(per_block):
+    for i in range(max_data):
         for b in blocks:
-            interleaved.append(b[i])
+            if i < len(b):
+                interleaved.append(b[i])
     for i in range(ec_per_block):
         for b in ec_blocks:
             interleaved.append(b[i])
