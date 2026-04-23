@@ -1,100 +1,74 @@
 name: rust
 
 on:
+  pull_request:
+    paths:
+      - "rust/**"
+      - ".github/workflows/rust.yml"
   push:
     branches: [main, develop]
     paths:
       - "rust/**"
       - ".github/workflows/rust.yml"
-  pull_request:
-    paths:
-      - "rust/**"
-      - ".github/workflows/rust.yml"
 
-env:
-  CARGO_TERM_COLOR: always
-  CARGO_INCREMENTAL: 0
-  RUST_BACKTRACE: short
-  RUSTFLAGS: "-D warnings"
-
+# Minimum surface first — richer matrix + caching will be added after
+# the baseline is green. Keeping each step in its own run: stanza so
+# the log line that reports the failure identifies the exact command.
 jobs:
-  fmt:
-    name: cargo fmt --check
+  rust:
+    name: rust — fmt + clippy + test + no_unsafe
     runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+      RUST_BACKTRACE: short
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
-      - name: fmt
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: where am I
+        run: |
+          set -euxo pipefail
+          pwd
+          ls -la
+          ls -la rust
+          rustc --version
+          cargo --version
+
+      - name: rustfmt
         working-directory: rust
         run: cargo fmt --all --check
 
-  clippy:
-    name: cargo clippy (deny warnings)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: rust
       - name: clippy
         working-directory: rust
         run: cargo clippy --all-targets --all-features -- -D warnings
 
-  test:
-    name: cargo test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: rust
       - name: test
         working-directory: rust
         run: cargo test --all --all-features --locked
 
-  # Architectural invariant guard:
-  # The workspace must NEVER introduce `unsafe` code outside documented
-  # FFI seams. This is ALSO enforced at the crate level via
-  # `#![forbid(unsafe_code)]` and the workspace-level
-  # `unsafe_code = "deny"` lint, but the duplicate grep gate catches
-  # the case where a PR silently removes the crate-root attribute.
-  #
-  # Matches any `unsafe` keyword token anywhere on a line (not only at
-  # line start), so it catches `pub unsafe fn foo()`,
-  # `let x = unsafe { ... }`, and method-level `unsafe fn bar()`
-  # inside an `impl` block — all of which the previous
-  # `^\s*unsafe\s` pattern missed.
-  #
-  # Documented FFI seams (future PyO3 glue) opt in by annotating the
-  # line with a `// SAFETY:` comment; those lines are excluded here.
-  no_unsafe:
-    name: forbid unsafe (invariant)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: grep for unsafe keyword
+      # Architectural invariant guard. The workspace must NEVER
+      # introduce `unsafe` code outside documented FFI seams. This is
+      # ALSO enforced via `#![forbid(unsafe_code)]` at each crate root
+      # and via the workspace lint `unsafe_code = "deny"` in
+      # rust/Cargo.toml; the grep below is the third line of defence
+      # that catches accidental removal of the crate-root attribute
+      # in a PR diff.
+      - name: forbid unsafe (invariant)
         run: |
           set -euo pipefail
           # Match the `unsafe` keyword token anywhere on a line, then
-          # strip false positives in this order:
-          #   1. `// SAFETY:` annotations (documented FFI seams)
-          #   2. `#![forbid(unsafe_code)]` — the attribute we WANT
-          #   3. lines whose first non-whitespace chars are `//` or
-          #      `//!` — doc/comment mentions of the word "unsafe"
+          # strip the three legitimate forms:
+          #   1. documented FFI seams      → `// SAFETY:`
+          #   2. the forbid attribute       → `#![forbid(unsafe_code)]`
+          #   3. doc/comment mentions       → lines starting with `//` or `//!`
           violations=$(grep -RIn --include='*.rs' -P '\bunsafe\b' rust/ \
                         | grep -v '// SAFETY:' \
                         | grep -Ev '#!\[forbid\(unsafe_code\)\]' \
                         | grep -Ev '^[^:]+:[0-9]+:\s*//' \
                         || true)
           if [ -n "$violations" ]; then
-            echo "Forbidden 'unsafe' usage found:" >&2
-            echo "$violations" >&2
+            echo "::error::forbidden 'unsafe' usage found"
+            echo "$violations"
             exit 1
           fi
           echo "no unsafe usage — invariant holds"
