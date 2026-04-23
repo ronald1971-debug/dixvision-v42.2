@@ -280,6 +280,12 @@ class KnowledgeStore:
                     size_bytes=size,
                     tags=tuple(row.get("tags", ())),
                 )
+                # Duplicate keys in the input rows must not inflate the
+                # byte counter — subtract the old entry's size before
+                # replacing it, mirroring the put() semantics.
+                if entry.key in self._data:
+                    old = self._data.pop(entry.key)
+                    self._bytes -= old.size_bytes
                 self._data[entry.key] = entry
                 self._bytes += entry.size_bytes
             self._enforce_caps_locked()

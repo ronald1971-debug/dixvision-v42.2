@@ -186,6 +186,24 @@ def test_oversized_put_is_rejected_without_wiping_store() -> None:
     assert s.eviction_count() == pre_evictions
 
 
+def test_restore_with_duplicate_keys_does_not_inflate_byte_counter() -> None:
+    """Regression guard: restore() must replace (not stack) on duplicate
+    keys, so the byte counter reflects only the surviving entry. A
+    previous implementation always added size_bytes, permanently
+    over-counting and triggering spurious LRU evictions."""
+    snap = [
+        {"key": "x", "value": "abc", "confidence": 0.5,
+         "inserted_at_ns": 0, "size_bytes": 3, "tags": []},
+        {"key": "x", "value": "abcde", "confidence": 0.5,
+         "inserted_at_ns": 1, "size_bytes": 5, "tags": []},
+    ]
+    s = KnowledgeStore(max_entries=1000, max_bytes=10_000)
+    s.restore(snap)
+    assert len(s) == 1
+    assert s.bytes_used() == 5, "byte counter must reflect surviving entry only"
+    assert s.get("x") == "abcde"
+
+
 def test_oversized_restore_row_is_skipped() -> None:
     """Regression guard: restore() must not admit rows larger than the
     byte cap, otherwise the same cascading eviction destroys the rest
