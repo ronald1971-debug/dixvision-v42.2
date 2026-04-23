@@ -367,3 +367,298 @@ Please confirm before I start coding:
 6. **FULL_AUTO live override visibility.** Should open-position cards show a permanent `close-now` button, or hide it behind a right-click menu?
 
 Waiting on your OK + answers to the above before any code PR lands.
+
+---
+
+## 11. Canonical screen layouts (post-research expansion)
+
+The widget grid from §1 ships with six canonical layouts the operator
+can switch between instantly (`Ctrl+1..6`). Each is a validated
+arrangement matching how professional desks actually use screen real
+estate; all widgets remain drag/resize-overridable.
+
+### 11.1 Single-monitor 4-pane grid (default desktop, 40/25/20/15)
+
+```
++-----------------------------------+---------------------+
+|                                   |                     |
+|        Chart (40%)                |   Order book /      |
+|        multi-TF,                  |   depth / tape      |
+|        drawing tools,             |     (25%)           |
+|        indicator stack            |                     |
+|                                   +---------------------+
+|                                   |                     |
+|                                   |  OrderForm (20%)    |
+|                                   |  + SL-TP builder    |
+|                                   |                     |
++-----------------------------------+---------------------+
+|  Positions / PnL / Alerts (15% full width)              |
++---------------------------------------------------------+
+```
+
+- **40 % Chart:** primary asset, configurable indicator stack, drawing
+  tools persisted per symbol.
+- **25 % Depth/Tape:** order book, time-and-sales, liquidation heatmap
+  (derivatives), route graph (DEX).
+- **20 % OrderForm + SL/TP builder:** all order types from §4, same
+  SL/TP primitives across backtest / paper / shadow / canary / live.
+- **15 % Positions / PnL / Alerts:** consolidated bottom bar with live
+  P&L, open positions, latest alerts, dead-man lamp, WARMUP-clock lamp.
+
+### 11.2 Dual-monitor split (standard desk)
+
+- **Monitor 1 — Execution:** Chart (60 %) + Depth/Tape (25 %) + OrderForm (15 %).
+- **Monitor 2 — Context + Risk:** Positions · PnL · Funding · Options chain / gamma
+  (if mode=options) · Memecoin smart-money feed (if mode=memecoin) · LedgerTail · Alerts · PadlockFloors.
+
+### 11.3 Triple-monitor split (power desk)
+
+- **Monitor 1 — Execution** (as 11.2).
+- **Monitor 2 — Context:** Positions · PnL · Funding · Route graph · Pool health · Economics ap.
+- **Monitor 3 — Risk + Research:** RiskCache · Safety · PadlockFloors · LedgerTail · Strategies · WeeklyScout · CustomStrategies · AlertsHub.
+
+### 11.4 Mobile portrait (PWA)
+
+Stacked single-column, collapsible sections, top-to-bottom priority:
+
+```
+[PadlockFloors lamp bar]  (dead-man / WARMUP / kill-switch / drawdown)
+[AutonomyMode selector]
+[Chart — mini, configurable TF]
+[OrderForm — compact]
+[Positions — swipe-left to close]
+[Alerts — infinite scroll]
+[LedgerTail — last 20 events]
+```
+
+### 11.5 Tablet landscape
+
+Two-column split; left = Chart + Depth, right = Positions + OrderForm +
+Alerts. Full widget grid available via `Layout → Custom`.
+
+### 11.6 Ultra-wide (32:9 / 49")
+
+Four vertical columns: Chart · Depth+Tape · OrderForm+SL/TP · Positions+PnL+Alerts.
+Gives the 4-pane grid without vertical splits.
+
+All layouts render the **PadlockFloors lamp bar** persistently — dead-man,
+WARMUP clock, kill-switch, drawdown floor, fast-path-frozen badge — so
+the operator cannot lose sight of any safety floor regardless of
+viewport.
+
+---
+
+## 12. Memecoin-mode cockpit tab (expansion of §3 memecoin trio)
+
+The Memecoin tab ships with a dedicated widget set purpose-built for
+the Solana / meme market, consuming the specs codified in
+`docs/MEMECOIN_TRADING_SPEC.md` and
+`docs/DEX_AND_BOT_ADAPTER_ROADMAP.md`.
+
+### 12.1 Widgets
+
+| Widget | What it shows |
+|--------|---------------|
+| **SafetyGate60s** | Live 60-second pre-trade pipeline per candidate token: mint/freeze/update authority · bundle detect · dev-wallet history · LP status · honeypot-sim. Row-red for any fail. |
+| **SmartMoneyFeed** | Live net-buys from the operator-curated smart-money wallet list (GMGN / Birdeye / Solscan) — token · wallet winrate · net-buy 5m SOL · smart-money holder count. |
+| **BundleAlerts** | Real-time alarm stream from the bundle detector — "3 fresh-funded wallets bought X in block 1, candidate auto-rejected." |
+| **RugWarnings** | Post-entry alarm stream — slow-rug / mint-abuse / tax-trap / LP-ownership-moved / honeypot-late-enable. Click row → force-exit confirm. |
+| **MemecoinPositions** | Per-position: entry, current, unrealized % / SOL, staged TP progress (2× / 3× / 5×), stop-loss, trailing status, smart-money-follower exit signal. |
+| **BurnerWalletCap** | Memecoin burner bankroll usage vs. hard cap (governance limit), per-bot tier-2 burner balances, top-up queue. |
+| **ModeSelectorMeme** | Off / Cautious / Aggressive with operator-TOTP transition. |
+| **ExitEngine** | Staged TP targets, stop-loss, trailing config, smart-money-follower exit toggle. |
+| **LPLockMonitor** | LP-ownership change watcher across all open memecoin positions. |
+| **PumpFunGraduates** | Pump.fun / PumpSwap graduation stream + post-graduation liquidity curve. |
+| **LaunchSniperQueue** | When Memecoin-Aggressive is active: pending Phase 1 + Phase 2 snipes with cancel button. |
+
+### 12.2 Default Memecoin tab layout
+
+```
++-------------------------+--------------------+----------------+
+| SmartMoneyFeed          | SafetyGate60s      | ModeSelectorMeme
+|                         |                    +----------------+
+|                         |                    | BurnerWalletCap
+|                         |                    +----------------+
+|                         |                    | PadlockFloors
++-------------------------+--------------------+----------------+
+| MemecoinPositions                           | ExitEngine      |
++---------------------------------------------+-----------------+
+| BundleAlerts | RugWarnings | LPLockMonitor  | LaunchSniperQueue
++---------------------------------------------+-----------------+
+| PumpFunGraduates (full width)                                 |
++---------------------------------------------------------------+
+```
+
+### 12.3 Safety interlocks (cockpit-side)
+
+- The OrderForm on the Memecoin tab **will not submit** a buy until
+  SafetyGate60s returns green; the submit button is disabled with a
+  tooltip listing which checks are still pending or red.
+- Position size input is hard-clamped to the governance cap for the
+  active Memecoin mode — the UI cannot submit a size above the cap.
+- Any red row on RugWarnings flashes the padlock lamp bar; operator
+  cannot navigate away from the Memecoin tab without acknowledging.
+
+---
+
+## 13. AI-platform feature-parity checklist
+
+Built as a public checklist so every operator request can be traced to
+a researched platform. Each row is a widget or a strategy template in
+the cockpit — not a new autonomous agent. Governance authority is
+unchanged.
+
+| # | Platform | Claimed capability | DIX widget / template |
+|---|----------|--------------------|-----------------------|
+| 1 | Trade Ideas (Holly) | Daily high-probability trade setups | `AISignalsFeed` widget consuming Holly API (read-only) |
+| 2 | TrendSpider | Automated TA, chart pattern recognition | `PatternScanner` widget + chart overlay |
+| 3 | QuantConnect | Institutional algorithmic backtesting | `BacktestRunner` widget + `CustomStrategies` template registry |
+| 4 | Tickeron | AI pattern recognition (equity + crypto) | Additional feed into `AISignalsFeed` |
+| 5 | Alpaca | API-first developer broker | Broker adapter (Phase 2); paper + live desks |
+| 6 | MenthorQ | Dealer positioning, gamma, volatility | `OptionsRisk` + `GammaHeatmap` widgets |
+| 7 | PredictIndicators.ai | Forward-looking indicator forecasts | `IndicatorForecast` widget (MACD / RSI / BB / Stoch with confidence gradient) |
+| 8 | TradeAlgo | Options analytics (Greeks, margin, AI risk) | `OptionsRisk` widget + `MarginTracker` |
+| 9 | Sharesight | Multi-broker portfolio performance | `PortfolioAttribution` widget (Sharpe, max DD, alpha/beta) |
+| 10 | Portfolio Visualizer | Performance attribution analytics | Same widget as #9, additional tabs |
+| 11 | Kubera | Unified view (brokerage + crypto + DeFi) | `UnifiedPortfolio` widget aggregating all DIX-connected venues |
+| 12 | Wealthica | Unified portfolio aggregation | Merged into `UnifiedPortfolio` |
+
+**Every feed is read-only.** Signals are surfaced as **advisory input**
+to the operator and (optionally, gated) to Indira's feature weights.
+Nothing on this list places a trade, approves a trade, modifies a
+rule, or bypasses the governance kernel. Same N1/N7 constraints as the
+neuromorphic triad.
+
+---
+
+## 14. Broker / venue adapter integration plan (cockpit-side)
+
+The cockpit surfaces every adapter listed in
+`docs/DEX_AND_BOT_ADAPTER_ROADMAP.md` through a uniform
+**BrokerStatus** widget + a uniform OrderForm routing dropdown.
+
+### 14.1 BrokerStatus widget
+
+- Per-adapter row: connection status · auth-token age (with rotate
+  button) · rate-limit headroom · p95 latency · dead-man timestamp ·
+  last error · burner-wallet balance (DEX/bot rows only).
+- Color: green / yellow (degraded) / red (dead-man tripped or
+  circuit-open) — matches Grafana palette for consistency.
+
+### 14.2 Routing dropdown on OrderForm
+
+- Shows only adapters valid for the active tab (e.g. Memecoin tab only
+  lists Jupiter / Raydium / PumpSwap / Four.meme / GMGN / BullX /
+  Trojan / Axiom / BonkBot / Banana Gun / Photon / Maestro).
+- Greys out any adapter whose dead-man is stale or whose circuit is
+  open.
+- Greys out any adapter whose burner is below the per-trade floor.
+
+### 14.3 Phase schedule for cockpit adapter rows
+
+| Phase | Adapters visible in cockpit |
+|-------|---|
+| PR #2 scaffolding | Placeholder rows for every adapter, `status=PENDING_PHASE_2` |
+| Phase 2 batch 1 | Jupiter · Raydium · Pump.fun/PumpSwap · Binance · Coinbase · IBKR |
+| Phase 2 batch 2 | Uniswap v4 · Four.meme · Hyperliquid · dYdX · Alpaca |
+| Phase 5 | Sniper-bot gateways (GMGN / BullX / Trojan / Axiom / BonkBot / Banana Gun / Photon / Maestro) |
+| Phase 6 | Forex broker batch 1 (Exness · IC Markets · Pepperstone · FP Markets · Axi) |
+| Phase 6 | Forex broker batch 2 (IG · FxPro · ThinkMarkets · Tickmill · OANDA · XM · RoboForex · Capital.com) |
+| Phase 6 | Forex broker batch 3 (BlackBull · Hantec · FXTM · AvaTrade · HFM · HYCM · IQ Option · Libertex · Deriv · Quotex) |
+| Phase 6 | Stock brokers (ProRealTime+IBKR · TradingView+broker · NinjaTrader) |
+
+Each adapter row exposes its authority_lint class (C2 / C3 / W1 / W2)
+in a hover tooltip so the operator can verify the authority boundary
+at a glance.
+
+---
+
+## 15. Browser / session hardening
+
+The web cockpit is a control surface for a live trading system. It
+ships with mandatory client-side hardening beyond the existing
+`cockpit/auth.py`.
+
+| Control | Requirement |
+|--------|-------------|
+| **HTTPS** | TLS-only. HSTS with 1-year `max-age` + `includeSubDomains` + `preload`. HTTP requests redirected 308. |
+| **Cert pinning** | Cockpit PWA embeds a public-key pin for the hosted 24/7 instance; mismatch = refuse to connect + operator alert. |
+| **2FA / TOTP** | Every login requires TOTP. TOTP also re-prompts for: mode change, canary→live promote, kill-switch override, wallet top-up, seed-list edit, authority_lint rule change. |
+| **Device binding** | Cockpit generates a device key pair at pairing time; session tokens are bound to that device key (WebAuthn). Sessions cannot be replayed from a different device. |
+| **Session timeout** | Idle timeout: 15 min. Absolute max session: 12 h. Re-auth forces TOTP. |
+| **Login-history monitor** | Widget `LoginHistory` shows every successful + failed login attempt with IP / device-ID / geo / timestamp. Anomaly (new geo, new device, impossible-travel) → lockout + operator alert. |
+| **Dedicated browser profile** | Cockpit recommends a dedicated Chromium profile with no extensions, no sync, no saved credentials outside the device key. One-click script to provision. |
+| **Download / paste controls** | Cockpit never downloads files to disk except explicitly requested exports. Paste of private keys into any form is intercepted + blocked + alerted. |
+| **Content-Security-Policy** | Strict CSP: `default-src 'self'`; no inline scripts; explicit allowlist for chart / telemetry origins. |
+| **Rate limit / brute-force lockout** | 5 failed logins → 15-min lockout; 15 failures → permanent lockout + operator unlock required. |
+| **Operator-override double-click** | Any "live" operator-override button (force exit all, kill-switch, mode change to FULL_AUTO) requires double-click + TOTP within 30 s window. |
+
+Every hardening control maps to a manifest safety clause and is
+rendered as a read-only row on the `PadlockFloors` widget.
+
+---
+
+## 16. Observability — Prometheus + Grafana dashboards (Phase 7)
+
+The cockpit is the operator's window; Grafana is the forensic layer.
+Phase 7 ships a fixed set of Grafana dashboards + their Prometheus
+metric definitions, no ad-hoc dashboards.
+
+### 16.1 Metric families (exported by every service)
+
+- `dix_ledger_events_total{type}` — counter, per event type.
+- `dix_hazard_events_total{severity}` — counter.
+- `dix_deadman_last_tick_seconds{sensor}` — gauge (age of last
+  proof-of-life per neuromorphic / DYON / memecoin sensor).
+- `dix_adapter_latency_seconds{adapter,stage}` — histogram.
+- `dix_adapter_error_total{adapter,kind}` — counter.
+- `dix_adapter_circuit_state{adapter}` — gauge (0 closed / 1 half / 2 open).
+- `dix_position_pnl_bps{asset,mode}` — gauge.
+- `dix_drawdown_bps{account}` — gauge.
+- `dix_memecoin_safety_gate_total{check,result}` — counter.
+- `dix_memecoin_rug_alerts_total{pattern}` — counter.
+- `dix_operator_approvals_total{action,result}` — counter.
+- `dix_autolearn_fetches_total{domain,status}` — counter.
+- `dix_autolearn_filter_total{verdict}` — counter.
+- `dix_autolearn_approvals_total{result}` — counter.
+- `dix_sandbox_pipeline_stage{stage,status}` — gauge.
+
+### 16.2 Dashboards shipped in Phase 7
+
+| # | Dashboard | Panels |
+|---|-----------|--------|
+| 1 | **Safety floors** | Dead-man lamp matrix · WARMUP clock · drawdown vs. 4 % floor · kill-switch state · hazard-event rate by severity · frozen-fast-path attestation. |
+| 2 | **Adapter health** | Per-adapter latency p50/p95/p99 · error rate · circuit state · token-age / rate-limit headroom. |
+| 3 | **Trading** | Positions · P&L by account / mode / asset · drawdown · Sharpe rolling 30d · win/loss by mode. |
+| 4 | **Memecoin** | Safety-gate pass/fail by check · rug-alerts by pattern · burner-wallet balances · per-bot tier-2 burner balances · sniper queue depth · mode-transition log. |
+| 5 | **Autolearn** | Crawler fetch rate by domain · filter verdict split · operator approve/reject rate · pending-buffer depth · per-source trust drift. |
+| 6 | **Sandbox pipeline** | Per-stage status (lint / tests / axiom-check / shadow / canary) · promote-chain velocity · operator approval latency. |
+| 7 | **Operator** | Login attempts (success/fail/geo) · TOTP-prompt rate · override-button rate · settings-change rate. |
+| 8 | **Governance** | Policy-rule hits · constraint-violation attempts · mode-transition log · two-person-gate events. |
+| 9 | **System / node** | CPU · RSS · GC · disk I/O · ledger write latency · hazard-bus backlog · event-loop lag. |
+| 10 | **Options / gamma** | Gamma exposure · dealer positioning · implied vol surface · MenthorQ-parity panels. |
+
+### 16.3 Alert routing (Phase 7)
+
+- Grafana alerts feed a single `SYSTEM_HAZARD` channel back into the
+  DIX hazard bus (severity-mapped).
+- Critical alerts mirror to the cockpit `AlertsHub` widget and to the
+  operator's pager.
+- Nothing in Grafana can execute, approve, or modify state — it is a
+  sink for metrics, a source of operator-visible alerts, and nothing
+  else.
+
+---
+
+## 17. What this expansion does NOT do
+
+- No new runtime code in this PR; it remains spec-only.
+- No commitment to a specific chart-library vendor for the AI-parity
+  widgets (IndicatorForecast / PatternScanner / OptionsRisk) — that
+  decision stays in §10 open questions.
+- No changes to the existing authority_lint rules C1/C2; W1/W2/C3 are
+  specified in the companion docs (MEMECOIN_TRADING_SPEC, INDIRA_WEB_AUTOLEARN_SPEC)
+  and implemented in Phase 5/6.
+- No change to the sandbox-gated promote chain; every widget listed
+  above rides the same chain once it has runtime code.
+
