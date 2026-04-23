@@ -1,0 +1,80 @@
+name: rust
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "rust/**"
+      - ".github/workflows/rust.yml"
+  pull_request:
+    paths:
+      - "rust/**"
+      - ".github/workflows/rust.yml"
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: short
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  fmt:
+    name: cargo fmt --check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: fmt
+        working-directory: rust
+        run: cargo fmt --all --check
+
+  clippy:
+    name: cargo clippy (deny warnings)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: clippy
+        working-directory: rust
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  test:
+    name: cargo test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: test
+        working-directory: rust
+        run: cargo test --all --all-features --locked
+
+  # Architectural invariant guard:
+  # The workspace must NEVER introduce `unsafe` code outside documented
+  # FFI seams. This is ALSO enforced at the crate level via
+  # `#![forbid(unsafe_code)]`, but the duplicate grep gate catches
+  # accidental removal of that attribute in a PR diff.
+  no_unsafe:
+    name: forbid unsafe (invariant)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: grep for unsafe blocks
+        run: |
+          set -euo pipefail
+          violations=$(grep -RIn --include='*.rs' -E '^\s*unsafe\s' rust/ || true)
+          if [ -n "$violations" ]; then
+            echo "Forbidden 'unsafe' blocks found:" >&2
+            echo "$violations" >&2
+            exit 1
+          fi
+          echo "no unsafe blocks — invariant holds"

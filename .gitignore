@@ -12,6 +12,10 @@ dist/
 htmlcov/
 target/
 
+# Rust workspace build artifacts
+rust/target/
+**/*.rs.bk
+
 # Operator-local credential storage. Written by
 # POST /api/credentials/set; never committed.
 .env
