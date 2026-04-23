@@ -300,37 +300,48 @@ fn circuit_breaker_register(name: &str, failure_threshold: u32, reset_timeout_ms
 
 /// Whether the next call should be allowed. Side-effectful: may
 /// advance the state machine.
+// The `useless_conversion` allow works around a known interaction
+// between PyO3 0.22's `#[pyfunction]` macro (which inserts a
+// `.map_err(Into::into)` on the generated extern wrapper) and
+// clippy 1.95's tightened lint — the conversion is a no-op when the
+// error type is already `PyErr`, but the macro emits it anyway.
 #[pyfunction]
+#[allow(clippy::useless_conversion)]
 fn circuit_breaker_allow(name: &str) -> PyResult<bool> {
     with_breaker(name, CircuitBreaker::allow)
 }
 
 /// Mark the most recent allowed call as successful.
 #[pyfunction]
+#[allow(clippy::useless_conversion)]
 fn circuit_breaker_record_success(name: &str) -> PyResult<()> {
     with_breaker(name, CircuitBreaker::record_success)
 }
 
 /// Mark the most recent allowed call as failed.
 #[pyfunction]
+#[allow(clippy::useless_conversion)]
 fn circuit_breaker_record_failure(name: &str) -> PyResult<()> {
     with_breaker(name, CircuitBreaker::record_failure)
 }
 
 /// Force-reset to `Closed`. Operator tool.
 #[pyfunction]
+#[allow(clippy::useless_conversion)]
 fn circuit_breaker_reset(name: &str) -> PyResult<()> {
     with_breaker(name, CircuitBreaker::reset)
 }
 
 /// Observable state string (`"closed"`, `"open"`, `"half_open"`).
 #[pyfunction]
+#[allow(clippy::useless_conversion)]
 fn circuit_breaker_state(name: &str) -> PyResult<String> {
     with_breaker(name, |b| b.state().as_str().to_string())
 }
 
 /// Current consecutive-failure count.
 #[pyfunction]
+#[allow(clippy::useless_conversion)]
 fn circuit_breaker_failure_count(name: &str) -> PyResult<u32> {
     with_breaker(name, CircuitBreaker::failure_count)
 }
