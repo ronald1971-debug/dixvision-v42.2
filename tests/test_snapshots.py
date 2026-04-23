@@ -195,3 +195,44 @@ def test_snapshot_is_immutable_after_capture() -> None:
     proj.apply(_event(2, {"v": 999}))
     assert stored["count"] == 1
     assert stored["last_payload"]["v"] == 100
+
+
+# ─────── regression: determinism with wall_ns=0 (Devin Review) ─────────
+
+
+def test_capture_preserves_event_wall_ns_zero() -> None:
+    """Regression for Devin Review PR #10: an event that stamps
+    ``wall_ns=0`` must be honored verbatim on the snapshot cursor,
+    not quietly replaced with a non-deterministic clock read.
+
+    Hard rule 3 in the module docstring mandates bit-deterministic
+    capture; relying on ``self._last_wall_ns or self._clock_wall()``
+    used Python's falsy-zero behavior to drop a legitimate zero.
+    """
+    proj = CountingProjector()
+    engine = SnapshotEngine(
+        projectors={"m": proj},
+        policy=SnapshotPolicy(events_per_snapshot=1, nanoseconds_per_snapshot=10**18),
+        clock_wall_ns=lambda: 123_456_789,  # would be used if fallback kicked in
+    )
+    snap = engine.on_event(_event(1, wall_ns=0))
+    assert snap is not None
+    assert snap.cursor.wall_ns == 0
+
+    # latest_at_or_before_wall_ns(0) must now locate the capture and
+    # latest_at_or_before_wall_ns(-1) must not.
+    assert engine.latest_at_or_before_wall_ns(0) is snap
+    assert engine.latest_at_or_before_wall_ns(-1) is None
+
+
+def test_capture_uses_clock_when_no_event_wall_ns_yet() -> None:
+    """The other side of the same fix: when *no* event has stamped a
+    wall_ns yet, the capture falls back to the injected clock."""
+    proj = CountingProjector()
+    engine = SnapshotEngine(
+        projectors={"m": proj},
+        policy=SnapshotPolicy(events_per_snapshot=10**9, nanoseconds_per_snapshot=10**18),
+        clock_wall_ns=lambda: 7_777,
+    )
+    snap = engine.snapshot_now()
+    assert snap.cursor.wall_ns == 7_777

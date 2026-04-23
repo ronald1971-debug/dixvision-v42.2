@@ -136,7 +136,11 @@ class SnapshotEngine:
         self._total_events: int = 0
         self._last_capture_mono_ns: int = self._clock_mono()
         self._last_sequence: int = 0
-        self._last_wall_ns: int = 0
+        # ``None`` means 'no event has supplied a wall_ns yet'; we cannot
+        # use 0 as a sentinel because an event may legitimately stamp
+        # wall_ns=0 (Unix epoch / test feeds) and we must preserve that
+        # determinism — see determinism rule 3 in the module docstring.
+        self._last_wall_ns: int | None = None
 
     # ─────── ingestion ──────────────────────────────────────────────
 
@@ -215,7 +219,14 @@ class SnapshotEngine:
         projector_views = {
             name: proj.snapshot() for name, proj in self._projectors.items()
         }
-        cursor_wall = self._last_wall_ns or self._clock_wall()
+        # Prefer the wall_ns carried on the latest event; only fall back
+        # to the clock when no event has supplied one. ``or`` would be a
+        # bug here because an event-supplied wall_ns=0 is valid.
+        cursor_wall = (
+            self._last_wall_ns
+            if self._last_wall_ns is not None
+            else self._clock_wall()
+        )
         snap = Snapshot(
             cursor=SnapshotCursor(
                 sequence=self._last_sequence,
