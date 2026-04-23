@@ -62,6 +62,15 @@ def utc_now() -> datetime:
 #                    Use for ledger / hazard timestamps, never for
 #                    latency measurement (NTP can jump).
 #
+# Implementation note: the Tier-0 directive refers to
+# ``time.perf_counter_ns()``. The actual Python primitive that
+# CPython documents as "cannot go backward" is ``time.monotonic_ns``;
+# ``time.perf_counter_ns`` is only guaranteed to have the highest
+# available resolution — not monotonicity. Because the T0-4 contract
+# explicitly promises non-decreasing behaviour, we bind ``now_ns`` to
+# ``time.monotonic_ns`` and treat the directive's word as shorthand
+# for "monotonic nanosecond clock".
+#
 # authority_lint rule T1 (see tools/authority_lint.py) enforces that
 # ``datetime.now()`` / ``time.time()`` are not called anywhere under
 # mind/*, execution/*, governance/*, system/*, except in this module
@@ -71,12 +80,12 @@ def utc_now() -> datetime:
 
 def now_ns() -> int:
     """Monotonic nanoseconds. Hot-path safe. Never goes backwards."""
-    return time.perf_counter_ns()
+    return time.monotonic_ns()
 
 
 def monotonic_ns() -> int:
     """Alias for now_ns(); spelled out for T0-4 contract readability."""
-    return time.perf_counter_ns()
+    return time.monotonic_ns()
 
 
 def wall_ns() -> int:

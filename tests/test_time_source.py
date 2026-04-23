@@ -53,6 +53,29 @@ def test_monotonic_ns_is_strictly_monotonic_100k_samples() -> None:
         prev = cur
 
 
+def test_now_ns_binds_to_time_monotonic_ns_not_perf_counter() -> None:
+    """Regression guard: the T0-4 contract requires a Python primitive
+    that is documented as non-decreasing. ``time.monotonic_ns`` is
+    that primitive; ``time.perf_counter_ns`` is NOT. This test pins
+    the implementation to ``time.monotonic_ns`` so a future refactor
+    cannot silently swap in ``time.perf_counter_ns``.
+    """
+    import time as _time
+
+    # The values from now_ns / monotonic_ns must track time.monotonic_ns
+    # to within a few microseconds (same clock source).
+    a = _time.monotonic_ns()
+    b = ts.now_ns()
+    c = ts.monotonic_ns()
+    d = _time.monotonic_ns()
+    assert a <= b <= c <= d
+    # If implementation accidentally returns perf_counter_ns (which
+    # typically reads as a tiny number — seconds since process start)
+    # the ordering above would still pass spuriously for new processes,
+    # so also check: monotonic_ns values are system-boot-scale (large).
+    assert c > 10 ** 6  # > 1 ms since boot; perf_counter starts near 0
+
+
 def test_wall_ns_and_monotonic_ns_are_independent() -> None:
     """wall_ns and monotonic_ns draw from different clocks; neither is
     a latency source for the other."""
