@@ -21,6 +21,7 @@ Hard rules:
 """
 from __future__ import annotations
 
+import threading
 from typing import Any, Protocol
 
 from state.ledger.event_store import EventStore, get_event_store
@@ -75,12 +76,15 @@ class ColdStore:
 
 
 _store: ColdStore | None = None
+_lock = threading.Lock()
 
 
 def get_cold_store() -> ColdStore:
     global _store
     if _store is None:
-        _store = ColdStore()
+        with _lock:
+            if _store is None:
+                _store = ColdStore()
     return _store
 
 
