@@ -186,12 +186,14 @@ class _RustMetricsSink:
 # -------------------------------------------------------- Public compatibility
 
 
-# Preserve the pre-polyglot public name. When the Rust wheel is
-# available, ``MetricsSink()`` constructions point to the shared Rust
-# sink; otherwise they construct a fresh Python sink. Callers using
-# the canonical ``get_metrics()`` accessor below get the same
-# behaviour on both paths — parallel ``MetricsSink()`` instantiations
-# are discouraged but remain compatible with the Python reference.
+# Preserve the pre-polyglot public name and its no-arg constructor.
+# ``MetricsSink`` always aliases to the pure-Python reference so
+# ``MetricsSink()`` stays constructible without a backend argument
+# (the Rust wrapper takes a mandatory ``rust_module`` parameter, so
+# it cannot be the public alias). Backend selection is routed
+# through :func:`get_metrics` — that is the canonical accessor and
+# is what returns the Rust-backed sink when the wheel is present.
+# Matches the pattern used by ``system/fast_risk_cache.py``.
 def make_python_sink() -> _PythonMetricsSink:
     """Force-construct a fresh pure-Python sink. Used by the parity
     test suite; callers should prefer :func:`get_metrics`."""
@@ -214,7 +216,7 @@ def backend() -> str:
     return "rust" if (_HAVE_RUST and _rs is not None) else "python"
 
 
-MetricsSink = _RustMetricsSink if (_HAVE_RUST and _rs is not None) else _PythonMetricsSink
+MetricsSink = _PythonMetricsSink
 
 
 class LatencyTimer:
