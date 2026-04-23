@@ -19,6 +19,11 @@ members = [
     "execution",
     "system",
     "bootstrap",
+    # FFI seam. Kept inside the workspace so `cargo test --all` and
+    # `cargo clippy --all-targets` exercise the PyO3 glue on every
+    # Rust CI run; the actual Python wheel is built separately by
+    # maturin in the `py-ext` workflow step.
+    "py_system",
 ]
 
 [workspace.package]

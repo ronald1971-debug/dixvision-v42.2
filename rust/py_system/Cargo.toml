@@ -1,0 +1,33 @@
+[package]
+name                   = "dixvision-py-system"
+version.workspace      = true
+edition.workspace      = true
+rust-version.workspace = true
+license.workspace      = true
+repository.workspace   = true
+description = "DIX VISION v42.2 — PyO3 FFI seam over dixvision-system. The ONLY crate where the `unsafe_code` seam below pyo3's abi3 is documented. Python packages import this as `dixvision_py_system`."
+
+# cdylib so maturin can produce a Python extension module.
+# rlib kept so downstream Rust crates (e.g. integration tests) can
+# depend on pure-Rust helpers here; pyo3-macros are not exported.
+[lib]
+name       = "dixvision_py_system"
+crate-type = ["cdylib", "rlib"]
+path       = "src/lib.rs"
+
+[dependencies]
+dixvision-system = { path = "../system" }
+
+# `extension-module` disables libpython linking — the extension is
+# loaded by the host interpreter at import time, so linking would
+# double-link the symbol table.
+#
+# `abi3-py38` pins to Python 3.8's stable ABI. One wheel covers
+# every 3.8+ interpreter with no per-minor-version rebuild. Matches
+# the supported matrix in `pyproject.toml`.
+[dependencies.pyo3]
+version  = "0.22"
+features = ["extension-module", "abi3-py38"]
+
+[lints]
+workspace = true

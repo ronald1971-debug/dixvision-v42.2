@@ -19,12 +19,17 @@
 
 use thiserror::Error;
 
+pub mod time_source;
+
+pub use time_source::{TimeSource, TimeStamp};
+
 /// Canonical error type for the system control plane.
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum SystemError {
-    /// Placeholder while the crate is empty. Removed in the first
-    /// real port PR (T0-4 `TimeSource` is the planned canary).
+    /// Retained for crates wired against the scaffold. Real errors
+    /// are added per port PR (T0-4 `time_source` itself is pure —
+    /// no fallible ops.).
     #[error("system scaffolding: not yet implemented ({0})")]
     NotImplemented(&'static str),
 }

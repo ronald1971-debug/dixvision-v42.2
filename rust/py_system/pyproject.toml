@@ -1,0 +1,31 @@
+# DIX VISION v42.2 — PyO3 extension build manifest.
+#
+# Built by maturin; produces a single abi3 wheel (cp38-abi3) that
+# loads into every Python 3.8+ interpreter without a per-minor-version
+# rebuild. The wheel exposes a module named `dixvision_py_system`
+# which the Python wrapper at `system/time_source.py` imports.
+
+[build-system]
+requires      = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name            = "dixvision-py-system"
+version         = "0.1.0"
+description     = "PyO3 seam over dixvision-system. Internal to DIX VISION v42.2."
+readme          = "../../README.md"
+requires-python = ">=3.8"
+license         = { text = "Proprietary" }
+classifiers = [
+  "Programming Language :: Rust",
+  "Programming Language :: Python :: Implementation :: CPython",
+]
+
+[tool.maturin]
+# Name of the Python-importable module. Must match `[lib].name` in
+# Cargo.toml and the `#[pymodule]` fn name in src/lib.rs.
+module-name     = "dixvision_py_system"
+# abi3 pins: single wheel for py38+, no per-version rebuilds.
+features        = ["pyo3/extension-module"]
+# Strip debug symbols from the released wheel.
+strip           = true
