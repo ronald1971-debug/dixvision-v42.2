@@ -61,20 +61,40 @@ jobs:
   # Architectural invariant guard:
   # The workspace must NEVER introduce `unsafe` code outside documented
   # FFI seams. This is ALSO enforced at the crate level via
-  # `#![forbid(unsafe_code)]`, but the duplicate grep gate catches
-  # accidental removal of that attribute in a PR diff.
+  # `#![forbid(unsafe_code)]` and the workspace-level
+  # `unsafe_code = "deny"` lint, but the duplicate grep gate catches
+  # the case where a PR silently removes the crate-root attribute.
+  #
+  # Matches any `unsafe` keyword token anywhere on a line (not only at
+  # line start), so it catches `pub unsafe fn foo()`,
+  # `let x = unsafe { ... }`, and method-level `unsafe fn bar()`
+  # inside an `impl` block — all of which the previous
+  # `^\s*unsafe\s` pattern missed.
+  #
+  # Documented FFI seams (future PyO3 glue) opt in by annotating the
+  # line with a `// SAFETY:` comment; those lines are excluded here.
   no_unsafe:
     name: forbid unsafe (invariant)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: grep for unsafe blocks
+      - name: grep for unsafe keyword
         run: |
           set -euo pipefail
-          violations=$(grep -RIn --include='*.rs' -E '^\s*unsafe\s' rust/ || true)
+          # Match the `unsafe` keyword token anywhere on a line, then
+          # strip false positives in this order:
+          #   1. `// SAFETY:` annotations (documented FFI seams)
+          #   2. `#![forbid(unsafe_code)]` — the attribute we WANT
+          #   3. lines whose first non-whitespace chars are `//` or
+          #      `//!` — doc/comment mentions of the word "unsafe"
+          violations=$(grep -RIn --include='*.rs' -P '\bunsafe\b' rust/ \
+                        | grep -v '// SAFETY:' \
+                        | grep -Ev '#!\[forbid\(unsafe_code\)\]' \
+                        | grep -Ev '^[^:]+:[0-9]+:\s*//' \
+                        || true)
           if [ -n "$violations" ]; then
-            echo "Forbidden 'unsafe' blocks found:" >&2
+            echo "Forbidden 'unsafe' usage found:" >&2
             echo "$violations" >&2
             exit 1
           fi
-          echo "no unsafe blocks — invariant holds"
+          echo "no unsafe usage — invariant holds"
