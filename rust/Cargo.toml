@@ -70,6 +70,16 @@ thiserror  = "1.0"
 anyhow     = "1.0"   # test-only: workspace policy forbids anyhow on hot path
 prost      = "0.12"  # protobuf runtime for generated stubs
 parking_lot = "0.12"
+# Lock-free atomic pointer swap. Used by FastRiskCache to give Indira's
+# hot path a zero-contention read on every tick while governance is the
+# sole serial writer. Pinned at the workspace level so every crate
+# shares the same version.
+arc-swap    = "1.7"
+# Civil-calendar formatting for ISO-8601 timestamps. We pin a version
+# without the `clock` feature on the default path because `TimeSource`
+# is our canonical wall-clock authority — chrono is used only to turn
+# already-captured UTC nanoseconds into a human-readable string.
+chrono      = { version = "0.4", default-features = false, features = ["std"] }
 
 [profile.release]
 opt-level       = 3

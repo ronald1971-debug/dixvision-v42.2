@@ -6,14 +6,18 @@ on:
       - "rust/**"
       - ".github/workflows/rust.yml"
       - "system/time_source.py"
+      - "system/fast_risk_cache.py"
       - "tests/test_time_source_parity.py"
+      - "tests/test_fast_risk_cache_parity.py"
   push:
     branches: [main, develop]
     paths:
       - "rust/**"
       - ".github/workflows/rust.yml"
       - "system/time_source.py"
+      - "system/fast_risk_cache.py"
       - "tests/test_time_source_parity.py"
+      - "tests/test_fast_risk_cache_parity.py"
 
 # Minimum surface first — richer matrix + caching will be added after
 # the baseline is green. Keeping each step in its own run: stanza so
@@ -112,7 +116,8 @@ jobs:
           python -c "import dixvision_py_system as m; \
                      print('crate_version', m.crate_version()); \
                      print('now', m.now()); \
-                     print('mono', m.now_mono_ns())"
+                     print('mono', m.now_mono_ns()); \
+                     print('risk_get', m.risk_get())"
 
       - name: pytest parity suite
-        run: pytest -q tests/test_time_source_parity.py
+        run: pytest -q tests/test_time_source_parity.py tests/test_fast_risk_cache_parity.py

@@ -19,8 +19,10 @@
 
 use thiserror::Error;
 
+pub mod fast_risk_cache;
 pub mod time_source;
 
+pub use fast_risk_cache::{FastRiskCache, RiskConstraints, RiskUpdate, TradeVerdict};
 pub use time_source::{TimeSource, TimeStamp};
 
 /// Canonical error type for the system control plane.
