@@ -41,6 +41,7 @@ use std::sync::OnceLock;
 use std::time::Duration;
 
 use dixvision_execution::circuit_breaker::{BreakerConfig, CircuitBreaker, SystemClock};
+use dixvision_execution::hazard;
 use dixvision_system::{fast_risk_cache, metrics, time_source};
 use parking_lot::Mutex;
 use pyo3::exceptions::PyKeyError;
@@ -341,6 +342,43 @@ fn circuit_breaker_failure_count(name: &str) -> PyResult<u32> {
     with_breaker(name, CircuitBreaker::failure_count)
 }
 
+// ----------------------------------------------------------- hazard classifier
+
+/// Whether a hazard event should trigger an immediate trading halt.
+///
+/// Parameters are passed as `&str` rather than an enum so the FFI
+/// surface matches the Python reference implementation exactly and
+/// callers do not pay for a two-way string-interning round-trip on
+/// the hot path. Unknown hazard types are classified conservatively
+/// (returns `false` except when `severity == "CRITICAL"`).
+#[pyfunction]
+#[allow(clippy::missing_const_for_fn)] // `#[pyfunction]` requires a plain fn
+fn hazard_should_halt_trading(hazard_type: &str, severity: &str) -> bool {
+    hazard::should_halt_trading(hazard_type, severity)
+}
+
+/// Whether a hazard event should trigger entry into safe mode.
+#[pyfunction]
+#[allow(clippy::missing_const_for_fn)]
+fn hazard_should_enter_safe_mode(hazard_type: &str, severity: &str) -> bool {
+    hazard::should_enter_safe_mode(hazard_type, severity)
+}
+
+/// Effective severity after type-implied promotion
+/// (`DATA_CORRUPTION_SUSPECTED` / `LEDGER_INCONSISTENCY` → `CRITICAL`).
+#[pyfunction]
+fn hazard_classify_severity(hazard_type: &str, severity: &str) -> String {
+    hazard::classify_severity(hazard_type, severity)
+}
+
+/// Recommended governance response string for a hazard type.
+/// Unknown types fall through to `"OBSERVE"`.
+#[pyfunction]
+#[allow(clippy::missing_const_for_fn)]
+fn hazard_classify_response(hazard_type: &str) -> &'static str {
+    hazard::classify_response(hazard_type)
+}
+
 // ---------------------------------------------------------------- pymodule
 
 /// `#[pymodule]` entry point. Module name MUST match
@@ -371,6 +409,10 @@ fn dixvision_py_system(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(circuit_breaker_reset, m)?)?;
     m.add_function(wrap_pyfunction!(circuit_breaker_state, m)?)?;
     m.add_function(wrap_pyfunction!(circuit_breaker_failure_count, m)?)?;
+    m.add_function(wrap_pyfunction!(hazard_should_halt_trading, m)?)?;
+    m.add_function(wrap_pyfunction!(hazard_should_enter_safe_mode, m)?)?;
+    m.add_function(wrap_pyfunction!(hazard_classify_severity, m)?)?;
+    m.add_function(wrap_pyfunction!(hazard_classify_response, m)?)?;
     Ok(())
 }
 

@@ -19,9 +19,14 @@
 #![forbid(unsafe_code)]
 
 pub mod circuit_breaker;
+pub mod hazard;
 
 pub use circuit_breaker::{
     BreakerConfig, BreakerState, CircuitBreaker, MonotonicClock, SystemClock,
+};
+pub use hazard::{
+    classify_response, classify_severity, is_known_hazard_type, is_known_severity,
+    should_enter_safe_mode, should_halt_trading, HAZARD_SEVERITIES, HAZARD_TYPES,
 };
 
 use thiserror::Error;
