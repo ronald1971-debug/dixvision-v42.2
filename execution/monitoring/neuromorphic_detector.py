@@ -71,6 +71,11 @@ class NeuromorphicDetector:
           - latency_ms_p99: float   rolling window
           - last_tick_gap_ms: float
         """
+        # N5 dead-man: proof-of-life is stamped FIRST, before any branch or
+        # helper call that could raise. Mirrors NeuromorphicSignalPlugin
+        # and NeuromorphicRisk — a calm telemetry stream, or a transient
+        # error path below, must not falsely trip the dead-man.
+        self._last_tick_seen = time.monotonic()
         component = str(sample.get("component", "unknown"))
 
         latency = float(sample.get("latency_ms_p99", 0.0))
