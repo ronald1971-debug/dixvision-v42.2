@@ -7,6 +7,11 @@
 # commit. When the migration is complete, crates may be relocated to
 # the manifest's target tree (`<domain>/Cargo.toml` directly); the
 # move is cosmetic and does not change imports or the public API.
+#
+# CI note: the accompanying `.github/workflows/rust.yml` only runs
+# when files under `rust/**` or the workflow file itself change.
+# Any non-cosmetic edit to this manifest is sufficient to trigger
+# the job.
 
 [workspace]
 resolver = "2"
