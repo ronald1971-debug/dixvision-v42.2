@@ -161,7 +161,7 @@ fn risk_update(patch: RiskPatchTuple) -> RiskTuple {
     snapshot_to_tuple(&snap)
 }
 
-/// Enter safe mode (trading halted, safe_mode = true). Returns new
+/// Enter safe mode (trading halted, `safe_mode` = true). Returns new
 /// snapshot.
 #[pyfunction]
 fn risk_enter_safe_mode() -> RiskTuple {
@@ -169,7 +169,7 @@ fn risk_enter_safe_mode() -> RiskTuple {
     snapshot_to_tuple(&snap)
 }
 
-/// Exit safe mode (trading resumed, safe_mode = false). Returns new
+/// Exit safe mode (trading resumed, `safe_mode` = false). Returns new
 /// snapshot.
 #[pyfunction]
 fn risk_exit_safe_mode() -> RiskTuple {
@@ -184,7 +184,7 @@ fn risk_halt_trading() -> RiskTuple {
     snapshot_to_tuple(&snap)
 }
 
-/// Resume trading (clears safe_mode as well). Returns new snapshot.
+/// Resume trading (clears `safe_mode` as well). Returns new snapshot.
 #[pyfunction]
 fn risk_resume_trading() -> RiskTuple {
     let snap = process_cache().resume_trading();
