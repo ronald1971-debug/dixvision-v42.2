@@ -213,3 +213,107 @@ def test_rebuild_at_uses_nearest_snapshot_before_target() -> None:
     # best snapshot ≤ 3 is the seq-2 snapshot, so resumed_from_snapshot
     # must be true.
     assert state.resumed_from_snapshot is True
+
+
+# ─────── regression: bugs reported on PR #10 ────────────────────────────
+
+
+def test_rebuild_by_wall_time_never_uses_snapshot_past_target() -> None:
+    """Regression for Devin Review BUG_0001: ``rebuild(at_timestamp_ns)``
+    must not pick a snapshot whose cursor is past the wall-time target.
+
+    Scenario: events land at wall 1000..5000, snapshots captured at
+    seq 2 (wall=2000) and seq 4 (wall=4000). Caller asks for wall=2500.
+    The reconstructor must NOT resume from the seq-4 snapshot; doing so
+    would poison projectors with events 3 and 4 that sit past 2500ns.
+    """
+    events = _events()
+    eng = SnapshotEngine(
+        projectors={"tally": RestorableTally()},
+        policy=SnapshotPolicy(
+            events_per_snapshot=2,
+            nanoseconds_per_snapshot=10**18,
+            max_ring_size=8,
+        ),
+    )
+    for ev in events:
+        eng.on_event(ev)
+
+    rc = StateReconstructor(
+        projector_factories={"tally": RestorableTally},
+        event_feed=lambda: events,
+        snapshot_engine=eng,
+    )
+    # events 1 (delta=1) + 2 (delta=5) = 6; events 3+ are past 2500ns
+    state = rc.rebuild(2_500)
+    assert state.projectors["tally"]["total"] == 6
+    assert state.projectors["tally"]["last_key"] == "b"
+    assert state.wall_ns == 2_000
+    assert state.sequence == 2
+
+
+def test_rebuild_by_wall_time_uses_eligible_snapshot() -> None:
+    """Sibling of the regression above: when the snapshot cursor DOES
+    fit under the wall-time target, the reconstructor should still
+    fast-forward — i.e. the fix for BUG_0001 must not regress the
+    fast-path for wall-time rebuilds."""
+    events = _events()
+    eng = SnapshotEngine(
+        projectors={"tally": RestorableTally()},
+        policy=SnapshotPolicy(
+            events_per_snapshot=2,
+            nanoseconds_per_snapshot=10**18,
+            max_ring_size=8,
+        ),
+    )
+    for ev in events[:4]:  # snapshots at seq 2 (wall=2000), seq 4 (wall=4000)
+        eng.on_event(ev)
+
+    rc = StateReconstructor(
+        projector_factories={"tally": RestorableTally},
+        event_feed=lambda: events,
+        snapshot_engine=eng,
+    )
+    # cutoff 4_500 includes events 1..4
+    state = rc.rebuild(4_500)
+    assert state.projectors["tally"]["total"] == 14
+    assert state.resumed_from_snapshot is True
+
+
+def test_partial_hydration_resets_restored_projectors_to_genesis() -> None:
+    """Regression for Devin Review BUG_0002: when one projector cannot
+    restore, any projector that DID restore must be reset back to
+    genesis — otherwise the forced genesis replay double-counts
+    pre-snapshot events on the restored projector.
+
+    Scenario: ``a`` (RestorableTally) restores from the snapshot,
+    ``b`` (TallyProjector, no restore) forces genesis replay.  Before
+    the fix, ``a.total`` ended up at 114+14 = 128; after the fix both
+    projectors reach 114 cleanly.
+    """
+    events = _events()
+    eng = SnapshotEngine(
+        projectors={"a": RestorableTally(), "b": TallyProjector()},
+        policy=SnapshotPolicy(
+            events_per_snapshot=2,
+            nanoseconds_per_snapshot=10**18,
+            max_ring_size=8,
+        ),
+    )
+    for ev in events[:4]:
+        eng.on_event(ev)
+
+    rc = StateReconstructor(
+        projector_factories={
+            "a": RestorableTally,
+            "b": TallyProjector,
+        },
+        event_feed=lambda: events,
+        snapshot_engine=eng,
+    )
+    state = rc.rebuild_latest()
+    assert state.resumed_from_snapshot is False  # b forced genesis
+    assert state.projectors["a"]["total"] == 114
+    assert state.projectors["b"]["total"] == 114
+    assert state.projectors["a"]["last_key"] == "e"
+    assert state.projectors["b"]["last_key"] == "e"

@@ -117,7 +117,7 @@ class StateReconstructor:
         target_sequence: int | None,
         target_wall_ns: int | None,
     ) -> ReconstructedState:
-        snap = self._pick_snapshot(target_sequence)
+        snap = self._pick_snapshot(target_sequence, target_wall_ns)
         projectors, fully_hydrated = self._hydrate_projectors(snap)
         # We can only fast-forward past the snapshot cursor if every
         # projector was restorable — otherwise the projectors that fell
@@ -159,12 +159,27 @@ class StateReconstructor:
             resumed_from_snapshot=use_fast_forward,
         )
 
-    def _pick_snapshot(self, target_sequence: int | None) -> Snapshot | None:
+    def _pick_snapshot(
+        self,
+        target_sequence: int | None,
+        target_wall_ns: int | None,
+    ) -> Snapshot | None:
+        """Pick the most advanced snapshot whose cursor is not past the target.
+
+        - ``target_sequence`` constrains ``cursor.sequence``.
+        - ``target_wall_ns`` constrains ``cursor.wall_ns``.
+
+        If both are ``None`` the caller wants the latest available snapshot.
+        Returning a snapshot past *either* target would poison the replay:
+        events already captured beyond the requested cursor cannot be undone.
+        """
         if self._snapshots is None:
             return None
-        if target_sequence is None:
-            return self._snapshots.latest()
-        return self._snapshots.latest_at_or_before(target_sequence)
+        if target_sequence is not None:
+            return self._snapshots.latest_at_or_before(target_sequence)
+        if target_wall_ns is not None:
+            return self._snapshots.latest_at_or_before_wall_ns(target_wall_ns)
+        return self._snapshots.latest()
 
     def _hydrate_projectors(
         self, snap: Snapshot | None
@@ -185,6 +200,7 @@ class StateReconstructor:
             return projectors, False
 
         fully_hydrated = True
+        restored_names: set[str] = set()
         for name, proj in projectors.items():
             view = snap.projectors.get(name)
             if view is None:
@@ -200,6 +216,18 @@ class StateReconstructor:
                 # Reset this one back to genesis and force a full replay.
                 projectors[name] = self._factories[name]()
                 fully_hydrated = False
+            else:
+                restored_names.add(name)
+
+        if not fully_hydrated and restored_names:
+            # Partial hydration poisons the replay: restored projectors would
+            # carry snapshot state AND then re-apply every pre-snapshot event
+            # during the forced genesis replay, double-counting everything.
+            # Drop every restored projector back to genesis so the replay is
+            # consistent across the whole set.
+            for name in restored_names:
+                projectors[name] = self._factories[name]()
+
         return projectors, fully_hydrated
 
 

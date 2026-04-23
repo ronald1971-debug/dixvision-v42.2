@@ -180,6 +180,16 @@ class SnapshotEngine:
                         best = snap
             return best
 
+    def latest_at_or_before_wall_ns(self, wall_ns: int) -> Snapshot | None:
+        """Nearest snapshot whose cursor.wall_ns ≤ ``wall_ns``."""
+        with self._lock:
+            best: Snapshot | None = None
+            for snap in self._ring:
+                if snap.cursor.wall_ns <= wall_ns:
+                    if best is None or snap.cursor.wall_ns > best.cursor.wall_ns:
+                        best = snap
+            return best
+
     def all(self) -> tuple[Snapshot, ...]:
         with self._lock:
             return tuple(self._ring)
