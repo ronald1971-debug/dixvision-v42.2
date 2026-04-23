@@ -32,7 +32,7 @@
 
 use std::sync::OnceLock;
 
-use dixvision_system::{fast_risk_cache, time_source};
+use dixvision_system::{fast_risk_cache, metrics, time_source};
 use pyo3::prelude::*;
 
 // ---------------------------------------------------------------- time_source
@@ -191,6 +191,56 @@ fn risk_resume_trading() -> RiskTuple {
     snapshot_to_tuple(&snap)
 }
 
+// -------------------------------------------------------------------- metrics
+
+/// Tuple shape for a `MetricsSnapshot` crossing the FFI seam.
+/// `HashMap` does not `IntoPy` directly from Rust via `pyo3` without an extra
+/// dependency on `pyo3::types::PyDict`, and we'd rather keep the
+/// surface plain-Rust primitives. The Python wrapper rehydrates the
+/// two `Vec<(String, f64)>` into `dict`s in one pass.
+///
+/// Fields, in order:
+///   0. `counters: list[(name, value)]`
+///   1. `p99: list[(name, value_ms)]`
+type MetricsSnapshotTuple = (Vec<(String, f64)>, Vec<(String, f64)>);
+
+fn process_metrics() -> &'static metrics::MetricsSink {
+    static SINK: OnceLock<metrics::MetricsSink> = OnceLock::new();
+    SINK.get_or_init(metrics::MetricsSink::new)
+}
+
+/// Bump a counter by `value`. When `labels` is non-empty the key
+/// is folded to ``"{name}:{labels}"`` to match the Python reference.
+#[pyfunction]
+#[pyo3(signature = (name, value, labels=None))]
+fn metrics_increment(name: &str, value: f64, labels: Option<&str>) {
+    process_metrics().increment(name, value, labels);
+}
+
+/// Append a histogram sample (latency in milliseconds).
+#[pyfunction]
+fn metrics_observe(name: &str, value_ms: f64) {
+    process_metrics().observe(name, value_ms);
+}
+
+/// 99th-percentile sample for `name`. Returns 0.0 when no samples
+/// have been observed.
+#[pyfunction]
+fn metrics_p99(name: &str) -> f64 {
+    process_metrics().p99(name)
+}
+
+/// Point-in-time snapshot of every counter and per-metric p99.
+#[pyfunction]
+fn metrics_snapshot() -> MetricsSnapshotTuple {
+    let snap = process_metrics().snapshot();
+    let mut counters: Vec<(String, f64)> = snap.counters.into_iter().collect();
+    counters.sort_by(|a, b| a.0.cmp(&b.0));
+    let mut p99: Vec<(String, f64)> = snap.p99.into_iter().collect();
+    p99.sort_by(|a, b| a.0.cmp(&b.0));
+    (counters, p99)
+}
+
 // ---------------------------------------------------------------- pymodule
 
 /// `#[pymodule]` entry point. Module name MUST match
@@ -210,6 +260,10 @@ fn dixvision_py_system(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(risk_exit_safe_mode, m)?)?;
     m.add_function(wrap_pyfunction!(risk_halt_trading, m)?)?;
     m.add_function(wrap_pyfunction!(risk_resume_trading, m)?)?;
+    m.add_function(wrap_pyfunction!(metrics_increment, m)?)?;
+    m.add_function(wrap_pyfunction!(metrics_observe, m)?)?;
+    m.add_function(wrap_pyfunction!(metrics_p99, m)?)?;
+    m.add_function(wrap_pyfunction!(metrics_snapshot, m)?)?;
     Ok(())
 }
 
