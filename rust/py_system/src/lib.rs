@@ -30,9 +30,14 @@
     clippy::redundant_pub_crate
 )]
 
+use std::collections::HashMap;
 use std::sync::OnceLock;
+use std::time::Duration;
 
+use dixvision_execution::circuit_breaker::{BreakerConfig, CircuitBreaker, SystemClock};
 use dixvision_system::{fast_risk_cache, metrics, time_source};
+use parking_lot::Mutex;
+use pyo3::exceptions::PyKeyError;
 use pyo3::prelude::*;
 
 // ---------------------------------------------------------------- time_source
@@ -241,6 +246,95 @@ fn metrics_snapshot() -> MetricsSnapshotTuple {
     (counters, p99)
 }
 
+// ------------------------------------------------------------ circuit_breaker
+
+/// Process-wide registry of breakers keyed by name. The `PyO3` seam
+/// policy forbids returning `#[pyclass]` instances, so Python
+/// callers reference breakers by string name; every FFI entry point
+/// below takes the name and resolves it in the registry.
+///
+/// The registry itself lives behind a `Mutex<HashMap<...>>`. Look-ups
+/// are `O(1)` expected; the critical section is a pointer copy so
+/// contention is negligible even with many adapters.
+type BreakerRegistry = Mutex<HashMap<String, &'static CircuitBreaker<SystemClock>>>;
+
+fn breaker_registry() -> &'static BreakerRegistry {
+    static REG: OnceLock<BreakerRegistry> = OnceLock::new();
+    REG.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn with_breaker<R>(name: &str, f: impl FnOnce(&CircuitBreaker<SystemClock>) -> R) -> PyResult<R> {
+    let reg = breaker_registry().lock();
+    reg.get(name).map_or_else(
+        || {
+            Err(PyKeyError::new_err(format!(
+                "circuit breaker not registered: {name}"
+            )))
+        },
+        |b| Ok(f(b)),
+    )
+}
+
+/// Register a new breaker under `name`. Returns `true` if a fresh
+/// breaker was created, `false` if one already existed (configuration
+/// is ignored in that case — adapters should register once at boot).
+#[pyfunction]
+fn circuit_breaker_register(name: &str, failure_threshold: u32, reset_timeout_ms: u64) -> bool {
+    let mut reg = breaker_registry().lock();
+    if reg.contains_key(name) {
+        return false;
+    }
+    let config = BreakerConfig {
+        failure_threshold,
+        reset_timeout: Duration::from_millis(reset_timeout_ms),
+    };
+    // Leak a heap-allocated breaker so references stored in the
+    // registry have `'static` lifetime. Breakers live for the
+    // lifetime of the process by design — the registry is
+    // never drained at runtime.
+    let boxed: &'static CircuitBreaker<SystemClock> =
+        Box::leak(Box::new(CircuitBreaker::new(config)));
+    reg.insert(name.to_string(), boxed);
+    true
+}
+
+/// Whether the next call should be allowed. Side-effectful: may
+/// advance the state machine.
+#[pyfunction]
+fn circuit_breaker_allow(name: &str) -> PyResult<bool> {
+    with_breaker(name, CircuitBreaker::allow)
+}
+
+/// Mark the most recent allowed call as successful.
+#[pyfunction]
+fn circuit_breaker_record_success(name: &str) -> PyResult<()> {
+    with_breaker(name, CircuitBreaker::record_success)
+}
+
+/// Mark the most recent allowed call as failed.
+#[pyfunction]
+fn circuit_breaker_record_failure(name: &str) -> PyResult<()> {
+    with_breaker(name, CircuitBreaker::record_failure)
+}
+
+/// Force-reset to `Closed`. Operator tool.
+#[pyfunction]
+fn circuit_breaker_reset(name: &str) -> PyResult<()> {
+    with_breaker(name, CircuitBreaker::reset)
+}
+
+/// Observable state string (`"closed"`, `"open"`, `"half_open"`).
+#[pyfunction]
+fn circuit_breaker_state(name: &str) -> PyResult<String> {
+    with_breaker(name, |b| b.state().as_str().to_string())
+}
+
+/// Current consecutive-failure count.
+#[pyfunction]
+fn circuit_breaker_failure_count(name: &str) -> PyResult<u32> {
+    with_breaker(name, CircuitBreaker::failure_count)
+}
+
 // ---------------------------------------------------------------- pymodule
 
 /// `#[pymodule]` entry point. Module name MUST match
@@ -264,6 +358,13 @@ fn dixvision_py_system(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(metrics_observe, m)?)?;
     m.add_function(wrap_pyfunction!(metrics_p99, m)?)?;
     m.add_function(wrap_pyfunction!(metrics_snapshot, m)?)?;
+    m.add_function(wrap_pyfunction!(circuit_breaker_register, m)?)?;
+    m.add_function(wrap_pyfunction!(circuit_breaker_allow, m)?)?;
+    m.add_function(wrap_pyfunction!(circuit_breaker_record_success, m)?)?;
+    m.add_function(wrap_pyfunction!(circuit_breaker_record_failure, m)?)?;
+    m.add_function(wrap_pyfunction!(circuit_breaker_reset, m)?)?;
+    m.add_function(wrap_pyfunction!(circuit_breaker_state, m)?)?;
+    m.add_function(wrap_pyfunction!(circuit_breaker_failure_count, m)?)?;
     Ok(())
 }
 

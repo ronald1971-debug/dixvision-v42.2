@@ -8,9 +8,11 @@ on:
       - "system/time_source.py"
       - "system/fast_risk_cache.py"
       - "system/metrics.py"
+      - "execution/circuit_breaker.py"
       - "tests/test_time_source_parity.py"
       - "tests/test_fast_risk_cache_parity.py"
       - "tests/test_metrics_parity.py"
+      - "tests/test_circuit_breaker_parity.py"
   push:
     branches: [main, develop]
     paths:
@@ -19,9 +21,11 @@ on:
       - "system/time_source.py"
       - "system/fast_risk_cache.py"
       - "system/metrics.py"
+      - "execution/circuit_breaker.py"
       - "tests/test_time_source_parity.py"
       - "tests/test_fast_risk_cache_parity.py"
       - "tests/test_metrics_parity.py"
+      - "tests/test_circuit_breaker_parity.py"
 
 # Minimum surface first — richer matrix + caching will be added after
 # the baseline is green. Keeping each step in its own run: stanza so
@@ -122,7 +126,9 @@ jobs:
                      print('now', m.now()); \
                      print('mono', m.now_mono_ns()); \
                      print('risk_get', m.risk_get()); \
-                     print('metrics_snapshot', m.metrics_snapshot())"
+                     print('metrics_snapshot', m.metrics_snapshot()); \
+                     m.circuit_breaker_register('_smoke', 3, 100); \
+                     print('cb_state', m.circuit_breaker_state('_smoke'))"
 
       - name: pytest parity suite
-        run: pytest -q tests/test_time_source_parity.py tests/test_fast_risk_cache_parity.py tests/test_metrics_parity.py
+        run: pytest -q tests/test_time_source_parity.py tests/test_fast_risk_cache_parity.py tests/test_metrics_parity.py tests/test_circuit_breaker_parity.py

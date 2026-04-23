@@ -16,7 +16,9 @@ crate-type = ["cdylib", "rlib"]
 path       = "src/lib.rs"
 
 [dependencies]
-dixvision-system = { path = "../system" }
+dixvision-system    = { path = "../system" }
+dixvision-execution = { path = "../execution" }
+parking_lot         = { workspace = true }
 
 # `extension-module` disables libpython linking — the extension is
 # loaded by the host interpreter at import time, so linking would

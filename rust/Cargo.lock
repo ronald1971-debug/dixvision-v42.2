@@ -59,6 +59,7 @@ name = "dixvision-execution"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "parking_lot",
  "thiserror",
 ]
 
@@ -66,7 +67,9 @@ dependencies = [
 name = "dixvision-py-system"
 version = "0.1.0"
 dependencies = [
+ "dixvision-execution",
  "dixvision-system",
+ "parking_lot",
  "pyo3",
 ]
 

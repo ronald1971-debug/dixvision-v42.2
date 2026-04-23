@@ -18,6 +18,12 @@
 
 #![forbid(unsafe_code)]
 
+pub mod circuit_breaker;
+
+pub use circuit_breaker::{
+    BreakerConfig, BreakerState, CircuitBreaker, MonotonicClock, SystemClock,
+};
+
 use thiserror::Error;
 
 /// Canonical error type for the execution domain.
