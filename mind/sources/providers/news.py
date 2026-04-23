@@ -8,16 +8,16 @@ pulling in ``feedparser`` as a hard dep. JSON APIs (CryptoPanic / Messari
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
 
 from mind.sources.news_streams import NewsItem
 from mind.sources.provider_base import Provider
 from mind.sources.rest_client import get as http_get
 from mind.sources.source_types import SourceKind
+from system.time_source import utc_now
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return utc_now().isoformat()
 
 
 _RSS_ITEM_RE = re.compile(r"<item[^>]*>(.*?)</item>", re.DOTALL | re.IGNORECASE)

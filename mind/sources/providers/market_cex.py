@@ -11,16 +11,16 @@ chat interface (DYON: "track XYZ on Kraken") which persists the change.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any
 
 from mind.sources.provider_base import Provider
 from mind.sources.rest_client import get as http_get
 from mind.sources.source_types import MarketTick, SourceKind
+from system.time_source import utc_now
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return utc_now().isoformat()
 
 
 class _CEXProviderBase(Provider):
