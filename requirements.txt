@@ -1,5 +1,6 @@
 # DIX VISION v42.2 -- Production dependencies
 pydantic>=2.0
+protobuf>=4.25
 pyyaml>=6.0
 python-dotenv>=1.0
 aiosqlite>=0.19
@@ -13,6 +14,7 @@ pywin32>=306; sys_platform == "win32"
 pystray>=0.19; sys_platform == "win32"
 Pillow>=10.0
 # Dev
+grpcio-tools>=1.60
 pytest>=8.0
 mypy>=1.9
 import-linter>=2.1

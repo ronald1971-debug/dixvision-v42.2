@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+// GOVERNANCE-domain messages. Governance is the sole authority for
+// ALL system transitions (architectural invariant #3).
+//
+// `mind` never emits these directly; policy modules under
+// `governance/policies/` produce them, kernel orchestrates, and the
+// ledger stores them for replay.
+
+package dixvision.v42_2.governance;
+
+// SystemMode is the full lifecycle of the running system.
+// Transitions are governance-only and require the gates documented
+// in DIX_VISION_v42_2_COMPILED.md § SAFETY GATES.
+enum SystemMode {
+  UNKNOWN_MODE = 0;
+  SANDBOX      = 1;
+  PAPER        = 2;
+  CANARY       = 3;
+  ACTIVE       = 4;
+  SAFE_MODE    = 5;
+  HALTED       = 6;
+}
+
+enum DecisionVerdict {
+  UNKNOWN_VERDICT = 0;
+  APPROVED        = 1;
+  REJECTED        = 2;
+  DEFERRED        = 3;  // needs operator input (TOTP / two-person)
+}
+
+// RiskConstraints mirrors system.fast_risk_cache.RiskConstraints. It
+// is the payload stamped onto every PolicyDecision and replayed from
+// the ledger.
+message RiskConstraints {
+  uint32 version                       = 1;
+  int64  updated_at_ns                 = 2;
+  string version_id                    = 3;   // "v{hex}-{hex}"
+  double max_order_size_usd            = 4;
+  double max_position_pct              = 5;
+  double circuit_breaker_drawdown      = 6;
+  double circuit_breaker_loss_pct      = 7;
+  bool   trading_allowed               = 8;
+  bool   safe_mode                     = 9;
+}
+
+// PolicyDecision is the atomic output of a governance policy module.
+// Every decision carries the risk_version_used it was stamped against
+// so replay can assert the same revision-in → same decision-out.
+message PolicyDecision {
+  string          decision_id        = 1;
+  uint64          sequence           = 2;
+  int64           wall_ns            = 3;
+  string          policy_name        = 4;   // "risk_policy", "mode_policy", ...
+  DecisionVerdict verdict            = 5;
+  string          subject_ref        = 6;   // intent_id / strategy_id / ...
+  string          risk_version_used  = 7;   // MANDATORY
+  string          rejection_reason   = 8;
+  repeated string required_approvals = 9;   // ["totp", "two_person", ...]
+}
+
+// ApprovalRequest is emitted by governance when a decision needs
+// human approval (TOTP / two-person / operator acceptance).
+message ApprovalRequest {
+  string          request_id         = 1;
+  uint64          sequence           = 2;
+  int64           wall_ns            = 3;
+  string          decision_id        = 4;
+  repeated string required_approvals = 5;
+  int64           expires_at_ns      = 6;
+}
+
+// ApprovalResponse is the authenticated confirmation from the operator
+// side of the pairing. Governance verifies the TOTP + signature
+// before recording the response.
+message ApprovalResponse {
+  string request_id = 1;
+  uint64 sequence   = 2;
+  int64  wall_ns    = 3;
+  string operator   = 4;
+  bool   granted    = 5;
+  string totp_proof = 6;   // one-time; verified once and discarded
+  string signature  = 7;
+}
+
+// ModeTransition is the authoritative record of a SystemMode change.
+message ModeTransition {
+  uint64     sequence    = 1;
+  int64      wall_ns     = 2;
+  SystemMode from_mode   = 3;
+  SystemMode to_mode     = 4;
+  string     decision_id = 5;
+  string     reason      = 6;
+}

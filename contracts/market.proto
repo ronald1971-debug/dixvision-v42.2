@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+// MARKET-domain messages. Produced by Indira's market graph.
+//
+// See docs/DIX_VISION_v42_2_COMPILED.md. Indira owns the MARKET
+// domain; no other domain emits these messages.
+
+package dixvision.v42_2.market;
+
+// Venue enumerates every execution venue Indira currently understands.
+// UNKNOWN_VENUE = 0 is mandatory for forward compatibility: a newer
+// producer can emit a venue this reader does not know about, and the
+// reader MUST reject the tick rather than silently mis-route it.
+enum Venue {
+  UNKNOWN_VENUE = 0;
+  BINANCE       = 1;
+  COINBASE      = 2;
+  KRAKEN        = 3;
+  HYPERLIQUID   = 4;
+  DYDX          = 5;
+  JUPITER       = 6;
+  RAYDIUM       = 7;
+  PUMP_FUN      = 8;
+  UNISWAP_V4    = 9;
+  BINGX         = 10;
+}
+
+// Side of a quote or fill. NONE is reserved for synthetic ticks
+// (e.g. index updates) that have no natural side.
+enum Side {
+  NONE = 0;
+  BUY  = 1;
+  SELL = 2;
+}
+
+// Tick is a single price observation. Indira's load_shedding_node
+// may coalesce or drop ticks under backpressure (Tier-0 Step 2);
+// each Tick therefore carries its own authoritative sequence + wall_ns
+// so replay does not depend on the transport's ordering guarantees.
+message Tick {
+  uint64 sequence       = 1;
+  int64  wall_ns        = 2;
+  Venue  venue          = 3;
+  string symbol         = 4;
+  double price          = 5;
+  double size           = 6;
+  Side   side           = 7;
+  // Optional fixed-precision alternatives. Populated when the venue's
+  // native representation is a decimal and we must preserve exact
+  // arithmetic across the Go ledger boundary. Price_e8 = price * 1e8.
+  int64  price_e8       = 8;
+  int64  size_e8        = 9;
+}
+
+// Quote is a top-of-book snapshot. Populated on every L1 update.
+message Quote {
+  uint64 sequence       = 1;
+  int64  wall_ns        = 2;
+  Venue  venue          = 3;
+  string symbol         = 4;
+  double bid_price      = 5;
+  double ask_price      = 6;
+  double bid_size       = 7;
+  double ask_size       = 8;
+  int64  bid_price_e8   = 9;
+  int64  ask_price_e8   = 10;
+}
+
+// MarketFrame is the aggregated tick bundle Indira's fusion_engine
+// operates on. Every frame is deterministically assembled from the
+// ticks + quotes whose wall_ns ≤ frame.wall_ns; replay of the
+// underlying stream MUST reproduce the same frames.
+message MarketFrame {
+  uint64 sequence              = 1;
+  int64  wall_ns               = 2;
+  string symbol                = 3;
+  repeated Tick  ticks         = 4;
+  repeated Quote quotes        = 5;
+  // Fusion-engine inputs normalised to [-1, 1]. Key = plugin name.
+  map<string, double> signals  = 6;
+}

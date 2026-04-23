@@ -1,0 +1,121 @@
+syntax = "proto3";
+
+// EXECUTION-domain messages. Produced by `mind` as intents; consumed
+// by `execution/` (Rust) which interfaces with exchanges.
+//
+// Invariants:
+//   - Every OrderIntent carries the `risk_version_used` of the risk
+//     cache it was stamped against (Tier-0 Step 1).
+//   - Every ExecutionEvent carries a deterministic `event_id` so
+//     replay can deduplicate retried submissions.
+
+package dixvision.v42_2.execution;
+
+import "market.proto";
+
+enum OrderType {
+  UNKNOWN_ORDER_TYPE = 0;
+  MARKET             = 1;
+  LIMIT              = 2;
+  STOP_MARKET        = 3;
+  STOP_LIMIT         = 4;
+  POST_ONLY          = 5;
+  IOC                = 6;
+  FOK                = 7;
+}
+
+enum TimeInForce {
+  UNKNOWN_TIF = 0;
+  GTC         = 1;
+  IOC_TIF     = 2;
+  FOK_TIF     = 3;
+  DAY         = 4;
+}
+
+enum OrderLifecycle {
+  UNKNOWN_LIFECYCLE = 0;
+  PENDING           = 1;
+  SUBMITTED         = 2;
+  PARTIALLY_FILLED  = 3;
+  FILLED            = 4;
+  CANCELLED         = 5;
+  REJECTED          = 6;
+  EXPIRED           = 7;
+}
+
+// OrderIntent is the producer-side message: mind has decided it wants
+// an order; execution has not yet seen the venue.
+message OrderIntent {
+  string            intent_id          = 1;   // deterministic hash
+  uint64            sequence           = 2;
+  int64             wall_ns            = 3;
+  dixvision.v42_2.market.Venue venue   = 4;
+  string            symbol             = 5;
+  dixvision.v42_2.market.Side  side    = 6;
+  OrderType         order_type         = 7;
+  TimeInForce       time_in_force      = 8;
+  double            size               = 9;
+  double            limit_price        = 10;
+  double            stop_price         = 11;
+  int64             size_e8            = 12;
+  int64             limit_price_e8     = 13;
+  int64             stop_price_e8      = 14;
+  // MANDATORY: which risk-cache revision stamped this intent.
+  // See Tier-0 Step 1 (system/fast_risk_cache version_id).
+  string            risk_version_used  = 15;
+  // Sandbox/paper/canary/active — enforced by strategy_lifecycle.
+  string            strategy_phase     = 16;
+  string            strategy_id        = 17;
+}
+
+// OrderEvent is every state transition an order undergoes after
+// submission. The full sequence is reconstructable from replay.
+message OrderEvent {
+  string            event_id           = 1;
+  string            intent_id          = 2;
+  uint64            sequence           = 3;
+  int64             wall_ns            = 4;
+  OrderLifecycle    lifecycle          = 5;
+  string            venue_order_id     = 6;
+  double            filled_size        = 7;
+  double            avg_fill_price     = 8;
+  int64             filled_size_e8     = 9;
+  int64             avg_fill_price_e8  = 10;
+  string            rejection_reason   = 11;
+}
+
+// Fill is a single atomic fill. Multiple fills may be emitted for
+// one OrderIntent; summing them must equal the final OrderEvent's
+// filled_size.
+message Fill {
+  string            fill_id            = 1;
+  string            intent_id          = 2;
+  uint64            sequence           = 3;
+  int64             wall_ns            = 4;
+  double            size               = 5;
+  double            price              = 6;
+  int64             size_e8            = 7;
+  int64             price_e8           = 8;
+  double            fee_usd            = 9;
+  int64             fee_usd_e8         = 10;
+}
+
+// AdapterState is emitted by each exchange adapter on every
+// circuit-breaker transition (Tier-0 Step 8).
+enum AdapterHealth {
+  UNKNOWN_HEALTH = 0;
+  HEALTHY        = 1;
+  DEGRADED       = 2;
+  CIRCUIT_OPEN   = 3;
+  DISABLED       = 4;
+}
+
+message AdapterState {
+  uint64        sequence           = 1;
+  int64         wall_ns            = 2;
+  dixvision.v42_2.market.Venue venue = 3;
+  AdapterHealth health             = 4;
+  uint32        consecutive_fails  = 5;
+  uint32        consecutive_wins   = 6;
+  string        last_failure_kind  = 7;
+}

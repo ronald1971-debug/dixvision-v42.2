@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+// SYSTEM-domain messages. Dyon owns the SYSTEM domain.
+//
+// `SystemHazard` is the ONLY cross-domain signal channel
+// (architectural invariant #4). Every other SYSTEM message is
+// intra-domain: it is never consumed directly by `mind` or by
+// exchange adapters — governance mediates.
+
+package dixvision.v42_2.system;
+
+// Severity determines the downstream response. CRITICAL must force
+// the global kill switch (Tier-0 Step 9) regardless of which policy
+// module receives it first.
+enum Severity {
+  UNKNOWN_SEVERITY = 0;
+  INFO             = 1;
+  WARN             = 2;
+  ERROR            = 3;
+  CRITICAL         = 4;
+}
+
+enum HazardKind {
+  UNKNOWN_HAZARD     = 0;
+  STALE_RISK_CACHE   = 1;  // Tier-0 Step 1 staleness halt
+  FEED_LOSS          = 2;
+  ADAPTER_FAILURE    = 3;  // Tier-0 Step 8 circuit breaker opened
+  PLUGIN_CRASH       = 4;
+  CONFIG_INVALID     = 5;
+  CONFIG_ROLLBACK    = 6;  // Tier-0 Step 16 fallback_manager triggered
+  KILL_SWITCH_TRIP   = 7;
+  CLOCK_SKEW         = 8;
+  LEDGER_INTEGRITY   = 9;
+  CHAOS_INJECTION    = 10; // Tier-0 Step 13 chaos_engine
+  DEADMAN_MISSED     = 11;
+  REGISTRY_LOCK_FAIL = 12;
+}
+
+// SystemHazard is emitted by Dyon and consumed exclusively by
+// governance. Mind NEVER subscribes to this channel directly.
+message SystemHazard {
+  string      hazard_id    = 1;
+  uint64      sequence     = 2;
+  int64       wall_ns      = 3;
+  HazardKind  kind         = 4;
+  Severity    severity     = 5;
+  string      source       = 6;    // module that emitted (e.g. "execution.adapters.binance")
+  string      description  = 7;
+  // Optional structured context. Keys are snake_case, values are
+  // always strings — cross-language safe.
+  map<string, string> context = 8;
+}
+
+// KillSwitchEvent is the authoritative record of a kill-switch
+// transition. Overrides every other decision; replay must restore
+// the exact active set of killed venues / strategies.
+enum KillScope {
+  UNKNOWN_SCOPE = 0;
+  GLOBAL        = 1;
+  PER_VENUE     = 2;
+  PER_STRATEGY  = 3;
+}
+
+message KillSwitchEvent {
+  string    event_id   = 1;
+  uint64    sequence   = 2;
+  int64     wall_ns    = 3;
+  KillScope scope      = 4;
+  string    target     = 5;   // "" for GLOBAL, venue or strategy_id otherwise
+  bool      engaged    = 6;   // true = kill on, false = kill cleared
+  string    reason     = 7;
+  string    operator   = 8;   // required for disengage; empty for engage
+  string    totp_proof = 9;   // required for disengage per safety gates
+}
+
+// ConfigChangeEvent records every runtime config mutation
+// (Tier-0 Step 16). Configs are never overwritten — each change
+// is a new version, traceable via version_id.
+message ConfigChangeEvent {
+  uint64 sequence        = 1;
+  int64  wall_ns         = 2;
+  string config_name     = 3;   // "risk_limits", "fusion_weights", ...
+  string from_version_id = 4;
+  string to_version_id   = 5;
+  string decision_id     = 6;   // governance decision that approved the change
+  string diff_hash       = 7;   // sha256 of canonical diff payload
+}
+
+message FeatureFlagDelta {
+  uint64 sequence    = 1;
+  int64  wall_ns     = 2;
+  string flag_name   = 3;
+  bool   enabled     = 4;
+  string version_id  = 5;
+  string decision_id = 6;
+}
+
+// HeartBeat is the dead-man's contract. Every hot-path node emits
+// on a fixed cadence; a miss triggers DEADMAN_MISSED which escalates
+// to governance.
+message HeartBeat {
+  uint64 sequence = 1;
+  int64  wall_ns  = 2;
+  string source   = 3;
+  int64  cadence_ns = 4;   // expected inter-beat interval
+}

@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+// LEDGER messages. The ledger is the authoritative, append-only,
+// hash-chained event log. Every decision the system makes must be
+// reconstructable from this stream alone (Core Guarantee #2).
+//
+// The ledger lives in Go (`state/ledger/`). Producers in Rust and
+// Python write via the gRPC facade; readers attach via cursors.
+
+package dixvision.v42_2.ledger;
+
+// EventType is the top-level envelope type. Sub-types live inside
+// `payload`, which is the canonical-encoded bytes of one of the
+// concrete domain messages defined in the other .proto files.
+enum EventType {
+  UNKNOWN_EVENT_TYPE = 0;
+  MARKET_TICK        = 1;   // market.Tick
+  MARKET_QUOTE       = 2;   // market.Quote
+  MARKET_FRAME       = 3;   // market.MarketFrame
+  ORDER_INTENT       = 4;   // execution.OrderIntent
+  ORDER_EVENT        = 5;   // execution.OrderEvent
+  FILL               = 6;   // execution.Fill
+  ADAPTER_STATE      = 7;   // execution.AdapterState
+  POLICY_DECISION    = 8;   // governance.PolicyDecision
+  APPROVAL_REQUEST   = 9;   // governance.ApprovalRequest
+  APPROVAL_RESPONSE  = 10;  // governance.ApprovalResponse
+  MODE_TRANSITION    = 11;  // governance.ModeTransition
+  SYSTEM_HAZARD      = 12;  // system.SystemHazard
+  KILL_SWITCH_EVENT  = 13;  // system.KillSwitchEvent
+  CONFIG_CHANGE      = 14;  // system.ConfigChangeEvent
+  FEATURE_FLAG_DELTA = 15;  // system.FeatureFlagDelta
+  HEARTBEAT          = 16;  // system.HeartBeat
+}
+
+// LedgerEvent is the envelope written to disk. It is the unit of
+// atomicity for hash-chaining: `hash_prev` is the sha256 of the
+// preceding event's canonical bytes.
+//
+// INVARIANT: once persisted, no field may change. The ledger is
+// append-only.
+message LedgerEvent {
+  uint64    sequence     = 1;   // strictly increasing from 1
+  int64     wall_ns      = 2;
+  EventType event_type   = 3;
+  string    sub_type     = 4;   // free-form sub-classification
+  string    source       = 5;   // domain-qualified producer name
+  bytes     payload      = 6;   // proto-encoded concrete message
+  bytes     hash_prev    = 7;   // sha256 of previous LedgerEvent
+  bytes     hash_self    = 8;   // sha256 of canonical self-encoding excluding this field
+}
+
+// Cursor is a stable position marker for snapshot boundaries and
+// replay resume-points. Both fields are required: sequence alone is
+// not sufficient because wall-time-driven rebuilds need wall_ns.
+message Cursor {
+  uint64 sequence = 1;
+  int64  wall_ns  = 2;
+}
+
+// Snapshot is the periodic state capture described in Tier-0 Step 0.
+// The snapshot engine captures every N events OR T seconds and stores
+// snapshots separately from the ledger; on boot the reconstructor
+// loads the latest and replays the delta to catch up.
+message Snapshot {
+  string snapshot_id              = 1;
+  Cursor cursor                   = 2;
+  int64  created_at_ns            = 3;
+  uint64 event_count              = 4;
+  // Per-projector serialised view. The format inside each bytes
+  // payload is the projector's own canonical encoding — the ledger
+  // is agnostic to projector internals.
+  map<string, bytes> projector_views = 5;
+  // Reproducibility stamps: active versions at capture time.
+  string risk_version_id          = 6;
+  map<string, string> config_version_ids  = 7;
+  map<string, string> plugin_version_ids  = 8;
+  bytes  hash_self                = 9;
+}
+
+// LedgerHead is the summary the writer publishes on every flush so
+// readers can stay caught up without scanning the whole log.
+message LedgerHead {
+  Cursor cursor         = 1;
+  uint64 event_count    = 2;
+  bytes  hash_self      = 3;   // hash of latest event
+  int64  updated_at_ns  = 4;
+}
