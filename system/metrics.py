@@ -214,7 +214,14 @@ def backend() -> str:
     return "rust" if (_HAVE_RUST and _rs is not None) else "python"
 
 
-MetricsSink = _RustMetricsSink if (_HAVE_RUST and _rs is not None) else _PythonMetricsSink
+# `MetricsSink` is the public name external callers instantiate. Aliasing
+# it to the Python backend keeps the pre-polyglot `MetricsSink()` no-arg
+# construction working regardless of whether the Rust wheel is installed
+# (`_RustMetricsSink.__init__` requires a `rust_module` argument). Callers
+# that want the Rust-backed singleton use `make_rust_sink()` or the
+# module-level accessor; see the matching pattern in
+# `system/fast_risk_cache.py::FastRiskCache`.
+MetricsSink = _PythonMetricsSink
 
 
 class LatencyTimer:
