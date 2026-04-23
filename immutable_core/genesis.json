@@ -1,7 +1,7 @@
 {
-  "_comment": "DIX VISION v42.2 genesis record",
+  "_comment": "DIX VISION v42.2 genesis record. foundation_hash is sha256 of immutable_core/foundation.py — regenerate via scripts/generate_hash.py after any edit to that file.",
   "version": "42.2.0",
   "codename": "Janus-Sentinel",
   "axioms_verified": true,
-  "foundation_hash": "RUN_scripts/generate_hash.py"
+  "foundation_hash": "f0bb648acca4f52be1384291980d4fa2a4bd2a6f8905b75ace2dbfb088e18f4c"
 }

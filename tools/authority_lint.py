@@ -83,6 +83,31 @@ HOT_PATH_FILES: tuple[str, ...] = (
 
 HOT_PATH_DB_BANNED: tuple[str, ...] = ("sqlite3", "psycopg", "duckdb", "asyncpg")
 
+# ── Rule C2: neuromorphic modules are sensors only ─────────────────────
+# Axioms N1 + N6 (immutable_core/neuromorphic_axioms.lean): the three
+# neuromorphic modules may observe + emit events only; they must never
+# import any decision / execution / registry-mutation surface.
+NEUROMORPHIC_FILES: tuple[str, ...] = (
+    "mind/plugins/neuromorphic_signal.py",
+    "execution/monitoring/neuromorphic_detector.py",
+    "governance/signals/neuromorphic_risk.py",
+)
+NEUROMORPHIC_FORBIDDEN_IMPORTS: tuple[str, ...] = (
+    "governance.kernel",
+    "governance.policy_engine",
+    "governance.constraint_compiler",
+    "governance.mode_manager",
+    "governance.patch_pipeline",
+    "mind.fast_execute",
+    "execution.engine",
+    "execution.adapter_router",
+    "execution.adapters",
+    "security.operator",
+    "security.wallet_policy",
+    "security.wallet_connect",
+    "core.registry",
+)
+
 
 @dataclass
 class Violation:
@@ -157,6 +182,33 @@ def _check_primitives(rel_path: str, src: str, tree: ast.AST) -> list[Violation]
     return out
 
 
+def _check_neuromorphic(rel_path: str, tree: ast.AST) -> list[Violation]:
+    """Rule C2: neuromorphic modules may only observe + emit events."""
+    out: list[Violation] = []
+    if rel_path not in NEUROMORPHIC_FILES:
+        return out
+    for node in ast.walk(tree):
+        mod: str | None = None
+        if isinstance(node, ast.ImportFrom) and node.module:
+            mod = node.module
+        for banned in NEUROMORPHIC_FORBIDDEN_IMPORTS:
+            if mod is not None and (mod == banned or mod.startswith(banned + ".")):
+                out.append(Violation(
+                    "C2", rel_path, node.lineno,
+                    f"neuromorphic sensor must not import {mod} "
+                    f"(axiom N1/N6: observe + emit only)"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                for banned in NEUROMORPHIC_FORBIDDEN_IMPORTS:
+                    if alias.name == banned or alias.name.startswith(banned + "."):
+                        out.append(Violation(
+                            "C2", rel_path, node.lineno,
+                            f"neuromorphic sensor must not import {alias.name} "
+                            f"(axiom N1/N6: observe + emit only)"))
+    return out
+
+
 def _check_hot_path_db(rel_path: str, tree: ast.AST) -> list[Violation]:
     out: list[Violation] = []
     is_hot = any(rel_path.startswith(h) for h in HOT_PATH_FILES)
@@ -201,6 +253,7 @@ def run() -> int:
         violations.extend(_check_imports(rel, tree))
         violations.extend(_check_primitives(rel, src, tree))
         violations.extend(_check_hot_path_db(rel, tree))
+        violations.extend(_check_neuromorphic(rel, tree))
 
     if not violations:
         print("[authority_lint] clean \u2014 0 violations")
