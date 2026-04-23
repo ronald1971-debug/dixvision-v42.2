@@ -1,0 +1,23 @@
+[package]
+name        = "dixvision-bootstrap"
+version.workspace     = true
+edition.workspace     = true
+rust-version.workspace = true
+license.workspace      = true
+repository.workspace   = true
+description = "DIX VISION v42.2 — deterministic kernel boot. kernel_boot, system_init, dependency_resolver. Per manifest §BOOTSTRAP (RUST)."
+
+[lib]
+name = "dixvision_bootstrap"
+path = "src/lib.rs"
+
+[dependencies]
+thiserror             = { workspace = true }
+dixvision-system      = { path = "../system" }
+dixvision-execution   = { path = "../execution" }
+
+[dev-dependencies]
+anyhow = { workspace = true }
+
+[lints]
+workspace = true
