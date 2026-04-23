@@ -37,7 +37,9 @@ ad-hoc dicts, no JSON-over-the-wire, no string-keyed payloads.
 4. **No `google.protobuf.Any` in cross-domain messages.** Any field
    that would need it must be resolved to a concrete sub-message
    instead. This keeps the wire self-describing across languages.
-5. **Package names are stable.** `dixvision.v42.2.<domain>`.
+5. **Package names are stable.** `dixvision.v42_2.<domain>` (Protobuf
+   package identifiers cannot contain `.` between digits without
+   being parsed as a package boundary, so `v42_2` uses an underscore).
 
 ---
 
