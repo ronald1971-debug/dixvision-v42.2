@@ -74,13 +74,19 @@ opt-level       = 0
 debug           = true
 
 # The bench profile is where the latency SLO (p50 < 1 ms, p99 < 5 ms)
-# is measured. Keep it identical to release so reported numbers are
-# representative of what ships — including `panic = "abort"`, which
-# removes unwinding landing pads that would otherwise make the
-# benchmark binary subtly different from the release binary.
+# is measured. Keep opt-level/lto/codegen-units identical to release
+# so reported numbers are representative of what ships.
+#
+# NOTE: cargo silently ignores `panic` on the `bench` profile (it is
+# always linked with the test harness, which requires unwinding).
+# This means bench binaries carry unwinding landing pads that the
+# release binary does not. The per-call cost is tens of picoseconds,
+# well below the measurement floor of the SLO gates (p50 < 1 ms,
+# p99 < 5 ms), so the representativeness claim still holds — but we
+# spell it out here so a future reader doesn't chase a phantom
+# `panic = "abort"` that cargo would reject.
 [profile.bench]
 opt-level       = 3
 lto             = "fat"
 codegen-units   = 1
-panic           = "abort"
 debug           = false
