@@ -11,16 +11,29 @@ Tier-0 Step 1 additions (see docs/ARCHITECTURE_V42_2_TIER0.md §2):
     - **version** (monotonic ``int``) — bumped on every ``update()``
       call. A non-increasing version means the writer missed an
       update or something corrupted the cache; Indira MUST reject.
+    - **version_id** (stable ``str``) — deterministic hex derived from
+      ``version`` + ``updated_at_ns``. Embedded in every decision
+      record as ``risk_version_used`` so audit / replay can verify
+      the exact constraints applied to each trade.
     - **updated_at_ns** (wall-clock nanoseconds) — stamps every
       update with ``time.time_ns()`` so Indira can measure staleness.
     - **staleness halt** — ``is_fresh(threshold_ns, now_ns)`` returns
       ``False`` when the cache is older than the threshold.
       ``allows_trade()`` now fails closed on stale cache.
+    - **RiskReading helper** — atomic snapshot of ``(version,
+      version_id, updated_at_ns, constraints)`` for callers that must
+      stamp a decision with the exact cache revision they used.
 
 Hard rule:
 
     If ``now_ns - updated_at_ns > STALENESS_THRESHOLD_NS``:
         reject ALL trades. No exceptions.
+
+Hard rule:
+
+    Every governance / fast-path decision record MUST include
+    ``risk_version_used`` = the ``version_id`` returned by
+    :meth:`FastRiskCache.read` at the moment the decision was made.
 """
 from __future__ import annotations
 
@@ -29,6 +42,19 @@ from dataclasses import dataclass, replace
 from threading import RLock
 
 from system.time_source import utc_now
+
+
+def _compute_version_id(version: int, updated_at_ns: int) -> str:
+    """Stable deterministic version-id for a risk-cache revision.
+
+    Used verbatim in decision records so every trade carries the exact
+    cache revision it was priced against. Must be deterministic — the
+    same ``(version, updated_at_ns)`` pair MUST always yield the same
+    ``version_id`` across replays. We just hex-format both fields
+    concatenated; no hashing, no collisions possible because ``version``
+    is monotonic by construction.
+    """
+    return f"v{version:x}-{updated_at_ns:x}"
 
 
 DEFAULT_STALENESS_THRESHOLD_NS = 5 * 1_000_000_000  # 5 seconds
@@ -52,6 +78,7 @@ class RiskConstraints:
     last_updated_utc: str = ""
     version: int = 0
     updated_at_ns: int = 0
+    version_id: str = ""
 
     def allows_trade(
         self,
@@ -87,6 +114,23 @@ class RiskConstraints:
         return True, "ok"
 
 
+@dataclass(frozen=True)
+class RiskReading:
+    """Atomic snapshot returned by :meth:`FastRiskCache.read`.
+
+    Callers that must stamp a decision with the cache revision they
+    used should capture a ``RiskReading`` once at the top of the
+    decision and copy ``version_id`` into the decision record. Because
+    :class:`RiskConstraints` is frozen and the cache swaps references
+    atomically, the reading is a consistent point-in-time view.
+    """
+
+    version: int
+    version_id: str
+    updated_at_ns: int
+    constraints: RiskConstraints
+
+
 class FastRiskCache:
     """Atomic single-writer, multi-reader risk cache.
 
@@ -112,6 +156,7 @@ class FastRiskCache:
             last_updated_utc=utc_now().isoformat(),
             version=1,
             updated_at_ns=now,
+            version_id=_compute_version_id(1, now),
         )
         self._lock = RLock()
 
@@ -126,6 +171,25 @@ class FastRiskCache:
     @property
     def updated_at_ns(self) -> int:
         return self._constraints.updated_at_ns
+
+    @property
+    def version_id(self) -> str:
+        return self._constraints.version_id
+
+    def read(self) -> RiskReading:
+        """Atomic snapshot of the cache revision.
+
+        Callers stamp ``reading.version_id`` into their decision record
+        as ``risk_version_used`` so audit / replay can verify the
+        constraints that were applied.
+        """
+        c = self._constraints
+        return RiskReading(
+            version=c.version,
+            version_id=c.version_id,
+            updated_at_ns=c.updated_at_ns,
+            constraints=c,
+        )
 
     @property
     def staleness_threshold_ns(self) -> int:
@@ -157,6 +221,7 @@ class FastRiskCache:
                 last_updated_utc=utc_now().isoformat(),
                 version=new_version,
                 updated_at_ns=now,
+                version_id=_compute_version_id(new_version, now),
                 **kwargs,
             )
             return self._constraints
