@@ -16,7 +16,7 @@ on:
 # the log line that reports the failure identifies the exact command.
 jobs:
   rust:
-    name: rust — fmt + clippy + test + no_unsafe
+    name: rust
     runs-on: ubuntu-latest
     env:
       CARGO_TERM_COLOR: always
@@ -24,6 +24,11 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v4
+
+      - name: toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
 
       - name: where am I
         run: |
