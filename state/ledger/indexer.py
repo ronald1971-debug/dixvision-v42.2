@@ -57,15 +57,18 @@ class LedgerIndexer:
             self._by_composite[(et, st)].append(seq)
 
     def recent_sequences_by_type(self, event_type: str, *, limit: int = 100) -> list[int]:
-        return self._recent(self._by_type.get(event_type), limit)
+        with self._lock:
+            return self._recent(self._by_type.get(event_type), limit)
 
     def recent_sequences_by_source(self, source: str, *, limit: int = 100) -> list[int]:
-        return self._recent(self._by_source.get(source), limit)
+        with self._lock:
+            return self._recent(self._by_source.get(source), limit)
 
     def recent_sequences_for(
         self, event_type: str, sub_type: str, *, limit: int = 100
     ) -> list[int]:
-        return self._recent(self._by_composite.get((event_type, sub_type)), limit)
+        with self._lock:
+            return self._recent(self._by_composite.get((event_type, sub_type)), limit)
 
     def clear(self) -> None:
         with self._lock:
@@ -76,10 +79,13 @@ class LedgerIndexer:
     # ─────── internals ──────────────────────────────────────────────
 
     def _recent(self, dq: deque[int] | None, limit: int) -> list[int]:
+        # Caller MUST hold ``self._lock``. Keeping the dict lookup and
+        # the deque materialization under the same lock is the only way
+        # to guarantee the reader doesn't race with ``clear()`` dropping
+        # the entry while ``index()`` installs a replacement deque.
         if limit <= 0 or not dq:
             return []
-        with self._lock:
-            return list(reversed(list(dq)))[:limit]
+        return list(reversed(list(dq)))[:limit]
 
 
 _indexer: LedgerIndexer | None = None
