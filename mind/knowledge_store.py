@@ -150,12 +150,26 @@ class KnowledgeStore:
         confidence: float = 0.5,
         tags: tuple[str, ...] = (),
     ) -> None:
-        """Insert or replace. Enforces both entry and byte caps via LRU."""
+        """Insert or replace. Enforces both entry and byte caps via LRU.
+
+        A single entry whose estimated size exceeds ``max_bytes`` is
+        rejected with :class:`ValueError` — otherwise the post-insert
+        LRU sweep would evict the entire rest of the store to make
+        room for an entry that cannot fit. The caller must keep
+        per-entry payloads within the configured cap (or raise the
+        cap at startup).
+        """
         if not isinstance(key, str) or not key:
             raise ValueError("key must be a non-empty str")
         if not 0.0 <= confidence <= 1.0:
             raise ValueError("confidence must be in [0, 1]")
         size = _estimate_bytes(value)
+        if size > self._max_bytes:
+            raise ValueError(
+                f"entry size {size} exceeds max_bytes {self._max_bytes}; "
+                "oversized writes are rejected to prevent cascading "
+                "eviction of the rest of the store"
+            )
         entry = KnowledgeEntry(
             key=key,
             value=value,
@@ -242,19 +256,28 @@ class KnowledgeStore:
             ]
 
     def restore(self, rows: list[dict[str, Any]]) -> None:
-        """Replace state from a prior snapshot (in insertion order)."""
+        """Replace state from a prior snapshot (in insertion order).
+
+        Rows whose size alone exceeds ``max_bytes`` are skipped rather
+        than inserted — admitting them would trigger the same
+        destructive cascade guarded against in :meth:`put`.
+        """
         with self._lock:
             self._data.clear()
             self._bytes = 0
             for row in rows:
+                size = int(
+                    row.get("size_bytes", _estimate_bytes(row["value"]))
+                )
+                if size > self._max_bytes:
+                    # skip rather than wipe everything that follows
+                    continue
                 entry = KnowledgeEntry(
                     key=str(row["key"]),
                     value=row["value"],
                     confidence=float(row.get("confidence", 0.5)),
                     inserted_at_ns=int(row.get("inserted_at_ns", 0)),
-                    size_bytes=int(
-                        row.get("size_bytes", _estimate_bytes(row["value"]))
-                    ),
+                    size_bytes=size,
                     tags=tuple(row.get("tags", ())),
                 )
                 self._data[entry.key] = entry

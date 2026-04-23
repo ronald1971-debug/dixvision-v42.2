@@ -163,6 +163,48 @@ def test_entry_dataclass_is_frozen() -> None:
         e.key = "mutated"  # type: ignore[misc]
 
 
+def test_oversized_put_is_rejected_without_wiping_store() -> None:
+    """Regression guard: a single oversized put() must NOT cascade-evict
+    the entire store. Before the fix, putting a value larger than
+    max_bytes would (a) push out every existing entry and (b) finally
+    evict itself, leaving the store empty."""
+    s = KnowledgeStore(max_entries=1000, max_bytes=100)
+    s.put("a", "x" * 30)
+    s.put("b", "y" * 30)
+    s.put("c", "z" * 20)
+    assert len(s) == 3
+    pre_evictions = s.eviction_count()
+
+    with pytest.raises(ValueError, match="exceeds max_bytes"):
+        s.put("huge", "Q" * 500)
+
+    assert len(s) == 3, "existing entries must survive rejected oversized put"
+    assert s.get("a") is not None
+    assert s.get("b") is not None
+    assert s.get("c") is not None
+    assert "huge" not in s
+    assert s.eviction_count() == pre_evictions
+
+
+def test_oversized_restore_row_is_skipped() -> None:
+    """Regression guard: restore() must not admit rows larger than the
+    byte cap, otherwise the same cascading eviction destroys the rest
+    of the replayed snapshot."""
+    snap = [
+        {"key": "ok1", "value": "x" * 10, "confidence": 0.5,
+         "inserted_at_ns": 0, "size_bytes": 10, "tags": []},
+        {"key": "huge", "value": "Q" * 500, "confidence": 0.5,
+         "inserted_at_ns": 0, "size_bytes": 500, "tags": []},
+        {"key": "ok2", "value": "y" * 10, "confidence": 0.5,
+         "inserted_at_ns": 0, "size_bytes": 10, "tags": []},
+    ]
+    s = KnowledgeStore(max_entries=1000, max_bytes=100)
+    s.restore(snap)
+    assert s.get("ok1") is not None
+    assert s.get("ok2") is not None
+    assert "huge" not in s
+
+
 def test_replace_existing_key_updates_value_and_size() -> None:
     s = KnowledgeStore()
     s.put("k", "short")
