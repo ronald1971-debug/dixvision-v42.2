@@ -14,7 +14,15 @@
 
 plugins:
   intelligence_engine:
-    microstructure: []
+    microstructure:
+      - name: microstructure_v1
+        version: "0.1.0"
+        status: SHADOW   # Phase E2 — wired but does not produce live trades
+        config:
+          tolerance_bps: 2.0
+          confidence_scale_bps: 50.0
+          min_confidence: 0.0
+        depends_on: []
     alpha: []
     alt_data: []
     memory: []
