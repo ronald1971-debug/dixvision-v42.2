@@ -1,0 +1,65 @@
+# Tier registry — RUNTIME vs OFFLINE engine declarations (Phase E0).
+#
+# Refs:
+#   manifest.md §0.2.1 / §0.5
+#   docs/total_recall_index.md §39 (RUNTIME-ENGINE-01..04, OFFLINE-ENGINE-01..02)
+#   build_plan.md §Phase E0
+#
+# `tier` is binding for authority lint rules L2/L3 and registry-driven boot.
+
+engines:
+  intelligence:
+    tier: RUNTIME
+    tier_id: RUNTIME-ENGINE-01
+    engine_id: ENGINE-01
+    hot_path: true
+    determinism: strict
+    process: runtime
+    bus: per_tick_canonical
+
+  execution:
+    tier: RUNTIME
+    tier_id: RUNTIME-ENGINE-02
+    engine_id: ENGINE-02
+    hot_path: true
+    determinism: strict
+    process: runtime
+    bus: per_tick_canonical
+
+  system:
+    tier: RUNTIME
+    tier_id: RUNTIME-ENGINE-03
+    engine_id: ENGINE-04
+    hot_path: false
+    determinism: strict
+    process: runtime
+    bus: per_tick_canonical
+
+  governance:
+    tier: RUNTIME
+    tier_id: RUNTIME-ENGINE-04
+    engine_id: ENGINE-06
+    hot_path: false
+    determinism: strict
+    process: runtime
+    bus: per_tick_canonical
+
+  learning:
+    tier: OFFLINE
+    tier_id: OFFLINE-ENGINE-01
+    engine_id: ENGINE-03
+    hot_path: false
+    determinism: stochastic_ok
+    process: shared_offline
+    bus: scheduler
+    cron: "0 */1 * * *"
+
+  evolution:
+    tier: OFFLINE
+    tier_id: OFFLINE-ENGINE-02
+    engine_id: ENGINE-05
+    hot_path: false
+    determinism: stochastic_ok
+    process: shared_offline
+    bus: scheduler
+    cron: "0 */6 * * *"

@@ -1,0 +1,47 @@
+# Plugin registry — PLUGIN-ACT-01 source of truth (Phase E0 seed).
+#
+# All entries start DISABLED; lifecycle changes flow through the Governance
+# pipeline only (PLUGIN-ACT-05). Phase E0 ships the schema + an empty seed;
+# concrete plugins land in Phase E2..E6 per build_plan.md.
+#
+# Schema:
+#   <slot_path>:
+#     name: str
+#     version: str
+#     status: DISABLED | SHADOW | ACTIVE
+#     config: { ... }
+#     depends_on: [str]
+
+plugins:
+  intelligence_engine:
+    microstructure: []
+    alpha: []
+    alt_data: []
+    memory: []
+    multi_timeframe: []
+    transfer: []
+    cognition: []
+    agent: []
+
+  execution_engine:
+    hot_path: []
+    adapters: []
+    protections: []
+
+  system_engine:
+    hazard_sensors: []
+    health_monitors: []
+    state: []
+
+  governance_engine:
+    control_plane: []
+    services: []
+    plugin_lifecycle: []
+
+  learning_engine:
+    lanes: []
+
+  evolution_engine:
+    intelligence_loops: []
+    skill_graph: []
+    patch_pipeline: []

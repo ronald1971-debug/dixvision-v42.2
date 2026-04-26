@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dixvision"
+version = "0.0.1"
+description = "DIX VISION v42.2 — engine + plugin runtime (Phase E0)"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+readme = "README.md"
+authors = [{ name = "Ronald Vervoort" }]
+dependencies = [
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+    "core*",
+    "intelligence_engine*",
+    "execution_engine*",
+    "system_engine*",
+    "governance_engine*",
+    "learning_engine*",
+    "evolution_engine*",
+    "state*",
+    "tools*",
+]
+exclude = ["tests*", "rust*", "docs*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [
+    "rust",
+    "docs",
+    ".git",
+    ".venv",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = [
+    # Phase E0 stubs intentionally have unused parameters.
+    "B008",
+]

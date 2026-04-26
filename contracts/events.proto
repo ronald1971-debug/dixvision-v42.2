@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+// Canonical 4-event bus. Mirror of core/contracts/events.py (Phase E0,
+// Lane A: Python-first; Protobuf reserved for future polyglot ports per
+// build_plan.md §Phase E9).
+//
+// Refs:
+//  - manifest.md §0.4 (CORE TRUTH), §1 (invariants)
+//  - docs/total_recall_index.md §13 (EVT-01..04)
+//  - INV-08 (only typed events cross domain)
+//  - INV-11 (no direct cross-engine calls)
+//
+// **Do not edit one side without the other.** The Python dataclasses are
+// the binding source of truth for Phase E0; this file exists so that
+// downstream language ports translate mechanically.
+
+package dixvision.v42_2;
+
+option java_package = "ai.dixvision.v42_2";
+
+enum Side {
+  SIDE_UNSPECIFIED = 0;
+  BUY = 1;
+  SELL = 2;
+  HOLD = 3;
+}
+
+enum HazardSeverity {
+  HAZARD_SEVERITY_UNSPECIFIED = 0;
+  INFO = 1;
+  LOW = 2;
+  MEDIUM = 3;
+  HIGH = 4;
+  CRITICAL = 5;
+}
+
+enum ExecutionStatus {
+  EXECUTION_STATUS_UNSPECIFIED = 0;
+  PROPOSED = 1;
+  APPROVED = 2;
+  REJECTED = 3;
+  SUBMITTED = 4;
+  FILLED = 5;
+  PARTIALLY_FILLED = 6;
+  CANCELLED = 7;
+  FAILED = 8;
+}
+
+enum SystemEventKind {
+  SYSTEM_EVENT_KIND_UNSPECIFIED = 0;
+  HEARTBEAT = 1;
+  HEALTH_REPORT = 2;
+  PLUGIN_LIFECYCLE = 3;   // PLUGIN-ACT-06
+  UPDATE_PROPOSED = 4;    // offline → Governance
+  LEDGER_COMMIT = 5;
+}
+
+// EVT-01
+message SignalEvent {
+  int64 ts_ns = 1;
+  string symbol = 2;
+  Side side = 3;
+  double confidence = 4;
+  repeated string plugin_chain = 5;
+  map<string, string> meta = 6;
+}
+
+// EVT-02
+message ExecutionEvent {
+  int64 ts_ns = 1;
+  string symbol = 2;
+  Side side = 3;
+  double qty = 4;
+  double price = 5;
+  ExecutionStatus status = 6;
+  string venue = 7;
+  string order_id = 8;
+  map<string, string> meta = 9;
+}
+
+// EVT-03
+message SystemEvent {
+  int64 ts_ns = 1;
+  SystemEventKind sub_kind = 2;
+  string source = 3;
+  map<string, string> payload = 4;
+  map<string, string> meta = 5;
+}
+
+// EVT-04 — only signal that crosses Indira ↔ Dyon domain.
+message HazardEvent {
+  int64 ts_ns = 1;
+  string code = 2;
+  HazardSeverity severity = 3;
+  string source = 4;
+  string detail = 5;
+  map<string, string> meta = 6;
+}
+
+message Event {
+  oneof payload {
+    SignalEvent signal = 1;
+    ExecutionEvent execution = 2;
+    SystemEvent system = 3;
+    HazardEvent hazard = 4;
+  }
+}

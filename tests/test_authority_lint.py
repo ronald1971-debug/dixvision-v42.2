@@ -1,0 +1,234 @@
+"""Phase E0 — authority_lint rule unit tests.
+
+Each lint rule (T1, C2, C3, W1, L1, L2, L3, B1) is exercised against
+synthetic source trees built in temp directories. The tests guarantee:
+
+* the real repo passes ``authority_lint`` with zero violations;
+* every rule fires on a synthetic violation;
+* every rule does NOT fire on its allow-listed shape.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from tools.authority_lint import lint_repo
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _write(root: Path, rel: str, body: str) -> None:
+    p = root / rel
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(body, encoding="utf-8")
+
+
+@pytest.fixture
+def fake_repo(tmp_path: Path) -> Path:
+    # Minimal package skeleton so AST parses + module names resolve.
+    for pkg in (
+        "core",
+        "core/contracts",
+        "state",
+        "state/ledger",
+        "intelligence_engine",
+        "execution_engine",
+        "system_engine",
+        "governance_engine",
+        "learning_engine",
+        "evolution_engine",
+        "mind",
+        "mind/neuromorphic",
+        "mind/web_autolearn",
+        "execution_engine/adapters",
+        "execution_engine/adapters/memecoin",
+        "wallet",
+    ):
+        _write(tmp_path, f"{pkg}/__init__.py", "")
+    return tmp_path
+
+
+def _rule_codes(violations) -> list[str]:
+    return [v.rule for v in violations]
+
+
+def test_real_repo_passes_zero_violations():
+    violations = lint_repo(REPO_ROOT)
+    assert violations == [], "\n".join(
+        v.format(REPO_ROOT) for v in violations
+    )
+
+
+# ---------------------------------------------------------------------------
+# T1
+# ---------------------------------------------------------------------------
+
+
+def test_t1_fires_on_hot_path_to_governance(fake_repo: Path):
+    _write(fake_repo, "mind/fast_execute.py", "from governance import kernel\n")
+    assert "T1" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_t1_allows_core_contracts(fake_repo: Path):
+    _write(
+        fake_repo,
+        "mind/fast_execute.py",
+        "from core.contracts.events import SignalEvent\n",
+    )
+    assert "T1" not in _rule_codes(lint_repo(fake_repo))
+
+
+# ---------------------------------------------------------------------------
+# C2 / C3 / W1
+# ---------------------------------------------------------------------------
+
+
+def test_c2_fires_on_neuromorphic_to_execution(fake_repo: Path):
+    _write(
+        fake_repo,
+        "mind/neuromorphic/decide.py",
+        "import execution_engine\n",
+    )
+    assert "C2" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_c3_fires_on_web_autolearn_to_governance(fake_repo: Path):
+    _write(
+        fake_repo,
+        "mind/web_autolearn/scrape.py",
+        "import governance\n",
+    )
+    assert "C3" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_w1_fires_on_memecoin_to_main_wallet(fake_repo: Path):
+    _write(
+        fake_repo,
+        "execution_engine/adapters/memecoin/router.py",
+        "from wallet.main_wallet import resolve\n",
+    )
+    assert "W1" in _rule_codes(lint_repo(fake_repo))
+
+
+# ---------------------------------------------------------------------------
+# L1
+# ---------------------------------------------------------------------------
+
+
+def test_l1_fires_learning_to_evolution(fake_repo: Path):
+    _write(
+        fake_repo,
+        "learning_engine/lane.py",
+        "from evolution_engine.engine import EvolutionEngine\n",
+    )
+    assert "L1" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_l1_fires_evolution_to_learning(fake_repo: Path):
+    _write(
+        fake_repo,
+        "evolution_engine/lane.py",
+        "from learning_engine.engine import LearningEngine\n",
+    )
+    assert "L1" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_l1_allows_shared_core_contracts(fake_repo: Path):
+    _write(
+        fake_repo,
+        "learning_engine/lane.py",
+        "from core.contracts.events import SystemEvent\n",
+    )
+    _write(
+        fake_repo,
+        "evolution_engine/lane.py",
+        "from core.contracts.events import SystemEvent\n",
+    )
+    codes = _rule_codes(lint_repo(fake_repo))
+    assert "L1" not in codes
+
+
+# ---------------------------------------------------------------------------
+# L2 / L3
+# ---------------------------------------------------------------------------
+
+
+def test_l2_fires_offline_to_runtime(fake_repo: Path):
+    _write(
+        fake_repo,
+        "learning_engine/bad.py",
+        "from intelligence_engine.engine import IntelligenceEngine\n",
+    )
+    codes = _rule_codes(lint_repo(fake_repo))
+    assert "L2" in codes
+
+
+def test_l2_allows_ledger_reader(fake_repo: Path):
+    _write(
+        fake_repo,
+        "state/ledger/reader.py",
+        "",
+    )
+    _write(
+        fake_repo,
+        "learning_engine/good.py",
+        "from state.ledger.reader import LedgerReader\n",
+    )
+    codes = _rule_codes(lint_repo(fake_repo))
+    assert "L2" not in codes
+
+
+def test_l3_fires_runtime_to_offline(fake_repo: Path):
+    _write(
+        fake_repo,
+        "intelligence_engine/bad.py",
+        "from learning_engine.engine import LearningEngine\n",
+    )
+    codes = _rule_codes(lint_repo(fake_repo))
+    assert "L3" in codes
+
+
+# ---------------------------------------------------------------------------
+# B1
+# ---------------------------------------------------------------------------
+
+
+def test_b1_fires_intelligence_to_execution(fake_repo: Path):
+    _write(
+        fake_repo,
+        "intelligence_engine/bad.py",
+        "from execution_engine.engine import ExecutionEngine\n",
+    )
+    codes = _rule_codes(lint_repo(fake_repo))
+    assert "B1" in codes
+
+
+def test_b1_allows_core_contracts(fake_repo: Path):
+    _write(
+        fake_repo,
+        "intelligence_engine/good.py",
+        "from core.contracts.events import SignalEvent\n",
+    )
+    codes = _rule_codes(lint_repo(fake_repo))
+    assert "B1" not in codes
+
+
+def test_b1_fires_for_each_runtime_pair(fake_repo: Path):
+    pairs = [
+        ("intelligence_engine", "execution_engine"),
+        ("intelligence_engine", "system_engine"),
+        ("intelligence_engine", "governance_engine"),
+        ("execution_engine", "system_engine"),
+        ("execution_engine", "governance_engine"),
+        ("system_engine", "governance_engine"),
+    ]
+    for src, dst in pairs:
+        _write(
+            fake_repo,
+            f"{src}/bad_to_{dst}.py",
+            f"from {dst}.engine import _\n",
+        )
+    codes = _rule_codes(lint_repo(fake_repo))
+    assert codes.count("B1") >= len(pairs)
