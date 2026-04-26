@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DIX VISION — Phase E1 Harness</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>DIX VISION <span class="muted">— Phase E1 Harness</span></h1>
+      <div class="muted small">
+        4-event canonical bus · paper broker · INV-08 / INV-15 / TEST-01
+      </div>
+    </header>
+
+    <main>
+      <section class="card" id="card-health">
+        <header>
+          <h2>Engine health</h2>
+          <button id="refresh-health" type="button">refresh</button>
+        </header>
+        <div id="health-grid" class="grid"></div>
+      </section>
+
+      <section class="card" id="card-tick">
+        <header><h2>Send market tick</h2></header>
+        <form id="form-tick">
+          <label>symbol <input name="symbol" value="BTCUSDT" required /></label>
+          <label>bid <input name="bid" type="number" step="any" value="49990" required /></label>
+          <label>ask <input name="ask" type="number" step="any" value="50010" required /></label>
+          <label>last <input name="last" type="number" step="any" value="50000" required /></label>
+          <button type="submit">post tick</button>
+        </form>
+        <pre id="tick-result" class="muted small"></pre>
+      </section>
+
+      <section class="card" id="card-signal">
+        <header><h2>Submit signal</h2></header>
+        <form id="form-signal">
+          <label>symbol <input name="symbol" value="BTCUSDT" required /></label>
+          <label>side
+            <select name="side">
+              <option>BUY</option>
+              <option>SELL</option>
+              <option>HOLD</option>
+            </select>
+          </label>
+          <label>confidence
+            <input name="confidence" type="number" step="0.01" min="0" max="1" value="0.7" required />
+          </label>
+          <label>qty (opt.)
+            <input name="qty" type="number" step="any" min="0" placeholder="default 1.0" />
+          </label>
+          <button type="submit">submit signal</button>
+        </form>
+        <pre id="signal-result" class="muted small"></pre>
+      </section>
+
+      <section class="card" id="card-events">
+        <header>
+          <h2>Recent events</h2>
+          <label class="inline">
+            <input type="checkbox" id="auto-refresh" checked /> auto refresh
+          </label>
+        </header>
+        <table id="events-table">
+          <thead>
+            <tr>
+              <th>seq</th>
+              <th>source</th>
+              <th>kind</th>
+              <th>symbol</th>
+              <th>details</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

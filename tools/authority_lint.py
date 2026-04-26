@@ -173,7 +173,11 @@ def _iter_python_files(repo_root: Path) -> Iterable[Path]:
         "target",
     }
     for p in repo_root.rglob("*.py"):
-        if any(part in skip_dirs for part in p.parts):
+        try:
+            rel_parts = p.relative_to(repo_root).parts
+        except ValueError:
+            rel_parts = p.parts
+        if any(part in skip_dirs for part in rel_parts):
             continue
         yield p
 
