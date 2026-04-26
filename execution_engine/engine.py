@@ -67,6 +67,24 @@ class ExecutionEngine(RuntimeEngine):
         if not isinstance(event, SignalEvent):
             return ()
 
+        # Phase E2: SHADOW signals from intelligence_engine are observed
+        # but never reach a broker. Returning a REJECTED ExecutionEvent
+        # keeps the audit trail visible without producing a live trade.
+        if event.meta.get("shadow") == "true":
+            return (
+                ExecutionEvent(
+                    ts_ns=event.ts_ns,
+                    symbol=event.symbol,
+                    side=event.side,
+                    qty=0.0,
+                    price=0.0,
+                    status=ExecutionStatus.REJECTED,
+                    venue=self._adapter.name,
+                    order_id="",
+                    meta={"reason": "shadow signal"},
+                ),
+            )
+
         mark = self._marks.get(event.symbol, 0.0)
         if mark <= 0.0:
             return (

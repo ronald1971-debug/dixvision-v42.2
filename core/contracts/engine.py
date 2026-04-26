@@ -25,7 +25,8 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
-from core.contracts.events import Event
+from core.contracts.events import Event, SignalEvent
+from core.contracts.market import MarketTick
 
 
 class EngineTier(StrEnum):
@@ -88,6 +89,36 @@ class Plugin(Protocol):
 
     def process(self, event: Event) -> Sequence[Event]:
         """Handle one event, return zero or more events to emit downstream."""
+        ...
+
+    def check_self(self) -> HealthStatus:
+        """Self-test; called by the host engine's ``check_self()``."""
+        ...
+
+
+@runtime_checkable
+class MicrostructurePlugin(Protocol):
+    """Phase E2 — first concrete plugin shape: tick-driven signal generator.
+
+    Microstructure plugins live under
+    ``intelligence_engine.plugin_slots["microstructure"]`` and consume
+    :class:`MarketTick` *inputs* (NOT bus events — INV-08). They emit zero
+    or more :class:`SignalEvent` instances per tick. Determinism contract
+    (INV-15 / TEST-01): output must be a pure function of the tick stream
+    and the plugin's own state — no clocks, no randomness, no IO.
+
+    A plugin in :attr:`PluginLifecycle.SHADOW` still emits signals, but the
+    host engine tags them with ``meta["shadow"] = "true"`` so the
+    Execution Engine rejects them without contacting any broker
+    (Phase E2 exit: "Shadow mode wired (no live trades)").
+    """
+
+    name: str
+    version: str
+    lifecycle: PluginLifecycle
+
+    def on_tick(self, tick: MarketTick) -> Sequence[SignalEvent]:
+        """Map one tick to zero-or-more deterministic signals."""
         ...
 
     def check_self(self) -> HealthStatus:
@@ -173,6 +204,7 @@ __all__ = [
     "EngineTier",
     "HealthState",
     "HealthStatus",
+    "MicrostructurePlugin",
     "OfflineEngine",
     "Plugin",
     "PluginLifecycle",

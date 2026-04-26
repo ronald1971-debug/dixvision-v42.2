@@ -45,6 +45,7 @@ from evolution_engine.engine import EvolutionEngine
 from execution_engine.engine import ExecutionEngine
 from governance_engine.engine import GovernanceEngine
 from intelligence_engine.engine import IntelligenceEngine
+from intelligence_engine.plugins import MicrostructureV1
 from learning_engine.engine import LearningEngine
 from system_engine.engine import SystemEngine
 
@@ -63,7 +64,9 @@ class _State:
 
     def __init__(self) -> None:
         self.lock = threading.Lock()
-        self.intelligence = IntelligenceEngine()
+        self.intelligence = IntelligenceEngine(
+            microstructure_plugins=(MicrostructureV1(),),
+        )
         self.execution = ExecutionEngine()
         self.system = SystemEngine()
         self.governance = GovernanceEngine()
@@ -209,6 +212,8 @@ def post_tick(body: TickIn) -> dict[str, Any]:
         volume=body.volume,
         venue=body.venue,
     )
+    signals_out: list[dict[str, Any]] = []
+    executions_out: list[dict[str, Any]] = []
     with STATE.lock:
         STATE.execution.on_market(tick)
         STATE.events.appendleft(
@@ -224,7 +229,20 @@ def post_tick(body: TickIn) -> dict[str, Any]:
             }
         )
         STATE.event_seq += 1
-    return {"accepted": True, "tick": _event_to_dict_tick(tick)}
+        # Phase E2: drive intelligence plugins on every tick. Shadow
+        # signals are tagged by the engine; Execution rejects them.
+        for sig in STATE.intelligence.on_market(tick):
+            STATE.record("intelligence", sig)
+            signals_out.append(_event_to_dict(sig))
+            for downstream in STATE.execution.process(sig):
+                STATE.record("execution", downstream)
+                executions_out.append(_event_to_dict(downstream))
+    return {
+        "accepted": True,
+        "tick": _event_to_dict_tick(tick),
+        "signals": signals_out,
+        "executions": executions_out,
+    }
 
 
 @app.post("/api/signal")
