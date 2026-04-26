@@ -279,11 +279,22 @@ def _event_to_dict_tick(tick: MarketTick) -> dict[str, Any]:
 
 
 _TS_COUNTER = {"v": 0}
+_TS_LOCK = threading.Lock()
 
 
 def _next_ts() -> int:
-    _TS_COUNTER["v"] += 1
-    return _TS_COUNTER["v"]
+    """Monotonic timestamp counter — must be atomic across threads.
+
+    FastAPI runs sync endpoint handlers in a thread pool, so concurrent
+    ``POST /api/tick`` / ``POST /api/signal`` requests would otherwise
+    race on the read-modify-write of ``_TS_COUNTER`` and emit duplicate
+    ``ts_ns`` values, violating the monotonic-timestamp contract (INV-15
+    / TimeAuthority T0-04). The dedicated lock keeps this function
+    independently thread-safe regardless of where it is called from.
+    """
+    with _TS_LOCK:
+        _TS_COUNTER["v"] += 1
+        return _TS_COUNTER["v"]
 
 
 __all__: Sequence[str] = ("app", "STATE")
