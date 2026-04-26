@@ -25,7 +25,14 @@ plugins:
 
   execution_engine:
     hot_path: []
-    adapters: []
+    adapters:
+      - name: paper
+        version: "0.1.0"
+        status: ACTIVE   # Phase E1 default; deterministic, in-process
+        config:
+          slippage_bps: 0.0
+          default_qty: 1.0
+        depends_on: []
     protections: []
 
   system_engine:
