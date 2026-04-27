@@ -49,7 +49,50 @@ plugins:
     state: []
 
   governance_engine:
-    control_plane: []
+    # GOV-CP-01..07 (Build Compiler Spec §0; Phase 1).
+    # The Control Plane is wired in code (governance_engine/control_plane/);
+    # this registry block records the canonical module set + spec ids so
+    # registry-driven introspection (DASH-08 governance panel, audit replay)
+    # can enumerate them without importing governance_engine directly.
+    control_plane:
+      - name: policy_engine
+        spec_id: GOV-CP-01
+        version: "1.0.0"
+        status: ACTIVE
+        depends_on: []
+      - name: risk_evaluator
+        spec_id: GOV-CP-02
+        version: "1.0.0"
+        status: ACTIVE
+        depends_on: [policy_engine]
+      - name: state_transition_manager
+        spec_id: GOV-CP-03
+        version: "1.0.0"
+        status: ACTIVE
+        depends_on: [policy_engine, ledger_authority_writer]
+      - name: event_classifier
+        spec_id: GOV-CP-04
+        version: "1.0.0"
+        status: ACTIVE
+        depends_on: []
+      - name: ledger_authority_writer
+        spec_id: GOV-CP-05
+        version: "1.0.0"
+        status: ACTIVE
+        depends_on: []
+      - name: compliance_validator
+        spec_id: GOV-CP-06
+        version: "1.0.0"
+        status: ACTIVE
+        depends_on: []
+      - name: operator_interface_bridge
+        spec_id: GOV-CP-07
+        version: "1.0.0"
+        status: ACTIVE
+        depends_on:
+          - policy_engine
+          - state_transition_manager
+          - ledger_authority_writer
     services: []
     plugin_lifecycle: []
 
