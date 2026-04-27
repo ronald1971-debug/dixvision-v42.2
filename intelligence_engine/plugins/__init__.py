@@ -2,7 +2,10 @@
 
 Concrete plugins land here as the system grows; Phase E2 introduces the
 first one — a deterministic order-book microstructure scorer
-(``microstructure.MicrostructureV1``) under the ``microstructure`` slot.
+(``microstructure.microstructure_v1.MicrostructureV1``) under the
+``microstructure`` slot. The slot is a package so new versions
+(``microstructure_v2.py`` …) can land alongside without churning
+imports — see ``docs/directory_tree.md``.
 """
 
 from intelligence_engine.plugins.microstructure import MicrostructureV1
