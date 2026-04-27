@@ -140,6 +140,14 @@ def test_venues_listed_per_domain():
     assert router.venues(TradingDomain.MEMECOIN) == ("paper",)
 
 
+def test_venues_listed_when_constructed_with_plain_str_keys():
+    """Constructor accepts plain str domain keys; venues() must still find them."""
+    a = _StubAdapter("paper")
+    router = AdapterRouter(adapters={(TradingDomain.NORMAL, "paper"): a})
+    assert router.venues(TradingDomain.NORMAL) == ("paper",)
+    assert router.adapter_for(_signal(domain="NORMAL", venue="paper")) is a
+
+
 def test_venue_argument_overrides_meta():
     router = AdapterRouter()
     a = _StubAdapter("paper")

@@ -78,7 +78,7 @@ class AdapterRouter:
 
     def venues(self, domain: TradingDomain) -> tuple[str, ...]:
         return tuple(
-            sorted(v for (d, v) in self._adapters if d is domain)
+            sorted(v for (d, v) in self._adapters if d == domain)
         )
 
     def __len__(self) -> int:

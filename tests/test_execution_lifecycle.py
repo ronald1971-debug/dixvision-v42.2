@@ -313,6 +313,21 @@ def test_fill_handler_unknown_order_raises():
         handler.apply(FillEvent(ts_ns=1, order_id="ghost", qty=1.0, price=1.0))
 
 
+def test_fill_handler_register_failure_does_not_create_book_entry():
+    """If FSM rejects the transition, no book entry must remain."""
+    fsm = OrderStateMachine()
+    handler = FillHandler(fsm)
+    # Order was never opened on the FSM.
+    with pytest.raises(KeyError):
+        handler.register(order_id="ghost", target_qty=10.0, ts_ns=1)
+    assert handler.state("ghost") is None
+    # Re-trying after opening the order must succeed cleanly.
+    fsm.open(order_id="ghost", ts_ns=2)
+    state = handler.register(order_id="ghost", target_qty=10.0, ts_ns=3)
+    assert state.target_qty == 10.0
+    assert fsm.get("ghost").state is OrderState.PENDING
+
+
 def test_fill_handler_zero_qty_or_price_raises():
     fsm = OrderStateMachine()
     fsm.open(order_id="o1", ts_ns=1)

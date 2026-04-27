@@ -91,17 +91,19 @@ class FillHandler:
             raise ValueError("target_qty must be > 0")
         if order_id in self._book:
             raise ValueError(f"already registered: {order_id}")
-        self._book[order_id] = OrderFillState(
-            order_id=order_id,
-            target_qty=target_qty,
-        )
+        # Drive the FSM first; if it raises (unknown order, illegal edge),
+        # the book entry must not exist — otherwise a retry would fail
+        # with "already registered" and apply() would operate against an
+        # order whose state is still NEW.
         self._fsm.transition(
             order_id=order_id,
             new_state=OrderState.PENDING,
             ts_ns=ts_ns,
             reason="submitted",
         )
-        return self._book[order_id]
+        state = OrderFillState(order_id=order_id, target_qty=target_qty)
+        self._book[order_id] = state
+        return state
 
     def apply(self, fill: FillEvent) -> OrderFillState:
         """Record a fill and drive the FSM to the appropriate state."""
