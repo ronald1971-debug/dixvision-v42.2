@@ -89,7 +89,7 @@ class ConflictResolver:
             # HOLD votes do not count toward either side.
 
         net = score[Side.BUY] - score[Side.SELL]
-        if abs(net) < self._min_net_score:
+        if abs(net) <= self._min_net_score:
             winning_side = Side.HOLD
             confidence = 0.0
         elif net > 0:
