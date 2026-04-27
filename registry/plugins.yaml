@@ -14,6 +14,10 @@
 
 plugins:
   intelligence_engine:
+    # Phase 3 (Build Compiler Spec §2): Indira market engine —
+    # signal pipeline + strategy lifecycle engine + learning interface.
+    # Microstructure v1 was wired in Phase E2; the strategy_runtime
+    # modules below are the new building blocks per Phase 3.
     microstructure:
       - name: microstructure_v1
         version: "0.1.0"
@@ -22,6 +26,50 @@ plugins:
           tolerance_bps: 2.0
           confidence_scale_bps: 50.0
           min_confidence: 0.0
+        depends_on: []
+    signal_pipeline:
+      - name: signal_pipeline
+        spec_id: IND-SP-01
+        version: "1.0.0"
+        status: ACTIVE
+        depends_on: [strategy_state_machine, regime_detector,
+                     strategy_scheduler, strategy_orchestrator,
+                     conflict_resolver]
+    strategy_runtime:
+      - name: strategy_state_machine
+        spec_id: IND-SLM-01
+        version: "1.0.0"
+        status: ACTIVE   # PROPOSED → SHADOW → CANARY → LIVE → RETIRED + FAILED
+        depends_on: []
+      - name: regime_detector
+        spec_id: IND-REG-01
+        version: "1.0.0"
+        status: ACTIVE
+        config:
+          window: 32
+          trend_threshold_bps: 5.0
+          volatility_threshold_bps: 25.0
+        depends_on: []
+      - name: strategy_scheduler
+        spec_id: IND-SCH-01
+        version: "1.0.0"
+        status: ACTIVE   # bar-aligned cadence
+        depends_on: []
+      - name: strategy_orchestrator
+        spec_id: IND-ORC-01
+        version: "1.0.0"
+        status: ACTIVE
+        depends_on: [strategy_state_machine]
+      - name: conflict_resolver
+        spec_id: IND-CFR-01
+        version: "1.0.0"
+        status: ACTIVE   # confidence-weighted vote per symbol
+        depends_on: []
+    learning_interface:
+      - name: learning_interface
+        spec_id: IND-LI-01
+        version: "1.0.0"
+        status: ACTIVE   # Indira → Learning bridge (no cross-engine import)
         depends_on: []
     alpha: []
     alt_data: []
