@@ -32,7 +32,17 @@ plugins:
     agent: []
 
   execution_engine:
-    hot_path: []
+    # Phase 2 (Build Compiler Spec §2): execution core — adapters, order
+    # lifecycle FSM, hot-path engine, execution monitor.
+    hot_path:
+      - name: fast_executor
+        spec_id: EXEC-11
+        version: "1.0.0"
+        status: ACTIVE   # T1-pure; gated against RiskSnapshot
+        config:
+          max_staleness_ns: 2000000000
+          default_qty: 1.0
+        depends_on: []
     adapters:
       - name: paper
         version: "0.1.0"
@@ -41,7 +51,43 @@ plugins:
           slippage_bps: 0.0
           default_qty: 1.0
         depends_on: []
-    protections: []
+      - name: adapter_router
+        spec_id: EXEC-01
+        version: "1.0.0"
+        status: ACTIVE
+        depends_on: []
+    lifecycle:
+      - name: order_state_machine
+        spec_id: EXEC-LC-01
+        version: "1.0.0"
+        status: ACTIVE
+        depends_on: []
+      - name: fill_handler
+        spec_id: EXEC-LC-02
+        version: "1.0.0"
+        status: ACTIVE
+        depends_on: [order_state_machine]
+      - name: partial_fill_resolver
+        spec_id: EXEC-LC-03
+        version: "1.0.0"
+        status: ACTIVE
+        depends_on: [fill_handler]
+      - name: retry_logic
+        spec_id: EXEC-LC-04
+        version: "1.0.0"
+        status: ACTIVE
+        depends_on: []
+      - name: sl_tp_manager
+        spec_id: EXEC-LC-05
+        version: "1.0.0"
+        status: ACTIVE
+        depends_on: []
+    protections:
+      - name: runtime_monitor
+        spec_id: EXEC-08
+        version: "1.0.0"
+        status: ACTIVE   # rolling-window health classifier
+        depends_on: []
 
   system_engine:
     hazard_sensors: []
