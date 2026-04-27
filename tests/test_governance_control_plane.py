@@ -14,8 +14,12 @@ from __future__ import annotations
 import pytest
 
 from core.contracts.events import (
+    ExecutionEvent,
+    ExecutionStatus,
     HazardEvent,
     HazardSeverity,
+    Side,
+    SignalEvent,
     SystemEvent,
     SystemEventKind,
 )
@@ -601,6 +605,41 @@ def test_engine_low_hazard_does_not_lock():
     assert eng.current_mode() is SystemMode.SAFE
     rows = [r for r in eng.ledger.read() if r.kind == "HAZARD_AUDIT"]
     assert len(rows) == 1
+
+
+def test_engine_signal_event_writes_audit_row():
+    eng = _build_engine()
+    eng.process(
+        SignalEvent(
+            ts_ns=42,
+            symbol="BTC-USD",
+            side=Side.BUY,
+            confidence=0.7,
+            plugin_chain=("microstructure_v1",),
+        )
+    )
+    rows = [r for r in eng.ledger.read() if r.kind == "SIGNAL_AUDIT"]
+    assert len(rows) == 1
+    assert rows[0].ts_ns == 42
+
+
+def test_engine_execution_event_writes_audit_row():
+    eng = _build_engine()
+    eng.process(
+        ExecutionEvent(
+            ts_ns=43,
+            symbol="BTC-USD",
+            side=Side.BUY,
+            qty=1.0,
+            price=50_000.0,
+            status=ExecutionStatus.FILLED,
+            venue="paper",
+            order_id="o1",
+        )
+    )
+    rows = [r for r in eng.ledger.read() if r.kind == "EXECUTION_AUDIT"]
+    assert len(rows) == 1
+    assert rows[0].ts_ns == 43
 
 
 def test_engine_check_self_reports_cp_modules():

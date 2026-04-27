@@ -100,16 +100,23 @@ class GovernanceEngine(RuntimeEngine):
             self._handle_system(event)  # type: ignore[arg-type]
             return ()
 
-        # SIGNAL / EXECUTION events are audited, but Governance does not
-        # currently produce a downstream bus event for them — those gate
-        # decisions are made by Execution against the FastRiskCache;
-        # Governance is the slow-path owner of the limits, not the
-        # per-tick gate. Audit row keeps the event chain replayable.
+        # SIGNAL / EXECUTION events are audited but never produce a
+        # downstream bus event from Governance — gate decisions are
+        # made by Execution against the FastRiskCache; Governance is
+        # the slow-path owner of the limits, not the per-tick gate.
+        # The classifier routes both event kinds through LEDGER, so
+        # an audit row preserves replay determinism (INV-15).
         if event.kind is EventKind.EXECUTION:
             self.ledger.append(
                 ts_ns=event.ts_ns,
                 kind="EXECUTION_AUDIT",
                 payload={"event": "EXECUTION"},
+            )
+        elif event.kind is EventKind.SIGNAL:
+            self.ledger.append(
+                ts_ns=event.ts_ns,
+                kind="SIGNAL_AUDIT",
+                payload={"event": "SIGNAL"},
             )
         return ()
 
