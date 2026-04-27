@@ -1,278 +1,470 @@
-# DIX v42.2 — Canonical Directory Tree (System Reference)
+# DIX v42.2 — Canonical Directory Tree (System Reference, v2)
 
-This file is the architectural source of truth for the DIX v42.2 layout.
-It is **descriptive of the steady-state shape**, not a refactor instruction
-for in-flight phases. Engine directories currently live at the repository
-root (e.g. `intelligence_engine/`, `execution_engine/`, …) rather than
-under an `engines/` umbrella; both layouts represent the same ENGINE
-boundary contracts (`core/contracts/engine.py`, lint rules `B1`/`L1`/
-`L2`/`L3`). The umbrella is a documentation convention.
+This file is the architectural source of truth for the DIX v42.2 layout. It
+**describes the steady-state shape** of the repository — every directory
+and module that is canonical under the v42.2 specification, regardless of
+whether it is implemented yet.
+
+This is **v2 of the canonical tree**, integrating:
+
+1. `manifest.md §A` (engine-led layout) — the binding base
+2. The 22 addon directives (Coherence Layer, Mode Engine, Drift Oracle,
+   Causal Graph, Meta-Adaptation Bridge, Dashboard OS, hard 3-domain
+   isolation, drift killers, plugin budgets, dual-speed system, …)
+3. The 10 institutional-grade additions (A–J): Portfolio Brain,
+   Strategy Orchestrator, Execution Lifecycle FSM, Market Data
+   Normalizer, Simulation Engine, Real-Time Risk Engine, Performance &
+   Alpha-Decay Tracking, Data Versioning, Strategy Registry split,
+   Operator Audit
 
 References:
 
-- `manifest.md` — invariants, ENGINE model, GOV-CP-01..07
-- `build_plan.md` — phase-by-phase delivery plan (E0..E9)
+- `manifest.md` — invariants, ENGINE-01..06 model, GOV-CP-01..07,
+  PLUGIN-ACT-01..07, authority lint rules
+- `build_plan.md` — phase-by-phase delivery plan (E0..E9 + v2 steps 8..13)
 - `docs/total_recall_index.md` — IND-L01..L31, DYN-L01..L24, HAZ-01..12,
   CORE-01..31, EXEC-01..14, NEUR-01..03, SAFE-01..27, DASH-01..32
 - `MAPPING.md` — layer-id → plugin-slot mapping
 
-```
-dix_vision/
+Annotation legend:
+
+- **[EXISTS]** — present on `main` today
+- **[NEW v1]** — added by the 22 addons (System Coherence Layer,
+  Dashboard OS, hard 3-domain isolation, drift killers)
+- **[NEW v2-A..J]** — added by the 10 institutional-grade additions
+- otherwise — canonical per `manifest.md §A`, not yet implemented
+
+```text
+dixvision-v42.2/
+├── README.md                                                  # INFRA-05  [EXISTS]
+├── pyproject.toml                                             # INFRA-01  [EXISTS]
+├── VERSION                                                    # INFRA-04
+├── .github/workflows/
+│   ├── ci.yml                                                 # CI-01     [EXISTS]
+│   ├── release.yml                                            # CI-02
+│   ├── rust.yml                                               # CI-03 (deferred)
+│   └── sandbox.yml                                            # CI-04, TEST-17
 │
-├── core/                                  # CORE-01..31 (foundation)
-│   ├── bootstrap_kernel.py                # CORE-02
-│   ├── registry.py                        # CORE-03
-│   ├── registry_lock.py
-│   ├── time_authority.py                  # CORE-08 (T0-04)
-│   ├── fast_risk_cache.py                 # CORE-06 (T0-01)
-│   ├── translation/                       # CORE-15 (SAFE-25)
-│   │   ├── translator.py
-│   │   ├── schemas.py
-│   │   └── validator.py
-│   ├── contracts/                         # Protocol layer (INV-08)
-│   │   ├── engine.py
-│   │   ├── plugin.py
-│   │   ├── event.py
-│   │   ├── risk.py
-│   │   ├── governance.py
-│   │   └── execution.py
-│   ├── config/                            # DYN-CFG-01..04
-│   │   ├── manager.py
-│   │   ├── watcher.py
-│   │   ├── versioning.py
-│   │   └── fallback.py
-│   └── safety/
-│       ├── kill_switch.py                 # SAFE-01 / SAFE-09
-│       ├── compute_budget.py
-│       └── network_guard.py               # SAFE-24
-│
-├── contracts/                             # Protobuf (PR-14 LOCKED)
-│   ├── events.proto                       # EVT-01..04
+├── contracts/                                                 # PR-14, INV-08
+│   ├── events.proto                                           # EVT-01..04  [EXISTS]
 │   ├── execution.proto
 │   ├── governance.proto
+│   ├── ledger.proto
+│   ├── market.proto
 │   └── system.proto
 │
-├── engines/                               # ENGINE MODEL (binding)
-│
-│   ├── intelligence_engine/               # ENGINE-01 (Indira)
-│   │   ├── engine.py
-│   │   ├── process.py
-│   │   ├── plugin_slots/
-│   │   │   ├── microstructure/
-│   │   │   ├── alpha/
-│   │   │   ├── alt_data/
-│   │   │   ├── memory/
-│   │   │   ├── multi_timeframe/
-│   │   │   ├── transfer/
-│   │   │   ├── cognition/
-│   │   │   └── agents/
-│   │   ├── plugins/                       # IND-L01..L31
-│   │   │   ├── market_microstructure.py
-│   │   │   ├── rag_engine.py
-│   │   │   ├── ral_engine.py
-│   │   │   ├── finmem_memory.py
-│   │   │   ├── alpha_agent_pool.py
-│   │   │   ├── multi_timeframe.py
-│   │   │   ├── drl_execution.py
-│   │   │   └── ...
-│   │   └── intent_producer.py             # CORE-27
-│
-│   ├── execution_engine/                  # ENGINE-02
-│   │   ├── engine.py
-│   │   ├── fast_execute.py                # T1-lint-pure
-│   │   ├── adapter_router.py              # EXEC-01
-│   │   ├── adapters/                      # EXEC-02
-│   │   │   ├── binance.py
-│   │   │   ├── coinbase.py
-│   │   │   ├── kraken.py
-│   │   │   └── memecoin/                  # isolated
-│   │   ├── protections/
-│   │   │   ├── circuit_breaker.py         # SAFE-23
-│   │   │   └── slippage_guard.py
-│   │   └── feedback/
-│   │       ├── slippage.py
-│   │       ├── latency.py
-│   │       └── fill_rate.py
-│
-│   ├── learning_engine/                   # ENGINE-03 (offline)
-│   │   ├── engine.py
-│   │   ├── evaluator.py
-│   │   ├── trainer.py
-│   │   ├── distillation.py
-│   │   ├── experience/
-│   │   └── emit_update_event.py
-│
-│   ├── system_engine/                     # ENGINE-04 (Dyon)
-│   │   ├── engine.py
-│   │   ├── hazard_sensors/                # HAZ-01..12
-│   │   │   ├── ws_timeout.py
-│   │   │   ├── exchange_unreachable.py
-│   │   │   ├── stale_data.py
-│   │   │   ├── memory_overflow.py
-│   │   │   └── clock_drift.py
-│   │   ├── health_monitors/
-│   │   │   ├── heartbeat.py
-│   │   │   ├── liveness.py
-│   │   │   └── watchdog.py
-│   │   ├── anomaly_detection/             # NEUR-02
-│   │   │   └── neuromorphic_detector.py
-│   │   └── state/
-│   │       ├── system_state.py
-│   │       └── drift_monitor.py           # CORE-18
-│
-│   ├── evolution_engine/                  # ENGINE-05
-│   │   ├── engine.py
-│   │   ├── skill_graph/
-│   │   ├── patch_pipeline/
-│   │   │   ├── sandbox.py
-│   │   │   ├── static_analysis.py
-│   │   │   ├── backtest.py
-│   │   │   ├── shadow.py
-│   │   │   ├── canary.py
-│   │   │   └── rollback.py
-│   │   └── emit_patch_event.py
-│
-│   └── governance_engine/                 # ENGINE-06 (AUTHORITY)
-│       ├── engine.py
-│       ├── control_plane/                 # GOV-CP-01..07
-│       │   ├── event_classifier.py        # CP-04
-│       │   ├── policy_engine.py           # CP-01
-│       │   ├── risk_evaluator.py          # CP-02
-│       │   ├── compliance_validator.py    # CP-06
-│       │   ├── state_transition.py        # CP-03
-│       │   ├── operator_bridge.py         # CP-07
-│       │   └── ledger_writer.py           # CP-05
-│       ├── modules/                       # GOV-G01..G18
-│       │   ├── constraint_loader.py
-│       │   ├── emergency_policy.py
-│       │   ├── trust_engine.py
-│       │   ├── patch_gate.py
-│       │   └── audit_replay.py
-│       └── fast_risk_updater.py
-│
-├── state/                                 # LEDGER + DBs
-│   ├── ledger/
-│   │   ├── append.py                      # LEDGER-01
-│   │   ├── hash_chain.py
-│   │   ├── indexer.py
-│   │   ├── snapshots.py                   # LEDGER-08
-│   │   └── reconstructor.py               # CORE-07
-│   ├── databases/                         # DB-01..26
-│   └── knowledge_store/                   # CORE-24
-│
-├── registry/                              # REG-01..14 (SOURCE OF TRUTH)
-│   ├── plugins.yaml
-│   ├── layers.yaml
-│   ├── risk.yaml
-│   ├── feature_flags.yaml
-│   ├── strategies.yaml
-│   └── enforcement_policies.yaml
-│
-├── cockpit/                               # COCKPIT SYSTEM
-│   ├── api/
-│   ├── websocket/
-│   ├── voices/
-│   │   ├── indira.py
-│   │   ├── dyon.py
-│   │   ├── governance.py
-│   │   └── devin.py
-│   └── reflection/
-│
-├── dashboard/                             # DASHBOARD OS
-│   ├── os_layer/
-│   │   ├── mode_manager.py                # MANUAL / SEMI / AUTO
-│   │   ├── session_controller.py
-│   │   ├── operator_gate.py               # INV-12 enforcement
-│   │   └── state_sync.py
+├── core/
+│   ├── __init__.py                                            # [EXISTS]
+│   ├── bootstrap_kernel.py                                    # CORE-02
+│   ├── registry.py                                            # CORE-03
+│   ├── secrets.py                                             # DEPLOY-11
+│   ├── contracts/                                             # CORE-04
+│   │   ├── __init__.py                                        # [EXISTS]
+│   │   ├── engine.py                                          # ENGINE-01..06 protocols  [EXISTS]
+│   │   ├── events.py                                          # EVT pydantic             [EXISTS]
+│   │   ├── market.py                                          # MarketTick               [EXISTS]
+│   │   ├── risk.py                                            # IRiskCache, IRiskConstraints
+│   │   ├── ledger.py                                          # ILedger
+│   │   ├── governance.py                                      # IGovernanceHazardSink, SystemMode enum
+│   │   └── execution.py                                       # IExecutionAdapter
 │   │
-│   ├── layouts/
-│   │   ├── default_4pane.py               # DASH-32
-│   │   ├── memecoin_tab.py                # DASH-27
-│   │   └── advanced_workspace.py
-│   │
-│   ├── widgets/
-│   │   ├── decision_trace.py              # DASH-04
-│   │   ├── risk_view.py                   # DASH-05
-│   │   ├── portfolio_view.py              # DASH-06
-│   │   ├── system_health.py               # DASH-07
-│   │   ├── governance_panel.py            # DASH-08
-│   │   ├── latency_monitor.py             # DASH-10
-│   │   └── plugin_manager.py
-│   │
-│   ├── trading_modes/
-│   │   ├── manual_mode.py
-│   │   ├── semi_auto_mode.py
-│   │   └── full_auto_mode.py
-│   │
-│   └── memecoin/                          # FULL ISOLATION
-│       ├── sniper.py                      # EXEC-12
-│       ├── copy_trader.py                 # EXEC-13
-│       ├── signal_trader.py               # EXEC-14
-│       ├── safety_stack.py                # SAFE-13
-│       └── burner_wallet.py               # INV-20
+│   └── coherence/                                             # [NEW v1] System Coherence Layer (addon §1)
+│       ├── __init__.py                                        # [NEW v1]
+│       ├── engine.py                                          # SCL-01 — global interpretation
+│       ├── causal_graph.py                                    # SCL-02 — trade→outcome→update edges
+│       ├── mode_engine.py                                     # SCL-03 — first-class FSM (MANUAL/SEMI/AUTO/SAFE_LOCKED)
+│       ├── drift_oracle.py                                    # SCL-04 — DRIFT_VECTOR computation
+│       └── meta_adaptation.py                                 # SCL-05 — Learning↔Evolution unifier
 │
-├── sensory/                               # NEURO + WEB AUTOLEARN
+├── immutable_core/                                            # SAFE-06, axioms
+│   ├── foundation.hash                                        # SAFE-06
+│   ├── kill_switch.py                                         # CORE-09
+│   ├── safety_axioms.lean                                     # S1..S10
+│   ├── hazard_axioms.lean                                     # H1..H10
+│   ├── neuromorphic_axioms.lean                               # N1..N8
+│   └── system_identity.py                                     # CORE-13
+│
+├── intelligence_engine/                                       # ENGINE-01 (Indira)  [EXISTS]
+│   ├── __init__.py                                            # [EXISTS]
+│   ├── engine.py                                              # [EXISTS]
+│   ├── charter/indira.py                                      # CORE-30
+│   ├── intent_producer.py                                     # CORE-27
+│   ├── plugins/
+│   │   ├── __init__.py                                        # [EXISTS]
+│   │   ├── microstructure/                                    # IND-L02, L22, L23, L24
+│   │   │   ├── __init__.py
+│   │   │   └── microstructure_v1.py                           # IND-L02 v1  [EXISTS as plugins/microstructure.py — moves in Step 2]
+│   │   ├── alpha/                                             # IND-L18, L15, L19
+│   │   ├── alt_data/                                          # IND-L08, L03
+│   │   ├── memory/                                            # IND-L21, L06, L26
+│   │   ├── multi_timeframe/                                   # IND-L20
+│   │   ├── transfer/                                          # IND-L27, L28
+│   │   ├── cognition/                                         # IND-L10, L11, L13
+│   │   └── agent/                                             # IND-L14, L16, L17
+│   ├── portfolio/                                             # [NEW v2-A] Portfolio Brain — coordinated portfolio
+│   │   ├── allocator.py                                       # capital allocation across strategies
+│   │   ├── exposure_manager.py                                # cross-asset exposure control
+│   │   ├── correlation_engine.py                              # correlation + clustering
+│   │   ├── risk_parity.py                                     # portfolio balancing
+│   │   └── capital_scheduler.py                               # capital rotation logic
+│   └── strategy_runtime/                                      # [NEW v2-B] Strategy Orchestrator
+│       ├── orchestrator.py                                    # activates strategies based on regime
+│       ├── scheduler.py                                       # when strategies run
+│       ├── regime_detector.py                                 # market regime classification
+│       └── conflict_resolver.py                               # resolves conflicting signals
+│
+├── execution_engine/                                          # ENGINE-02  [EXISTS]
+│   ├── __init__.py                                            # [EXISTS]
+│   ├── engine.py                                              # [EXISTS]
+│   ├── hot_path/
+│   │   ├── time_authority.py                                  # CORE-08, T0-04
+│   │   ├── fast_risk_cache.py                                 # CORE-06, T0-01
+│   │   └── fast_execute.py                                    # EXEC-11, T1-pure
+│   ├── adapters/
+│   │   ├── __init__.py                                        # [EXISTS]
+│   │   ├── base.py                                            # EXEC-02   [EXISTS]
+│   │   ├── paper.py                                           #          [EXISTS]
+│   │   ├── binance.py · coinbase.py · kraken.py
+│   │   ├── oanda.py · ig.py · ibkr.py · alpaca.py
+│   │   └── memecoin/                                          # EXEC-12..14 (separate-process candidate)
+│   ├── protections/
+│   │   ├── circuit_breaker.py                                 # T0-08, SAFE-23
+│   │   ├── runtime_monitor.py                                 # EXEC-08
+│   │   ├── reconciliation.py                                  # EXEC-10
+│   │   └── feedback.py                                        # EXEC-09
+│   ├── lifecycle/                                             # [NEW v2-C] Order State Machine — real broker realism
+│   │   ├── order_state_machine.py                             # FSM: NEW→PENDING→PARTIAL→FILLED→CLOSED→ERROR
+│   │   ├── fill_handler.py
+│   │   ├── sl_tp_manager.py                                   # stop-loss / take-profit lifecycle
+│   │   ├── retry_logic.py
+│   │   └── partial_fill_resolver.py
+│   ├── market_data/                                           # [NEW v2-D] Canonical market state (replay==live)
+│   │   ├── normalizer.py
+│   │   ├── aggregator.py
+│   │   ├── latency_tracker.py
+│   │   └── book_builder.py
+│   └── domains/                                               # [NEW v1] Hard 3-domain isolation
+│       ├── __init__.py
+│       ├── normal/                                            # standard Indira+execution
+│       ├── copy_trading/                                      # external wallet mirror, isolated
+│       └── memecoin/                                          # burner wallet, strict caps, isolated process
+│
+├── learning_engine/                                           # ENGINE-03 (offline)  [EXISTS]
+│   ├── __init__.py                                            # [EXISTS]
+│   ├── engine.py                                              # [EXISTS]
+│   ├── lanes/
+│   │   ├── self_learning_loop.py                              # IND-L04
+│   │   ├── ral.py                                             # IND-L07
+│   │   ├── policy_distillation.py                             # IND-L12
+│   │   ├── continual_distillation.py                          # DYN-L22
+│   │   ├── federated.py                                       # IND-L31, DYN-L24
+│   │   ├── experience_base.py                                 # IND-L30, DYN-L23
+│   │   └── patch_outcome_feedback.py                          # DYN-L02
+│   ├── update_emitter.py                                      # → GOV-G18
+│   └── performance_analysis/                                  # [NEW v2-G] Alpha decay + execution quality
+│       ├── alpha_decay.py
+│       ├── execution_quality.py
+│       ├── slippage_analysis.py
+│       ├── latency_impact.py
+│       └── pnl_attribution.py
+│
+├── system_engine/                                             # ENGINE-04 (Dyon)  [EXISTS]
+│   ├── __init__.py                                            # [EXISTS]
+│   ├── engine.py                                              # [EXISTS]
+│   ├── charter/dyon.py                                        # CORE-30
+│   ├── hazard_sensors/                                        # HAZ-01..12
+│   │   ├── sensor_array.py
+│   │   ├── ws_timeout.py · exchange_unreachable.py · stale_data.py
+│   │   ├── memory_overflow.py · clock_drift.py
+│   │   ├── neuromorphic_detector.py                           # NEUR-02 (rule-based stub v1)
+│   │   ├── market_anomaly.py
+│   │   └── system_anomaly.py
+│   ├── health_monitors/
+│   │   ├── heartbeat.py · liveness.py · watchdog.py
+│   │   ├── api_changelogs.py · github_trending.py · stack_overflow.py
+│   │   └── repo_discovery.py
+│   └── state/
+│       ├── system_state.py
+│       ├── drift_monitor.py                                   # CORE-18 (feeds core/coherence/drift_oracle.py)
+│       ├── homeostasis.py                                     # CORE-19
+│       ├── anomaly_detector.py                                # CORE-20
+│       ├── runtime_guardian.py                                # CORE-10
+│       └── kill_switch_runtime.py                             # T0-09
+│
+├── evolution_engine/                                          # ENGINE-05 (offline)  [EXISTS]
+│   ├── __init__.py                                            # [EXISTS]
+│   ├── engine.py                                              # [EXISTS]
+│   ├── intelligence_loops/                                    # DYN-L01, L03..L08, L19
+│   ├── skill_graph/                                           # DYN-L14..L17
+│   └── patch_pipeline/                                        # GOV-G18, EXEC-15, DYN-L18, L21
+│       ├── pipeline.py
+│       ├── sandbox.py · static_analysis.py · backtest.py
+│       ├── shadow.py · canary.py · rollback.py
+│       └── critique_loop.py
+│
+├── governance_engine/                                         # ENGINE-06  [EXISTS]
+│   ├── __init__.py                                            # [EXISTS]
+│   ├── engine.py                                              # [EXISTS]
+│   ├── charter/governance.py                                  # CORE-30
+│   ├── control_plane/                                         # GOV-CP-01..07
+│   │   ├── policy_engine.py                                   # GOV-CP-01
+│   │   ├── risk_evaluator.py                                  # GOV-CP-02
+│   │   ├── state_transition_manager.py                        # GOV-CP-03 (only writer of system mode)
+│   │   ├── event_classifier.py                                # GOV-CP-04
+│   │   ├── ledger_authority_writer.py                         # GOV-CP-05
+│   │   ├── compliance_validator.py                            # GOV-CP-06
+│   │   └── operator_interface_bridge.py                       # GOV-CP-07
+│   ├── services/                                              # adjacent (non-pipeline)
+│   │   ├── trust_engine.py                                    # GOV-G13
+│   │   ├── liveness_watchdog.py                               # GOV-G09
+│   │   ├── triple_window_dry_run.py                           # GOV-G15
+│   │   ├── overconfidence_guardrail.py                        # GOV-G17
+│   │   ├── audit_replay.py                                    # GOV-G17
+│   │   └── patch_pipeline.py                                  # GOV-G18
+│   ├── plugin_lifecycle/                                      # PLUGIN-ACT-01..07
+│   │   ├── registry_loader.py
+│   │   ├── activation_gate.py
+│   │   ├── lifecycle_emitter.py
+│   │   └── hot_reload_signal.py
+│   └── risk_engine/                                           # [NEW v2-F] Real-time risk evaluator (cache ≠ intelligence)
+│       ├── real_time_risk.py
+│       ├── position_limits.py
+│       ├── drawdown_guard.py
+│       ├── exposure_limits.py
+│       └── kill_conditions.py
+│
+├── sensory/                                                   # NEUR-01..04, WEBLEARN-01..10
 │   ├── neuromorphic/
-│   │   ├── indira_signal.py               # NEUR-01
-│   │   ├── dyon_anomaly.py                # NEUR-02
-│   │   └── governance_risk.py             # NEUR-03
+│   │   ├── indira_signal.py                                   # NEUR-01
+│   │   ├── dyon_anomaly.py                                    # NEUR-02
+│   │   └── governance_risk.py                                 # NEUR-03
 │   └── web_autolearn/
-│       ├── crawler.py
-│       ├── filter.py
-│       ├── curator.py
-│       └── approval_queue.py
+│       ├── crawler.py                                         # WEBLEARN-01 (Playwright)
+│       ├── ai_filter.py                                       # WEBLEARN-02
+│       ├── curator.py                                         # WEBLEARN-03
+│       ├── pending_buffer.py                                  # WEBLEARN-04, HITL-07
+│       └── seeds.yaml                                         # WEBLEARN-10
 │
-├── execution/                             # SHARED INFRA (non-engine logic)
-│   ├── async_bus.py                       # EXEC-05
-│   ├── event_emitter.py                   # EXEC-04
-│   ├── severity_classifier.py             # EXEC-06
-│   └── chaos_engine.py                    # EXEC-07
+├── state/
+│   ├── __init__.py                                            # [EXISTS]
+│   ├── ledger/
+│   │   ├── __init__.py                                        # [EXISTS]
+│   │   ├── reader.py                                          # LEDGER-stub  [EXISTS]
+│   │   ├── append.py · event_store.py                         # LEDGER-01
+│   │   ├── hot_store.py · cold_store.py                       # LEDGER-03..04
+│   │   ├── hash_chain.py · indexer.py                         # LEDGER-05
+│   │   ├── integrity.py · event_types.py                      # LEDGER-06..07
+│   │   ├── snapshots.py                                       # LEDGER-08
+│   │   └── reconstructor.py                                   # CORE-07
+│   ├── databases/                                             # DB-01..26
+│   ├── knowledge_store.py                                     # CORE-24, T0-11
+│   ├── memory_tensor/                                         # [NEW v1] Unified market+decision+system+outcome
+│   └── data_versioning/                                       # [NEW v2-H] Snapshot + feature versioning
+│       ├── market_snapshots.py
+│       ├── feature_store.py
+│       └── dataset_registry.py
+│
+├── registry/                                                  # REG-01..14, source of truth
+│   ├── plugins.yaml                                           # PLUGIN-ACT-01  [EXISTS]
+│   ├── engines.yaml                                           # REG-02         [EXISTS]
+│   ├── layers.yaml · risk.yaml · feature_flags.yaml
+│   ├── enforcement_policies.yaml · governance_ruleset.yaml · alerts.yaml
+│   ├── budgets.yaml                                           # [NEW v1] plugin budgets per engine
+│   └── strategies/                                            # [NEW v2-I] Strategy registry split
+│       ├── definitions.yaml
+│       ├── lifecycle.yaml
+│       └── performance.yaml
+│
+├── translation/                                               # CORE-15, SAFE-25
+│   ├── intent_to_patch.py
+│   ├── round_trip_validator.py
+│   └── audit_writer.py                                        # DB-14
+│
+├── enforcement/
+│   ├── decorators.py                                          # CORE-11
+│   └── runtime_guardian.py                                    # CORE-10
+│
+├── integrity/
+│   └── verify_boot.py                                         # CORE-12, FAIL-16
+│
+├── execution/                                                 # SHARED INFRA (non-engine)
+│   ├── async_bus.py                                           # EXEC-05 (single bus)
+│   ├── fast_lane.py                                           # [NEW v1] segmented bus
+│   ├── hazard_lane.py                                         # [NEW v1]
+│   ├── offline_lane.py                                        # [NEW v1]
+│   ├── event_emitter.py                                       # EXEC-04, HAZ-04
+│   ├── severity_classifier.py                                 # EXEC-06
+│   └── chaos_engine.py                                        # EXEC-07
+│
+├── simulation/                                                # [NEW v2-E] First-class backtest + scenario engine
+│   ├── __init__.py
+│   ├── backtester.py
+│   ├── event_replayer.py                                      # uses tools/replay_validator
+│   ├── scenario_generator.py
+│   ├── slippage_model.py
+│   └── latency_model.py
+│
+├── tools/
+│   ├── __init__.py                                            # [EXISTS]
+│   ├── authority_lint.py                                      # CORE-31, CI-05  [EXISTS]
+│   ├── contract_diff.py                                       # LEDGER-12
+│   ├── replay_validator.py                                    # TEST-01 helper
+│   ├── config_validator.py                                    # DYN-CFG-02 helper
+│   └── enforcement_matrix.py                                  # [NEW v1] invariant→4-layer map
 │
 ├── scripts/
-│   ├── profile_hot_path.py                # CI-10
-│   ├── verify.py
-│   └── dix_cli.py                         # plugin + mode control
+│   ├── diagnostics.py                                         # TEST-12
+│   ├── profile_hot_path.py                                    # CI-10
+│   ├── run_chaos_day.py                                       # EXEC-07, TEST-08
+│   ├── verify.py                                              # TEST-15
+│   └── dix_cli.py                                             # plugin + mode CLI
 │
-├── tests/                                 # TEST-01..20
-│   ├── test_replay.py
-│   ├── test_hazard_flow.py
-│   ├── test_latency.py
-│   ├── test_governance.py
+├── tests/                                                     # TEST-01..20  [EXISTS partial]
+│   ├── __init__.py                                            # [EXISTS]
+│   ├── test_engine_contracts.py                               # [EXISTS]
+│   ├── test_authority_lint.py                                 # TEST-18  [EXISTS]
+│   ├── test_execution_engine.py                               # [EXISTS]
+│   ├── test_intelligence_engine.py                            # [EXISTS]
+│   ├── test_ui_server.py                                      # [EXISTS]
+│   ├── test_replay.py                                         # TEST-01
+│   ├── test_hazard_flow.py                                    # TEST-02
+│   ├── test_latency.py · test_governance.py
 │   ├── test_neuromorphic.py
-│   └── ...
+│   └── drift_killers/                                         # [NEW v1]
+│       ├── test_replay_gate.py
+│       ├── test_behavior_diff.py
+│       ├── test_registry_lock.py
+│       ├── test_snapshot_boundary.py
+│       └── test_no_hidden_channels.py
 │
+├── ui/                                                        # FastAPI test harness  [EXISTS]
+│   ├── __init__.py                                            # [EXISTS]
+│   ├── server.py                                              # [EXISTS]
+│   └── static/{index.html, app.js, styles.css}                # [EXISTS]
+│
+├── cockpit/                                                   # COCKPIT-01..11
+│   ├── app.py · auth.py · llm.py · pairing.py · qr.py         # COCKPIT-01..03
+│   ├── charter/devin.py                                       # CORE-30
+│   ├── audit/                                                 # [NEW v2-J] Operator decision logging — full HITL trace
+│   │   ├── operator_actions.py
+│   │   ├── override_log.py
+│   │   └── decision_diff.py
+│   ├── api/
+│   │   ├── status.py · risk.py · charters.py · ai.py
+│   │   ├── autonomy.py · operator.py
+│   │   ├── custom_strategies.py · weekly_scout.py
+│   │   └── mode.py                                            # [NEW v1] Dashboard OS — request-only
+│   ├── widgets/
+│   │   ├── plugin_manager.py                                  # PLUGIN-ACT-03
+│   │   ├── kill_switch.py                                     # COCKPIT-01
+│   │   ├── master_sliders.py                                  # COCKPIT-02..04
+│   │   ├── decision_trace.py                                  # COCKPIT-05 (causal-chain enabled)
+│   │   ├── risk_view.py                                       # COCKPIT-06
+│   │   ├── portfolio_view.py                                  # COCKPIT-07
+│   │   ├── system_health.py                                   # COCKPIT-08
+│   │   ├── alert_center.py                                    # COCKPIT-09
+│   │   └── governance_panel.py                                # COCKPIT-10
+│   └── cli/
+│       └── dix_plugin.py                                      # PLUGIN-ACT-04
+│
+├── dashboard/                                                 # DASH-01..32 (TypeScript) + Dashboard OS
+│   ├── package.json
+│   ├── pnpm-lock.yaml
+│   ├── os_layer/                                              # [NEW v1] DOS-CORE
+│   │   ├── kernel.ts                                          # DASH-00 — event subscription, projection, routing
+│   │   ├── state_projection.ts                                # EVENT → UI state
+│   │   ├── control_plane_router.ts                            # all user actions → governance
+│   │   ├── mode_aware_controller.ts                           # enforces UI based on system mode
+│   │   ├── temporal_layer.ts                                  # LIVE / REPLAY / SNAPSHOT / SIMULATION
+│   │   ├── session_controller.ts
+│   │   ├── operator_gate.ts                                   # INV-12 enforcement
+│   │   └── state_sync.ts
+│   ├── trading_modes/                                         # [NEW v1] UI bindings for mode behavior
+│   │   ├── manual_mode.ts
+│   │   ├── semi_auto_mode.ts
+│   │   ├── auto_mode.ts
+│   │   └── safe_locked_mode.ts
+│   └── src/
+│       ├── App.tsx
+│       ├── GlobalHeader.tsx                                   # DASH-01
+│       ├── ModeControlBar.tsx                                 # DASH-02
+│       ├── WorkspaceGrid.tsx                                  # DASH-03 (mode-aware)
+│       ├── DecisionTrace.tsx                                  # DASH-04 (causal chain rendering)
+│       ├── RiskView.tsx                                       # DASH-05 (unified RISK_STATE_VECTOR)
+│       ├── PortfolioView.tsx                                  # DASH-06
+│       ├── SystemHealth.tsx                                   # DASH-07
+│       ├── GovernancePanel.tsx                                # DASH-08
+│       ├── EvolutionMonitor.tsx                               # DASH-09
+│       ├── LatencyMonitor.tsx                                 # DASH-10
+│       ├── PerformanceMetrics.tsx · TradeJournal.tsx · AlertCenter.tsx
+│       ├── WorkspaceManager.tsx · ReportingSuite.tsx
+│       ├── DriftMonitor.tsx                                   # [NEW v1]
+│       ├── CognitionPanel.tsx                                 # [NEW v1]
+│       ├── TimeControl.tsx                                    # [NEW v1]
+│       ├── memecoin/                                          # DASH-27 (3 sub-modes)
+│       ├── per_form/                                          # DASH-28 (Forex / Stocks / Crypto / Memecoin)
+│       ├── self_reflection.tsx                                # DASH-29
+│       └── grafana_panel.tsx                                  # DASH-31
+│
+├── mobile_pwa/                                                # DASH-25, DEPLOY-14
+├── cloud/                                                     # DEPLOY-13
+├── windows/                                                   # DEPLOY-01..12
 ├── deploy/
-│   ├── setup.ps1
-│   ├── dix-update.bat
-│   ├── docker/
-│   └── service/
+│   ├── docker/ · service/
+│   ├── setup.ps1 · dix-update.bat
 │
-├── immutable_core/
-│   ├── foundation.py
-│   ├── foundation.hash
-│   ├── safety_axioms.lean
-│   ├── hazard_axioms.lean
-│   └── neuromorphic_axioms.lean
-│
-└── VERSION
+└── docs/
+    ├── PR2_SPEC.md                                            # [EXISTS]
+    ├── directory_tree.md                                      # this file
+    ├── total_recall_index.md
+    ├── coverage_report.md
+    └── enforcement_matrix.md                                  # [NEW v1]
 ```
 
-## Notes on the current code layout vs. this tree
+## Build phasing
 
-* Engine packages currently live at the repo root (`intelligence_engine/`,
-  `execution_engine/`, `learning_engine/`, `system_engine/`,
-  `evolution_engine/`, `governance_engine/`). They are imported under those
-  paths everywhere — `core/contracts/engine.py`, `tools/authority_lint.py`
-  (rules `B1`, `L1`, `L2`, `L3`), `tests/`, `ui/server.py`. This is an
-  identical model to placing them under `engines/`; the umbrella is a
-  documentation convention, not a code change.
-* `dashboard/`, `sensory/`, `immutable_core/` are reserved namespaces in
-  the spec. Their initial implementations land in later phases
-  (E6/E7/E8) per `build_plan.md`. Until they ship, leaving them out of
-  the code tree is the correct state — they would otherwise be empty
-  packages that the lint and import tools would flag.
-* `state/ledger/` is implemented as a flat package
-  (`state/ledger/store.py`, `state/ledger/reader.py`,
-  `state/ledger/__init__.py`) at Phase E3. The spec breakdown
-  (`append.py` / `hash_chain.py` / `indexer.py` / `snapshots.py` /
-  `reconstructor.py`) is the steady-state shape for E5+.
+The 13-step phasing for closing the gap from current `main` (46 files) to
+the canonical tree above (~250 nodes) is in `build_plan.md`. In summary:
+
+| Step | Scope |
+|---|---|
+| 1 | This document (canonical tree, doc-only) |
+| 2 | Move `intelligence_engine/plugins/microstructure.py` → `microstructure/microstructure_v1.py` |
+| 3 | Phase E3 — Governance Control Plane (GOV-CP-01..07) + Hazard Sensors (HAZ-01..12) + Ledger expansion |
+| 4 | Coherence Layer (`core/coherence/` × 5 modules) + lint rule B2 |
+| 5 | Dashboard OS kernel (frontend, parallelisable with Step 6) |
+| 6 | Hard 3-domain isolation (`execution_engine/domains/`) |
+| 7 | Drift killers + enforcement matrix |
+| 8 | Real-Time Risk Engine (v2-F) + Execution Lifecycle FSM (v2-C) |
+| 9 | Portfolio Brain (v2-A) + Strategy Orchestrator (v2-B) |
+| 10 | Market Data Normalizer (v2-D) + Data Versioning (v2-H) |
+| 11 | Simulation Engine (v2-E) — top-level |
+| 12 | Performance + Alpha Decay (v2-G) |
+| 13 | Strategy registry split (v2-I) + Operator Audit (v2-J) |
+
+Every step lands as its own PR. Each PR ends with a green CI gate.
+
+## Architectural invariants reinforced by this tree
+
+1. **Engines are sealed boxes.** No engine imports another engine; only
+   `core/contracts/` is shared. Lint rules `T1`, `B1`, `L1`, `L2`, `L3`
+   enforce.
+2. **Coherence is a layer, not an engine.** `core/coherence/` *binds*
+   engines via event interception; it never modifies engine code. New
+   lint rule `B2` (Step 4) reserves cross-engine import privilege to
+   `core/coherence/`.
+3. **Governance is the only authority.** Every state mutation
+   (mode, plugin lifecycle, risk amend, patch deploy, learning update)
+   traverses GOV-CP-01..07 and lands as a ledger row.
+4. **Hard 3-domain isolation.** NORMAL / COPY-TRADING / MEMECOIN are
+   separated under `execution_engine/domains/`; memecoin runs in its own
+   process with a burner wallet (INV-20, SAFE-13).
+5. **Replay determinism.** All offline engines (Learning, Evolution)
+   read the ledger via `state/ledger/reader.py` only; never reach into
+   runtime engine state. Data versioning (v2-H) guarantees that
+   replay sees the same market data as live ran on.
+6. **Coordinated portfolio.** v2-A + v2-B turn "many independent
+   strategy outputs" into "one coordinated portfolio decision".
+7. **Real broker realism.** v2-C + v2-D + v2-F provide the order
+   lifecycle, normalised market state, and real-time risk evaluation
+   needed for non-paper execution.
