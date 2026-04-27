@@ -6,6 +6,8 @@ Pure-Python, deterministic — no clocks, no IO.
 
 from __future__ import annotations
 
+import math
+
 import pytest
 
 from core.contracts.events import Side, SignalEvent
@@ -438,6 +440,31 @@ def test_resolver_balanced_signals_collapse_to_hold():
     coalesced, _ = out[0]
     assert coalesced.side is Side.HOLD
     assert coalesced.confidence == 0.0
+
+
+def test_resolver_balanced_signals_collapse_to_hold_default_threshold():
+    """Default ``min_net_score=0.0`` must still collapse a perfectly balanced
+    BUY/SELL pair to HOLD with zero (non-negative) confidence.
+
+    Regression for Devin Review BUG_pr-review-job-13b551b6da21436ba5d4f4bc83877512_0001:
+    previously ``abs(net) < 0.0`` evaluated False for net == 0.0, falling
+    through to the SELL branch with ``min(1.0, -0.0) == -0.0``.
+    """
+
+    r = ConflictResolver()
+    out = r.resolve(
+        [
+            _signal("X", Side.BUY, 0.5, "p1"),
+            _signal("X", Side.SELL, 0.5, "p2"),
+        ]
+    )
+    coalesced, resolution = out[0]
+    assert coalesced.side is Side.HOLD
+    assert coalesced.confidence == 0.0
+    # Guard against negative-zero leaking into downstream consumers.
+    assert math.copysign(1.0, coalesced.confidence) > 0.0
+    assert resolution.winning_side is Side.HOLD
+    assert resolution.net_score == 0.0
 
 
 def test_resolver_groups_by_symbol():
