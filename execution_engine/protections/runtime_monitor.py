@@ -140,10 +140,26 @@ class RuntimeMonitor:
 
     def report(self) -> RuntimeMonitorReport:
         c = self._counters
-        n = max(1, c.submitted)
-        fill_rate = c.filled / n
-        reject_rate = c.rejected / n
-        fail_rate = c.failed / n
+
+        # Rates and health classification are derived from the *rolling
+        # window* (most recent ``window`` outcomes) so degradation spikes
+        # are detected and historical events stop influencing the verdict
+        # once they fall off the deque. Lifetime totals stay on the
+        # report for audit/observability.
+        win_filled = 0
+        win_rejected = 0
+        win_failed = 0
+        for status in self._window:
+            if status is ExecutionStatus.FILLED:
+                win_filled += 1
+            elif status is ExecutionStatus.REJECTED:
+                win_rejected += 1
+            elif status is ExecutionStatus.FAILED:
+                win_failed += 1
+        win_total = max(1, len(self._window))
+        fill_rate = win_filled / win_total
+        reject_rate = win_rejected / win_total
+        fail_rate = win_failed / win_total
 
         if (
             fail_rate >= self._fail_fail_rate
@@ -182,7 +198,8 @@ class RuntimeMonitor:
             queue_depth=self._queue_depth,
             detail=(
                 f"submitted={c.submitted} filled={c.filled} "
-                f"rejected={c.rejected} failed={c.failed}"
+                f"rejected={c.rejected} failed={c.failed} "
+                f"window={len(self._window)}"
             ),
         )
 

@@ -132,6 +132,27 @@ def test_monitor_invalid_window_rejected():
         RuntimeMonitor(latency_window=0)
 
 
+def test_monitor_rates_are_windowed_not_cumulative():
+    """Old failures must fall off once they leave the rolling window."""
+    mon = RuntimeMonitor(window=10, fail_reject_rate=0.30)
+
+    # Burst of rejects fills the window → FAIL.
+    for _ in range(10):
+        mon.record(_ev(ExecutionStatus.REJECTED))
+    assert mon.report().state is RuntimeMonitorState.FAIL
+
+    # Healthy fills push the rejects out of the window → recovery.
+    for _ in range(10):
+        mon.record(_ev(ExecutionStatus.FILLED))
+    rep = mon.report()
+    assert rep.state is RuntimeMonitorState.OK
+    assert rep.reject_rate == 0.0
+    # Lifetime totals still reflect everything we ever saw.
+    assert rep.submitted == 20
+    assert rep.rejected == 10
+    assert rep.filled == 10
+
+
 def test_monitor_replay_determinism_same_inputs_same_report():
     def run() -> tuple:
         mon = RuntimeMonitor()
