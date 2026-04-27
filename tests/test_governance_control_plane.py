@@ -33,7 +33,6 @@ from governance_engine.control_plane import (
     ComplianceValidator,
     EventClassifier,
     LedgerAuthorityWriter,
-    OperatorInterfaceBridge,
     PolicyEngine,
     RiskEvaluator,
     StateTransitionManager,
@@ -43,7 +42,6 @@ from governance_engine.control_plane.event_classifier import (
     PipelineStage,
 )
 from governance_engine.engine import GovernanceEngine
-
 
 # ---------------------------------------------------------------------------
 # LedgerAuthorityWriter (GOV-CP-05)
