@@ -1,0 +1,16 @@
+# Confidence Engine coefficients (Phase 6.T1b / INV-50 collaborator).
+#
+# Composite formula (audit-friendly per J3 reward breakdown):
+#
+#   consensus  = |buy_count - sell_count| / total_signals
+#   strength   = mean(signal.confidence) over consensus side
+#   coverage   = min(1, total_signals / saturation_count)
+#   composite  = (w_c·consensus + w_s·strength + w_v·coverage) / Σw
+#
+# Patches edit this file via Governance; runtime never does.
+
+version: v3.3-T1b
+consensus_weight: 0.5
+strength_weight: 0.3
+coverage_weight: 0.2
+saturation_count: 8
