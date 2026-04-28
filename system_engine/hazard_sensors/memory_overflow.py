@@ -46,6 +46,9 @@ class MemoryOverflowSensor:
                 ),
             )
         if rss_bytes >= self._warn_bytes:
+            # Re-entry into a lower band must rearm the higher band so a
+            # subsequent re-spike re-emits CRITICAL.
+            self._armed_critical = False
             if self._armed_warn:
                 return ()
             self._armed_warn = True

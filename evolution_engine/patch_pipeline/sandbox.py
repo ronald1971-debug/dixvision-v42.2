@@ -29,16 +29,15 @@ class SandboxStage:
     __slots__ = ("_forbidden_prefixes",)
 
     def __init__(self, forbidden_prefixes: Sequence[str] | None = None) -> None:
-        self._forbidden_prefixes: tuple[str, ...] = tuple(
-            forbidden_prefixes
-            or (
+        if forbidden_prefixes is None:
+            forbidden_prefixes = (
                 "subprocess",
                 "socket",
                 "urllib",
                 "requests",
                 "ctypes",
             )
-        )
+        self._forbidden_prefixes: tuple[str, ...] = tuple(forbidden_prefixes)
 
     def evaluate(
         self,
