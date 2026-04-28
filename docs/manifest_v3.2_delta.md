@@ -155,7 +155,8 @@ regime transition without satisfying INV-49 are logged as
 
 **Path:** `core/coherence/performance_pressure.py`
 **Phase:** 6.T1a
-**Spec ID:** SCL-04 (refined)
+**Spec ID:** SCL-06 (refined uncertainty derivation;
+SCL-04 remains `drift_oracle.py`, SCL-05 remains `meta_adaptation.py`)
 
 **What it is:**
 The Pressure Vector dataclass shape stays **unchanged**:
@@ -352,8 +353,10 @@ Governance patch pipeline (preserves INV-37).
 **Invariant (INV-51):**
 - An archetype in `RETIRED` state may not emit signals.
 - Auto-demotion (`ACTIVE → DEGRADED` or `DEGRADED → RETIRED`)
-  happens **only** in `learning_engine.evaluator.archetype_evaluator`
-  during scheduled offline runs.
+  happens **only** in `learning_engine/performance_analysis/archetype_evaluator.py`
+  during scheduled offline runs (new module under existing
+  `learning_engine/performance_analysis/` package; preserves INV-15
+  replay determinism by running offline-only).
 - Auto-promotion (`DEGRADED → ACTIVE`) is **forbidden** — promotion
   goes through the patch pipeline + HITL gate.
 - The `decay_rate` is applied multiplicatively per-week to
@@ -493,9 +496,10 @@ PHASE 6.T1c              Reward shaping (auditable, versioned)        [v3.1 H5]
 PHASE 6.T1d              System Intent Engine + GOV-CP-07 setter      [v3.1 G1]
 PHASE 6.T1e              Regime hysteresis activation                  [v3.2 I2]
                          (extends regime_router with INV-49 gate)
-PHASE 7      ──────────  Asset systems / Neuromorphic / Optimization (locked spec)
+PHASE 7      ──────────  Asset systems (forex / stocks / crypto / memecoin) (locked spec)
                          + PolicyEngine constant-time table          [v3.2 I7]
-PHASES 8–9   ──────────  Locked spec
+PHASE 8      ──────────  Neuromorphic + AutoLearn (locked spec)
+PHASE 9      ──────────  Optimization layer (locked spec)
 PHASE 10     ──────────  Intelligence Depth Layer
    10.1                   Simulation vPro (parallel + arena +
                           adversarial) + richer SimulationOutcome    [v3.2 I5]
