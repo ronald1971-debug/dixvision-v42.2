@@ -90,6 +90,15 @@ class SystemEventKind(StrEnum):
     # auditable per INV-47.
     # ------------------------------------------------------------------
     REWARD_BREAKDOWN = "REWARD_BREAKDOWN"
+    # ------------------------------------------------------------------
+    # v3.3 J3 — per-tick meta-controller audit record (Phase 6.T1c).
+    # Emitted by
+    # ``intelligence_engine.meta_controller.runtime_adapter`` next to
+    # BELIEF_STATE_SNAPSHOT / PRESSURE_VECTOR_SNAPSHOT every hot-path
+    # tick so the offline calibrator can attribute drift to the
+    # confidence / sizing components and the final decision.
+    # ------------------------------------------------------------------
+    META_AUDIT = "META_AUDIT"
 
 
 # ---------------------------------------------------------------------------
