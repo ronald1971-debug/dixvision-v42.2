@@ -70,6 +70,12 @@ enum SystemEventKind {
   // individual components (consensus / strength / coverage / sizing
   // / latency / slippage / fallback / shaping_version).
   REWARD_BREAKDOWN = 9;
+  // v3.3 J3 — per-tick meta-controller audit record.
+  // Emitted by intelligence_engine.meta_controller.runtime_adapter
+  // alongside BELIEF_STATE_SNAPSHOT / PRESSURE_VECTOR_SNAPSHOT every
+  // hot-path tick so the offline calibrator can attribute drift to
+  // confidence / sizing components and the final decision.
+  META_AUDIT = 10;
 }
 
 // EVT-01
