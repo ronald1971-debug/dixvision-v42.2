@@ -287,7 +287,8 @@ dixvision-v42.2/
 │       ├── slippage_analysis.py
 │       ├── latency_impact.py
 │       ├── pnl_attribution.py
-│       └── reward_shaping.py                                  # [NEW v3-T1] kills naive PnL=reward; risk-adjusted reward composition
+│       ├── reward_shaping.py                                  # [NEW v3-T1] kills naive PnL=reward; risk-adjusted reward composition
+│       └── archetype_evaluator.py                             # [NEW v3.2] ARCH-EVAL-01 — offline-only auto-demotion of archetypes (INV-51); reads ledgered performance windows, writes RETIRED/DEGRADED transitions through patch pipeline
 │
 ├── system_engine/                                             # ENGINE-04 (Dyon)  [EXISTS]
 │   ├── __init__.py                                            # [EXISTS]
