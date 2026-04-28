@@ -1,11 +1,11 @@
-# DIX v42.2 — Canonical Directory Tree (System Reference, v3)
+# DIX v42.2 — Canonical Directory Tree (System Reference, v3.1)
 
 This file is the architectural source of truth for the DIX v42.2 layout. It
 **describes the steady-state shape** of the repository — every directory
 and module that is canonical under the v42.2 specification, regardless of
 whether it is implemented yet.
 
-This is **v3 of the canonical tree**, integrating:
+This is **v3.1 of the canonical tree**, integrating:
 
 1. `manifest.md §A` (engine-led layout) — the binding base
 2. The 22 addon directives (Coherence Layer, Mode Engine, Drift Oracle,
@@ -24,6 +24,21 @@ This is **v3 of the canonical tree**, integrating:
      Simulation vPro, Trader Intelligence System (full F1), Macro Regime
      Engine, Cross-Asset Coupling, Strategic Execution + Market Impact,
      trader-intelligence proto contract
+5. The v3.1 fold-in (operator decisions G1 / G2 / G3 / G4):
+   - **System Intent Engine** (read-only projection in `core/coherence/`,
+     operator-written via GOV-CP-07) — Phase 6.T1d
+   - **Opponent Model** (`intelligence_engine/opponent_model/`,
+     extends Trader Intelligence) — Phase 10.10
+   - **Reflexive Simulation Layer** (`simulation/reflexive_layer/`,
+     market-reacts-to-you) — Phase 10.11
+   - **Strategy Genetics** (`evolution_engine/genetic/`,
+     mutation/crossover/inheritance) — Phase 10.12
+   - **Regret / Counterfactual Memory** (`state/memory_tensor/regret/`,
+     missed-opportunity tracking) — Phase 10.13
+   - **Internal Debate Round** (`meta_controller/debate_round.py`,
+     deterministic agent stance scoring — NOT meta-RL) — Phase 10.14
+   - **Time Hierarchy + Dynamic Identity** doctrine (manifest §X,
+     no new modules — emergent property of existing FSMs)
 
 References:
 
@@ -44,6 +59,8 @@ Annotation legend:
   existing engines, no spec change)
 - **[NEW v3-P10]** — Phase 10 Intelligence Depth Layer (extras Tier 2,
   formal phase append after Phase 9)
+- **[NEW v3.1]** — v3.1 fold-in (Intent Engine, Opponent Model,
+  Reflexive Sim, Strategy Genetics, Regret Memory, Internal Debate)
 - otherwise — canonical per `manifest.md §A`, not yet implemented
 
 ```text
@@ -89,7 +106,8 @@ dixvision-v42.2/
 │       ├── drift_oracle.py                                    # SCL-04 — DRIFT_VECTOR computation
 │       ├── meta_adaptation.py                                 # SCL-05 — Learning↔Evolution unifier
 │       ├── belief_state.py                                    # [NEW v3-T1] BELIEF_STATE_VECTOR (regime, vol, liq, conf, hypotheses) — frozen, read-only projection
-│       └── performance_pressure.py                            # [NEW v3-T1] PRESSURE_VECTOR (perf/risk/drift/latency/uncertainty) — derived from existing sensors
+│       ├── performance_pressure.py                            # [NEW v3-T1] PRESSURE_VECTOR (perf/risk/drift/latency/uncertainty) — derived from existing sensors
+│       └── system_intent.py                                   # [NEW v3.1] INTENT_VECTOR (objective, focus, risk_mode, horizon) — read-only; only GOV-CP-07 writes via IntentTransition event
 │
 ├── immutable_core/                                            # SAFE-06, axioms
 │   ├── foundation.hash                                        # SAFE-06
@@ -137,13 +155,22 @@ dixvision-v42.2/
 │   │   ├── regime_detector.py                                 # IND-REG-01 — runtime regime tags    [EXISTS]
 │   │   ├── state_machine.py                                   # IND-SLM-01 — strategy lifecycle FSM [EXISTS]
 │   │   └── conflict_resolver.py                               # IND-CFR-01 — resolves conflicting signals [EXISTS]
-│   ├── meta_controller/                                       # [NEW v3-T1] Meta-Controller (sits BETWEEN orchestrator and conflict_resolver; per B1 keeps both)
+│   ├── meta_controller/                                       # [NEW v3-T1] Meta-Controller (sits BETWEEN orchestrator and conflict_resolver; per B1 keeps both). v3.1 sub-package layout per H1 (audit separation, NOT a new engine boundary)
 │   │   ├── __init__.py
-│   │   ├── regime_router.py                                   # MC-01 — routes by Belief State regime
-│   │   ├── strategy_selector.py                               # MC-02 — picks eligible strategies
-│   │   ├── confidence_engine.py                               # MC-03 — composite confidence (Sharpe + Bayesian + Entropy + Stability + Alignment + safety mods)
-│   │   ├── position_sizer.py                                  # MC-04 — Kelly / vol-target / pressure-adjusted size
-│   │   └── execution_policy.py                                # MC-05 — final SKIP / SHADOW / EXECUTE decision
+│   │   ├── perception/                                        # [NEW v3.1] Regime / context perception
+│   │   │   ├── __init__.py
+│   │   │   └── regime_router.py                               # MC-01 — routes by Belief State regime
+│   │   ├── evaluation/                                        # [NEW v3.1] Selection + confidence + debate
+│   │   │   ├── __init__.py
+│   │   │   ├── strategy_selector.py                           # MC-02 — picks eligible strategies
+│   │   │   ├── confidence_engine.py                           # MC-03 — composite confidence (Sharpe + Bayesian + Entropy + Stability + Alignment + safety mods)
+│   │   │   └── debate_round.py                                # [NEW v3.1] MC-06 — deterministic stance/scoring round across agents (NOT meta-RL); feeds confidence_engine
+│   │   ├── allocation/                                        # [NEW v3.1] Position sizing
+│   │   │   ├── __init__.py
+│   │   │   └── position_sizer.py                              # MC-04 — Kelly / vol-target / pressure-adjusted size
+│   │   └── policy/                                            # [NEW v3.1] Final SKIP / SHADOW / EXECUTE gate
+│   │       ├── __init__.py
+│   │       └── execution_policy.py                            # MC-05 — final SKIP / SHADOW / EXECUTE decision
 │   ├── macro/                                                 # [NEW v3-P10] Macro Regime Engine
 │   │   ├── regime_classifier.py                               # MAC-01 — HMM/Bayesian regime switching
 │   │   ├── hidden_state_detector.py                           # MAC-02 — latent state inference
@@ -154,6 +181,11 @@ dixvision-v42.2/
 │   │   ├── lead_lag.py                                        # XAS-02 — lead/lag detection
 │   │   ├── contagion_detector.py                              # XAS-03 — cross-asset shock propagation
 │   │   └── basket_constructor.py                              # XAS-04 — synthetic basket builder
+│   ├── opponent_model/                                        # [NEW v3.1] Real-time opponent / crowd modelling (extends Trader Intelligence)
+│   │   ├── __init__.py
+│   │   ├── behavior_predictor.py                              # OPP-01 — predicts likely trader actions from microstructure
+│   │   ├── crowd_density.py                                   # OPP-02 — estimates positioning crowdedness
+│   │   └── strategy_detector.py                               # OPP-03 — infers in-market strategy populations
 │   └── meta/                                                  # [NEW v3-P10] Trader Intelligence consumer (reads archetypes, synthesises strategies)
 │       ├── trader_archetypes.py                               # TI-CONS-01 — loads registry/trader_archetypes.yaml
 │       ├── strategy_synthesizer.py                            # TI-CONS-02 — composes archetypes into ComposedStrategy
@@ -258,6 +290,11 @@ dixvision-v42.2/
 │   ├── engine.py                                              # [EXISTS]
 │   ├── intelligence_loops/                                    # DYN-L01, L03..L08, L19
 │   ├── skill_graph/                                           # DYN-L14..L17
+│   ├── genetic/                                               # [NEW v3.1] Strategy Genetics — patch-pipeline-gated
+│   │   ├── __init__.py
+│   │   ├── mutation_operators.py                              # GEN-01 — parameter / structural mutations
+│   │   ├── crossover.py                                       # GEN-02 — strategy crossover
+│   │   └── fitness_inheritance.py                             # GEN-03 — inherited fitness accounting
 │   └── patch_pipeline/                                        # GOV-G18, EXEC-15, DYN-L18, L21
 │       ├── pipeline.py
 │       ├── sandbox.py · static_analysis.py · backtest.py
@@ -332,10 +369,15 @@ dixvision-v42.2/
 │   │   ├── semantic.py                                        # semantic memory (market knowledge)
 │   │   ├── procedural.py                                      # procedural memory (strategy procedures)
 │   │   ├── meta_memory.py                                     # meta memory (what works vs doesn't)
-│   │   └── trader_patterns/                                   # [NEW v3-P10] persisted TraderProfile + StrategyAtom store
-│   │       ├── profile_store.py
-│   │       ├── atom_store.py
-│   │       └── archetype_store.py
+│   │   ├── trader_patterns/                                   # [NEW v3-P10] persisted TraderProfile + StrategyAtom store
+│   │   │   ├── profile_store.py
+│   │   │   ├── atom_store.py
+│   │   │   └── archetype_store.py
+│   │   └── regret/                                            # [NEW v3.1] Regret / counterfactual memory
+│   │       ├── __init__.py
+│   │       ├── missed_opportunity.py                          # REG-01 — paths not taken
+│   │       ├── almost_trades.py                               # REG-02 — near-miss tracking
+│   │       └── regret_log.py                                  # REG-03 — append-only regret events
 │   └── data_versioning/                                       # [NEW v2-H] Snapshot + feature versioning
 │       ├── market_snapshots.py
 │       ├── feature_store.py
@@ -392,10 +434,15 @@ dixvision-v42.2/
 │   │   ├── capital_allocator.py                               # SIM-11 — capital flows by score
 │   │   ├── kill_underperformers.py                            # SIM-12 — retires losing strategies
 │   │   └── promotion_engine.py                                # SIM-13 — graduates winners (PROPOSED→SHADOW)
-│   └── adversarial/                                           # [NEW v3-P10] Adversarial market simulation layer
-│       ├── liquidity_attacker.py                              # SIM-14
-│       ├── stop_hunter.py                                     # SIM-15
-│       └── flash_crash_synth.py                               # SIM-16
+│   ├── adversarial/                                           # [NEW v3-P10] Adversarial market simulation layer
+│   │   ├── liquidity_attacker.py                              # SIM-14
+│   │   ├── stop_hunter.py                                     # SIM-15
+│   │   └── flash_crash_synth.py                               # SIM-16
+│   └── reflexive_layer/                                       # [NEW v3.1] Reflexivity — market reacts to YOUR orders
+│       ├── __init__.py
+│       ├── impact_feedback.py                                 # REFL-01 — own-order price impact loop
+│       ├── liquidity_decay.py                                 # REFL-02 — liquidity drying up under our flow
+│       └── crowd_density_sim.py                               # REFL-03 — alpha decay due to popularity / crowding
 │
 ├── tools/
 │   ├── __init__.py                                            # [EXISTS]
@@ -538,10 +585,16 @@ v3 (Tier 1 follow-ons + Phase 10):
 | Phase 6.T1a | Tier 1 follow-on: Belief State + Pressure Vector (`core/coherence/`) | after Phase 6 |
 | Phase 6.T1b | Tier 1 follow-on: Meta-Controller + Confidence Engine (`intelligence_engine/meta_controller/`) | after 6.T1a |
 | Phase 6.T1c | Tier 1 follow-on: Reward shaping (`learning_engine/performance_analysis/reward_shaping.py`) | after 6.T1b |
+| Phase 6.T1d | v3.1 fold-in: System Intent Engine (`core/coherence/system_intent.py`, GOV-CP-07 setter) | after 6.T1c |
 | Phase 7 | Asset systems (forex, stocks, crypto, memecoin isolated process) | locked spec |
 | Phase 8 | Neuromorphic + AutoLearn (sensors, web autolearn, anomaly adapters) | locked spec |
 | Phase 9 | Optimization layer (Rust ports if measured) | locked spec |
 | **Phase 10** | **Intelligence Depth Layer** — Simulation vPro + Trader Intelligence (full F1) + Macro Regime + Cross-Asset + Strategic Execution + `agents/` | **NEW (per E1)** |
+| Phase 10.10 | v3.1 fold-in: Opponent Model (`intelligence_engine/opponent_model/`) | within Phase 10 |
+| Phase 10.11 | v3.1 fold-in: Reflexive Simulation Layer (`simulation/reflexive_layer/`) | within Phase 10 |
+| Phase 10.12 | v3.1 fold-in: Strategy Genetics (`evolution_engine/genetic/`) | within Phase 10 |
+| Phase 10.13 | v3.1 fold-in: Regret / Counterfactual Memory (`state/memory_tensor/regret/`) | within Phase 10 |
+| Phase 10.14 | v3.1 fold-in: Internal Debate Round (`meta_controller/debate_round.py`) | within Phase 10 |
 
 Legacy v2 13-step build remains a sub-decomposition reference in
 `build_plan.md` for non-engine items (drift killers, registry split,
@@ -599,3 +652,24 @@ renames, no domain collapses, no module removals, additive only.
     generation uses caller-supplied PRNG seeds; embeddings produced
     offline with fixed seed + checkpoint hash ledgered; agents are
     pure-function-of-state with no clocks; no pure RL (INV-15).
+13. **Intent is operator-written, system-read (v3.1).**
+    `core/coherence/system_intent.py` is a frozen read-only projection.
+    The operator writes `IntentTransition` events through GOV-CP-07
+    (HITL gate); meta-controller reads intent via L3 Protocol. The
+    system never auto-mutates its own mission. Governance remains the
+    only authority.
+14. **Internal debate is deterministic, not meta-RL (v3.1).**
+    `meta_controller/debate_round.py` runs a deterministic stance +
+    confidence scoring round across stateful `agents/`. No learned
+    coordinator, no policy-gradient meta-controller. Output feeds
+    `confidence_engine`. INV-15 replay determinism preserved.
+15. **Time hierarchy is layered, not new (v3.1).** Existing FSMs
+    already span ms (hot_path) → sec/min (strategy_runtime) →
+    hour/day (portfolio + arena cadence) → day/week
+    (evolution_engine) → week/month (System Intent + GOV-G18 patch
+    cadence). v3.1 documents this, no new modules.
+16. **Dynamic identity is emergent (v3.1).** "From trend follower
+    → mean reversion" is the active subset of LIVE strategies under
+    the current regime + intent — produced by Strategy Lifecycle FSM
+    + Strategy Arena + meta-controller `regime_router` reading
+    `system_intent`. No new identity engine.
