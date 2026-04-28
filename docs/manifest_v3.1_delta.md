@@ -184,7 +184,7 @@ gate (SAFE-03 / GOV-G17) or HITL approval for LIVE promotion.
 
 **Path:** `state/memory_tensor/regret/`
 **Phase:** 10.13
-**Spec IDs:** REG-01..03
+**Spec IDs:** RGT-01..03 *(renamed from REG-01..03 to avoid namespace collision with the pre-existing `registry/` REG-01..14 spec IDs)*
 
 **Modules:**
 - `missed_opportunity.py` — paths not taken (signal emitted, executed
@@ -217,7 +217,7 @@ state/memory_tensor/regret/*.py:
 
 ### 1.6 Internal Debate Round (G2 reframed)
 
-**Path:** `intelligence_engine/meta_controller/debate_round.py`
+**Path:** `intelligence_engine/meta_controller/evaluation/debate_round.py` *(under the H1 sub-package layout — see §8.1)*
 **Phase:** 10.14
 **Spec ID:** MC-06
 
@@ -251,7 +251,7 @@ agent_stances, weights)`. No clocks, no PRNGs. Replay reproduces
 debate consensus bit-for-bit. CI test:
 `tests/meta_controller/test_debate_deterministic.py`.
 
-**Existing B4 lint extended** to permit `meta_controller/debate_round.py`
+**Existing B4 lint extended** to permit `meta_controller/evaluation/debate_round.py`
 to import `intelligence_engine.agents.*` (read-only).
 
 ---
@@ -340,7 +340,7 @@ shapes).
 | B11 | `intelligence_engine/agents/*` | No in-runtime weight updates (INV-45) |
 | B12 | `registry/trader_archetypes.yaml` schema | Each archetype must declare `feature_space` / `regime_scope` / `correlation_class` (INV-46) |
 | B13 | `learning_engine/performance_analysis/reward_shaping.py` | Shaping function must register version + raw-reward retention (INV-47) |
-| B4 (extended) | `intelligence_engine/meta_controller/debate_round.py` | Permitted to import `agents/` (read-only) |
+| B4 (extended) | `intelligence_engine/meta_controller/evaluation/debate_round.py` | Permitted to import `agents/` (read-only) |
 
 Existing B6 (simulation isolation) covers `simulation/reflexive_layer/`.
 Existing patch_pipeline lint covers `evolution_engine/genetic/`.

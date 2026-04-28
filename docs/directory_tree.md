@@ -35,7 +35,7 @@ This is **v3.1 of the canonical tree**, integrating:
      mutation/crossover/inheritance) — Phase 10.12
    - **Regret / Counterfactual Memory** (`state/memory_tensor/regret/`,
      missed-opportunity tracking) — Phase 10.13
-   - **Internal Debate Round** (`meta_controller/debate_round.py`,
+   - **Internal Debate Round** (`meta_controller/evaluation/debate_round.py`,
      deterministic agent stance scoring — NOT meta-RL) — Phase 10.14
    - **Time Hierarchy + Dynamic Identity** doctrine (manifest §X,
      no new modules — emergent property of existing FSMs)
@@ -107,7 +107,7 @@ dixvision-v42.2/
 │       ├── meta_adaptation.py                                 # SCL-05 — Learning↔Evolution unifier
 │       ├── belief_state.py                                    # [NEW v3-T1] BELIEF_STATE_VECTOR (regime, vol, liq, conf, hypotheses) — frozen, read-only projection
 │       ├── performance_pressure.py                            # [NEW v3-T1] PRESSURE_VECTOR (perf/risk/drift/latency/uncertainty) — derived from existing sensors
-│       └── system_intent.py                                   # [NEW v3.1] INTENT_VECTOR (objective, focus, risk_mode, horizon) — read-only; only GOV-CP-07 writes via IntentTransition event
+│       └── system_intent.py                                   # [NEW v3.1] INTENT_VECTOR (objective, focus, risk_mode, horizon) — read-only; operator proposes via GOV-CP-07, state_transition_manager (GOV-CP-03) writes IntentTransition event
 │
 ├── immutable_core/                                            # SAFE-06, axioms
 │   ├── foundation.hash                                        # SAFE-06
@@ -375,9 +375,9 @@ dixvision-v42.2/
 │   │   │   └── archetype_store.py
 │   │   └── regret/                                            # [NEW v3.1] Regret / counterfactual memory
 │   │       ├── __init__.py
-│   │       ├── missed_opportunity.py                          # REG-01 — paths not taken
-│   │       ├── almost_trades.py                               # REG-02 — near-miss tracking
-│   │       └── regret_log.py                                  # REG-03 — append-only regret events
+│   │       ├── missed_opportunity.py                          # RGT-01 — paths not taken (renamed from REG-01 to avoid collision with registry/ REG-01..14)
+│   │       ├── almost_trades.py                               # RGT-02 — near-miss tracking
+│   │       └── regret_log.py                                  # RGT-03 — append-only regret events
 │   └── data_versioning/                                       # [NEW v2-H] Snapshot + feature versioning
 │       ├── market_snapshots.py
 │       ├── feature_store.py
@@ -594,7 +594,7 @@ v3 (Tier 1 follow-ons + Phase 10):
 | Phase 10.11 | v3.1 fold-in: Reflexive Simulation Layer (`simulation/reflexive_layer/`) | within Phase 10 |
 | Phase 10.12 | v3.1 fold-in: Strategy Genetics (`evolution_engine/genetic/`) | within Phase 10 |
 | Phase 10.13 | v3.1 fold-in: Regret / Counterfactual Memory (`state/memory_tensor/regret/`) | within Phase 10 |
-| Phase 10.14 | v3.1 fold-in: Internal Debate Round (`meta_controller/debate_round.py`) | within Phase 10 |
+| Phase 10.14 | v3.1 fold-in: Internal Debate Round (`meta_controller/evaluation/debate_round.py`) | within Phase 10 |
 
 Legacy v2 13-step build remains a sub-decomposition reference in
 `build_plan.md` for non-engine items (drift killers, registry split,
@@ -659,7 +659,7 @@ renames, no domain collapses, no module removals, additive only.
     system never auto-mutates its own mission. Governance remains the
     only authority.
 14. **Internal debate is deterministic, not meta-RL (v3.1).**
-    `meta_controller/debate_round.py` runs a deterministic stance +
+    `meta_controller/evaluation/debate_round.py` runs a deterministic stance +
     confidence scoring round across stateful `agents/`. No learned
     coordinator, no policy-gradient meta-controller. Output feeds
     `confidence_engine`. INV-15 replay determinism preserved.
