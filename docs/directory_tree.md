@@ -54,7 +54,7 @@ This is **v3.2 of the canonical tree**, integrating:
      B15) — Phase 10.8
    - **Richer `SimulationOutcome` payload** (`failure_modes`,
      `regime_performance_map`, `adversarial_breakdowns` —
-     `simulation/arena/simulation_outcome.py`) — Phase 10.1
+     `simulation/strategy_arena/simulation_outcome.py`) — Phase 10.1
    - **Archetype lifecycle** (`{state, decay_rate, performance_score}`
      in `registry/trader_archetypes.yaml` +
      `intelligence_engine/strategy_runtime/archetype_lifecycle.py`,

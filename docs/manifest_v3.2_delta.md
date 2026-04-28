@@ -111,8 +111,8 @@ intelligence_engine/meta_controller/policy/execution_policy.py:
 ### 1.2 Regime Transition Hysteresis (I2 — INV-49)
 
 **Path:** `intelligence_engine/strategy_runtime/regime_detector.py`
-(IND-REG-01, already shipped in Phase 3 — extended in 6.T1a)
-**Phase:** 6.T1a (lands with regime_router activation against Belief State)
+(IND-REG-01, already shipped in Phase 3 — extended in 6.T1e)
+**Phase:** 6.T1e (lands after System Intent Engine; extends regime_router with INV-49 gate)
 **Spec ID:** IND-REG-02
 
 **What it is:**
@@ -279,7 +279,7 @@ that signal (signal still consumed; metadata ignored fail-closed).
 ### 1.5 Richer Simulation Outcome (I5 — Schema delta)
 
 **Path:** `core/contracts/events.py` (`SystemEvent.simulation_outcome`
-payload extended) + `simulation/arena/simulation_outcome.py`
+payload extended) + `simulation/strategy_arena/simulation_outcome.py`
 **Phase:** 10.1 (lands with Simulation vPro)
 **Spec ID:** SIM-OUT-02
 
@@ -381,9 +381,9 @@ for HITL review.
 ### 1.7 PolicyEngine Constant-Time Lookup (I7 reframed)
 
 **Path:** `governance_engine/control_plane/policy_engine.py`
-(GOV-CP-02 — refined, no API change)
+(GOV-CP-01 — refined, no API change)
 **Phase:** 7 (perf-hardening — locked spec)
-**Spec ID:** GOV-CP-02-PERF
+**Spec ID:** GOV-CP-01-PERF
 
 **What it is — and what it is NOT:**
 
