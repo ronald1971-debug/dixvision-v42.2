@@ -1,0 +1,23 @@
+# Position Sizer coefficients (Phase 6.T1b allocation/).
+#
+# Composite formula (audit-friendly per J3 reward breakdown):
+#
+#   confidence_factor = clamp01(confidence)        if conf >= floor
+#                      = 0                          otherwise
+#   regime_factor     = multiplier_for(regime)    in [0, +inf)
+#   risk_factor       = clamp01(1 - risk_damping · pressure.risk)
+#   pre_cap_size      = clamp01(base_fraction · cf · rf · risk_f)
+#   final_size        = min(pre_cap_size, kelly_cap)
+#
+# Patches edit this file via Governance; runtime never does.
+
+version: v3.3-T1b
+base_fraction: 1.0
+kelly_cap: 0.25
+
+trend_multiplier: 1.0
+range_multiplier: 0.5
+vol_spike_multiplier: 0.0
+
+confidence_floor: 0.2
+risk_damping: 0.5
