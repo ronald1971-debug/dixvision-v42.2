@@ -53,6 +53,12 @@ enum SystemEventKind {
   PLUGIN_LIFECYCLE = 3;   // PLUGIN-ACT-06
   UPDATE_PROPOSED = 4;    // offline → Governance
   LEDGER_COMMIT = 5;
+  // v3.3 T1a — coherence projection snapshots (INV-53 calibration hook).
+  // Read-only by definition; emitted by core.coherence so the offline
+  // learning_engine.calibration.coherence_calibrator has a ledgered
+  // window to read against realised outcomes.
+  BELIEF_STATE_SNAPSHOT = 6;
+  PRESSURE_VECTOR_SNAPSHOT = 7;
 }
 
 // EVT-01

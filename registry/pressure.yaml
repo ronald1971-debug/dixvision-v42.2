@@ -1,0 +1,32 @@
+# Pressure Vector — derivation coefficients (Phase 6.T1a).
+#
+# Refs:
+#   docs/manifest_v3.2_delta.md §1.3 (INV-50, SAFE-43)
+#   docs/manifest_v3.1_delta.md §H2 (continuous safety modifier, INV-31)
+#   docs/manifest_v3.3_delta.md §1.2 (INV-53 calibration hook)
+#   core/coherence/performance_pressure.py
+#
+# Schema: see PressureConfig dataclass.
+#   alpha + beta MUST be <= 1.0 so that the composite `uncertainty`
+#   stays in [0, 1] without clamping in the typical path.
+#
+# Default coefficients are an even split between raw per-signal
+# uncertainty and cross-signal entropy. Phase 6.T1c calibration may
+# tune these via the patch pipeline; never edited at runtime.
+
+version: v3.3-T1a
+
+alpha: 0.5
+beta:  0.5
+
+# `entropy_high_water` is the uncertainty above which the continuous
+# safety modifier starts to compress trade size (NOT a kill switch —
+# Governance retains the hard override = 0 path outside this
+# projection). 0.6 means the system softens around the upper third of
+# the uncertainty domain.
+entropy_high_water: 0.6
+
+# Compression slope above the high-water mark. With slope 1.5, an
+# uncertainty of 1.0 (full disagreement at zero confidence) maps to
+# safety_modifier = max(0, 1 - (1.0 - 0.6) * 1.5) = 0.4.
+entropy_high_water_modifier: 1.5

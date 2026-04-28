@@ -64,6 +64,14 @@ class SystemEventKind(StrEnum):
     PLUGIN_LIFECYCLE = "PLUGIN_LIFECYCLE"  # ties into PLUGIN-ACT-06
     UPDATE_PROPOSED = "UPDATE_PROPOSED"  # offline engines emit this
     LEDGER_COMMIT = "LEDGER_COMMIT"
+    # ------------------------------------------------------------------
+    # v3.3 T1a — coherence projection snapshots (INV-53 calibration hook).
+    # Read-only by definition; emitted by ``core.coherence`` so the
+    # offline ``learning_engine.calibration.coherence_calibrator`` has a
+    # ledgered window to read against realised outcomes.
+    # ------------------------------------------------------------------
+    BELIEF_STATE_SNAPSHOT = "BELIEF_STATE_SNAPSHOT"
+    PRESSURE_VECTOR_SNAPSHOT = "PRESSURE_VECTOR_SNAPSHOT"
 
 
 # ---------------------------------------------------------------------------
