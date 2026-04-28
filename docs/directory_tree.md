@@ -1,11 +1,11 @@
-# DIX v42.2 — Canonical Directory Tree (System Reference, v3.2)
+# DIX v42.2 — Canonical Directory Tree (System Reference, v3.3)
 
 This file is the architectural source of truth for the DIX v42.2 layout. It
 **describes the steady-state shape** of the repository — every directory
 and module that is canonical under the v42.2 specification, regardless of
 whether it is implemented yet.
 
-This is **v3.2 of the canonical tree**, integrating:
+This is **v3.3 of the canonical tree**, integrating:
 
 1. `manifest.md §A` (engine-led layout) — the binding base
 2. The 22 addon directives (Coherence Layer, Mode Engine, Drift Oracle,
@@ -62,6 +62,24 @@ This is **v3.2 of the canonical tree**, integrating:
    - **PolicyEngine constant-time decision table** (`I7` reframed —
      internal precompile in `governance_engine/control_plane/
      policy_engine.py`, no parallel approval path) — Phase 7
+7. The v3.3 self-correction (operator decisions J1 / J2 / J3 / J4 / J5):
+   - **Shadow Meta-Controller** (non-acting divergence tracker in
+     `intelligence_engine/meta_controller/policy/shadow_policy.py`,
+     INV-52) — Phase 6.T1b
+   - **Belief + Pressure calibration loop** (offline, governance-gated
+     `learning_engine/calibration/coherence_calibrator.py`,
+     INV-53) — Phase 6.T1c
+   - **Per-component reward audit** (`RewardBreakdown` ledger row +
+     `registry/reward_components.yaml` allowlist, B18; extends v3.1
+     INV-47) — Phase 6.T1c
+   - **Agent introspection contract** (pure `state_snapshot()` +
+     `recent_decisions(n)` on every `agents/` class via
+     `core/contracts/agent.py` Protocol +
+     `intelligence_engine/agents/_base.py` ABC, INV-54) — Phase 10.8
+   - **Sim-realism tracker + reward penalty**
+     (`learning_engine/calibration/sim_realism_tracker.py` +
+     `sim_overconfidence_penalty` term in reward shaper, INV-55) —
+     Phase 10.1 + Phase 6.T1c
 
 References:
 
@@ -87,6 +105,9 @@ Annotation legend:
 - **[NEW v3.2]** — v3.2 stress-stabilization (fallback lane,
   hysteresis, entropy uncertainty, agent_context schema, richer
   simulation outcome, archetype lifecycle, PolicyEngine constant-time table)
+- **[NEW v3.3]** — v3.3 self-correction (shadow meta-controller,
+  belief+pressure calibration loop, per-component reward audit,
+  agent introspection contract, sim-realism tracker)
 - otherwise — canonical per `manifest.md §A`, not yet implemented
 
 ```text
@@ -164,6 +185,7 @@ dixvision-v42.2/
 │   │   └── agent/                                             # IND-L14, L16, L17
 │   ├── agents/                                                # [NEW v3-P10, per C2] specialised stateful agents (distinct from stateless plugins)
 │   │   ├── __init__.py
+│   │   ├── _base.py                                           # [NEW v3.3] AGENT-INTRO-01 — abstract base implementing AgentIntrospection (state_snapshot + recent_decisions ring buffer); enforces INV-54 + B19
 │   │   ├── scalper.py                                         # AGT-01 — high-frequency intra-bar agent
 │   │   ├── swing_trader.py                                    # AGT-02 — multi-bar swing agent
 │   │   ├── macro.py                                           # AGT-03 — macro/regime-driven agent
@@ -197,7 +219,8 @@ dixvision-v42.2/
 │   │   │   └── position_sizer.py                              # MC-04 — Kelly / vol-target / pressure-adjusted size
 │   │   └── policy/                                            # [NEW v3.1] Final SKIP / SHADOW / EXECUTE gate
 │   │       ├── __init__.py
-│   │       └── execution_policy.py                            # MC-05 — final SKIP / SHADOW / EXECUTE decision; precomputed FALLBACK_POLICY + _fallback_lane() returned when latency budget exceeded or upstream stale [NEW v3.2 — INV-48]
+│   │       ├── execution_policy.py                            # MC-05 — final SKIP / SHADOW / EXECUTE decision; precomputed FALLBACK_POLICY + _fallback_lane() returned when latency budget exceeded or upstream stale [NEW v3.2 — INV-48]
+│   │       └── shadow_policy.py                               # [NEW v3.3] META-EP-03 — non-acting shadow ExecutionPolicy; runs alongside primary decide(), emits SystemEvent(kind=META_DIVERGENCE) only; never imports governance_engine/execution_engine (B17, INV-52)
 │   ├── macro/                                                 # [NEW v3-P10] Macro Regime Engine
 │   │   ├── regime_classifier.py                               # MAC-01 — HMM/Bayesian regime switching
 │   │   ├── hidden_state_detector.py                           # MAC-02 — latent state inference
@@ -281,14 +304,18 @@ dixvision-v42.2/
 │   │   ├── normalizer.py                                      # TI-LRN-02 — schema-normalises into TraderProfile
 │   │   ├── encoder.py                                         # TI-LRN-03 — encodes into StrategyAtom
 │   │   └── embedder.py                                        # TI-LRN-04 — deterministic offline embedding (fixed seed + checkpoint, ledgered)
-│   └── performance_analysis/                                  # [NEW v2-G] Alpha decay + execution quality
-│       ├── alpha_decay.py
-│       ├── execution_quality.py
-│       ├── slippage_analysis.py
-│       ├── latency_impact.py
-│       ├── pnl_attribution.py
-│       ├── reward_shaping.py                                  # [NEW v3-T1] kills naive PnL=reward; risk-adjusted reward composition
-│       └── archetype_evaluator.py                             # [NEW v3.2] ARCH-EVAL-01 — offline-only auto-demotion of archetypes (INV-51); reads ledgered performance windows, writes RETIRED/DEGRADED transitions through patch pipeline
+│   ├── performance_analysis/                                  # [NEW v2-G] Alpha decay + execution quality
+│   │   ├── alpha_decay.py
+│   │   ├── execution_quality.py
+│   │   ├── slippage_analysis.py
+│   │   ├── latency_impact.py
+│   │   ├── pnl_attribution.py
+│   │   ├── reward_shaping.py                                  # [NEW v3-T1] kills naive PnL=reward; risk-adjusted reward composition (v3.3: emits RewardBreakdown ledger row per training batch with per-component decomposition + lens_calibration_penalty + sim_overconfidence_penalty — B18, INV-47 EXTENDED)
+│   │   └── archetype_evaluator.py                             # [NEW v3.2] ARCH-EVAL-01 — offline-only auto-demotion of archetypes (INV-51); reads ledgered performance windows, writes RETIRED/DEGRADED transitions through patch pipeline
+│   └── calibration/                                           # [NEW v3.3] Coherence + simulation calibration (offline, governance-gated; never writes coherence/simulation/strategy state)
+│       ├── __init__.py
+│       ├── coherence_calibrator.py                            # [NEW v3.3] CAL-01 — offline calibrator; emits SystemEvent(kind=CALIBRATION_REPORT) per ledger window; HITL-gated patch path only (INV-53, SAFE-49)
+│       └── sim_realism_tracker.py                             # [NEW v3.3] CAL-02 — per-(strategy, regime) sim-vs-live divergence; emits SystemEvent(kind=SIM_REALISM_REPORT); reward shaper consumes for sim_overconfidence_penalty (INV-55, SAFE-50)
 │
 ├── system_engine/                                             # ENGINE-04 (Dyon)  [EXISTS]
 │   ├── __init__.py                                            # [EXISTS]
@@ -422,6 +449,11 @@ dixvision-v42.2/
 │   ├── agent_context_keys.yaml                                # [NEW v3.2] allowlist of typed `SignalEvent.agent_context` keys (B15) — horizon / conviction_type / memory_ref / regime_assumption / confidence_band
 │   ├── regime_hysteresis.yaml                                 # [NEW v3.2] persistence_ticks + confidence_delta thresholds for INV-49 hysteresis
 │   ├── pressure.yaml                                          # [NEW v3.2] α, β coefficients for entropy-aware uncertainty + entropy_high_water + entropy_high_water_modifier (INV-50, SAFE-43)
+│   ├── reward_components.yaml                                 # [NEW v3.3] B18 allowlist of RewardBreakdown.components keys (pnl / risk_adj / drawdown_pen / latency_pen / slippage_pen / …); versioned alongside reward_shaping (INV-47 EXTENDED)
+│   ├── agent_state_keys.yaml                                  # [NEW v3.3] B19 allowlist of AgentIntrospection.state_snapshot() keys (INV-54)
+│   ├── agent_rationale_tags.yaml                              # [NEW v3.3] allowlist of AgentDecisionTrace.rationale_tags (INV-54)
+│   ├── calibration.yaml                                       # [NEW v3.3] CAL window length + belief/pressure thresholds + critical_threshold + N_consecutive for SAFE-49 / SAFE-50 (INV-53, INV-55)
+│   ├── meta_controller.yaml                                   # [NEW v3.3] shadow latency budget multiplier + N_consecutive ticks for SAFE-48 (INV-52)
 │   └── strategies/                                            # [NEW v2-I] Strategy registry split
 │       ├── definitions.yaml
 │       ├── lifecycle.yaml
@@ -615,17 +647,17 @@ v3 (Tier 1 follow-ons + Phase 10):
 | Phase 5 | Learning + Evolution closed loop | DONE (PR #34) |
 | **Phase 6** | **Dashboard OS Control Plane** — 5 IMMUTABLE WIDGETS per spec §6 | **DONE (PR #37)** |
 | Phase 6.T1a | Tier 1 follow-on: Belief State + Pressure Vector (`core/coherence/`) — entropy-aware uncertainty (INV-50) [v3.2] | **NEXT** |
-| Phase 6.T1b | Tier 1 follow-on: Meta-Controller + Confidence Engine (`intelligence_engine/meta_controller/`) — INV-48 fallback lane in `policy/execution_policy.py` [v3.2] | after 6.T1a |
-| Phase 6.T1c | Tier 1 follow-on: Reward shaping (`learning_engine/performance_analysis/reward_shaping.py`) | after 6.T1b |
+| Phase 6.T1b | Tier 1 follow-on: Meta-Controller + Confidence Engine (`intelligence_engine/meta_controller/`) — INV-48 fallback lane in `policy/execution_policy.py` [v3.2] + INV-52 shadow lane in `policy/shadow_policy.py` [v3.3] | after 6.T1a |
+| Phase 6.T1c | Tier 1 follow-on: Reward shaping (`learning_engine/performance_analysis/reward_shaping.py`) + per-component RewardBreakdown ledger row (B18) [v3.3] + `learning_engine/calibration/coherence_calibrator.py` (INV-53) + `sim_realism_tracker.py` (INV-55) wiring | after 6.T1b |
 | Phase 6.T1d | v3.1 fold-in: System Intent Engine (`core/coherence/system_intent.py`, GOV-CP-07 setter) | after 6.T1c |
 | Phase 6.T1e | v3.2 fold-in: regime hysteresis activation (`regime_detector.py` + `registry/regime_hysteresis.yaml`, INV-49) | after 6.T1d |
 | Phase 7 | Asset systems (forex, stocks, crypto, memecoin isolated process) + PolicyEngine constant-time decision table (I7 reframed) [v3.2] | locked spec |
 | Phase 8 | Neuromorphic + AutoLearn (sensors, web autolearn, anomaly adapters) | locked spec |
 | Phase 9 | Optimization layer (Rust ports if measured) | locked spec |
 | **Phase 10** | **Intelligence Depth Layer** — Simulation vPro + Trader Intelligence (full F1) + Macro Regime + Cross-Asset + Strategic Execution + `agents/` | **NEW (per E1)** |
-| Phase 10.1 | Simulation vPro — adds richer `SimulationOutcome` (failure_modes + regime_performance_map + adversarial_breakdowns) [v3.2] | within Phase 10 |
+| Phase 10.1 | Simulation vPro — adds richer `SimulationOutcome` (failure_modes + regime_performance_map + adversarial_breakdowns) [v3.2] + upstream feed for `learning_engine/calibration/sim_realism_tracker.py` (INV-55) [v3.3] | within Phase 10 |
 | Phase 10.2–10.4 | Trader Intelligence ingest/offline/consumer + archetype lifecycle (`archetype_lifecycle.py`, INV-51) [v3.2] | within Phase 10 |
-| Phase 10.8 | `agents/` namespace activation + typed `SignalEvent.agent_context` schema + B15 lint (`registry/agent_context_keys.yaml`) [v3.2] | within Phase 10 |
+| Phase 10.8 | `agents/` namespace activation + typed `SignalEvent.agent_context` schema + B15 lint (`registry/agent_context_keys.yaml`) [v3.2] + AgentIntrospection contract (`_base.py` ABC, INV-54, B19) [v3.3] | within Phase 10 |
 | Phase 10.10 | v3.1 fold-in: Opponent Model (`intelligence_engine/opponent_model/`) | within Phase 10 |
 | Phase 10.11 | v3.1 fold-in: Reflexive Simulation Layer (`simulation/reflexive_layer/`) | within Phase 10 |
 | Phase 10.12 | v3.1 fold-in: Strategy Genetics (`evolution_engine/genetic/`) | within Phase 10 |
