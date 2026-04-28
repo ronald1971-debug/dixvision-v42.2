@@ -1,75 +1,22 @@
-"""Patch pipeline FSM and record (Phase 4)."""
+"""Patch pipeline FSM and record (Phase 4 / Phase 5 refactor).
+
+Concrete in-memory implementation of
+:class:`core.contracts.patch.PatchPipelineProtocol`. Data types
+(:class:`PatchStage`, :class:`PatchRecord`, :class:`StageVerdict`, …) are
+re-exported from :mod:`core.contracts.patch` for backward compatibility
+with Phase 4 callers.
+"""
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass, field
-from enum import StrEnum
-from types import MappingProxyType
-
-
-class PatchStage(StrEnum):
-    PROPOSED = "PROPOSED"
-    SANDBOX = "SANDBOX"
-    STATIC_ANALYSIS = "STATIC_ANALYSIS"
-    BACKTEST = "BACKTEST"
-    SHADOW = "SHADOW"
-    CANARY = "CANARY"
-    APPROVED = "APPROVED"
-    REJECTED = "REJECTED"
-    ROLLED_BACK = "ROLLED_BACK"
-
-
-_LEGAL: dict[PatchStage, frozenset[PatchStage]] = {
-    PatchStage.PROPOSED: frozenset({PatchStage.SANDBOX, PatchStage.REJECTED}),
-    PatchStage.SANDBOX: frozenset(
-        {PatchStage.STATIC_ANALYSIS, PatchStage.REJECTED}
-    ),
-    PatchStage.STATIC_ANALYSIS: frozenset(
-        {PatchStage.BACKTEST, PatchStage.REJECTED}
-    ),
-    PatchStage.BACKTEST: frozenset({PatchStage.SHADOW, PatchStage.REJECTED}),
-    PatchStage.SHADOW: frozenset({PatchStage.CANARY, PatchStage.REJECTED}),
-    PatchStage.CANARY: frozenset(
-        {PatchStage.APPROVED, PatchStage.REJECTED, PatchStage.ROLLED_BACK}
-    ),
-    PatchStage.APPROVED: frozenset({PatchStage.ROLLED_BACK}),
-    PatchStage.REJECTED: frozenset(),
-    PatchStage.ROLLED_BACK: frozenset(),
-}
-
-LEGAL_PATCH_TRANSITIONS: Mapping[PatchStage, frozenset[PatchStage]] = (
-    MappingProxyType(_LEGAL)
+from core.contracts.patch import (
+    LEGAL_PATCH_TRANSITIONS,
+    PatchPipelineError,
+    PatchRecord,
+    PatchStage,
+    PatchTransition,
+    StageVerdict,
 )
-
-
-class PatchPipelineError(RuntimeError):
-    """Raised on illegal patch transitions or unknown patch IDs."""
-
-
-@dataclass(frozen=True, slots=True)
-class StageVerdict:
-    ts_ns: int
-    stage: PatchStage
-    passed: bool
-    detail: str = ""
-    meta: Mapping[str, str] = field(default_factory=dict)
-
-
-@dataclass(frozen=True, slots=True)
-class _Transition:
-    ts_ns: int
-    prev: PatchStage
-    new: PatchStage
-    reason: str
-
-
-@dataclass(frozen=True, slots=True)
-class PatchRecord:
-    patch_id: str
-    stage: PatchStage
-    history: tuple[_Transition, ...]
-    verdicts: tuple[StageVerdict, ...]
 
 
 class PatchPipeline:
@@ -82,7 +29,7 @@ class PatchPipeline:
 
     def __init__(self) -> None:
         self._records: dict[str, PatchStage] = {}
-        self._history: dict[str, list[_Transition]] = {}
+        self._history: dict[str, list[PatchTransition]] = {}
         self._verdicts: dict[str, list[StageVerdict]] = {}
 
     # ------------------------------------------------------------------
@@ -93,7 +40,7 @@ class PatchPipeline:
             raise PatchPipelineError(f"patch already exists: {patch_id!r}")
         self._records[patch_id] = PatchStage.PROPOSED
         self._history[patch_id] = [
-            _Transition(
+            PatchTransition(
                 ts_ns=ts_ns,
                 prev=PatchStage.PROPOSED,
                 new=PatchStage.PROPOSED,
@@ -131,7 +78,9 @@ class PatchPipeline:
             )
         self._records[patch_id] = new_stage
         self._history[patch_id].append(
-            _Transition(ts_ns=ts_ns, prev=prev, new=new_stage, reason=reason)
+            PatchTransition(
+                ts_ns=ts_ns, prev=prev, new=new_stage, reason=reason
+            )
         )
         return self.get(patch_id)
 
@@ -159,5 +108,6 @@ __all__ = [
     "PatchPipelineError",
     "PatchRecord",
     "PatchStage",
+    "PatchTransition",
     "StageVerdict",
 ]
