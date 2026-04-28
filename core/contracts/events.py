@@ -79,6 +79,17 @@ class SystemEventKind(StrEnum):
     # decisions against the primary policy's actual outcome.
     # ------------------------------------------------------------------
     META_DIVERGENCE = "META_DIVERGENCE"
+    # ------------------------------------------------------------------
+    # v3.1 H5 + v3.3 J3 — reward shaping per-component breakdown
+    # (Tier 1.5). Emitted by
+    # ``learning_engine.lanes.reward_shaping`` per realised trade so
+    # the offline calibrator can attribute reward drift to individual
+    # components (consensus / strength / coverage / sizing rationale /
+    # latency / slippage / fallback). The raw PnL is preserved
+    # alongside the shaped reward to keep shaping invertible /
+    # auditable per INV-47.
+    # ------------------------------------------------------------------
+    REWARD_BREAKDOWN = "REWARD_BREAKDOWN"
 
 
 # ---------------------------------------------------------------------------

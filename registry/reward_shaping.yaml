@@ -1,0 +1,28 @@
+# Reward shaping coefficients (Tier 1.5 / H5 + J3 per-component breakdown).
+#
+# The shaping function is the *additive sum* of named components:
+#
+#   shaped = pnl_weight·pnl
+#     + Σ confidence_weights·confidence_components
+#     − slippage_penalty_per_bps·|slippage_bps|
+#     − latency_penalty_per_us·max(latency_us, 0)
+#     − sizing_kelly_cap_penalty·[rationale==KELLY_CAPPED]
+#     − sizing_floor_penalty·[rationale==CONFIDENCE_BELOW_FLOOR]
+#     − fallback_penalty·[fallback]
+#
+# Penalties are listed as positive *magnitudes*; the shaping function
+# applies the sign internally. raw_pnl is preserved on every breakdown
+# record so the unshaped reward is always recoverable (INV-47).
+#
+# Patches edit this file via Governance; runtime never does.
+
+version: v3.3-J3
+pnl_weight: 1.0
+slippage_penalty_per_bps: 0.05
+latency_penalty_per_us: 0.001
+confidence_consensus_weight: 0.05
+confidence_strength_weight: 0.05
+confidence_coverage_weight: 0.02
+sizing_kelly_cap_penalty: 0.0
+sizing_floor_penalty: 0.0
+fallback_penalty: 0.5
