@@ -24,6 +24,7 @@ from intelligence_engine.meta_controller.config import (
     DEFAULT_SIZER_PATH,
     load_meta_controller_config,
 )
+from intelligence_engine.meta_controller.hot_path import MetaControllerHotPath
 from intelligence_engine.meta_controller.orchestrator import (
     META_CONTROLLER_VERSION,
     MetaControllerConfig,
@@ -45,6 +46,7 @@ __all__ = [
     "DEFAULT_SIZER_PATH",
     "META_CONTROLLER_VERSION",
     "MetaControllerConfig",
+    "MetaControllerHotPath",
     "MetaControllerOutput",
     "MetaControllerState",
     "RUNTIME_ADAPTER_SOURCE",
