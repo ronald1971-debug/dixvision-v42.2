@@ -47,7 +47,7 @@ This is **v3.2 of the canonical tree**, integrating:
    - **Regime hysteresis activation** (extends `regime_detector.py` +
      new `registry/regime_hysteresis.yaml`, INV-49) — Phase 6.T1e
    - **Cross-signal entropy in Pressure Vector `uncertainty`**
-     (`pressure_vector.py` derivation, INV-50, +
+     (`performance_pressure.py` derivation, INV-50, +
      `registry/pressure.yaml`) — Phase 6.T1a
    - **Typed `agent_context` schema** (`SignalEvent.agent_context:
      Mapping[str, str]` + `registry/agent_context_keys.yaml` allowlist,

@@ -153,7 +153,7 @@ regime transition without satisfying INV-49 are logged as
 
 ### 1.3 Cross-Signal Entropy in Pressure Vector (I3 — INV-50)
 
-**Path:** `core/coherence/pressure_vector.py`
+**Path:** `core/coherence/performance_pressure.py`
 **Phase:** 6.T1a
 **Spec ID:** SCL-04 (refined)
 
