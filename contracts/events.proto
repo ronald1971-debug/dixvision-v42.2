@@ -64,6 +64,12 @@ enum SystemEventKind {
   // event so the offline learning_engine can compare alternative
   // decisions against the primary policy's actual outcome.
   META_DIVERGENCE = 8;
+  // v3.1 H5 + v3.3 J3 — reward shaping per-component breakdown.
+  // Emitted by learning_engine.lanes.reward_shaping per realised
+  // trade so the offline calibrator can attribute reward drift to
+  // individual components (consensus / strength / coverage / sizing
+  // / latency / slippage / fallback / shaping_version).
+  REWARD_BREAKDOWN = 9;
 }
 
 // EVT-01
