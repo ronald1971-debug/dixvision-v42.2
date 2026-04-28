@@ -1,0 +1,23 @@
+# Regime Router — INV-49 hysteresis coefficients (Phase 6.T1e).
+#
+# Refs:
+#   docs/manifest_v3.2_delta.md §1.2 (INV-49 regime hysteresis)
+#   docs/manifest_v3.1_delta.md §B1  (BeliefState as projection)
+#   intelligence_engine/meta_controller/perception/regime_router.py
+#
+# Schema: see RegimeRouterConfig.
+#
+# Default coefficients trade off responsiveness against flapping. The
+# patch pipeline edits this file after Phase 6.T1c calibration; never
+# at runtime.
+
+version: v3.3-T1e
+
+# N — minimum consecutive ticks the candidate regime must dominate
+# before transition. Higher = less flapping, more lag.
+persistence_ticks: 4
+
+# θ — confidence-delta fast-path threshold. A single tick whose
+# regime_confidence exceeds the current regime's confidence by at
+# least θ transitions immediately. Higher = stricter break detection.
+confidence_delta_threshold: 0.4
