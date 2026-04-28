@@ -1,11 +1,11 @@
-# DIX v42.2 — Canonical Directory Tree (System Reference, v2)
+# DIX v42.2 — Canonical Directory Tree (System Reference, v3)
 
 This file is the architectural source of truth for the DIX v42.2 layout. It
 **describes the steady-state shape** of the repository — every directory
 and module that is canonical under the v42.2 specification, regardless of
 whether it is implemented yet.
 
-This is **v2 of the canonical tree**, integrating:
+This is **v3 of the canonical tree**, integrating:
 
 1. `manifest.md §A` (engine-led layout) — the binding base
 2. The 22 addon directives (Coherence Layer, Mode Engine, Drift Oracle,
@@ -16,6 +16,14 @@ This is **v2 of the canonical tree**, integrating:
    Normalizer, Simulation Engine, Real-Time Risk Engine, Performance &
    Alpha-Decay Tracking, Data Versioning, Strategy Registry split,
    Operator Audit
+4. The 20 extras directives (operator decisions A1 / B1 / C2 / D1 / E1 / F1):
+   - Tier 1 follow-ons after Phase 6: Belief State, Pressure Vector,
+     Meta-Controller, Confidence Engine, Reward Shaping
+   - `agents/` namespace alongside `plugins/` (per C2)
+   - **Phase 10: Intelligence Depth Layer** (per E1, after Phase 9):
+     Simulation vPro, Trader Intelligence System (full F1), Macro Regime
+     Engine, Cross-Asset Coupling, Strategic Execution + Market Impact,
+     trader-intelligence proto contract
 
 References:
 
@@ -28,10 +36,14 @@ References:
 
 Annotation legend:
 
-- **[EXISTS]** — present on `main` today
+- **[EXISTS]** — present on `main` today (Phases 0–5 shipped)
 - **[NEW v1]** — added by the 22 addons (System Coherence Layer,
   Dashboard OS, hard 3-domain isolation, drift killers)
 - **[NEW v2-A..J]** — added by the 10 institutional-grade additions
+- **[NEW v3-T1]** — Tier 1 extras follow-on (after Phase 6, fits inside
+  existing engines, no spec change)
+- **[NEW v3-P10]** — Phase 10 Intelligence Depth Layer (extras Tier 2,
+  formal phase append after Phase 9)
 - otherwise — canonical per `manifest.md §A`, not yet implemented
 
 ```text
@@ -51,7 +63,8 @@ dixvision-v42.2/
 │   ├── governance.proto
 │   ├── ledger.proto
 │   ├── market.proto
-│   └── system.proto
+│   ├── system.proto
+│   └── trader_intelligence.proto                              # [NEW v3-P10] TraderProfile, StrategyAtom, ComposedStrategy, MetaControllerState
 │
 ├── core/
 │   ├── __init__.py                                            # [EXISTS]
@@ -72,9 +85,11 @@ dixvision-v42.2/
 │       ├── __init__.py                                        # [NEW v1]
 │       ├── engine.py                                          # SCL-01 — global interpretation
 │       ├── causal_graph.py                                    # SCL-02 — trade→outcome→update edges
-│       ├── mode_engine.py                                     # SCL-03 — first-class FSM (MANUAL/SEMI/AUTO/SAFE_LOCKED)
+│       ├── mode_engine.py                                     # SCL-03 — read-only Protocol/types (only Governance writes mode)
 │       ├── drift_oracle.py                                    # SCL-04 — DRIFT_VECTOR computation
-│       └── meta_adaptation.py                                 # SCL-05 — Learning↔Evolution unifier
+│       ├── meta_adaptation.py                                 # SCL-05 — Learning↔Evolution unifier
+│       ├── belief_state.py                                    # [NEW v3-T1] BELIEF_STATE_VECTOR (regime, vol, liq, conf, hypotheses) — frozen, read-only projection
+│       └── performance_pressure.py                            # [NEW v3-T1] PRESSURE_VECTOR (perf/risk/drift/latency/uncertainty) — derived from existing sensors
 │
 ├── immutable_core/                                            # SAFE-06, axioms
 │   ├── foundation.hash                                        # SAFE-06
@@ -89,11 +104,13 @@ dixvision-v42.2/
 │   ├── engine.py                                              # [EXISTS]
 │   ├── charter/indira.py                                      # CORE-30
 │   ├── intent_producer.py                                     # CORE-27
-│   ├── plugins/
+│   ├── signal_pipeline.py                                     # IND-SP-01 [EXISTS, Phase 3]
+│   ├── learning_interface.py                                  # IND-LI-01 [EXISTS, Phase 3]
+│   ├── plugins/                                               # IND-L0x stateless feature plugins (existing taxonomy)
 │   │   ├── __init__.py                                        # [EXISTS]
 │   │   ├── microstructure/                                    # IND-L02, L22, L23, L24
-│   │   │   ├── __init__.py
-│   │   │   └── microstructure_v1.py                           # IND-L02 v1  [EXISTS as plugins/microstructure.py — moves in Step 2]
+│   │   │   ├── __init__.py                                    # [EXISTS]
+│   │   │   └── microstructure_v1.py                           # IND-L02 v1  [EXISTS]
 │   │   ├── alpha/                                             # IND-L18, L15, L19
 │   │   ├── alt_data/                                          # IND-L08, L03
 │   │   ├── memory/                                            # IND-L21, L06, L26
@@ -101,17 +118,46 @@ dixvision-v42.2/
 │   │   ├── transfer/                                          # IND-L27, L28
 │   │   ├── cognition/                                         # IND-L10, L11, L13
 │   │   └── agent/                                             # IND-L14, L16, L17
+│   ├── agents/                                                # [NEW v3-P10, per C2] specialised stateful agents (distinct from stateless plugins)
+│   │   ├── __init__.py
+│   │   ├── scalper.py                                         # AGT-01 — high-frequency intra-bar agent
+│   │   ├── swing_trader.py                                    # AGT-02 — multi-bar swing agent
+│   │   ├── macro.py                                           # AGT-03 — macro/regime-driven agent
+│   │   ├── liquidity_provider.py                              # AGT-04 — passive liquidity agent
+│   │   └── adversarial_observer.py                            # AGT-05 — read-only adversarial probe (no orders)
 │   ├── portfolio/                                             # [NEW v2-A] Portfolio Brain — coordinated portfolio
 │   │   ├── allocator.py                                       # capital allocation across strategies
 │   │   ├── exposure_manager.py                                # cross-asset exposure control
 │   │   ├── correlation_engine.py                              # correlation + clustering
 │   │   ├── risk_parity.py                                     # portfolio balancing
 │   │   └── capital_scheduler.py                               # capital rotation logic
-│   └── strategy_runtime/                                      # [NEW v2-B] Strategy Orchestrator
-│       ├── orchestrator.py                                    # activates strategies based on regime
-│       ├── scheduler.py                                       # when strategies run
-│       ├── regime_detector.py                                 # market regime classification
-│       └── conflict_resolver.py                               # resolves conflicting signals
+│   ├── strategy_runtime/                                      # [NEW v2-B] Strategy Orchestrator [EXISTS, Phase 3]
+│   │   ├── orchestrator.py                                    # IND-ORC-01 — regime+lifecycle gating  [EXISTS]
+│   │   ├── scheduler.py                                       # IND-SCH-01 — bar-aligned cadence    [EXISTS]
+│   │   ├── regime_detector.py                                 # IND-REG-01 — runtime regime tags    [EXISTS]
+│   │   ├── state_machine.py                                   # IND-SLM-01 — strategy lifecycle FSM [EXISTS]
+│   │   └── conflict_resolver.py                               # IND-CFR-01 — resolves conflicting signals [EXISTS]
+│   ├── meta_controller/                                       # [NEW v3-T1] Meta-Controller (sits BETWEEN orchestrator and conflict_resolver; per B1 keeps both)
+│   │   ├── __init__.py
+│   │   ├── regime_router.py                                   # MC-01 — routes by Belief State regime
+│   │   ├── strategy_selector.py                               # MC-02 — picks eligible strategies
+│   │   ├── confidence_engine.py                               # MC-03 — composite confidence (Sharpe + Bayesian + Entropy + Stability + Alignment + safety mods)
+│   │   ├── position_sizer.py                                  # MC-04 — Kelly / vol-target / pressure-adjusted size
+│   │   └── execution_policy.py                                # MC-05 — final SKIP / SHADOW / EXECUTE decision
+│   ├── macro/                                                 # [NEW v3-P10] Macro Regime Engine
+│   │   ├── regime_classifier.py                               # MAC-01 — HMM/Bayesian regime switching
+│   │   ├── hidden_state_detector.py                           # MAC-02 — latent state inference
+│   │   ├── latent_embedder.py                                 # MAC-03 — deterministic offline embeddings
+│   │   └── macro_event_aligner.py                             # MAC-04 — aligns macro releases to bars
+│   ├── cross_asset/                                           # [NEW v3-P10] Cross-Asset Coupling
+│   │   ├── correlation_matrix.py                              # XAS-01 — rolling correlation
+│   │   ├── lead_lag.py                                        # XAS-02 — lead/lag detection
+│   │   ├── contagion_detector.py                              # XAS-03 — cross-asset shock propagation
+│   │   └── basket_constructor.py                              # XAS-04 — synthetic basket builder
+│   └── meta/                                                  # [NEW v3-P10] Trader Intelligence consumer (reads archetypes, synthesises strategies)
+│       ├── trader_archetypes.py                               # TI-CONS-01 — loads registry/trader_archetypes.yaml
+│       ├── strategy_synthesizer.py                            # TI-CONS-02 — composes archetypes into ComposedStrategy
+│       └── archetype_arena.py                                 # TI-CONS-03 — Darwinian capital competition between archetypes
 │
 ├── execution_engine/                                          # ENGINE-02  [EXISTS]
 │   ├── __init__.py                                            # [EXISTS]
@@ -119,30 +165,39 @@ dixvision-v42.2/
 │   ├── hot_path/
 │   │   ├── time_authority.py                                  # CORE-08, T0-04
 │   │   ├── fast_risk_cache.py                                 # CORE-06, T0-01
-│   │   └── fast_execute.py                                    # EXEC-11, T1-pure
+│   │   └── fast_execute.py                                    # EXEC-11, T1-pure  [EXISTS, Phase 2]
 │   ├── adapters/
 │   │   ├── __init__.py                                        # [EXISTS]
 │   │   ├── base.py                                            # EXEC-02   [EXISTS]
 │   │   ├── paper.py                                           #          [EXISTS]
+│   │   ├── router.py                                          # EXEC-01 hard-domain router  [EXISTS, Phase 2]
 │   │   ├── binance.py · coinbase.py · kraken.py
 │   │   ├── oanda.py · ig.py · ibkr.py · alpaca.py
 │   │   └── memecoin/                                          # EXEC-12..14 (separate-process candidate)
 │   ├── protections/
 │   │   ├── circuit_breaker.py                                 # T0-08, SAFE-23
-│   │   ├── runtime_monitor.py                                 # EXEC-08
+│   │   ├── runtime_monitor.py                                 # EXEC-08  [EXISTS, Phase 2]
 │   │   ├── reconciliation.py                                  # EXEC-10
-│   │   └── feedback.py                                        # EXEC-09
-│   ├── lifecycle/                                             # [NEW v2-C] Order State Machine — real broker realism
-│   │   ├── order_state_machine.py                             # FSM: NEW→PENDING→PARTIAL→FILLED→CLOSED→ERROR
-│   │   ├── fill_handler.py
-│   │   ├── sl_tp_manager.py                                   # stop-loss / take-profit lifecycle
-│   │   ├── retry_logic.py
-│   │   └── partial_fill_resolver.py
+│   │   └── feedback.py                                        # EXEC-09  [EXISTS, Phase 5]
+│   ├── lifecycle/                                             # [NEW v2-C] Order State Machine — real broker realism  [EXISTS, Phase 2]
+│   │   ├── order_state_machine.py                             # EXEC-LC-01 FSM: NEW→PENDING→PARTIAL→FILLED→CLOSED→ERROR
+│   │   ├── fill_handler.py                                    # EXEC-LC-02
+│   │   ├── sl_tp_manager.py                                   # EXEC-LC-03 stop-loss / take-profit lifecycle
+│   │   ├── retry_logic.py                                     # EXEC-LC-04
+│   │   └── partial_fill_resolver.py                           # EXEC-LC-05
 │   ├── market_data/                                           # [NEW v2-D] Canonical market state (replay==live)
 │   │   ├── normalizer.py
 │   │   ├── aggregator.py
 │   │   ├── latency_tracker.py
 │   │   └── book_builder.py
+│   ├── strategic_execution/                                   # [NEW v3-P10] Strategic execution + market impact
+│   │   ├── __init__.py
+│   │   ├── adversarial_executor.py                            # SE-01 — game-theoretic order placement
+│   │   ├── optimal_execution.py                               # SE-02 — Almgren-Chriss style optimal trajectory
+│   │   └── market_impact/
+│   │       ├── model.py                                       # SE-03 — square-root impact model
+│   │       ├── depth_estimator.py                             # SE-04 — book-depth estimator
+│   │       └── slippage_curve.py                              # SE-05 — historical slippage curve fitter
 │   └── domains/                                               # [NEW v1] Hard 3-domain isolation
 │       ├── __init__.py
 │       ├── normal/                                            # standard Indira+execution
@@ -160,13 +215,20 @@ dixvision-v42.2/
 │   │   ├── federated.py                                       # IND-L31, DYN-L24
 │   │   ├── experience_base.py                                 # IND-L30, DYN-L23
 │   │   └── patch_outcome_feedback.py                          # DYN-L02
-│   ├── update_emitter.py                                      # → GOV-G18
+│   ├── update_emitter.py                                      # → GOV-G18  [EXISTS, Phase 5]
+│   ├── trader_abstraction/                                    # [NEW v3-P10] Trader Intelligence learning side
+│   │   ├── __init__.py
+│   │   ├── extractor.py                                       # TI-LRN-01 — extracts behaviour primitives
+│   │   ├── normalizer.py                                      # TI-LRN-02 — schema-normalises into TraderProfile
+│   │   ├── encoder.py                                         # TI-LRN-03 — encodes into StrategyAtom
+│   │   └── embedder.py                                        # TI-LRN-04 — deterministic offline embedding (fixed seed + checkpoint, ledgered)
 │   └── performance_analysis/                                  # [NEW v2-G] Alpha decay + execution quality
 │       ├── alpha_decay.py
 │       ├── execution_quality.py
 │       ├── slippage_analysis.py
 │       ├── latency_impact.py
-│       └── pnl_attribution.py
+│       ├── pnl_attribution.py
+│       └── reward_shaping.py                                  # [NEW v3-T1] kills naive PnL=reward; risk-adjusted reward composition
 │
 ├── system_engine/                                             # ENGINE-04 (Dyon)  [EXISTS]
 │   ├── __init__.py                                            # [EXISTS]
@@ -243,7 +305,14 @@ dixvision-v42.2/
 │       ├── ai_filter.py                                       # WEBLEARN-02
 │       ├── curator.py                                         # WEBLEARN-03
 │       ├── pending_buffer.py                                  # WEBLEARN-04, HITL-07
-│       └── seeds.yaml                                         # WEBLEARN-10
+│       ├── seeds.yaml                                         # WEBLEARN-10
+│       └── trader_intelligence/                               # [NEW v3-P10] Trader Intelligence ingestion side
+│           ├── __init__.py
+│           ├── crawler.py                                     # TI-ING-01 — crawls trader profiles (governed seed list)
+│           ├── profile_extractor.py                           # TI-ING-02 — pulls structured trader behaviour
+│           ├── behavior_analyzer.py                           # TI-ING-03 — derives behaviour primitives
+│           ├── performance_validator.py                       # TI-ING-04 — validates against verified PnL
+│           └── archetype_publisher.py                         # TI-ING-05 — publishes WEB_SIGNAL_EVENT for HITL gate
 │
 ├── state/
 │   ├── __init__.py                                            # [EXISTS]
@@ -259,6 +328,14 @@ dixvision-v42.2/
 │   ├── databases/                                             # DB-01..26
 │   ├── knowledge_store.py                                     # CORE-24, T0-11
 │   ├── memory_tensor/                                         # [NEW v1] Unified market+decision+system+outcome
+│   │   ├── episodic.py                                        # episodic memory (per-trade outcomes)
+│   │   ├── semantic.py                                        # semantic memory (market knowledge)
+│   │   ├── procedural.py                                      # procedural memory (strategy procedures)
+│   │   ├── meta_memory.py                                     # meta memory (what works vs doesn't)
+│   │   └── trader_patterns/                                   # [NEW v3-P10] persisted TraderProfile + StrategyAtom store
+│   │       ├── profile_store.py
+│   │       ├── atom_store.py
+│   │       └── archetype_store.py
 │   └── data_versioning/                                       # [NEW v2-H] Snapshot + feature versioning
 │       ├── market_snapshots.py
 │       ├── feature_store.py
@@ -270,6 +347,8 @@ dixvision-v42.2/
 │   ├── layers.yaml · risk.yaml · feature_flags.yaml
 │   ├── enforcement_policies.yaml · governance_ruleset.yaml · alerts.yaml
 │   ├── budgets.yaml                                           # [NEW v1] plugin budgets per engine
+│   ├── trader_archetypes.yaml                                 # [NEW v3-P10] 30 seed traders × 5 dimensions → 300 archetypes catalog
+│   ├── agents.yaml                                            # [NEW v3-P10] agent registry (scalper / swing / macro / liquidity / adversarial)
 │   └── strategies/                                            # [NEW v2-I] Strategy registry split
 │       ├── definitions.yaml
 │       ├── lifecycle.yaml
@@ -296,13 +375,27 @@ dixvision-v42.2/
 │   ├── severity_classifier.py                                 # EXEC-06
 │   └── chaos_engine.py                                        # EXEC-07
 │
-├── simulation/                                                # [NEW v2-E] First-class backtest + scenario engine
+├── simulation/                                                # [NEW v2-E + v3-P10] First-class simulation engine — vPro
 │   ├── __init__.py
-│   ├── backtester.py
-│   ├── event_replayer.py                                      # uses tools/replay_validator
-│   ├── scenario_generator.py
-│   ├── slippage_model.py
-│   └── latency_model.py
+│   ├── engine.py                                              # SIM-00 — top-level entry point (parallel realities + arena)
+│   ├── backtester.py                                          # SIM-01 — historical backtest
+│   ├── event_replayer.py                                      # SIM-02 — uses tools/replay_validator
+│   ├── scenario_generator.py                                  # SIM-03 — deterministic scenario PRNG (caller-supplied seed)
+│   ├── slippage_model.py                                      # SIM-04
+│   ├── latency_model.py                                       # SIM-05
+│   ├── market_state_adapter.py                                # [NEW v3-P10] SIM-06 — frozen state builder
+│   ├── parallel_runner.py                                     # [NEW v3-P10] SIM-07 — runs N realities deterministically
+│   ├── scoring_engine.py                                      # [NEW v3-P10] SIM-08 — scores per-trader/per-archetype outcomes
+│   ├── state_snapshot.py                                      # [NEW v3-P10] SIM-09 — ledger-safe SimulationSnapshot
+│   ├── strategy_arena/                                        # [NEW v3-P10] Darwinian competition (slow cadence, publishes ranking)
+│   │   ├── arena.py                                           # SIM-10 — competition harness
+│   │   ├── capital_allocator.py                               # SIM-11 — capital flows by score
+│   │   ├── kill_underperformers.py                            # SIM-12 — retires losing strategies
+│   │   └── promotion_engine.py                                # SIM-13 — graduates winners (PROPOSED→SHADOW)
+│   └── adversarial/                                           # [NEW v3-P10] Adversarial market simulation layer
+│       ├── liquidity_attacker.py                              # SIM-14
+│       ├── stop_hunter.py                                     # SIM-15
+│       └── flash_crash_synth.py                               # SIM-16
 │
 ├── tools/
 │   ├── __init__.py                                            # [EXISTS]
@@ -387,9 +480,11 @@ dixvision-v42.2/
 │   └── src/
 │       ├── App.tsx
 │       ├── GlobalHeader.tsx                                   # DASH-01
-│       ├── ModeControlBar.tsx                                 # DASH-02
+│       ├── ModeControlBar.tsx                                 # DASH-02 — Phase 6 IMMUTABLE WIDGET 1 (request-only, GOV-CP-03 writes)
+│       ├── EngineStatusGrid.tsx                               # DASH-EG-01 — Phase 6 IMMUTABLE WIDGET 2 (6 engines × {alive,degraded,halted,offline})
 │       ├── WorkspaceGrid.tsx                                  # DASH-03 (mode-aware)
-│       ├── DecisionTrace.tsx                                  # DASH-04 (causal chain rendering)
+│       ├── DecisionTrace.tsx                                  # DASH-04 — Phase 6 IMMUTABLE WIDGET 3 (causal chain rendering)
+│       ├── StrategyLifecyclePanel.tsx                         # DASH-SLP-01 — Phase 6 IMMUTABLE WIDGET 4 (strategy FSM viewer)
 │       ├── RiskView.tsx                                       # DASH-05 (unified RISK_STATE_VECTOR)
 │       ├── PortfolioView.tsx                                  # DASH-06
 │       ├── SystemHealth.tsx                                   # DASH-07
@@ -401,7 +496,12 @@ dixvision-v42.2/
 │       ├── DriftMonitor.tsx                                   # [NEW v1]
 │       ├── CognitionPanel.tsx                                 # [NEW v1]
 │       ├── TimeControl.tsx                                    # [NEW v1]
+│       ├── BeliefStateView.tsx                                # [NEW v3-T1] renders core/coherence/belief_state.py snapshot
+│       ├── PressureMeter.tsx                                  # [NEW v3-T1] renders core/coherence/performance_pressure.py vector
+│       ├── MetaControllerView.tsx                             # [NEW v3-T1] confidence/sizing visibility
+│       ├── ArchetypeArena.tsx                                 # [NEW v3-P10] strategy_arena live ranking
 │       ├── memecoin/                                          # DASH-27 (3 sub-modes)
+│       │   └── MemecoinControlPanel.tsx                       # DASH-MCP-01 — Phase 6 IMMUTABLE WIDGET 5 (isolated process control)
 │       ├── per_form/                                          # DASH-28 (Forex / Stocks / Crypto / Memecoin)
 │       ├── self_reflection.tsx                                # DASH-29
 │       └── grafana_panel.tsx                                  # DASH-31
@@ -421,28 +521,35 @@ dixvision-v42.2/
     └── enforcement_matrix.md                                  # [NEW v1]
 ```
 
-## Build phasing
+## Build phasing (Build Compiler Spec §2 — locked sequence)
 
-The 13-step phasing for closing the gap from current `main` (46 files) to
-the canonical tree above (~250 nodes) is in `build_plan.md`. In summary:
+The phase-by-phase delivery is in `build_plan.md`. Updated to integrate
+v3 (Tier 1 follow-ons + Phase 10):
 
-| Step | Scope |
-|---|---|
-| 1 | This document (canonical tree, doc-only) |
-| 2 | Move `intelligence_engine/plugins/microstructure.py` → `microstructure/microstructure_v1.py` |
-| 3 | Phase E3 — Governance Control Plane (GOV-CP-01..07) + Hazard Sensors (HAZ-01..12) + Ledger expansion |
-| 4 | Coherence Layer (`core/coherence/` × 5 modules) + lint rule B2 |
-| 5 | Dashboard OS kernel (frontend, parallelisable with Step 6) |
-| 6 | Hard 3-domain isolation (`execution_engine/domains/`) |
-| 7 | Drift killers + enforcement matrix |
-| 8 | Real-Time Risk Engine (v2-F) + Execution Lifecycle FSM (v2-C) |
-| 9 | Portfolio Brain (v2-A) + Strategy Orchestrator (v2-B) |
-| 10 | Market Data Normalizer (v2-D) + Data Versioning (v2-H) |
-| 11 | Simulation Engine (v2-E) — top-level |
-| 12 | Performance + Alpha Decay (v2-G) |
-| 13 | Strategy registry split (v2-I) + Operator Audit (v2-J) |
+| Phase / Step | Scope | Status |
+|---|---|---|
+| Phase 0 | Bootstrap core (contracts, ledger, registry, time, event bus) | DONE (PR #14, #15, #23) |
+| Phase 1 | Governance core (GOV-CP-01..07, Mode FSM, OperatorBridge) | DONE (PR #28) |
+| Phase 2 | Execution core (adapters, lifecycle FSM, hot path, runtime monitor) | DONE (PR #29) |
+| Phase 3 | Indira (signal_pipeline, microstructure, strategy_runtime, learning_interface) | DONE (PR #30, #31) |
+| Phase 4 | Dyon (HAZ-01..12, health monitors, system state, patch pipeline) | DONE (PR #32, #33) |
+| Phase 5 | Learning + Evolution closed loop | DONE (PR #34) |
+| **Phase 6** | **Dashboard OS Control Plane** — 5 IMMUTABLE WIDGETS per spec §6 | **NEXT** |
+| Phase 6.T1a | Tier 1 follow-on: Belief State + Pressure Vector (`core/coherence/`) | after Phase 6 |
+| Phase 6.T1b | Tier 1 follow-on: Meta-Controller + Confidence Engine (`intelligence_engine/meta_controller/`) | after 6.T1a |
+| Phase 6.T1c | Tier 1 follow-on: Reward shaping (`learning_engine/performance_analysis/reward_shaping.py`) | after 6.T1b |
+| Phase 7 | Asset systems (forex, stocks, crypto, memecoin isolated process) | locked spec |
+| Phase 8 | Neuromorphic + AutoLearn (sensors, web autolearn, anomaly adapters) | locked spec |
+| Phase 9 | Optimization layer (Rust ports if measured) | locked spec |
+| **Phase 10** | **Intelligence Depth Layer** — Simulation vPro + Trader Intelligence (full F1) + Macro Regime + Cross-Asset + Strategic Execution + `agents/` | **NEW (per E1)** |
 
-Every step lands as its own PR. Each PR ends with a green CI gate.
+Legacy v2 13-step build remains a sub-decomposition reference in
+`build_plan.md` for non-engine items (drift killers, registry split,
+operator audit).
+
+Every phase lands as its own PR. Each PR ends with a green CI gate.
+Build Compiler Spec §1.1 freeze rules apply to every phase: no engine
+renames, no domain collapses, no module removals, additive only.
 
 ## Architectural invariants reinforced by this tree
 
@@ -468,3 +575,27 @@ Every step lands as its own PR. Each PR ends with a green CI gate.
 7. **Real broker realism.** v2-C + v2-D + v2-F provide the order
    lifecycle, normalised market state, and real-time risk evaluation
    needed for non-paper execution.
+8. **Belief State + Pressure Vector are derived projections.** v3-T1
+   `core/coherence/belief_state.py` and `performance_pressure.py` read
+   existing engine state via L3 protocols; they never write engine
+   state. Governance remains the only authority.
+9. **Meta-Controller composes with Strategy Orchestrator (per B1).**
+   Pipeline: `signal_pipeline → orchestrator (lifecycle gate) →
+   meta_controller (regime route + selector + confidence + sizer +
+   policy) → conflict_resolver (vote)`. Both modules retained, distinct
+   responsibilities.
+10. **Trader Intelligence is governed sensory data.** v3-P10 ingestion
+    (`sensory/web_autolearn/trader_intelligence/`) emits
+    `WEB_SIGNAL_EVENT` through HITL gate; learning side
+    (`learning_engine/trader_abstraction/`) builds embeddings offline
+    with fixed seed + ledgered checkpoint; consumer side
+    (`intelligence_engine/meta/`) reads `registry/trader_archetypes.yaml`.
+    Engines never reach into raw web data.
+11. **Simulation runs on slower cadence than hot path.** v3-P10
+    `simulation/strategy_arena/` publishes a `StrategyRanking` snapshot
+    that the meta-controller reads cached. T1 ≤1ms hot-path budget
+    preserved.
+12. **Determinism preserved across all v3 additions.** Scenario
+    generation uses caller-supplied PRNG seeds; embeddings produced
+    offline with fixed seed + checkpoint hash ledgered; agents are
+    pure-function-of-state with no clocks; no pure RL (INV-15).
