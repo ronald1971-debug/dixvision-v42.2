@@ -9,6 +9,14 @@ Lint:
 - L3 forbids importing from ``learning_engine`` or ``evolution_engine``.
 """
 
-from intelligence_engine.engine import IntelligenceEngine
+from intelligence_engine.engine import (
+    DEFAULT_SIGNAL_WINDOW_SIZE,
+    IntelligenceEngine,
+)
+from intelligence_engine.runtime_context import RuntimeContext
 
-__all__ = ["IntelligenceEngine"]
+__all__ = [
+    "DEFAULT_SIGNAL_WINDOW_SIZE",
+    "IntelligenceEngine",
+    "RuntimeContext",
+]
