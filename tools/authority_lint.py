@@ -419,6 +419,33 @@ def _check_b7(
     return None
 
 
+SHADOW_POLICY_PREFIXES: tuple[str, ...] = (
+    "intelligence_engine.meta_controller.policy.shadow_policy",
+)
+
+SHADOW_POLICY_FORBIDDEN_PREFIXES: tuple[str, ...] = (
+    "governance_engine",
+)
+
+
+def _check_b17(
+    importer: str, target: str, file: Path, line: int
+) -> Violation | None:
+    if not _starts_with_any(importer, SHADOW_POLICY_PREFIXES):
+        return None
+    if _starts_with_any(target, SHADOW_POLICY_FORBIDDEN_PREFIXES):
+        return Violation(
+            "B17",
+            file,
+            line,
+            importer,
+            target,
+            "shadow meta-controller is non-acting; governance_engine "
+            "imports forbidden (INV-52)",
+        )
+    return None
+
+
 RULE_CHECKS = (
     _check_t1,
     _check_c2,
@@ -429,6 +456,7 @@ RULE_CHECKS = (
     _check_l3,
     _check_b1,
     _check_b7,
+    _check_b17,
 )
 
 
