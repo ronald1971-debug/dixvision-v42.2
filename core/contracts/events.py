@@ -72,6 +72,13 @@ class SystemEventKind(StrEnum):
     # ------------------------------------------------------------------
     BELIEF_STATE_SNAPSHOT = "BELIEF_STATE_SNAPSHOT"
     PRESSURE_VECTOR_SNAPSHOT = "PRESSURE_VECTOR_SNAPSHOT"
+    # ------------------------------------------------------------------
+    # v3.3 T1b — INV-52 shadow meta-controller divergence record.
+    # The shadow policy never reaches PolicyEngine; it only emits this
+    # event so the offline ``learning_engine`` can compare alternative
+    # decisions against the primary policy's actual outcome.
+    # ------------------------------------------------------------------
+    META_DIVERGENCE = "META_DIVERGENCE"
 
 
 # ---------------------------------------------------------------------------

@@ -59,6 +59,11 @@ enum SystemEventKind {
   // window to read against realised outcomes.
   BELIEF_STATE_SNAPSHOT = 6;
   PRESSURE_VECTOR_SNAPSHOT = 7;
+  // v3.3 T1b — INV-52 shadow meta-controller divergence record.
+  // The shadow policy never reaches PolicyEngine; it only emits this
+  // event so the offline learning_engine can compare alternative
+  // decisions against the primary policy's actual outcome.
+  META_DIVERGENCE = 8;
 }
 
 // EVT-01
