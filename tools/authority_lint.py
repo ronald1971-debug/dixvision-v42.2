@@ -15,6 +15,14 @@ Rule set (ZIP v4):
 * **L3**  Runtime engines may not import ``learning_engine`` or
   ``evolution_engine``.
 * **B1**  Cross-runtime-engine direct imports forbidden — generalises T1.
+* **B7**  Dashboard isolation (Build Compiler Spec §6 + INV-37). The
+  ``dashboard/`` package is the dashboard *control plane*. It may only
+  import ``core.contracts``, ``core.coherence`` (read-only),
+  ``governance_engine.control_plane`` (Protocol surfaces / GOV-CP-07
+  bridge), ``state.ledger.reader``, and ``intelligence_engine``
+  read-only public surfaces (``check_self``-style health + the
+  strategy lifecycle FSM). Private engine modules and any
+  ``learning_engine`` / ``evolution_engine`` imports are forbidden.
 
 Allow-list applies to every rule:
 
@@ -111,6 +119,22 @@ MEMECOIN_ADAPTER_PREFIXES: tuple[str, ...] = (
 
 MAIN_WALLET_FORBIDDEN_PREFIXES: tuple[str, ...] = (
     "wallet.main_wallet",
+)
+
+# Dashboard isolation (B7).
+DASHBOARD_PREFIXES: tuple[str, ...] = ("dashboard",)
+
+# Imports the dashboard control-plane is permitted to make beyond the
+# common allow-list. Each entry is matched as a dotted prefix.
+DASHBOARD_ALLOWED_PREFIXES: tuple[str, ...] = (
+    "core",
+    "core.contracts",
+    "core.coherence",
+    "state.ledger.reader",
+    "governance_engine.control_plane",
+    # Read-only public surfaces of intelligence_engine that the
+    # dashboard projects (strategy lifecycle FSM types + health).
+    "intelligence_engine.strategy_runtime.state_machine",
 )
 
 
@@ -367,6 +391,34 @@ def _check_b1(
     )
 
 
+def _check_b7(
+    importer: str, target: str, file: Path, line: int
+) -> Violation | None:
+    if not _starts_with_any(importer, DASHBOARD_PREFIXES):
+        return None
+    # Imports inside the dashboard package itself are always fine.
+    if _starts_with_any(target, DASHBOARD_PREFIXES):
+        return None
+    if _check_allow_list(target):
+        return None
+    if _starts_with_any(target, DASHBOARD_ALLOWED_PREFIXES):
+        return None
+    # Block any other engine import — runtime or offline.
+    if _starts_with_any(target, ALL_ENGINE_PACKAGES):
+        return Violation(
+            "B7",
+            file,
+            line,
+            importer,
+            target,
+            "dashboard isolation: only core.contracts, core.coherence, "
+            "state.ledger.reader, governance_engine.control_plane, and "
+            "intelligence_engine.strategy_runtime.state_machine are allowed "
+            "(Build Compiler Spec §6 + INV-37)",
+        )
+    return None
+
+
 RULE_CHECKS = (
     _check_t1,
     _check_c2,
@@ -376,6 +428,7 @@ RULE_CHECKS = (
     _check_l2,
     _check_l3,
     _check_b1,
+    _check_b7,
 )
 
 
