@@ -81,22 +81,32 @@ replay determinism) is documented in
 
 ### Running on Windows (one-click launcher)
 
-A double-click launcher + desktop shortcut are shipped under
-`scripts/windows/`. First-time setup (PowerShell, run from the repo root):
+A double-click launcher + auto-installed desktop shortcut are shipped
+under `scripts/windows/`. First-time setup is literally one step:
 
-```powershell
-# 1. (one time) install the desktop shortcut
-powershell -ExecutionPolicy Bypass -File scripts\windows\install_desktop_shortcut.ps1
-
-# 2. double-click "DIX VISION" on your desktop — or run the .bat directly
+```bat
 scripts\windows\start_dixvision.bat
 ```
 
-The launcher is **idempotent**: the first run creates a `.venv`,
-`pip install -r requirements-dev.txt` + `pip install -e .` and writes a
-marker file under `.venv/`; subsequent runs skip setup and just
-(re)start the FastAPI control-plane harness on
-`http://127.0.0.1:8080/`, opening the page in your default browser.
+That's it. On the first run the launcher creates a `.venv`,
+`pip install -r requirements-dev.txt` + `pip install -e .`, writes a
+marker file under `.venv/`, **drops a "DIX VISION" shortcut on your
+desktop**, and starts the FastAPI control-plane harness on
+`http://127.0.0.1:8080/` (opening the page in your default browser).
+
+Subsequent runs skip the install steps and just (re)start the harness.
+The desktop-shortcut step is idempotent and self-healing: every launch
+overwrites `Desktop\DIX VISION.lnk`, so re-running the .bat fixes a
+deleted shortcut.
+
+If you prefer to install the shortcut without launching the harness
+(e.g. on a setup pass), the standalone PowerShell entry point is still
+available:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\windows\install_desktop_shortcut.ps1
+```
+
 Use `scripts\windows\stop_dixvision.bat` for a clean shutdown
 (force-kills whatever is listening on port 8080).
 

@@ -94,6 +94,23 @@ if not exist "%VENV_MARKER%" (
     echo Dependencies installed.
 )
 
+REM --- ensure the desktop shortcut is in place (idempotent, self-healing) ------
+REM Calls install_desktop_shortcut.ps1 in -Quiet mode every launch. The PS
+REM script overwrites any existing "DIX VISION.lnk" on the user's desktop,
+REM so re-running fixes a deleted shortcut. Failures here are non-fatal; the
+REM launcher still proceeds to start the dashboard.
+where powershell >nul 2>&1
+if %errorlevel%==0 (
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT_DIR%install_desktop_shortcut.ps1" -Quiet
+    if errorlevel 1 (
+        echo [WARN] Desktop shortcut install failed ^(continuing^).
+    ) else (
+        echo Desktop shortcut: installed/refreshed.
+    )
+) else (
+    echo [WARN] powershell not found; skipping desktop shortcut install.
+)
+
 REM --- launch the dashboard in the default browser after a short delay ---------
 REM ('start "" /b' detaches without opening a new shell window)
 start "" /b cmd /c "timeout /t 3 /nobreak >nul && start "" "%DASH_URL%""

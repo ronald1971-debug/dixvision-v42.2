@@ -21,10 +21,15 @@
 [CmdletBinding()]
 param(
     [string] $ShortcutName = "DIX VISION",
-    [switch] $AllUsers
+    [switch] $AllUsers,
+    [switch] $Quiet
 )
 
 $ErrorActionPreference = "Stop"
+
+function Write-Status($msg) {
+    if (-not $Quiet) { Write-Host $msg }
+}
 
 # Resolve repo root (this script lives in scripts/windows/).
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
@@ -51,12 +56,12 @@ if (Test-Path $VenvPyW) {
     $IconLocation = "$env:SystemRoot\System32\shell32.dll,13"
 }
 
-Write-Host ""
-Write-Host "=== DIX VISION desktop shortcut ==="
-Write-Host "Repo:     $RepoRoot"
-Write-Host "Launcher: $Launcher"
-Write-Host "Shortcut: $LinkPath"
-Write-Host ""
+Write-Status ""
+Write-Status "=== DIX VISION desktop shortcut ==="
+Write-Status "Repo:     $RepoRoot"
+Write-Status "Launcher: $Launcher"
+Write-Status "Shortcut: $LinkPath"
+Write-Status ""
 
 $Shell = New-Object -ComObject WScript.Shell
 $Link  = $Shell.CreateShortcut($LinkPath)
@@ -67,4 +72,4 @@ $Link.Description      = "Launch the DIX VISION v42.2 control-plane dashboard"
 $Link.WindowStyle      = 1  # Normal window so uvicorn logs are visible
 $Link.Save()
 
-Write-Host "Shortcut created. Double-click 'DIX VISION' on your desktop to launch."
+Write-Status "Shortcut created. Double-click 'DIX VISION' on your desktop to launch."
