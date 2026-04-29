@@ -57,6 +57,7 @@ class LatencySpikeSensor:
                 source=self.source,
                 detail=f"latency breaches {breaches}/{self._window} > budget {self._budget_ns}ns",
                 meta={"breaches": str(breaches), "window": str(self._window)},
+                produced_by_engine="system_engine",
             ),
         )
 

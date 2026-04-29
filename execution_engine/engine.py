@@ -158,6 +158,7 @@ class ExecutionEngine(RuntimeEngine):
                     venue=self._adapter.name,
                     order_id="",
                     meta={"reason": "shadow signal"},
+                    produced_by_engine="execution_engine",
                 ),
             )
 
@@ -174,6 +175,7 @@ class ExecutionEngine(RuntimeEngine):
                     venue=self._adapter.name,
                     order_id="",
                     meta={"reason": "no mark for symbol"},
+                    produced_by_engine="execution_engine",
                 ),
             )
 

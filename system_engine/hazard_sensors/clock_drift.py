@@ -53,6 +53,7 @@ class ClockDriftSensor:
                 source=self.source,
                 detail=f"clock drift {drift}ns > tolerance {self._tolerance_ns}ns",
                 meta={"drift_ns": str(drift)},
+                produced_by_engine="system_engine",
             ),
         )
 

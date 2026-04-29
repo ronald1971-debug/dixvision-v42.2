@@ -124,6 +124,7 @@ class ConflictResolver:
             confidence=confidence,
             plugin_chain=tuple(chain),
             meta=merged_meta,
+            produced_by_engine="intelligence_engine",
         )
         resolution = ConflictResolution(
             symbol=symbol,

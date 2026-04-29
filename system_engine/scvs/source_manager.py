@@ -202,6 +202,7 @@ class SourceManager:
                             "source_id": decl.id,
                             "category": decl.category.value,
                         },
+                        produced_by_engine="system_engine",
                     )
                 )
             st.last_status = new_status

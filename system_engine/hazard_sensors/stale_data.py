@@ -48,6 +48,7 @@ class StaleDataSensor:
                     source=self.source,
                     detail=f"{symbol} quotes stale for {gap}ns",
                     meta={"symbol": symbol, "gap_ns": str(gap)},
+                    produced_by_engine="system_engine",
                 )
             )
         return tuple(out)

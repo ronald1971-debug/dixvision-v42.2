@@ -87,6 +87,7 @@ class MicrostructureV1:
                     "diff_bps": f"{diff_bps:.6f}",
                     "tolerance_bps": f"{self.tolerance_bps:.6f}",
                 },
+                produced_by_engine="intelligence_engine",
             ),
         )
 
