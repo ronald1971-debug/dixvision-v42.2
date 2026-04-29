@@ -71,7 +71,21 @@ jobs:
       - name: grep for unsafe blocks
         run: |
           set -euo pipefail
-          violations=$(grep -RIn --include='*.rs' -E '^\s*unsafe\s' rust/ || true)
+          # Match `unsafe` as a whole word anywhere on the line so we
+          # also catch `pub unsafe fn`, `let x = unsafe { ... }`, and
+          # `pub(crate) unsafe trait`. Filter out legitimate
+          # mentions of the literal token:
+          #   * `// SAFETY:` justification comments (a documented FFI seam)
+          #   * the `unsafe_code` lint attribute name
+          #   * doc comments (lines starting with `//!`, `///`, or `*`
+          #     when wrapped in `/* */`) — those discuss the rule, they
+          #     don't introduce it.
+          violations=$(grep -RIn --include='*.rs' -P '\bunsafe\b' rust/ \
+            | grep -v '// SAFETY:' \
+            | grep -v 'unsafe_code' \
+            | grep -Pv ':\s*///' \
+            | grep -Pv ':\s*//!' \
+            || true)
           if [ -n "$violations" ]; then
             echo "Forbidden 'unsafe' blocks found:" >&2
             echo "$violations" >&2
