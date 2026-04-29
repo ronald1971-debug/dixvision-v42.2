@@ -1,0 +1,226 @@
+/* DIX VISION — Dashboard-2026 wave-01 (vanilla skeleton).
+ *
+ * This stylesheet powers the chat widgets (Indira / Dyon) and the
+ * per-form widget grid. It is intentionally a thin vanilla layer:
+ * wave-02 will replace the markup with React + shadcn/ui, but every
+ * endpoint and every JSON shape exercised by this skeleton is the
+ * executable spec the React port has to honour.
+ */
+
+:root {
+  --bg: #0d1117;
+  --bg-card: #151b25;
+  --bg-elev: #1a2231;
+  --fg: #e6edf3;
+  --fg-muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-warn: #d29922;
+  --accent-danger: #f85149;
+  --border: #30363d;
+  --radius: 8px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar .brand { font-weight: 600; }
+.topbar .brand .logo { color: var(--accent); margin-right: 6px; }
+.topbar nav a { margin-left: 16px; color: var(--fg-muted); }
+.topbar nav a.active { color: var(--accent); }
+
+main { padding: 20px; }
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.card h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.card h2 .spec {
+  color: var(--fg-muted);
+  font-size: 11px;
+  font-weight: 400;
+  margin-left: 8px;
+}
+
+label {
+  display: block;
+  color: var(--fg-muted);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+select, input, textarea {
+  background: var(--bg-elev);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  width: 100%;
+}
+
+textarea {
+  min-height: 80px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+
+button {
+  background: var(--accent);
+  color: #0d1117;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: var(--border);
+  color: var(--fg-muted);
+  cursor: not-allowed;
+}
+
+.muted { color: var(--fg-muted); }
+
+/* Chat widget transcript. */
+.chat-log {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px;
+  min-height: 240px;
+  max-height: 480px;
+  overflow-y: auto;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 12.5px;
+  margin-bottom: 12px;
+}
+
+.chat-row {
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed var(--border);
+}
+
+.chat-row:last-child { border-bottom: none; margin-bottom: 0; }
+
+.chat-row .who {
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.chat-row .meta {
+  color: var(--fg-muted);
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.chat-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.chat-controls .full { grid-column: 1 / -1; }
+
+.empty-state {
+  color: var(--fg-muted);
+  font-style: italic;
+}
+
+/* Per-form widget grid. */
+.forms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.form-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.form-card h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.form-card .domain-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--bg-elev);
+  color: var(--fg-muted);
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-left: 8px;
+  text-transform: uppercase;
+}
+
+.form-card.isolated {
+  border-color: var(--accent-warn);
+}
+
+.form-card.isolated .domain-tag {
+  background: var(--accent-warn);
+  color: #0d1117;
+}
+
+.form-card .field {
+  margin-bottom: 8px;
+}
+
+.form-card .field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mode-banner {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.mode-banner .mode {
+  font-weight: 600;
+  color: var(--accent);
+}

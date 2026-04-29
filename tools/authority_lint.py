@@ -40,6 +40,25 @@ Rule set (ZIP v4):
 * **B22** Triad Lock — only ``intelligence_engine`` (and the ``ui/``
   dev-harness) may construct ``SignalEvent`` (INV-56). Tests +
   ``contracts/`` are exempt.
+* **B23** Registry-driven AI providers (Dashboard-2026 wave-01). Chat
+  widget files (``ui/static/chat_widget.js``,
+  ``ui/static/indira_chat.html``, ``ui/static/dyon_chat.html``, and
+  any future ``intelligence_engine.cognitive.chat.*`` Python module)
+  may not contain any string literal naming a specific AI vendor.
+  The single source of truth is ``registry/data_source_registry.yaml``
+  (rows with ``category: ai``); chat widgets must read that registry
+  via ``GET /api/ai/providers`` and surface whatever it returns.
+  Adding a new provider is a registry-only change — no widget edit.
+* **B24** LangGraph / LangChain import containment (Dashboard-2026
+  wave-03 prep, INV-67). Only ``intelligence_engine.cognitive.*``
+  and ``evolution_engine.dyon.*`` may import ``langgraph``,
+  ``langchain*``, or ``langsmith``. Hot-path engines
+  (``execution_engine``, ``governance_engine``, ``system_engine``)
+  and the deterministic core (``core``) must never import any of
+  these surfaces — graph orchestration is non-deterministic and is
+  quarantined as advisory-only. Rule fires defensively even before
+  any module imports LangGraph (currently none) so future work
+  cannot drift past the boundary unnoticed.
 
 Allow-list applies to every rule:
 
@@ -620,6 +639,44 @@ def _check_triad_event_constructions(
     return out
 
 
+def _check_b24(
+    importer: str, target: str, file: Path, line: int
+) -> Violation | None:
+    """B24 — LangGraph / LangChain import containment (INV-67).
+
+    Only the cognitive subsystems may pull in graph-orchestration or
+    LangChain surfaces. Hot-path engines, deterministic core, and the
+    governance layer must stay free of non-deterministic ML
+    dependencies so INV-15 replay determinism is preserved on the
+    typed bus.
+    """
+
+    if not _starts_with_any(
+        target, ("langgraph", "langchain", "langsmith")
+    ):
+        return None
+    if _starts_with_any(importer, COGNITIVE_ALLOWED_PREFIXES):
+        return None
+    return Violation(
+        "B24",
+        file,
+        line,
+        importer,
+        target,
+        "LangGraph / LangChain / LangSmith imports are quarantined to"
+        " intelligence_engine.cognitive.* and evolution_engine.dyon.*"
+        " (INV-67) — non-deterministic graph orchestration may not"
+        " enter the hot path or governance.",
+    )
+
+
+# Module prefixes allowed to import langgraph / langchain* / langsmith.
+COGNITIVE_ALLOWED_PREFIXES: tuple[str, ...] = (
+    "intelligence_engine.cognitive",
+    "evolution_engine.dyon",
+)
+
+
 RULE_CHECKS = (
     _check_t1,
     _check_c2,
@@ -633,7 +690,128 @@ RULE_CHECKS = (
     _check_b8,
     _check_b17,
     _check_b20,
+    _check_b24,
 )
+
+
+# ---------------------------------------------------------------------------
+# B23 — registry-driven AI providers (Dashboard-2026 wave-01)
+# ---------------------------------------------------------------------------
+
+# Chat widget files that B23 lints. Static files (HTML / JS) are scanned
+# byte-by-byte (case-insensitive substring); Python files matching
+# CHAT_WIDGET_PYTHON_PREFIXES are scanned via AST (string constants only)
+# so that hot-path docstrings explaining the rule itself don't trip it.
+CHAT_WIDGET_STATIC_RELATIVES: tuple[tuple[str, ...], ...] = (
+    ("ui", "static", "chat_widget.js"),
+    ("ui", "static", "indira_chat.html"),
+    ("ui", "static", "dyon_chat.html"),
+)
+
+# Python module prefixes that B23 also lints. Empty for wave-01 (the
+# router itself is in core.cognitive_router and is registry-driven by
+# construction; chat widget *backends* land in wave-02). Listed here
+# so wave-02 doesn't have to re-edit the lint to add coverage.
+CHAT_WIDGET_PYTHON_PREFIXES: tuple[str, ...] = (
+    "intelligence_engine.cognitive.chat",
+    "ui.cognitive.chat",
+)
+
+# Provider tokens that are forbidden in chat widget code. Curated list
+# of known AI vendors / brand names as of 2026 — any string match
+# (case-insensitive) trips the rule. Adding a new token here is FINE;
+# the rule only fails if it appears in chat widget source. The list
+# is intentionally long so it covers names that aren't yet in the
+# registry but might be added later (Anthropic / Claude / Qwen / etc.).
+FORBIDDEN_AI_PROVIDER_TOKENS: tuple[str, ...] = (
+    "openai",
+    "chatgpt",
+    "gpt-4",
+    "gpt4",
+    "gemini",
+    "grok",
+    "deepseek",
+    "anthropic",
+    "claude",
+    "qwen",
+    "mistral",
+    "llama",
+    "xai",
+    "cognition",
+    # NOTE: the brand name "Devin" is also forbidden but is omitted
+    # from this list because the substring "devin" appears in
+    # repo-internal Devin-Review comments and branch names that may
+    # legitimately be quoted in chat widget audit text. Treat it as a
+    # known limitation: humans must still avoid hard-coding "devin"
+    # in chat widget code by convention.
+)
+
+
+def _check_b23_static(repo_root: Path) -> list[Violation]:
+    """B23 — scan chat widget static files for forbidden vendor tokens."""
+
+    out: list[Violation] = []
+    for parts in CHAT_WIDGET_STATIC_RELATIVES:
+        path = repo_root.joinpath(*parts)
+        if not path.exists():
+            # Wave-01 may ship subset of these. A missing file is fine;
+            # the rule fires on existing content only.
+            continue
+        text = path.read_text(encoding="utf-8")
+        haystack = text.lower()
+        for token in FORBIDDEN_AI_PROVIDER_TOKENS:
+            idx = haystack.find(token)
+            if idx == -1:
+                continue
+            # Compute 1-based line number of the first hit for clarity.
+            line_no = haystack.count("\n", 0, idx) + 1
+            out.append(
+                Violation(
+                    "B23",
+                    path,
+                    line_no,
+                    "ui.static." + path.stem,
+                    token,
+                    "chat widget files must be registry-driven; the"
+                    " literal token "
+                    f"{token!r} is forbidden — read providers from"
+                    " /api/ai/providers (SCVS registry).",
+                )
+            )
+    return out
+
+
+def _check_b23_python(
+    importer: str, file: Path, tree: ast.AST
+) -> list[Violation]:
+    """B23 — scan chat widget Python modules' string literals."""
+
+    if not _starts_with_any(importer, CHAT_WIDGET_PYTHON_PREFIXES):
+        return []
+    out: list[Violation] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Constant):
+            continue
+        if not isinstance(node.value, str):
+            continue
+        haystack = node.value.lower()
+        for token in FORBIDDEN_AI_PROVIDER_TOKENS:
+            if token in haystack:
+                out.append(
+                    Violation(
+                        "B23",
+                        file,
+                        getattr(node, "lineno", 0),
+                        importer,
+                        token,
+                        "chat widget Python modules must be"
+                        " registry-driven; the literal token "
+                        f"{token!r} is forbidden — read providers"
+                        " from the SCVS registry.",
+                    )
+                )
+                break  # one violation per node is enough
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -679,6 +857,10 @@ def lint_repo(repo_root: Path) -> list[Violation]:
         violations.extend(
             _check_triad_event_constructions(importer, path, repo_root, tree)
         )
+        # B23 — chat widget Python modules must be registry-driven.
+        violations.extend(_check_b23_python(importer, path, tree))
+    # B23 — chat widget static files (HTML / JS).
+    violations.extend(_check_b23_static(repo_root))
     return violations
 
 
