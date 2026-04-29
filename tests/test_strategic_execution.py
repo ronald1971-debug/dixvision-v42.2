@@ -110,6 +110,21 @@ def test_zero_sigma_gives_twap_even_with_risk_aversion():
     assert s.is_twap()
 
 
+def test_is_twap_predicate_matches_solver_for_subsecond_horizons():
+    """``is_twap()`` must mirror the solver's TWAP-path selection regardless
+    of ``horizon_seconds``. Earlier the predicate clamped the horizon to
+    ``max(.., 1.0)`` which made it strictly more conservative than the
+    solver for sub-second horizons (e.g. for horizon=1ms a TWAP-branch
+    schedule would have reported ``is_twap()=False``).
+    """
+
+    s = _solve(horizon_seconds=0.001, risk_aversion=0.0)
+    assert s.is_twap()
+    expected = 1000.0 / 10
+    for sl in s.slices:
+        assert math.isclose(sl.quantity, expected, abs_tol=1e-9)
+
+
 def test_high_risk_aversion_front_loads_schedule():
     s = _solve(sigma=0.5, risk_aversion=100.0)
     # First slice strictly larger than last for any positive kappa.

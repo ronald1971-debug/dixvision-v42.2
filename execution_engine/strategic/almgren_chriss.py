@@ -93,9 +93,14 @@ class ExecutionSchedule:
         return sum(s.quantity for s in self.slices)
 
     def is_twap(self) -> bool:
-        """True iff the schedule is the risk-neutral TWAP limit."""
+        """True iff the schedule is the risk-neutral TWAP limit.
 
-        return self.kappa < _KAPPA_T_EPS / max(self.horizon_seconds, 1.0)
+        Mirrors the solver's TWAP-path predicate so that any schedule
+        actually computed via the TWAP branch reports ``True``, regardless
+        of ``horizon_seconds``.
+        """
+
+        return self.kappa * self.horizon_seconds < _KAPPA_T_EPS
 
 
 # ---------------------------------------------------------------------------
