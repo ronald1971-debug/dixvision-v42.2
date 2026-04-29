@@ -23,16 +23,31 @@ Authority constraints (B7 lint):
 
 from __future__ import annotations
 
-from collections.abc import Callable
+import threading
+from collections.abc import Callable, Sequence
 from dataclasses import asdict, is_dataclass
 from typing import Any, Protocol
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, Field
 
+from core.coherence.system_intent import (
+    INTENT_KEY_FOCUS,
+    INTENT_KEY_HORIZON,
+    INTENT_KEY_OBJECTIVE,
+    INTENT_KEY_REASON,
+    INTENT_KEY_RISK_MODE,
+    encode_focus,
+)
+from core.contracts.governance import (
+    OperatorAction,
+    OperatorRequest,
+)
 from dashboard.control_plane.decision_trace import DecisionTracePanel
 from dashboard.control_plane.engine_status_grid import EngineStatusGrid
 from dashboard.control_plane.memecoin_control_panel import MemecoinControlPanel
 from dashboard.control_plane.mode_control_bar import ModeControlBar
+from dashboard.control_plane.router import ControlPlaneRouter
 from dashboard.control_plane.strategy_lifecycle_panel import (
     StrategyLifecyclePanel,
 )
@@ -47,6 +62,8 @@ class DashboardWidgets(Protocol):
     the engine wiring in :mod:`ui.server`.
     """
 
+    lock: threading.Lock
+
     @property
     def mode(self) -> ModeControlBar: ...
     @property
@@ -57,9 +74,46 @@ class DashboardWidgets(Protocol):
     def decisions(self) -> DecisionTracePanel: ...
     @property
     def memecoin(self) -> MemecoinControlPanel: ...
+    @property
+    def dashboard_router(self) -> ControlPlaneRouter: ...
+
+    def next_ts(self) -> int: ...
 
 
 _WidgetsProvider = Callable[[], DashboardWidgets]
+
+
+# ---------------------------------------------------------------------------
+# Pydantic action request models (DASH-2)
+# ---------------------------------------------------------------------------
+
+
+class ModeActionIn(BaseModel):
+    target_mode: str = Field(..., min_length=1, max_length=32)
+    reason: str = Field("", max_length=512)
+    operator_authorized: bool = False
+    requestor: str = Field("operator", min_length=1, max_length=64)
+
+
+class IntentActionIn(BaseModel):
+    objective: str = Field(..., min_length=1, max_length=64)
+    risk_mode: str = Field(..., min_length=1, max_length=64)
+    horizon: str = Field(..., min_length=1, max_length=64)
+    focus: Sequence[str] = Field(default_factory=tuple)
+    reason: str = Field("", max_length=512)
+    requestor: str = Field("operator", min_length=1, max_length=64)
+
+
+class KillActionIn(BaseModel):
+    reason: str = Field("operator kill", max_length=512)
+    requestor: str = Field("operator", min_length=1, max_length=64)
+
+
+class LifecycleActionIn(BaseModel):
+    plugin_path: str = Field(..., min_length=1, max_length=256)
+    target_status: str = Field(..., min_length=1, max_length=64)
+    reason: str = Field("", max_length=512)
+    requestor: str = Field("operator", min_length=1, max_length=64)
 
 
 def _to_dict(obj: Any) -> Any:
@@ -119,6 +173,89 @@ def build_dashboard_router(provider: _WidgetsProvider) -> APIRouter:
     def get_memecoin() -> dict[str, Any]:
         widgets = provider()
         return {"memecoin": _to_dict(widgets.memecoin.status())}
+
+    # ------------------------------------------------------------------
+    # DASH-2 — operator action endpoints
+    # ------------------------------------------------------------------
+    #
+    # Each action posts an ``OperatorRequest`` through the
+    # ``ControlPlaneRouter`` (DASH-CP-01) → ``OperatorInterfaceBridge``
+    # (GOV-CP-07). The route handler never writes the ledger directly
+    # and never bypasses Governance — it constructs the typed request,
+    # submits it, and returns the resulting ``GovernanceDecision``
+    # verbatim (so a rejection is visible in the UI).
+
+    def _submit(
+        widgets: DashboardWidgets,
+        request: OperatorRequest,
+    ) -> dict[str, Any]:
+        with widgets.lock:
+            outcome = widgets.dashboard_router.submit(request)
+        return {
+            "approved": outcome.approved,
+            "summary": outcome.summary,
+            "decision": _to_dict(outcome.decision),
+        }
+
+    @router.post("/action/mode")
+    def action_mode(body: ModeActionIn) -> dict[str, Any]:
+        widgets = provider()
+        request = OperatorRequest(
+            ts_ns=widgets.next_ts(),
+            requestor=body.requestor,
+            action=OperatorAction.REQUEST_MODE,
+            payload={
+                "target_mode": body.target_mode,
+                "reason": body.reason,
+                "operator_authorized": "true"
+                if body.operator_authorized
+                else "false",
+            },
+        )
+        return _submit(widgets, request)
+
+    @router.post("/action/intent")
+    def action_intent(body: IntentActionIn) -> dict[str, Any]:
+        widgets = provider()
+        request = OperatorRequest(
+            ts_ns=widgets.next_ts(),
+            requestor=body.requestor,
+            action=OperatorAction.REQUEST_INTENT,
+            payload={
+                INTENT_KEY_OBJECTIVE: body.objective,
+                INTENT_KEY_RISK_MODE: body.risk_mode,
+                INTENT_KEY_HORIZON: body.horizon,
+                INTENT_KEY_FOCUS: encode_focus(tuple(body.focus)),
+                INTENT_KEY_REASON: body.reason,
+            },
+        )
+        return _submit(widgets, request)
+
+    @router.post("/action/kill")
+    def action_kill(body: KillActionIn) -> dict[str, Any]:
+        widgets = provider()
+        request = OperatorRequest(
+            ts_ns=widgets.next_ts(),
+            requestor=body.requestor,
+            action=OperatorAction.REQUEST_KILL,
+            payload={"reason": body.reason},
+        )
+        return _submit(widgets, request)
+
+    @router.post("/action/lifecycle")
+    def action_lifecycle(body: LifecycleActionIn) -> dict[str, Any]:
+        widgets = provider()
+        request = OperatorRequest(
+            ts_ns=widgets.next_ts(),
+            requestor=body.requestor,
+            action=OperatorAction.REQUEST_PLUGIN_LIFECYCLE,
+            payload={
+                "plugin_path": body.plugin_path,
+                "target_status": body.target_status,
+                "reason": body.reason,
+            },
+        )
+        return _submit(widgets, request)
 
     @router.get("/summary")
     def get_summary() -> dict[str, Any]:
