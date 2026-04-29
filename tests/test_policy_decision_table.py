@@ -63,7 +63,7 @@ def _legacy_verdict(
     if action is OperatorAction.REQUEST_INTENT:
         return True, ""
     if action is OperatorAction.REQUEST_UNLOCK:
-        return False, "POLICY_UNLOCK_NOT_LOCKED"
+        return False, "POLICY_NOT_LOCKED"
     return False, "POLICY_UNKNOWN_ACTION"
 
 

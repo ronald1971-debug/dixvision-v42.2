@@ -129,7 +129,7 @@ def _compile_default(
 
     if action is OperatorAction.REQUEST_UNLOCK:
         # REQUEST_UNLOCK only makes sense from LOCKED.
-        return False, "POLICY_UNLOCK_NOT_LOCKED"
+        return False, "POLICY_NOT_LOCKED"
 
     return False, "POLICY_UNKNOWN_ACTION"
 
