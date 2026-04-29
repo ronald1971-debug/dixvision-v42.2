@@ -58,6 +58,37 @@ jobs:
         working-directory: rust
         run: cargo test --all --all-features --locked
 
+  # Build the PyO3 wheel and run the dual-backend parity test against
+  # both backends. The Python suite alone (in the main `ci` workflow)
+  # only proves the pure-Python reference; this job proves the Rust
+  # backend agrees byte-for-byte on every gate branch.
+  parity:
+    name: python-rust parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+      - name: install maturin
+        run: python -m pip install --upgrade pip maturin
+      - name: install python test deps
+        run: python -m pip install pytest pyyaml fastapi pydantic
+      - name: build + install dixvision_py_execution wheel
+        working-directory: rust/py_execution
+        run: |
+          maturin build --release --out dist
+          python -m pip install --force-reinstall dist/*.whl
+      - name: confirm rust backend is wired in
+        run: |
+          python -c "from execution_engine.hot_path.fast_execute import _rust_backend_available; assert _rust_backend_available(), 'wheel not detected'"
+      - name: parity tests (both backends)
+        run: python -m pytest tests/test_fast_execute_parity.py tests/test_execution_hot_path.py -v
+
   # Architectural invariant guard:
   # The workspace must NEVER introduce `unsafe` code outside documented
   # FFI seams. This is ALSO enforced at the crate level via

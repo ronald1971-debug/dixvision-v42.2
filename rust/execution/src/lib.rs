@@ -18,6 +18,8 @@
 
 #![forbid(unsafe_code)]
 
+pub mod fast_execute;
+
 use thiserror::Error;
 
 /// Canonical error type for the execution domain.

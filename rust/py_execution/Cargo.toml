@@ -1,0 +1,47 @@
+# PyO3 wrapper crate for the execution domain.
+#
+# This is the FFI seam between Python and the pure Rust logic in
+# `dixvision-execution`. It owns NO logic of its own — every public
+# function here is a thin marshalling shim. That keeps the audit
+# surface tiny: any divergence between Python and Rust must come
+# from `dixvision-execution` itself, which is exhaustively unit-tested
+# without PyO3 in scope.
+#
+# The wheel produced by `maturin build` is named
+# `dixvision_py_execution`. Python imports it via:
+#
+#     from dixvision_py_execution import decide_gate
+#
+# The Python wrapper at `execution_engine/hot_path/fast_execute.py`
+# detects the wheel at import time and falls back to the pure-Python
+# implementation when the wheel is not present (e.g. in CI jobs that
+# only run the Python suite, or operator boxes that haven't built
+# the wheel yet).
+
+[package]
+name        = "dixvision-py-execution"
+version     = { workspace = true }
+edition     = { workspace = true }
+rust-version = { workspace = true }
+license     = { workspace = true }
+repository  = { workspace = true }
+publish     = false
+
+[lib]
+# `cdylib` is what maturin needs to produce the .so / .pyd.
+# `rlib` lets in-tree Rust unit tests link the library so we can
+# cover the marshalling shim without spinning a Python interpreter.
+crate-type = ["cdylib", "rlib"]
+name       = "dixvision_py_execution"
+
+[dependencies]
+# In-process logic crate — no PyO3 in scope here.
+dixvision-execution = { path = "../execution" }
+# `extension-module` keeps the compiled wheel from linking against a
+# specific libpython, which lets one wheel run against any
+# 3.10..3.13 ABI3 interpreter. `abi3-py310` matches the project's
+# minimum supported Python.
+pyo3 = { version = "0.22", features = ["extension-module", "abi3-py310"] }
+
+[lints]
+workspace = true

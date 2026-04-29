@@ -1,0 +1,41 @@
+# Maturin / PEP-517 build descriptor for the execution PyO3 wheel.
+#
+# The wheel is OPTIONAL — the Python hot-path module
+# (`execution_engine/hot_path/fast_execute.py`) auto-detects it and
+# falls back to a pure-Python implementation when it's missing. That
+# means:
+#
+#   * CI jobs that only exercise the Python suite do not need to
+#     build the wheel.
+#   * Parity CI jobs install the wheel and re-run the same tests so
+#     both backends are covered.
+#   * Operator boxes can opt in by running `pip install` inside this
+#     directory; nothing else changes.
+
+[build-system]
+requires      = ["maturin>=1.5,<2"]
+build-backend = "maturin"
+
+[project]
+name            = "dixvision-py-execution"
+version         = "0.1.0"
+description     = "PyO3 hot-path bindings for the DIX VISION execution domain."
+requires-python = ">=3.10"
+license         = { text = "Proprietary" }
+classifiers     = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Rust",
+    "Operating System :: OS Independent",
+    "License :: Other/Proprietary License",
+]
+
+[tool.maturin]
+# Compile from this directory so the cdylib output ends up scoped to
+# the right crate.
+manifest-path = "Cargo.toml"
+# `extension-module` matches the pyo3 feature so the wheel is a true
+# CPython extension.
+features = ["pyo3/extension-module"]
+# ABI3 wheel — works against any CPython >= 3.10 without rebuild.
+# No `python-source` set: this is a pure-Rust extension; no Python
+# package layered on top.
