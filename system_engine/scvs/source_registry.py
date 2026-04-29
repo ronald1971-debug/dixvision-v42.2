@@ -20,6 +20,24 @@ REGISTRY_VERSION = "v0.1.0"
 
 ALLOWED_AUTH = frozenset({"none", "required"})
 
+# SCVS Phase 2 — runtime liveness defaults. Sources without an
+# explicit ``liveness_threshold_ms`` inherit the category default; the
+# fallback is 30 s for everything that is not explicitly tighter or
+# looser. ``synthetic`` is exempt (replay buffers don't heartbeat) and
+# ``regulatory`` filings publish on a slow human cadence.
+_DEFAULT_LIVENESS_MS_BY_CATEGORY: Mapping[str, int] = {
+    "market": 5_000,
+    "onchain": 60_000,
+    "news": 5 * 60_000,
+    "social": 5 * 60_000,
+    "macro": 24 * 60 * 60_000,
+    "regulatory": 24 * 60 * 60_000,
+    "dev": 60 * 60_000,
+    "alt": 5 * 60_000,
+    "ai": 60_000,
+    "synthetic": 0,  # 0 == not liveness-checked
+}
+
 
 class SourceCategory(StrEnum):
     """Canonical source category taxonomy (matches the v3.5 SCVS spec)."""
@@ -49,6 +67,7 @@ class SourceDeclaration:
     auth: str
     enabled: bool
     critical: bool
+    liveness_threshold_ms: int = 0  # 0 == not liveness-checked
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,6 +121,19 @@ def _parse_source(raw: Any, idx: int) -> SourceDeclaration:
             f"{ctx}: auth '{auth}' must be one of {sorted(ALLOWED_AUTH)}"
         )
 
+    default_liveness = _DEFAULT_LIVENESS_MS_BY_CATEGORY.get(category.value, 30_000)
+    liveness_raw = raw.get("liveness_threshold_ms", default_liveness)
+    try:
+        liveness_ms = int(liveness_raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"{ctx}: liveness_threshold_ms must be an integer (got {liveness_raw!r})"
+        ) from exc
+    if liveness_ms < 0:
+        raise ValueError(
+            f"{ctx}: liveness_threshold_ms must be >= 0 (got {liveness_ms})"
+        )
+
     return SourceDeclaration(
         id=sid,
         name=str(_require(raw, "name", ctx)),
@@ -112,6 +144,7 @@ def _parse_source(raw: Any, idx: int) -> SourceDeclaration:
         auth=auth,
         enabled=bool(raw.get("enabled", False)),
         critical=bool(raw.get("critical", False)),
+        liveness_threshold_ms=liveness_ms,
     )
 
 

@@ -110,6 +110,17 @@ class SystemEventKind(StrEnum):
     # realised outcome distribution.
     # ------------------------------------------------------------------
     CALIBRATION_REPORT = "CALIBRATION_REPORT"
+    # ------------------------------------------------------------------
+    # v3.5 SCVS Phase 2 — runtime source liveness transitions emitted by
+    # ``system_engine.scvs.source_manager``. Pure projection of a
+    # caller-supplied ``now_ns`` against the per-source heartbeat memo;
+    # one row per status transition (UNKNOWN→LIVE, LIVE→STALE,
+    # STALE→LIVE). Critical-source STALE transitions additionally emit
+    # an ``HAZ-13`` hazard for governance escalation (SCVS-06).
+    # ------------------------------------------------------------------
+    SOURCE_HEARTBEAT = "SOURCE_HEARTBEAT"
+    SOURCE_STALE = "SOURCE_STALE"
+    SOURCE_RECOVERED = "SOURCE_RECOVERED"
 
 
 # ---------------------------------------------------------------------------

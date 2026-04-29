@@ -82,6 +82,15 @@ enum SystemEventKind {
   // PRESSURE_VECTOR_SNAPSHOT / META_AUDIT / REWARD_BREAKDOWN ledger
   // rows. Read-only by Governance — never gates execution.
   CALIBRATION_REPORT = 11;
+  // v3.5 SCVS Phase 2 — runtime source liveness transitions emitted by
+  // system_engine.scvs.source_manager. Pure projection of a caller-
+  // supplied now_ns against the per-source heartbeat memo; one row per
+  // status transition (UNKNOWN→LIVE, LIVE→STALE, STALE→LIVE).
+  // Critical-source STALE transitions additionally emit an HAZ-13
+  // hazard for governance escalation (SCVS-06).
+  SOURCE_HEARTBEAT = 12;
+  SOURCE_STALE = 13;
+  SOURCE_RECOVERED = 14;
 }
 
 // EVT-01
