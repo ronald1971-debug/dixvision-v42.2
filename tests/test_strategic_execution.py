@@ -188,6 +188,25 @@ def test_validation_rejects_invalid_inputs(kwargs, match):
         _solve(**kwargs)
 
 
+def test_kappa_squared_overflow_rejected():
+    """Even when each individual parameter is finite, their combination
+    can drive ``kappa^2 = lambda * sigma^2 / eta_tilde`` past the
+    float64 range. The solver must reject rather than return a NaN
+    schedule (would silently violate SAFE-61 and SAFE-62).
+    """
+
+    with pytest.raises(ValueError, match="overflows"):
+        solve_almgren_chriss(
+            quantity=1000.0,
+            horizon_seconds=600.0,
+            n_slices=10,
+            sigma=1.0,
+            eta=1e-4,
+            gamma=0.0,
+            risk_aversion=1e308,
+        )
+
+
 def test_permanent_impact_too_large_rejected():
     # gamma * tau / 2 must be < eta
     with pytest.raises(ValueError, match="eta - gamma"):

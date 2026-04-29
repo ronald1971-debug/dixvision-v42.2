@@ -178,6 +178,11 @@ def solve_almgren_chriss(
         )
 
     kappa_squared = (risk_aversion * sigma * sigma) / eta_tilde if sigma > 0 else 0.0
+    if not math.isfinite(kappa_squared):
+        raise ValueError(
+            "risk_aversion * sigma^2 / (eta - gamma*tau/2) overflows; "
+            "reduce risk_aversion or sigma, or increase eta"
+        )
     kappa = math.sqrt(kappa_squared) if kappa_squared > 0 else 0.0
 
     # Schedule selection: TWAP limit when kappa*T is numerically zero.
