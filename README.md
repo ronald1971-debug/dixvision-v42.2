@@ -41,6 +41,31 @@ python tools/authority_lint.py --strict .
 pytest -q
 ```
 
+### Running on Windows (one-click launcher)
+
+A double-click launcher + desktop shortcut are shipped under
+`scripts/windows/`. First-time setup (PowerShell, run from the repo root):
+
+```powershell
+# 1. (one time) install the desktop shortcut
+powershell -ExecutionPolicy Bypass -File scripts\windows\install_desktop_shortcut.ps1
+
+# 2. double-click "DIX VISION" on your desktop — or run the .bat directly
+scripts\windows\start_dixvision.bat
+```
+
+The launcher is **idempotent**: the first run creates a `.venv`,
+`pip install -e ".[dev]"` and writes a marker file under `.venv/`;
+subsequent runs skip setup and just (re)start the FastAPI control-plane
+harness on `http://127.0.0.1:8080/`, opening the page in your default
+browser. Use `scripts\windows\stop_dixvision.bat` for a clean shutdown
+(force-kills whatever is listening on port 8080).
+
+Requirements: Python 3.12 from python.org *or* `winget install
+Python.Python.3.12`. If a `pip install` fails because of missing C
+build tools, run `winget install Microsoft.VisualStudio.2022.BuildTools`
+once and retry.
+
 ## References
 
 * `docs/total_recall_index.md` — every architectural ID.

@@ -1,0 +1,100 @@
+@echo off
+REM ============================================================================
+REM DIX VISION v42.2 — Windows launcher
+REM ============================================================================
+REM Idempotent: first run creates a venv and installs dependencies; subsequent
+REM runs just (re)start the FastAPI control-plane harness on http://127.0.0.1:8080
+REM and open the dashboard in the default browser.
+REM
+REM Usage: double-click "DIX VISION.lnk" on the desktop (created by
+REM        install_desktop_shortcut.ps1), or run this .bat directly.
+REM ============================================================================
+
+setlocal enabledelayedexpansion
+
+REM --- repo root is two levels above this script -------------------------------
+set "SCRIPT_DIR=%~dp0"
+set "REPO_ROOT=%SCRIPT_DIR%..\.."
+pushd "%REPO_ROOT%" >nul
+
+set "VENV_DIR=%REPO_ROOT%\.venv"
+set "VENV_PY=%VENV_DIR%\Scripts\python.exe"
+set "VENV_MARKER=%VENV_DIR%\.dixvision_installed"
+set "DASH_URL=http://127.0.0.1:8080/"
+set "DASH_PORT=8080"
+
+echo.
+echo === DIX VISION v42.2 — Windows launcher ===
+echo Repo:  %REPO_ROOT%
+echo Venv:  %VENV_DIR%
+echo URL:   %DASH_URL%
+echo.
+
+REM --- find a usable Python interpreter ---------------------------------------
+set "PY_CMD="
+where py >nul 2>&1
+if %errorlevel%==0 (
+    py -3.12 -c "import sys" >nul 2>&1
+    if !errorlevel!==0 set "PY_CMD=py -3.12"
+)
+if not defined PY_CMD (
+    where python >nul 2>&1
+    if %errorlevel%==0 (
+        for /f "tokens=2 delims= " %%v in ('python -V 2^>^&1') do set "PY_VER=%%v"
+        echo Found python !PY_VER!
+        set "PY_CMD=python"
+    )
+)
+if not defined PY_CMD (
+    echo [ERROR] Python 3.12+ not found.
+    echo         Install from https://www.python.org/downloads/windows/ ^(check "Add to PATH"^)
+    echo         or run: winget install Python.Python.3.12
+    pause
+    popd >nul
+    exit /b 1
+)
+
+REM --- create venv on first run ------------------------------------------------
+if not exist "%VENV_PY%" (
+    echo Creating virtual environment...
+    %PY_CMD% -m venv "%VENV_DIR%"
+    if errorlevel 1 (
+        echo [ERROR] venv creation failed.
+        pause
+        popd >nul
+        exit /b 1
+    )
+)
+
+REM --- install / update dependencies on first run ------------------------------
+if not exist "%VENV_MARKER%" (
+    echo Installing dependencies ^(first-run only, ~2-3 minutes^)...
+    "%VENV_PY%" -m pip install --upgrade pip
+    "%VENV_PY%" -m pip install -e ".[dev]"
+    if errorlevel 1 (
+        echo [ERROR] pip install failed.
+        echo         If wheels failed to build, install MSVC Build Tools:
+        echo            winget install Microsoft.VisualStudio.2022.BuildTools
+        pause
+        popd >nul
+        exit /b 1
+    )
+    echo. > "%VENV_MARKER%"
+    echo Dependencies installed.
+)
+
+REM --- launch the dashboard in the default browser after a short delay ---------
+REM ('start "" /b' detaches without opening a new shell window)
+start "" /b cmd /c "timeout /t 3 /nobreak >nul && start "" "%DASH_URL%""
+
+echo.
+echo Starting FastAPI harness on %DASH_URL% ^(Ctrl+C to stop^)
+echo Tip: run scripts\windows\stop_dixvision.bat to force-kill if needed.
+echo.
+
+REM --- run uvicorn in the foreground so logs are visible -----------------------
+"%VENV_PY%" -m uvicorn ui.server:app --host 127.0.0.1 --port %DASH_PORT%
+set "EXITCODE=%errorlevel%"
+
+popd >nul
+endlocal & exit /b %EXITCODE%
