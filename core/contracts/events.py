@@ -141,6 +141,29 @@ class SystemEventKind(StrEnum):
     # produce identical ledger rows (INV-15).
     # ------------------------------------------------------------------
     DECISION_TRACE = "DECISION_TRACE"
+    # ------------------------------------------------------------------
+    # v3.6 BEHAVIOR-P5 — patch pipeline ledger surface. Emitted by
+    # ``evolution_engine.patch_pipeline.events`` when a structural
+    # mutation enters / advances through / leaves the Phase 4 patch
+    # pipeline. The dashboard's Strategy-Lifecycle widget (DASH-SLP-01)
+    # and the Indira/Dyon chat widgets read these to render reviewable
+    # cards. Distinct from UPDATE_PROPOSED, which is the non-structural
+    # parameter-update surface.
+    #
+    #  * ``PATCH_PROPOSED``       — a new ``PatchProposal`` was
+    #    registered with the bridge (Stage = PROPOSED).
+    #  * ``PATCH_STAGE_VERDICT``  — one stage finished and recorded a
+    #    verdict (Stage ∈ {SANDBOX, STATIC_ANALYSIS, BACKTEST, SHADOW,
+    #    CANARY}).
+    #  * ``PATCH_DECISION``       — terminal decision driven by the
+    #    bridge (APPROVED / REJECTED / ROLLED_BACK).
+    #
+    # All three events have deterministic, key-sorted JSON payloads so
+    # replays produce byte-identical ledger rows (INV-15, INV-66).
+    # ------------------------------------------------------------------
+    PATCH_PROPOSED = "PATCH_PROPOSED"
+    PATCH_STAGE_VERDICT = "PATCH_STAGE_VERDICT"
+    PATCH_DECISION = "PATCH_DECISION"
 
 
 # ---------------------------------------------------------------------------

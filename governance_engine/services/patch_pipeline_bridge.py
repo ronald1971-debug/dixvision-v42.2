@@ -14,29 +14,15 @@ Deterministic. No clocks, no IO. Caller supplies all ``ts_ns``.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass
-
 from core.contracts.learning import PatchProposal
 from core.contracts.patch import (
+    PatchApprovalDecision,
     PatchPipelineError,
     PatchPipelineProtocol,
     PatchRecord,
     PatchStage,
     StageVerdict,
 )
-
-
-@dataclass(frozen=True, slots=True)
-class PatchApprovalDecision:
-    """Frozen record of an approval-bridge decision."""
-
-    ts_ns: int
-    patch_id: str
-    decision: str
-    reason: str
-    final_stage: PatchStage
-    meta: Mapping[str, str]
 
 
 class PatchApprovalBridge:
