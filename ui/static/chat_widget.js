@@ -124,6 +124,10 @@ async function initChatWidget(cfg) {
       cfg.statusEl.textContent =
         `${data.providers.length} provider(s) eligible for task class`
         + ` "${data.task ?? '(any)'}".`;
+      // Re-enable the send button on the recovery path: a previous
+      // boot may have disabled it (no providers / fetch failure) and
+      // re-init must reset it to match the new state.
+      cfg.sendBtnEl.disabled = false;
     }
   } catch (err) {
     cfg.statusEl.textContent =
