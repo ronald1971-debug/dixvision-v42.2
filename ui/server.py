@@ -41,13 +41,26 @@ from core.contracts.events import (
     SignalEvent,
 )
 from core.contracts.market import MarketTick
+from dashboard.control_plane.decision_trace import DecisionTracePanel
+from dashboard.control_plane.engine_status_grid import EngineStatusGrid
+from dashboard.control_plane.memecoin_control_panel import MemecoinControlPanel
+from dashboard.control_plane.mode_control_bar import ModeControlBar
+from dashboard.control_plane.router import ControlPlaneRouter
+from dashboard.control_plane.strategy_lifecycle_panel import (
+    StrategyLifecyclePanel,
+)
 from evolution_engine.engine import EvolutionEngine
 from execution_engine.engine import ExecutionEngine
 from governance_engine.engine import GovernanceEngine
 from intelligence_engine.engine import IntelligenceEngine
 from intelligence_engine.plugins import MicrostructureV1
+from intelligence_engine.strategy_runtime.state_machine import (
+    StrategyStateMachine,
+)
 from learning_engine.engine import LearningEngine
+from state.ledger.reader import LedgerReader
 from system_engine.engine import SystemEngine
+from ui.dashboard_routes import build_dashboard_router
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -75,6 +88,23 @@ class _State:
         self.events: deque[dict[str, Any]] = deque(maxlen=500)
         self.event_seq: int = 0
 
+        # Phase 6 dashboard widgets (DASH-1).
+        self.strategy_fsm = StrategyStateMachine()
+        self.ledger_reader = LedgerReader()
+        self.dashboard_router = ControlPlaneRouter(
+            bridge=self.governance.operator,
+        )
+        self.mode_widget = ModeControlBar(
+            state_transitions=self.governance.state_transitions,
+            router=self.dashboard_router,
+        )
+        self.engines_widget = EngineStatusGrid(engines=self.all_engines())
+        self.strategies_widget = StrategyLifecyclePanel(fsm=self.strategy_fsm)
+        self.decisions_widget = DecisionTracePanel(ledger=self.ledger_reader)
+        self.memecoin_widget = MemecoinControlPanel(
+            router=self.dashboard_router,
+        )
+
     def all_engines(self) -> dict[str, Any]:
         return {
             "intelligence": self.intelligence,
@@ -85,6 +115,26 @@ class _State:
             "evolution": self.evolution,
         }
 
+    @property
+    def mode(self) -> ModeControlBar:
+        return self.mode_widget
+
+    @property
+    def engines(self) -> EngineStatusGrid:
+        return self.engines_widget
+
+    @property
+    def strategies(self) -> StrategyLifecyclePanel:
+        return self.strategies_widget
+
+    @property
+    def decisions(self) -> DecisionTracePanel:
+        return self.decisions_widget
+
+    @property
+    def memecoin(self) -> MemecoinControlPanel:
+        return self.memecoin_widget
+
     def record(self, source: str, event: Event) -> None:
         self.event_seq += 1
         self.events.appendleft(
@@ -94,6 +144,11 @@ class _State:
                 **_event_to_dict(event),
             }
         )
+        # Feed the ledger reader so DASH-1 ``/api/dashboard/decisions``
+        # has a live trace. The Phase E0 reader stub uses
+        # ``_seed_for_tests`` as its only ingestion API; that is fine
+        # for the in-process harness.
+        self.ledger_reader._seed_for_tests((event,))
 
 
 STATE = _State()
@@ -153,6 +208,9 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url=None,
 )
+
+# DASH-1 — read-only widget projections for the operator dashboard.
+app.include_router(build_dashboard_router(lambda: STATE))
 
 
 @app.get("/", response_class=HTMLResponse)
