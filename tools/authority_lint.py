@@ -49,6 +49,12 @@ Rule set (ZIP v4):
   (rows with ``category: ai``); chat widgets must read that registry
   via ``GET /api/ai/providers`` and surface whatever it returns.
   Adding a new provider is a registry-only change — no widget edit.
+* **B25** Execution Gate origin restriction (HARDEN-01 / INV-68).
+  Only ``intelligence_engine.*`` and ``governance_engine.*`` may call
+  ``create_execution_intent`` / ``mark_approved`` / ``mark_rejected``.
+  Tests use the dedicated ``tests.fixtures`` origin so production
+  code paths stay tight.
+
 * **B24** LangGraph / LangChain import containment (Dashboard-2026
   wave-03 prep, INV-67). Only ``intelligence_engine.cognitive.*``
   and ``evolution_engine.dyon.*`` may import ``langgraph``,
@@ -695,6 +701,53 @@ RULE_CHECKS = (
 
 
 # ---------------------------------------------------------------------------
+# B25 — Execution Gate origin restriction (HARDEN-01 / INV-68)
+# ---------------------------------------------------------------------------
+
+# Modules that may call the ExecutionIntent factory functions. Tests
+# and the contract module itself are exempt (the dataclass lives in
+# ``core.contracts.execution_intent`` so it can reference its own
+# helpers).
+B25_ALLOWED_PREFIXES: tuple[str, ...] = (
+    "intelligence_engine",
+    "governance_engine",
+    "core.contracts.execution_intent",
+)
+
+B25_FORBIDDEN_NAMES: frozenset[str] = frozenset(
+    {"create_execution_intent", "mark_approved", "mark_rejected"}
+)
+
+
+def _check_b25(
+    importer: str, file: Path, repo_root: Path, tree: ast.AST
+) -> list[Violation]:
+    """B25 — ExecutionIntent factory restriction (INV-68 / HARDEN-01)."""
+
+    if _is_triad_constructor_test_exempt(file, repo_root):
+        return []
+    if _starts_with_any(importer, B25_ALLOWED_PREFIXES):
+        return []
+    out: list[Violation] = []
+    for line, name in _iter_named_calls(tree):
+        if name in B25_FORBIDDEN_NAMES:
+            out.append(
+                Violation(
+                    "B25",
+                    file,
+                    line,
+                    importer,
+                    name,
+                    "Execution Gate (INV-68): only intelligence_engine.*"
+                    " and governance_engine.* may construct or mutate"
+                    " an ExecutionIntent — outside callers must request"
+                    " approval through the typed Governance bridge.",
+                )
+            )
+    return out
+
+
+# ---------------------------------------------------------------------------
 # B23 — registry-driven AI providers (Dashboard-2026 wave-01)
 # ---------------------------------------------------------------------------
 
@@ -857,6 +910,8 @@ def lint_repo(repo_root: Path) -> list[Violation]:
         violations.extend(
             _check_triad_event_constructions(importer, path, repo_root, tree)
         )
+        # B25 — Execution Gate intent factory restriction (INV-68).
+        violations.extend(_check_b25(importer, path, repo_root, tree))
         # B23 — chat widget Python modules must be registry-driven.
         violations.extend(_check_b23_python(importer, path, tree))
     # B23 — chat widget static files (HTML / JS).
