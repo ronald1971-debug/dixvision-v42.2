@@ -211,7 +211,12 @@ class PatchPipelineOrchestrator:
 
         # Stage 0 — register the proposal with Governance.
         record = self._bridge.receive_proposal(proposal)
-        events.append(proposal_as_system_event(proposal))
+        events.append(
+            proposal_as_system_event(
+                proposal,
+                ts_ns_override=ts_ns + _STAGE_TS_OFFSETS[PatchStage.PROPOSED],
+            )
+        )
 
         # Stage 1 — sandbox isolation.
         sandbox_ts = ts_ns + _STAGE_TS_OFFSETS[PatchStage.SANDBOX]

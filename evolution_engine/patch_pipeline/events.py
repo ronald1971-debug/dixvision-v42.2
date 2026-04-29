@@ -53,13 +53,28 @@ def proposal_as_system_event(
     proposal: PatchProposal,
     *,
     source: str = PATCH_EVENT_SOURCE_PROPOSAL,
+    ts_ns_override: int | None = None,
 ) -> SystemEvent:
-    """Project a :class:`PatchProposal` into a ``PATCH_PROPOSED`` event."""
+    """Project a :class:`PatchProposal` into a ``PATCH_PROPOSED`` event.
+
+    The original ``proposal.ts_ns`` is always preserved inside the JSON
+    body (so :func:`proposal_from_system_event` reverses this faithfully).
+    When ``ts_ns_override`` is supplied, it becomes the *outer*
+    :class:`SystemEvent.ts_ns` instead of ``proposal.ts_ns`` — this is
+    how the orchestrator (INV-66) keeps every emission timestamp aligned
+    with its caller-supplied base ``ts_ns + _STAGE_TS_OFFSETS[…]`` table
+    so a single replay produces monotonically-increasing event
+    timestamps regardless of when the proposal was originally created.
+    """
     if not source:
         raise ValueError("proposal_as_system_event: source must be non-empty")
     if not proposal.patch_id:
         raise ValueError(
             "proposal_as_system_event: patch_id must be non-empty"
+        )
+    if ts_ns_override is not None and ts_ns_override < 0:
+        raise ValueError(
+            "proposal_as_system_event: ts_ns_override must be non-negative"
         )
     body = {
         "version": PATCH_EVENT_VERSION,
@@ -75,7 +90,7 @@ def proposal_as_system_event(
         "proposal": json.dumps(body, sort_keys=True, separators=(",", ":")),
     }
     return SystemEvent(
-        ts_ns=proposal.ts_ns,
+        ts_ns=ts_ns_override if ts_ns_override is not None else proposal.ts_ns,
         sub_kind=SystemEventKind.PATCH_PROPOSED,
         source=source,
         payload=payload,

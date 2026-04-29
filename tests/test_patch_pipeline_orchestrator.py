@@ -261,6 +261,45 @@ def test_run_replay_byte_identical_events():
     assert payloads_a == payloads_b
 
 
+def test_run_event_ts_ns_derives_from_base_not_proposal_ts_ns():
+    """INV-66 regression: ``SystemEvent.ts_ns`` for every emission must be
+    derived from the caller-supplied base ``ts_ns`` plus the per-stage
+    offset, NOT from ``proposal.ts_ns``. Without this guarantee, a proposal
+    whose creation timestamp is *after* the run base timestamp produces a
+    non-monotonic event stream that breaks replay-deterministic ordering
+    (the PROPOSED row would carry a ts_ns greater than every subsequent
+    stage row). The original ``proposal.ts_ns`` must still survive inside
+    the JSON body so :func:`proposal_from_system_event` round-trips.
+    """
+    orch, _ = _make_orchestrator()
+    base_ts = 1_000
+    proposal = _proposal(ts_ns=9_999)  # deliberately > base_ts
+    run = orch.run(
+        proposal=proposal, evidence=_clean_evidence(), ts_ns=base_ts
+    )
+
+    # Outer event timestamps must be base_ts + offset (0..6), not 9_999.
+    assert [e.ts_ns for e in run.events] == [
+        base_ts,
+        base_ts + 1,
+        base_ts + 2,
+        base_ts + 3,
+        base_ts + 4,
+        base_ts + 5,
+        base_ts + 6,
+    ]
+    # Strictly monotonic (the load-bearing INV-66 guarantee).
+    assert [e.ts_ns for e in run.events] == sorted(
+        e.ts_ns for e in run.events
+    )
+    # Body still preserves the original proposal.ts_ns for replay parity.
+    proposed = run.events[0]
+    assert proposed.sub_kind is SystemEventKind.PATCH_PROPOSED
+    recovered = proposal_from_system_event(proposed)
+    assert recovered.ts_ns == 9_999
+    assert recovered == proposal
+
+
 def test_run_rejects_negative_ts_and_empty_reason():
     orch, _ = _make_orchestrator()
     with pytest.raises(ValueError):
