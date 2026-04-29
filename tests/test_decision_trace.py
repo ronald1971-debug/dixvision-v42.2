@@ -280,6 +280,32 @@ def test_compute_trace_id_distinguishes_inputs() -> None:
     assert len({a, b, c, d, e}) == 5
 
 
+def test_compute_trace_id_separator_is_unambiguous() -> None:
+    # Regression: an earlier implementation used "|" as both the inter-
+    # field separator and the intra-plugin_chain join character, so
+    # ("a", "b") and ("a|b",) hashed to the same id. The current
+    # implementation uses ASCII control bytes that cannot appear in
+    # plugin names, so these must be distinct.
+    two_plugins = compute_trace_id(
+        symbol="BTCUSDT", ts_ns=1, plugin_chain=("a", "b")
+    )
+    one_pipe_plugin = compute_trace_id(
+        symbol="BTCUSDT", ts_ns=1, plugin_chain=("a|b",)
+    )
+    assert two_plugins != one_pipe_plugin
+
+
+def test_compute_trace_id_distinguishes_empty_chain_from_empty_entry() -> None:
+    # Regression: () (no plugins) and ("",) (one empty-named plugin)
+    # used to hash to the same id because both flatten to the empty
+    # string under "|".join. They must now be distinct.
+    no_plugins = compute_trace_id(symbol="BTCUSDT", ts_ns=1, plugin_chain=())
+    one_empty_plugin = compute_trace_id(
+        symbol="BTCUSDT", ts_ns=1, plugin_chain=("",)
+    )
+    assert no_plugins != one_empty_plugin
+
+
 def test_compute_trace_id_rejects_empty_symbol() -> None:
     with pytest.raises(ValueError, match="symbol"):
         compute_trace_id(symbol="", ts_ns=1, plugin_chain=())

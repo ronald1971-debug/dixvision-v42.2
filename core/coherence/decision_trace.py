@@ -67,8 +67,18 @@ def compute_trace_id(
         raise ValueError(
             f"compute_trace_id: ts_ns must be non-negative; got {ts_ns}"
         )
-    chain = "|".join(plugin_chain)
-    payload = f"{symbol}|{ts_ns}|{chain}".encode()
+    # Use ASCII control bytes as separators so plugin names containing
+    # any printable character (including '|' or ':') cannot collide with
+    # the field delimiter:
+    #   * \x1f (Unit Separator) between (symbol, ts_ns, chain)
+    #   * \x00 (NUL) between plugin_chain entries
+    # This means ("a", "b") and ("a|b",) hash to distinct ids, and
+    # () and ("",) hash to distinct ids (the latter contains an explicit
+    # empty entry).
+    chain = "\x00".join(plugin_chain)
+    payload = (
+        f"{symbol}\x1f{ts_ns}\x1f{len(plugin_chain)}\x1f{chain}"
+    ).encode()
     return hashlib.sha256(payload).hexdigest()[:_TRACE_ID_LEN]
 
 
