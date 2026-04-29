@@ -75,8 +75,21 @@ function appendChatRow(logEl, who, body, meta) {
   logEl.scrollTop = logEl.scrollHeight;
 }
 
+// Per-widget abort controllers so that re-initialising a widget
+// (e.g. when the operator switches the task class) cleanly tears
+// down the previous init's listeners. Keyed by send-button element
+// because the page reuses the same DOM nodes across boots.
+const _widgetAbortControllers = new WeakMap();
+
 /**
  * Initialise a chat widget instance.
+ *
+ * Safe to call multiple times against the same `cfg.sendBtnEl`:
+ * each call aborts the previous init's listeners before adding new
+ * ones. This matters because both indira_chat.html and
+ * dyon_chat.html re-call this on every task-class dropdown change;
+ * without the abort, click handlers would accumulate and the
+ * oldest (stale `taskClass`) one would fire first.
  *
  * @param {object} cfg
  * @param {string} cfg.taskClass         TaskClass value (e.g.
@@ -91,6 +104,13 @@ function appendChatRow(logEl, who, body, meta) {
  * @param {HTMLElement} cfg.statusEl
  */
 async function initChatWidget(cfg) {
+  const previous = _widgetAbortControllers.get(cfg.sendBtnEl);
+  if (previous) {
+    previous.abort();
+  }
+  const controller = new AbortController();
+  _widgetAbortControllers.set(cfg.sendBtnEl, controller);
+
   cfg.statusEl.textContent = 'loading providers…';
   try {
     const data = await fetchProviders(cfg.taskClass);
@@ -113,31 +133,35 @@ async function initChatWidget(cfg) {
     cfg.sendBtnEl.disabled = true;
   }
 
-  cfg.sendBtnEl.addEventListener('click', () => {
-    const text = cfg.inputEl.value.trim();
-    if (!text) {
-      return;
-    }
-    const pinnedId = cfg.selectEl.value || null;
-    const meta = pinnedId
-      ? `task=${cfg.taskClass} · pinned=${pinnedId}`
-      : `task=${cfg.taskClass} · auto (registry order)`;
-    appendChatRow(cfg.logEl, 'You', text, meta);
-    cfg.inputEl.value = '';
-    // Wave-01 stub: turn dispatch lands in wave-02 with streaming +
-    // governance routing. For now we echo the routing decision so
-    // the operator can verify the dropdown actually drives behaviour.
-    appendChatRow(
-      cfg.logEl,
-      cfg.widgetLabel,
-      '[wave-01 skeleton] turn dispatch is stubbed. The router would'
-        + ' send this to: '
-        + (pinnedId
-          ? `the pinned provider (${pinnedId}).`
-          : 'every enabled provider in registry order, with fallback.'),
-      null,
-    );
-  });
+  cfg.sendBtnEl.addEventListener(
+    'click',
+    () => {
+      const text = cfg.inputEl.value.trim();
+      if (!text) {
+        return;
+      }
+      const pinnedId = cfg.selectEl.value || null;
+      const meta = pinnedId
+        ? `task=${cfg.taskClass} · pinned=${pinnedId}`
+        : `task=${cfg.taskClass} · auto (registry order)`;
+      appendChatRow(cfg.logEl, 'You', text, meta);
+      cfg.inputEl.value = '';
+      // Wave-01 stub: turn dispatch lands in wave-02 with streaming +
+      // governance routing. For now we echo the routing decision so
+      // the operator can verify the dropdown actually drives behaviour.
+      appendChatRow(
+        cfg.logEl,
+        cfg.widgetLabel,
+        '[wave-01 skeleton] turn dispatch is stubbed. The router would'
+          + ' send this to: '
+          + (pinnedId
+            ? `the pinned provider (${pinnedId}).`
+            : 'every enabled provider in registry order, with fallback.'),
+        null,
+      );
+    },
+    { signal: controller.signal },
+  );
 }
 
 window.DIXChatWidget = { initChatWidget };
