@@ -1,0 +1,20 @@
+# DIX VISION v42.2 — runtime dependencies.
+#
+# This file is the auto-install target for the Windows launcher
+# (scripts/windows/start_dixvision.bat) and any other automation
+# that needs the bare minimum to *run* the operator harness.
+#
+# Pins are deliberately kept identical to the matching extras in
+# pyproject.toml ([project.optional-dependencies] / ui) so the two
+# install paths stay in sync. If you bump a version here, bump it in
+# pyproject.toml in the same commit and vice-versa.
+#
+# For development (pytest + ruff + httpx test client), use
+# requirements-dev.txt instead — it pulls in this file plus the dev
+# tooling.
+
+PyYAML>=6.0
+fastapi>=0.110
+uvicorn>=0.27
+pydantic>=2.0
+websockets>=12.0

@@ -1,0 +1,14 @@
+# DIX VISION v42.2 — development dependencies.
+#
+# Includes everything from requirements.txt plus the test runner,
+# linter, and HTTP test client. Used by the Windows launcher's
+# first-run install (scripts/windows/start_dixvision.bat) so a fresh
+# clone can run `pytest -q` and `ruff check .` immediately.
+#
+# Mirror of pyproject.toml [project.optional-dependencies] / dev —
+# keep both in sync.
+
+-r requirements.txt
+pytest>=8.0
+ruff>=0.5.0
+httpx>=0.25

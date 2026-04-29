@@ -67,14 +67,25 @@ if not exist "%VENV_PY%" (
 )
 
 REM --- install / update dependencies on first run ------------------------------
+REM Auto-installs everything from requirements-dev.txt (which transitively
+REM pulls in requirements.txt — runtime deps + dev tooling). The package
+REM itself is then installed editable so `ui.server`, `core.contracts`,
+REM `system_engine.scvs`, etc. resolve from the repo source.
 if not exist "%VENV_MARKER%" (
     echo Installing dependencies ^(first-run only, ~2-3 minutes^)...
     "%VENV_PY%" -m pip install --upgrade pip
-    "%VENV_PY%" -m pip install -e ".[dev]"
+    "%VENV_PY%" -m pip install -r requirements-dev.txt
     if errorlevel 1 (
-        echo [ERROR] pip install failed.
+        echo [ERROR] pip install -r requirements-dev.txt failed.
         echo         If wheels failed to build, install MSVC Build Tools:
         echo            winget install Microsoft.VisualStudio.2022.BuildTools
+        pause
+        popd >nul
+        exit /b 1
+    )
+    "%VENV_PY%" -m pip install -e .
+    if errorlevel 1 (
+        echo [ERROR] pip install -e . failed.
         pause
         popd >nul
         exit /b 1
