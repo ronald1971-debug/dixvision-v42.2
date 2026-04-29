@@ -21,9 +21,21 @@ into the system.
 
 from __future__ import annotations
 
+from core.coherence.system_intent import (
+    INTENT_KEY_FOCUS,
+    INTENT_KEY_HORIZON,
+    INTENT_KEY_OBJECTIVE,
+    INTENT_KEY_REASON,
+    INTENT_KEY_RISK_MODE,
+    decode_focus,
+)
 from core.contracts.governance import (
     DecisionKind,
     GovernanceDecision,
+    IntentHorizon,
+    IntentObjective,
+    IntentRiskMode,
+    IntentTransitionRequest,
     ModeTransitionRequest,
     OperatorAction,
     OperatorRequest,
@@ -42,6 +54,27 @@ def _parse_mode(name: str) -> SystemMode | None:
     try:
         return SystemMode[name]
     except KeyError:
+        return None
+
+
+def _parse_intent_objective(raw: str) -> IntentObjective | None:
+    try:
+        return IntentObjective(raw)
+    except ValueError:
+        return None
+
+
+def _parse_intent_risk_mode(raw: str) -> IntentRiskMode | None:
+    try:
+        return IntentRiskMode(raw)
+    except ValueError:
+        return None
+
+
+def _parse_intent_horizon(raw: str) -> IntentHorizon | None:
+    try:
+        return IntentHorizon(raw)
+    except ValueError:
         return None
 
 
@@ -97,6 +130,8 @@ class OperatorInterfaceBridge:
             return self._handle_unlock(request, current)
         if request.action is OperatorAction.REQUEST_PLUGIN_LIFECYCLE:
             return self._handle_plugin_lifecycle(request)
+        if request.action is OperatorAction.REQUEST_INTENT:
+            return self._handle_intent(request)
 
         # Unknown action — should be unreachable because PolicyEngine
         # would have rejected it; defensive fall-through preserves
@@ -269,6 +304,78 @@ class OperatorInterfaceBridge:
             approved=True,
             summary=f"{plugin_path} -> {target_status}",
             ledger_seq=entry.seq,
+        )
+
+
+    def _handle_intent(self, request: OperatorRequest) -> GovernanceDecision:
+        """Route a ``REQUEST_INTENT`` action to ``propose_intent``.
+
+        The dashboard packs the desired ``objective`` / ``risk_mode`` /
+        ``horizon`` (StrEnum values) and an optional ``focus`` (encoded
+        with ``encode_focus``) into the ``OperatorRequest.payload``
+        ``Mapping[str, str]``. Unknown values short-circuit to a
+        ``BRIDGE_UNKNOWN_INTENT`` rejection ledger row before
+        ``propose_intent`` runs, so malformed dashboard input never
+        reaches the GOV-CP-03 writer.
+        """
+
+        objective_raw = request.payload.get(INTENT_KEY_OBJECTIVE, "")
+        risk_mode_raw = request.payload.get(INTENT_KEY_RISK_MODE, "")
+        horizon_raw = request.payload.get(INTENT_KEY_HORIZON, "")
+
+        objective = _parse_intent_objective(objective_raw)
+        risk_mode = _parse_intent_risk_mode(risk_mode_raw)
+        horizon = _parse_intent_horizon(horizon_raw)
+
+        if objective is None or risk_mode is None or horizon is None:
+            entry = self._ledger.append(
+                ts_ns=request.ts_ns,
+                kind="OPERATOR_REJECTED",
+                payload={
+                    "requestor": request.requestor,
+                    "action": request.action,
+                    "rejection_code": "BRIDGE_UNKNOWN_INTENT",
+                    INTENT_KEY_OBJECTIVE: objective_raw,
+                    INTENT_KEY_RISK_MODE: risk_mode_raw,
+                    INTENT_KEY_HORIZON: horizon_raw,
+                },
+            )
+            return GovernanceDecision(
+                ts_ns=request.ts_ns,
+                kind=DecisionKind.REJECTED,
+                approved=False,
+                summary="intent transition rejected (unknown enum value)",
+                rejection_code="BRIDGE_UNKNOWN_INTENT",
+                ledger_seq=entry.seq,
+            )
+
+        focus = decode_focus(request.payload.get(INTENT_KEY_FOCUS, ""))
+
+        decision = self._state.propose_intent(
+            IntentTransitionRequest(
+                ts_ns=request.ts_ns,
+                requestor=request.requestor,
+                objective=objective,
+                risk_mode=risk_mode,
+                horizon=horizon,
+                focus=focus,
+                reason=request.payload.get(INTENT_KEY_REASON, ""),
+            )
+        )
+
+        return GovernanceDecision(
+            ts_ns=decision.ts_ns,
+            kind=DecisionKind.INTENT_TRANSITION,
+            approved=decision.approved,
+            summary=(
+                f"intent set: objective={decision.objective.value} "
+                f"risk_mode={decision.risk_mode.value} "
+                f"horizon={decision.horizon.value}"
+                if decision.approved
+                else f"intent rejected ({decision.rejection_code})"
+            ),
+            rejection_code=decision.rejection_code,
+            ledger_seq=decision.ledger_seq,
         )
 
 
