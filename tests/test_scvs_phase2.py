@@ -118,6 +118,43 @@ def test_registry_explicit_threshold_wins(tmp_path):
     assert reg.sources[0].liveness_threshold_ms == 250
 
 
+def test_registry_unknown_category_falls_back_to_30s(tmp_path, monkeypatch):
+    """Future-proof: an unmapped category gets the documented 30s fail-safe.
+
+    Regression for Devin Review BUG_pr-review-job-d9c36929c0d34da3b33f731cbff661d6_0001.
+    """
+    import yaml
+
+    from system_engine.scvs import source_registry as sr
+
+    monkeypatch.setattr(
+        sr,
+        "_DEFAULT_LIVENESS_MS_BY_CATEGORY",
+        {"market": 5_000},
+    )
+    p = tmp_path / "r.yaml"
+    p.write_text(
+        yaml.safe_dump(
+            {
+                "version": "v0.1.0",
+                "sources": [
+                    {
+                        "id": "SRC-AI-X-001",
+                        "name": "x",
+                        "category": "ai",  # not in the patched map
+                        "provider": "x",
+                        "endpoint": "https://x",
+                        "schema": "x.X",
+                        "auth": "none",
+                    }
+                ],
+            }
+        )
+    )
+    reg = sr.load_source_registry(p)
+    assert reg.sources[0].liveness_threshold_ms == 30_000
+
+
 def test_registry_rejects_negative_threshold(tmp_path):
     import yaml
 

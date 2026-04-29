@@ -121,7 +121,7 @@ def _parse_source(raw: Any, idx: int) -> SourceDeclaration:
             f"{ctx}: auth '{auth}' must be one of {sorted(ALLOWED_AUTH)}"
         )
 
-    default_liveness = _DEFAULT_LIVENESS_MS_BY_CATEGORY.get(category.value, 0)
+    default_liveness = _DEFAULT_LIVENESS_MS_BY_CATEGORY.get(category.value, 30_000)
     liveness_raw = raw.get("liveness_threshold_ms", default_liveness)
     try:
         liveness_ms = int(liveness_raw)
