@@ -1,0 +1,256 @@
+# registry/constraint_rules.yaml
+#
+# Single source of truth for the v42.2 constraint engine. Every
+# invariant (INV), governance rule (GOV), safety rule (SAFE), hazard
+# (HAZ), performance constraint (PERF), and SCVS rule that the
+# control plane needs to evaluate at runtime appears here.
+#
+# This file is loaded by ``core.constraint_engine.compiler.compile_rules``
+# which validates:
+#
+# * every ``owner`` resolves against ``registry/authority_matrix.yaml``;
+# * dependencies form a DAG (no cycles);
+# * actions and severities are drawn from the closed enumerations defined
+#   alongside the loader;
+# * the optional ``when`` predicate parses against the small expression
+#   grammar implemented in ``core.constraint_engine.expr``.
+#
+# Phase 1 of the constraint engine focuses on **declarative coverage**:
+# every rule the system already enforces somewhere is recorded here, with
+# a documented owner from the authority matrix. Runtime call sites
+# adopt ``RuleGraph.evaluate(facts)`` as a follow-on.
+
+version: v0.1.0
+
+rules:
+
+  # --------------------------------------------------------------------
+  # INV — invariants
+  # --------------------------------------------------------------------
+
+  - id: INV-15
+    kind: INV
+    severity: BLOCK
+    owner: ledger
+    action: AUDIT
+    description: "Replay determinism — same inputs produce the same outputs across replays."
+    notes: |
+      Enforced by tests (TEST-01) and by every pure module rejecting
+      reads of the wall-clock or process PRNG.
+
+  - id: INV-38
+    kind: INV
+    severity: BLOCK
+    owner: governance
+    action: REJECT
+    description: "Mode FSM advances only via StateTransitionManager.propose_mode (GOV-CP-03)."
+    depends_on: [INV-15]
+
+  - id: INV-47
+    kind: INV
+    severity: BLOCK
+    owner: ledger
+    action: AUDIT
+    description: "Raw PnL is preserved alongside any shaped reward (shaping is invertible)."
+    depends_on: [INV-15]
+
+  - id: INV-53
+    kind: INV
+    severity: AUDIT
+    owner: learning
+    action: AUDIT
+    description: "Calibration windows replay deterministically against the ledger."
+    depends_on: [INV-15]
+
+  - id: INV-56
+    kind: INV
+    severity: BLOCK
+    owner: governance
+    action: REJECT
+    description: "Triad Lock — Governance never trades; only Indira constructs SignalEvent; only Executor constructs ExecutionEvent."
+    when: "actor != owner"
+    notes: "Structurally enforced by lint rules B20/B21/B22."
+
+  - id: INV-58
+    kind: INV
+    severity: BLOCK
+    owner: system
+    action: HAZARD_EMIT
+    description: "Source liveness FSM — STALE classification is fail-safe."
+    depends_on: [INV-15]
+
+  - id: INV-59
+    kind: INV
+    severity: BLOCK
+    owner: system
+    action: REJECT
+    description: "Per-packet contract conformance (SCVS-04)."
+    depends_on: [INV-15, INV-58]
+
+  - id: INV-60
+    kind: INV
+    severity: BLOCK
+    owner: governance
+    action: AUDIT
+    description: "Single authority resolution table at registry/authority_matrix.yaml."
+
+  # --------------------------------------------------------------------
+  # SAFE — safety rules
+  # --------------------------------------------------------------------
+
+  - id: SAFE-09
+    kind: SAFE
+    severity: BLOCK
+    owner: system
+    action: HALT
+    description: "FastRiskCache fail-closed on staleness."
+    when: "fast_risk_cache_age_ns > fast_risk_cache_max_age_ns"
+    depends_on: [INV-15]
+
+  - id: SAFE-57
+    kind: SAFE
+    severity: HIGH
+    owner: system
+    action: HAZARD_EMIT
+    description: "Critical-source STALE → HAZ-13."
+    depends_on: [INV-58]
+
+  - id: SAFE-59
+    kind: SAFE
+    severity: BLOCK
+    owner: system
+    action: REJECT
+    description: "Per-packet staleness (SCVS-09) is independent of per-source heartbeat (SCVS-05)."
+    depends_on: [INV-58, INV-59]
+
+  - id: SAFE-60
+    kind: SAFE
+    severity: HIGH
+    owner: system
+    action: HAZARD_EMIT
+    description: "Critical AI provider failure escalates through the same HAZ-13 seam."
+    depends_on: [INV-59]
+
+  # --------------------------------------------------------------------
+  # HAZ — hazard sensors (presence is recorded; emission is system_engine)
+  # --------------------------------------------------------------------
+
+  - id: HAZ-13
+    kind: HAZ
+    severity: HIGH
+    owner: system
+    action: HAZARD_EMIT
+    description: "Critical source went STALE or critical AI provider failed."
+    depends_on: [SAFE-57, SAFE-60]
+
+  # --------------------------------------------------------------------
+  # SCVS — Source & Consumption Validation System
+  # --------------------------------------------------------------------
+
+  - id: SCVS-01
+    kind: SCVS
+    severity: BLOCK
+    owner: system
+    action: REJECT
+    description: "No unused sources — every enabled registry row must be consumed."
+
+  - id: SCVS-02
+    kind: SCVS
+    severity: BLOCK
+    owner: system
+    action: REJECT
+    description: "No phantom consumption — every consumes.yaml entry must exist in the registry."
+
+  - id: SCVS-04
+    kind: SCVS
+    severity: BLOCK
+    owner: system
+    action: REJECT
+    description: "Schema enforcement on incoming packets."
+    depends_on: [INV-59]
+
+  - id: SCVS-05
+    kind: SCVS
+    severity: HIGH
+    owner: system
+    action: HAZARD_EMIT
+    description: "Source liveness — heartbeat threshold."
+    depends_on: [INV-58]
+
+  - id: SCVS-06
+    kind: SCVS
+    severity: HIGH
+    owner: system
+    action: HAZARD_EMIT
+    description: "Critical-source fail-closed."
+    depends_on: [SCVS-05]
+
+  - id: SCVS-07
+    kind: SCVS
+    severity: HIGH
+    owner: system
+    action: HAZARD_EMIT
+    description: "AI provider response validation (latency / structure / empty)."
+    depends_on: [INV-59]
+
+  - id: SCVS-08
+    kind: SCVS
+    severity: WARN
+    owner: system
+    action: WARN
+    description: "Duplicate source detection (non-fatal)."
+
+  - id: SCVS-09
+    kind: SCVS
+    severity: BLOCK
+    owner: system
+    action: REJECT
+    description: "Stale data rejection per packet."
+    depends_on: [INV-59]
+
+  - id: SCVS-10
+    kind: SCVS
+    severity: AUDIT
+    owner: governance
+    action: AUDIT
+    description: "No silent fallbacks — every fallback emits SOURCE_FALLBACK_ACTIVATED."
+
+  # --------------------------------------------------------------------
+  # GOV — governance control points
+  # --------------------------------------------------------------------
+
+  - id: GOV-CP-03
+    kind: GOV
+    severity: BLOCK
+    owner: governance
+    action: REJECT
+    description: "Mode FSM transitions go through StateTransitionManager.propose_mode."
+    depends_on: [INV-38]
+
+  - id: GOV-CP-07
+    kind: GOV
+    severity: BLOCK
+    owner: governance
+    action: REJECT
+    description: "Operator actions route via OperatorInterfaceBridge before any writer."
+    depends_on: [INV-38]
+
+  # --------------------------------------------------------------------
+  # PERF — performance constraints (advisory; never gate trading)
+  # --------------------------------------------------------------------
+
+  - id: PERF-01
+    kind: PERF
+    severity: WARN
+    owner: system
+    action: WARN
+    description: "Hot-path latency budget per tick."
+    when: "hot_path_latency_ns > hot_path_latency_budget_ns"
+
+  - id: PERF-02
+    kind: PERF
+    severity: WARN
+    owner: system
+    action: WARN
+    description: "Ledger commit latency budget."
+    when: "ledger_commit_latency_ns > ledger_commit_budget_ns"

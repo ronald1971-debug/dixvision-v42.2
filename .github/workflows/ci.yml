@@ -34,5 +34,8 @@ jobs:
       - name: Authority matrix lint (registry/authority_matrix.yaml)
         run: python tools/authority_matrix_lint.py
 
+      - name: Constraint engine lint (registry/constraint_rules.yaml)
+        run: python tools/constraint_lint.py
+
       - name: Pytest
         run: pytest -q
