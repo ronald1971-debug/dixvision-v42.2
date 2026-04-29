@@ -1,0 +1,71 @@
+name: dashboard2026
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "dashboard2026/**"
+      - "core/contracts/api/**"
+      - "tools/codegen/**"
+      - ".github/workflows/dashboard2026.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "dashboard2026/**"
+      - "core/contracts/api/**"
+      - "tools/codegen/**"
+      - ".github/workflows/dashboard2026.yml"
+
+jobs:
+  build:
+    name: lint + typecheck + build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard2026
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: dashboard2026/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: TypeScript
+        run: npm run typecheck
+
+      - name: Vite build
+        run: npm run build
+
+  codegen-drift:
+    name: pydantic→ts codegen drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Re-run generator and assert no drift
+        # The pytest in the main `ci` workflow already covers this,
+        # but a dedicated job gives a clear failure signal whenever
+        # a Pydantic API model is touched.
+        run: |
+          python -m tools.codegen.pydantic_to_ts \
+            core.contracts.api.credentials.CredentialsStatusResponse \
+            --check \
+            --out dashboard2026/src/types/generated/api.ts
