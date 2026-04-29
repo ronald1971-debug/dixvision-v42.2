@@ -20,10 +20,26 @@ reviewed.
 Both the builder (:func:`core.coherence.decision_trace.build_decision_trace`)
 and the serialiser (:func:`core.coherence.decision_trace.as_system_event`)
 are pure functions of their inputs. ``trace_id`` is the first 16 hex
-characters of ``sha256("{symbol}|{ts_ns}|{plugin_chain}")`` — same
-inputs → same id, byte-identical across replays. JSON serialisation
-uses ``sort_keys=True`` + ``separators=(",", ":")`` so the resulting
-:class:`SystemEvent` payload is byte-identical too.
+characters of the SHA-256 of an unambiguously-delimited byte string:
+
+```
+payload = f"{symbol}\x1f{ts_ns}\x1f{len(plugin_chain)}\x1f{chain}".encode()
+chain   = "\x00".join(plugin_chain)
+trace_id = sha256(payload).hexdigest()[:16]
+```
+
+ASCII control bytes are used as separators (``\x1f`` Unit Separator
+between fields, ``\x00`` NUL between ``plugin_chain`` entries) so
+plugin names containing any printable character (including ``|`` or
+``:``) cannot collide with the field delimiter. The chain length is
+included so an empty chain ``()`` and a one-element empty-named chain
+``("",)`` produce distinct ids. Same inputs → same id, byte-identical
+across replays. Polyglot ports (Phase E9) MUST follow this exact
+formula to stay replay-compatible across language boundaries
+(INV-15).
+
+JSON serialisation uses ``sort_keys=True`` + ``separators=(",", ":")``
+so the resulting :class:`SystemEvent` payload is byte-identical too.
 
 Reverse path (:func:`core.coherence.decision_trace.trace_from_system_event`)
 is strict and lossless: round-tripping any built trace through
