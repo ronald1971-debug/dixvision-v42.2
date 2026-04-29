@@ -151,6 +151,59 @@ def test_update_rejects_newline_in_value(tmp_path: Path) -> None:
         update_dotenv_file(p, {"FOO": "line1\nline2"})
 
 
+# ----- round-trip ---------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "plain",
+        "with space",
+        'has"double"quote',
+        "has$dollar",
+        "has\\backslash",
+        'all"three\\$mixed',
+        "sk-abc$def",
+        "key-with\"quote",
+        "key-with\\backslash",
+        "trailing space ",
+        " leading space",
+        "= equals = inside =",
+        "#hash-not-comment",
+        "",
+    ],
+)
+def test_round_trip_through_file(tmp_path: Path, value: str) -> None:
+    """``parse_dotenv(write_dotenv(value)) == value`` for every
+    string the writer accepts (i.e. anything without a newline).
+    """
+
+    if value == "":
+        # Empty values must round-trip through the bare writer
+        # path (writer special-cases "" → ``""``).
+        p = tmp_path / ".env"
+        update_dotenv_file(p, {"FOO": value})
+        assert load_dotenv_file(p) == {"FOO": value}
+        return
+
+    p = tmp_path / ".env"
+    update_dotenv_file(p, {"FOO": value})
+    assert load_dotenv_file(p) == {"FOO": value}
+
+
+def test_round_trip_preserves_via_returned_mapping(tmp_path: Path) -> None:
+    """:func:`update_dotenv_file` must return values matching what
+    a fresh :func:`load_dotenv_file` would produce — otherwise an
+    in-process write disagrees with a post-restart read.
+    """
+
+    p = tmp_path / ".env"
+    val = 'mixed"$\\value'
+    returned = update_dotenv_file(p, {"FOO": val})
+    assert returned == {"FOO": val}
+    assert load_dotenv_file(p) == {"FOO": val}
+
+
 def test_update_dedupes_later_occurrences_of_same_key(tmp_path: Path) -> None:
     p = tmp_path / ".env"
     p.write_text("FOO=a\nBAR=keep\nFOO=b\n", encoding="utf-8")

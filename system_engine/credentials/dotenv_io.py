@@ -5,15 +5,26 @@ we support is the lowest-common-denominator subset every dotenv
 implementation agrees on:
 
     KEY=value           # simple
-    KEY="quoted value"  # double-quoted (escapes are NOT processed)
-    KEY='quoted value'  # single-quoted
+    KEY="quoted value"  # double-quoted; ``\\\\`` ``\\"`` ``\\$`` escapes processed
+    KEY='quoted value'  # single-quoted; literal, no escape processing
     # comment lines      (full-line comments only)
+
+Round-trip rules (mirror bash's ``set -a; source .env; set +a``):
+
+* The writer prefers a bare value when it contains only safe
+  characters; otherwise it picks double quotes and backslash-
+  escapes ``\\``, ``"`` and ``$`` so the file remains
+  source-able by bash.
+* The reader undoes exactly that escaping for double-quoted
+  values, leaves single-quoted values literal, and leaves bare
+  values literal.
+* Therefore ``parse_dotenv(write_dotenv(value)) == value`` for
+  every str that does not contain a newline. (See
+  ``test_credentials_dotenv_io.py::test_round_trip_*``.)
 
 Inline ``# comment`` after a value is **not** stripped — every
 character after ``=`` belongs to the value (after surrounding
-quotes are removed). This matches the behaviour of bash's
-``set -a; source .env; set +a`` which is the most common operator
-flow on the Linux/Mac launcher.
+quotes and escapes are processed).
 
 The writer is intentionally line-rewriting rather than full-file
 re-templating: when an operator updates a single key, we preserve
@@ -61,11 +72,45 @@ def is_valid_env_var_name(name: str) -> bool:
     return bool(_ENV_VAR_NAME_RE.match(name))
 
 
-def _unquote(raw: str) -> str:
-    """Strip a single matching pair of surrounding quotes."""
+def _unescape_double_quoted(body: str) -> str:
+    """Reverse the escapes that :func:`_format_value` introduced.
 
-    if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in ("'", '"'):
-        return raw[1:-1]
+    We only undo the three sequences the writer ever produces:
+    ``\\\\`` → ``\\``, ``\\"`` → ``"``, ``\\$`` → ``$``. A backslash
+    followed by anything else is kept verbatim — that matches
+    bash's behaviour inside a double-quoted string and means a
+    hand-edited file can carry e.g. ``\\n`` as a literal two-char
+    sequence.
+    """
+
+    out: list[str] = []
+    i = 0
+    n = len(body)
+    while i < n:
+        c = body[i]
+        if c == "\\" and i + 1 < n and body[i + 1] in ('\\', '"', '$'):
+            out.append(body[i + 1])
+            i += 2
+            continue
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
+def _unquote(raw: str) -> str:
+    """Strip a single matching pair of surrounding quotes.
+
+    Double-quoted values get escape processing (mirrors what
+    :func:`_format_value` writes). Single-quoted values are taken
+    literally (matches bash semantics). Bare values are returned
+    unchanged.
+    """
+
+    if len(raw) >= 2 and raw[0] == raw[-1]:
+        if raw[0] == '"':
+            return _unescape_double_quoted(raw[1:-1])
+        if raw[0] == "'":
+            return raw[1:-1]
     return raw
 
 
