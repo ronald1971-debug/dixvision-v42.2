@@ -26,7 +26,6 @@ Endpoints:
 from __future__ import annotations
 
 import json
-import os
 import threading
 from collections import deque
 from collections.abc import Sequence
@@ -73,9 +72,13 @@ from system_engine.credentials import (
     DEFAULT_TIMEOUT_S as CREDENTIAL_VERIFY_TIMEOUT_S,
 )
 from system_engine.credentials import (
+    StorageNotWritable,
+    is_devin_session,
     presence_status,
     requirements_for_registry,
+    resolve_env,
     verify_provider,
+    write_credential,
 )
 from system_engine.engine import SystemEngine
 from system_engine.scvs.source_registry import (
@@ -480,7 +483,8 @@ def credentials_status() -> dict[str, Any]:
     """
 
     requirements = requirements_for_registry(STATE.source_registry)
-    statuses = presence_status(requirements, os.environ)
+    env = resolve_env()
+    statuses = presence_status(requirements, env)
 
     items = []
     summary = {"present": 0, "partial": 0, "missing": 0}
@@ -510,6 +514,7 @@ def credentials_status() -> dict[str, Any]:
             "partial": summary["partial"],
             "missing": summary["missing"],
         },
+        "writable": not is_devin_session(),
         "items": items,
     }
 
@@ -560,7 +565,7 @@ def credentials_verify(body: CredentialVerifyIn) -> dict[str, Any]:
 
     result = verify_provider(
         matching.provider,
-        os.environ,
+        resolve_env(),
         timeout=CREDENTIAL_VERIFY_TIMEOUT_S,
     )
     return {
@@ -569,6 +574,76 @@ def credentials_verify(body: CredentialVerifyIn) -> dict[str, Any]:
         "outcome": result.outcome.value,
         "http_status": result.http_status,
         "detail": result.detail,
+    }
+
+
+class CredentialSetIn(BaseModel):
+    """Persist one credential (PR-C, local launcher only).
+
+    The dashboard sends ``{source_id, env_var, value}``. The server
+    refuses the request when (a) the row is not in the registry,
+    (b) ``env_var`` is not declared by that row's blueprint, or
+    (c) we are running inside a Devin session — Devin secrets are
+    operator-set via the ``secrets`` tool, not via the dashboard.
+
+    The secret value is never logged and never echoed back. The
+    response only carries ``{ok, env_var, source_id}``.
+    """
+
+    source_id: str = Field(..., min_length=1, max_length=128)
+    env_var: str = Field(..., min_length=1, max_length=128)
+    value: str = Field(..., min_length=1, max_length=4096)
+
+
+@app.post("/api/credentials/set")
+def credentials_set(body: CredentialSetIn) -> dict[str, Any]:
+    """Write one credential to the local ``.env`` file.
+
+    Returns ``{ok: True, source_id, env_var}`` on success.
+    Refuses with HTTP 409 inside a Devin session, HTTP 404 for an
+    unknown ``source_id``, and HTTP 422 when ``env_var`` does not
+    belong to the row's blueprint.
+    """
+
+    requirements = requirements_for_registry(STATE.source_registry)
+    matching = next(
+        (r for r in requirements if r.source_id == body.source_id),
+        None,
+    )
+    if matching is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"unknown or non-auth-required source_id "
+                f"'{body.source_id}'"
+            ),
+        )
+    if body.env_var not in matching.env_vars:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"env_var '{body.env_var}' is not declared by "
+                f"source '{body.source_id}' (expected one of "
+                f"{list(matching.env_vars)})"
+            ),
+        )
+
+    try:
+        write_credential(body.env_var, body.value)
+    except StorageNotWritable as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from None
+    except (ValueError, TypeError) as exc:
+        # ``write_credential`` validates name/value shape; surface
+        # those as 422 without leaking the value.
+        raise HTTPException(
+            status_code=422,
+            detail=f"invalid credential payload: {type(exc).__name__}",
+        ) from None
+
+    return {
+        "ok": True,
+        "source_id": matching.source_id,
+        "env_var": body.env_var,
     }
 
 
