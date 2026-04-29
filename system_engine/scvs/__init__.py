@@ -23,6 +23,12 @@ from system_engine.scvs.consumption_tracker import (
     load_consumption_declaration,
 )
 from system_engine.scvs.lint import SCVSViolation, validate_scvs
+from system_engine.scvs.source_manager import (
+    HAZ_CRITICAL_SOURCE_STALE,
+    SourceLivenessReport,
+    SourceManager,
+    SourceStatus,
+)
 from system_engine.scvs.source_registry import (
     SourceCategory,
     SourceDeclaration,
@@ -31,12 +37,16 @@ from system_engine.scvs.source_registry import (
 )
 
 __all__ = [
+    "HAZ_CRITICAL_SOURCE_STALE",
     "ConsumptionDeclaration",
     "ConsumptionInput",
     "SCVSViolation",
     "SourceCategory",
     "SourceDeclaration",
+    "SourceLivenessReport",
+    "SourceManager",
     "SourceRegistry",
+    "SourceStatus",
     "discover_consumption_declarations",
     "load_consumption_declaration",
     "load_source_registry",
