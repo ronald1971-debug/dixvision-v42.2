@@ -26,8 +26,8 @@ export interface CredentialItem {
   env_vars: string[];
   env_vars_present: boolean[];
   missing_env_vars: string[];
-  signup_url?: string | null;
+  signup_url: string | null;
   free_tier: boolean;
-  notes?: string | null;
+  notes: string | null;
   state: PresenceStateApi;
 }

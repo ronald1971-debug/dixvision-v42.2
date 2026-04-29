@@ -124,7 +124,13 @@ def _schema_to_ts(
         return "null"
     if type_ == "array":
         item = schema.get("items", {})
-        return f"{_schema_to_ts(item, defs, interfaces, enums)}[]"
+        inner = _schema_to_ts(item, defs, interfaces, enums)
+        # `[]` binds tighter than `|` in TypeScript: parenthesise so
+        # `list[str | None]` renders as `(string | null)[]`, not the
+        # mis-parsed `string | null[]` (i.e. `string | Array<null>`).
+        if " | " in inner:
+            return f"({inner})[]"
+        return f"{inner}[]"
     if type_ == "object":
         # Loose objects (Mapping[str, Any]) → record. The dashboard
         # avoids these in typed responses; nested BaseModels are
@@ -171,17 +177,14 @@ def _emit_named(
 
     for field_name, field_schema in properties.items():
         ts_type = _schema_to_ts(field_schema, defs, interfaces, enums)
-        is_optional = field_name not in required or _has_null_branch(field_schema)
+        # Optional in TS means "key may be absent / undefined". That is
+        # NOT the same as Pydantic's nullable: a required `str | None`
+        # field is always serialised (as a string or `null`), so the
+        # key is always present and `?` would be wrong.
+        is_optional = field_name not in required
         fields.append(
             _Field(name=field_name, ts_type=ts_type, optional=is_optional),
         )
-
-
-def _has_null_branch(schema: dict[str, Any]) -> bool:
-    branches = schema.get("anyOf")
-    if not branches:
-        return False
-    return any(b.get("type") == "null" for b in branches)
 
 
 def _render(
