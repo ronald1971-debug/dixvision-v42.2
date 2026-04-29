@@ -412,6 +412,74 @@ def test_runner_start_then_stop_idempotent() -> None:
     runner.stop()
 
 
+def test_runner_start_during_pump_init_does_not_spawn_orphan_thread() -> None:
+    """Regression for Devin Review BUG_0001 on PR #67.
+
+    ``FeedRunner.start()`` previously had an incomplete idempotency
+    guard: when the worker thread had been launched but had not yet
+    constructed and assigned ``self._pump`` (a narrow window between
+    ``Thread.start()`` and the lock-protected pump assignment), the
+    guard ``if self._pump is not None`` fell through. A second
+    concurrent ``start()`` call (FastAPI runs sync handlers in a
+    thread pool, so this is reachable via two near-simultaneous
+    ``POST /api/feeds/binance/start`` requests) would then spawn a
+    second daemon thread + pump and overwrite ``self._thread``,
+    orphaning the first thread which kept consuming from the Binance
+    WS forever and double-feeding the sink.
+
+    This test simulates the racy window directly by setting up a
+    runner whose ``self._thread`` is alive but whose ``self._pump`` is
+    None, then calls ``start()`` and asserts the existing thread is
+    preserved + a provisional status is returned.
+    """
+
+    runner = FeedRunner(
+        sink=lambda _t: None,
+        clock_ns=lambda: 1,
+        symbols=("btcusdt",),
+    )
+
+    # Construct the racy state: a daemon thread that idles until told.
+    block = threading.Event()
+
+    def _idle() -> None:
+        block.wait(timeout=5.0)
+
+    fake_thread = threading.Thread(
+        target=_idle, name="bug0001-fake-pump-init", daemon=True
+    )
+    fake_thread.start()
+    try:
+        # Reach into the runner to mirror exactly the window the bug
+        # opened: thread alive, pump None.
+        runner._thread = fake_thread
+        assert runner._pump is None
+
+        # Second concurrent start() — must NOT spawn another thread.
+        result = runner.start()
+
+        # Provisional status reflects the runner is starting up and
+        # symbols come from the caller's configured tuple, NOT from
+        # whatever override the racy second call passed.
+        assert result.running is True
+        assert result.symbols == ("BTCUSDT",)
+        assert result.ticks_received == 0
+
+        # Critically: the existing thread reference is preserved. If
+        # the bug had regressed, ``runner._thread`` would be a freshly
+        # spawned ``binance-public-ws-pump`` thread.
+        assert runner._thread is fake_thread, (
+            "BUG_0001 regressed: start() spawned a second thread + pump"
+        )
+        assert runner._thread.name == "bug0001-fake-pump-init"
+    finally:
+        block.set()
+        fake_thread.join(timeout=2.0)
+        # Drop the runner's reference so its ``stop`` path doesn't try
+        # to touch our fake thread (which has no real loop/pump).
+        runner._thread = None
+
+
 def test_runner_start_with_symbol_override() -> None:
     captured: list[str] = []
 
