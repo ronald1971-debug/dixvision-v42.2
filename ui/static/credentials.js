@@ -13,6 +13,10 @@
     missing: 'missing',
   };
 
+  // Captured from /api/credentials/status; controls whether the
+  // "set key" inline form is rendered (false inside Devin sessions).
+  let writable = true;
+
   // Outcome → label/CSS class for the verify button result badge.
   // Mirrors VerifyOutcome in system_engine/credentials/verifiers.py.
   const VERIFY_OUTCOME = {
@@ -39,17 +43,24 @@
       .replace(/'/g, '&#39;');
   }
 
-  function renderEnvVars(envVars, present) {
+  function renderEnvVars(envVars, present, sourceId) {
     // Render each env var with a present/missing dot so the operator
     // can see exactly which name is missing on a partial row.
+    const safeSid = escapeHtml(sourceId);
     const parts = envVars.map(function (name, idx) {
       const ok = !!present[idx];
       const cls = ok ? 'env-ok' : 'env-miss';
       const dot = ok ? '●' : '○';
+      const safeName = escapeHtml(name);
+      const setBtn = (!ok && writable)
+        ? ' <button class="set-btn" data-source-id="' + safeSid +
+          '" data-env-var="' + safeName + '">set…</button>'
+        : '';
       return (
-        '<span class="' + cls + '">' +
+        '<span class="env-var-row ' + cls + '">' +
         '<span class="env-dot">' + dot + '</span>' +
-        '<code>' + escapeHtml(name) + '</code>' +
+        '<code>' + safeName + '</code>' +
+        setBtn +
         '</span>'
       );
     });
@@ -79,7 +90,10 @@
       '</div><div class="src-id muted">' + sid + '</div></td>' +
       '<td><code>' + escapeHtml(item.category) + '</code></td>' +
       '<td><code>' + escapeHtml(item.provider) + '</code></td>' +
-      '<td>' + renderEnvVars(item.env_vars, item.env_vars_present) +
+      '<td>' +
+      renderEnvVars(
+        item.env_vars, item.env_vars_present, item.source_id,
+      ) +
       '</td>' +
       '<td><span class="' + stateClass + '">' + stateLabel +
       '</span></td>' +
@@ -164,6 +178,63 @@
     });
   }
 
+  function attachSetHandlers() {
+    document.querySelectorAll('.set-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        promptAndSet(btn);
+      });
+    });
+  }
+
+  async function promptAndSet(button) {
+    const sourceId = button.getAttribute('data-source-id');
+    const envVar = button.getAttribute('data-env-var');
+    if (!sourceId || !envVar) {
+      return;
+    }
+    // eslint-disable-next-line no-alert
+    const value = window.prompt(
+      'Set ' + envVar + ' (will be written to .env, gitignored):',
+    );
+    if (value == null || value === '') {
+      return;
+    }
+    button.disabled = true;
+    try {
+      const resp = await fetch('/api/credentials/set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_id: sourceId,
+          env_var: envVar,
+          value: value,
+        }),
+      });
+      if (!resp.ok) {
+        let msg = 'HTTP ' + resp.status;
+        try {
+          const data = await resp.json();
+          if (data && data.detail) {
+            msg = data.detail;
+          }
+        } catch (e) {
+          /* fall through */
+        }
+        // eslint-disable-next-line no-alert
+        window.alert('Could not set ' + envVar + ': ' + msg);
+        return;
+      }
+      await load();
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
+      // eslint-disable-next-line no-alert
+      window.alert('Could not set ' + envVar + ': fetch failed');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
   function renderSummary(summary) {
     const el = document.getElementById('summary');
     if (!el) {
@@ -216,6 +287,8 @@
       return;
     }
     const data = await resp.json();
+    writable = data.writable !== false;
+    renderWritabilityBanner(writable);
     renderSummary(data.summary || { total: 0, present: 0, partial: 0, missing: 0 });
     const tbody = document.getElementById('cred-rows');
     if (!tbody) {
@@ -230,6 +303,26 @@
     }
     tbody.innerHTML = data.items.map(renderRow).join('');
     attachVerifyHandlers();
+    attachSetHandlers();
+  }
+
+  function renderWritabilityBanner(canWrite) {
+    const el = document.getElementById('writability');
+    if (!el) {
+      return;
+    }
+    if (canWrite) {
+      el.innerHTML = '';
+      el.style.display = 'none';
+      return;
+    }
+    el.style.display = '';
+    el.innerHTML =
+      '<strong>Read-only on this host.</strong> ' +
+      'Detected a Devin session, so credentials cannot be written ' +
+      'from the dashboard. Add keys via the <code>secrets</code> ' +
+      'tool instead; they will appear here once injected into the ' +
+      'environment.';
   }
 
   if (document.readyState === 'loading') {

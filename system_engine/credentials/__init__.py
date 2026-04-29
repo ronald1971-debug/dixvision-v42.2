@@ -50,6 +50,13 @@ from system_engine.credentials.status import (
     PresenceState,
     presence_status,
 )
+from system_engine.credentials.storage import (
+    StorageNotWritable,
+    default_dotenv_path,
+    is_devin_session,
+    resolve_env,
+    write_credential,
+)
 from system_engine.credentials.verifiers import (
     DEFAULT_TIMEOUT_S,
     VERIFIERS,
@@ -66,11 +73,16 @@ __all__ = [
     "CredentialStatus",
     "DEFAULT_TIMEOUT_S",
     "PresenceState",
+    "StorageNotWritable",
     "VERIFIERS",
     "VerifierSpec",
     "VerifyOutcome",
     "VerifyResult",
+    "default_dotenv_path",
+    "is_devin_session",
     "presence_status",
     "requirements_for_registry",
+    "resolve_env",
     "verify_provider",
+    "write_credential",
 ]

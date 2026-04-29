@@ -356,3 +356,35 @@ button:disabled {
   color: var(--fg-muted);
   font-style: italic;
 }
+
+.env-var-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 1px 0;
+}
+
+.set-btn {
+  background: var(--bg-elev);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 7px;
+  font-size: 10px;
+  cursor: pointer;
+}
+.set-btn:hover { border-color: var(--accent); color: var(--accent); }
+.set-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.writability-banner {
+  background: #2a2410;
+  border: 1px solid var(--accent-warn);
+  color: var(--fg);
+  padding: 10px 14px;
+  border-radius: 4px;
+  margin: 14px 0;
+  font-size: 13px;
+}

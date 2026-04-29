@@ -11,3 +11,8 @@ dist/
 .coverage
 htmlcov/
 target/
+
+# Operator-local credential storage. Written by
+# POST /api/credentials/set; never committed.
+.env
+.env.local
