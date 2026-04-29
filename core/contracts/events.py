@@ -130,6 +130,17 @@ class SystemEventKind(StrEnum):
     # SCVS-10 forbids.
     # ------------------------------------------------------------------
     SOURCE_FALLBACK_ACTIVATED = "SOURCE_FALLBACK_ACTIVATED"
+    # ------------------------------------------------------------------
+    # v3.6 BEHAVIOR-P4 — per-decision audit record. Emitted by
+    # ``core.coherence.decision_trace.as_system_event`` once per
+    # decision so the offline calibrator and the operator dashboard's
+    # Decision-Trace widget (DASH-04) can reconstruct *why* each
+    # decision happened (confidence breakdown, active hazards,
+    # throttle applied, execution outcome). The trace_id is a
+    # deterministic hash of (symbol, ts_ns, plugin_chain) so replays
+    # produce identical ledger rows (INV-15).
+    # ------------------------------------------------------------------
+    DECISION_TRACE = "DECISION_TRACE"
 
 
 # ---------------------------------------------------------------------------
