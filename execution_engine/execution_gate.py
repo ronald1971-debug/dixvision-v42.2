@@ -264,7 +264,10 @@ class AuthorityGuard:
             caller=caller,
             extra=extra,
         )
-        self._emit_hazard(violation, ts_ns=ts_ns or intent.ts_ns)
+        self._emit_hazard(
+            violation,
+            ts_ns=ts_ns if ts_ns is not None else intent.ts_ns,
+        )
         raise UnauthorizedActorError(self._format(violation))
 
     def _emit_hazard(
