@@ -48,6 +48,7 @@ content hash is computed.
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import dataclass, field
 from typing import Final
 
@@ -109,9 +110,23 @@ def _canonical_fields(
     consumer can't accidentally accept an extended intent.
     """
 
-    plugin_chain = "|".join(signal.plugin_chain)
-    meta_items = ";".join(
-        f"{k}={signal.meta[k]}" for k in sorted(signal.meta.keys())
+    # Use canonical JSON for plugin_chain and meta so structurally
+    # different inputs cannot collide on a delimiter trick — e.g.
+    # ``{"a": "1", "b": "2"}`` vs ``{"a": "1;b=2"}`` would otherwise
+    # both serialise to ``"a=1;b=2"``. ``json.dumps`` with sorted keys
+    # and the canonical ``(",", ":")`` separators produces stable,
+    # unambiguous output that the receiver can re-derive bit-for-bit
+    # (INV-15 replay determinism).
+    plugin_chain = json.dumps(
+        list(signal.plugin_chain),
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    meta_items = json.dumps(
+        dict(signal.meta),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
     )
     return (
         ("ts_ns", str(ts_ns)),

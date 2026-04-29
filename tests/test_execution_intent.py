@@ -92,6 +92,64 @@ def test_intent_hash_differs_when_any_canonical_field_changes():
     assert base.content_hash != different_signal.content_hash
 
 
+def test_intent_hash_no_meta_delimiter_collision():
+    """Different meta dicts must not collide via delimiter trickery.
+
+    Regression for Devin Review BUG_0001 on PR #78 — the original
+    impl used ``";".join(f"{k}={v}")`` which collided
+    ``{"a": "1", "b": "2"}`` with ``{"a": "1;b=2"}``. Canonical JSON
+    serialisation closes the gap.
+    """
+
+    def _signal_with_meta(meta: dict[str, str]) -> SignalEvent:
+        return SignalEvent(
+            ts_ns=1_000_000_000,
+            symbol="BTCUSDT",
+            side=Side.BUY,
+            confidence=0.9,
+            plugin_chain=("microstructure_v1",),
+            meta=meta,
+        )
+
+    a = create_execution_intent(
+        ts_ns=10,
+        origin="tests.fixtures",
+        signal=_signal_with_meta({"a": "1", "b": "2"}),
+    )
+    b = create_execution_intent(
+        ts_ns=10,
+        origin="tests.fixtures",
+        signal=_signal_with_meta({"a": "1;b=2"}),
+    )
+    assert a.content_hash != b.content_hash
+
+
+def test_intent_hash_no_plugin_chain_delimiter_collision():
+    """Plugin chain entries containing the delimiter must not collide."""
+
+    def _signal_with_chain(chain: tuple[str, ...]) -> SignalEvent:
+        return SignalEvent(
+            ts_ns=1_000_000_000,
+            symbol="BTCUSDT",
+            side=Side.BUY,
+            confidence=0.9,
+            plugin_chain=chain,
+            meta={},
+        )
+
+    a = create_execution_intent(
+        ts_ns=10,
+        origin="tests.fixtures",
+        signal=_signal_with_chain(("a", "b")),
+    )
+    b = create_execution_intent(
+        ts_ns=10,
+        origin="tests.fixtures",
+        signal=_signal_with_chain(("a|b",)),
+    )
+    assert a.content_hash != b.content_hash
+
+
 def test_intent_verify_content_hash_round_trip():
     intent = create_execution_intent(
         ts_ns=10, origin="tests.fixtures", signal=_signal()
