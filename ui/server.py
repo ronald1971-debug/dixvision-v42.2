@@ -17,6 +17,10 @@ Endpoints:
                                      the resulting ExecutionEvent(s).
 * ``GET  /api/events?limit=N``     — recent events emitted by either engine
                                      (in-memory ring buffer; not durable).
+* ``POST /api/feeds/binance/start`` — start the read-only Binance public
+                                     WebSocket pump (SRC-MARKET-BINANCE-001).
+* ``POST /api/feeds/binance/stop``  — stop the pump.
+* ``GET  /api/feeds/binance/status``— pump telemetry snapshot.
 """
 
 from __future__ import annotations
@@ -61,6 +65,7 @@ from learning_engine.engine import LearningEngine
 from state.ledger.reader import LedgerReader
 from system_engine.engine import SystemEngine
 from ui.dashboard_routes import build_dashboard_router
+from ui.feeds.runner import FeedRunner
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -103,6 +108,19 @@ class _State:
         self.decisions_widget = DecisionTracePanel(ledger=self.ledger_reader)
         self.memecoin_widget = MemecoinControlPanel(
             router=self.dashboard_router,
+        )
+
+        # Live data feeds (SCVS-registered sources). The Binance public
+        # WS pump is opt-in via ``POST /api/feeds/binance/start``; the
+        # runner here is constructed but not yet started so the harness
+        # boots quickly with no external network dependency.
+        # Lambda defers the ``_next_ts`` lookup until the first tick
+        # arrives — ``_next_ts`` is defined later in this module, so a
+        # bare reference would NameError at import time when ``STATE``
+        # is instantiated.
+        self.binance_feed = FeedRunner(
+            sink=self._ingest_market_tick_locked,
+            clock_ns=lambda: _next_ts(),
         )
 
     def all_engines(self) -> dict[str, Any]:
@@ -153,6 +171,37 @@ class _State:
         # for the in-process harness.
         self.ledger_reader._seed_for_tests((event,))
 
+    def _ingest_market_tick_locked(self, tick: MarketTick) -> None:
+        """Sink callable used by ``ui/feeds/runner.FeedRunner``.
+
+        Acquires :attr:`lock` and runs the same Intelligence -> Execution
+        fan-out as ``POST /api/tick`` so a tick from the Binance public
+        WS pump is byte-identical (per ``_event_to_dict_tick``) to a
+        manually-posted one. Called from the pump's asyncio thread, so
+        the lock is mandatory.
+        """
+
+        with self.lock:
+            self.execution.on_market(tick)
+            self.event_seq += 1
+            self.events.appendleft(
+                {
+                    "seq": self.event_seq,
+                    "source": "feed.binance",
+                    "kind": "MARKET_TICK",
+                    "ts_ns": tick.ts_ns,
+                    "symbol": tick.symbol,
+                    "bid": tick.bid,
+                    "ask": tick.ask,
+                    "last": tick.last,
+                    "venue": tick.venue,
+                }
+            )
+            for sig in self.intelligence.on_market(tick):
+                self.record("intelligence", sig)
+                for downstream in self.execution.process(sig):
+                    self.record("execution", downstream)
+
 
 STATE = _State()
 
@@ -198,6 +247,19 @@ class SignalIn(BaseModel):
     confidence: float = Field(..., ge=0.0, le=1.0)
     ts_ns: int | None = None
     qty: float | None = None
+
+
+class BinanceFeedStartIn(BaseModel):
+    """Optional override for ``POST /api/feeds/binance/start``.
+
+    Empty body uses the runner's configured default symbol set
+    (``ui.feeds.binance_public_ws.DEFAULT_SYMBOLS``: BTCUSDT + ETHUSDT).
+    """
+
+    symbols: list[str] | None = Field(
+        default=None,
+        description="Override symbol list, e.g. ['btcusdt', 'ethusdt', 'solusdt']",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -347,6 +409,64 @@ def get_events(limit: int = 50) -> dict[str, Any]:
     with STATE.lock:
         items = list(STATE.events)[:limit]
     return {"events": items}
+
+
+# ---------------------------------------------------------------------------
+# Live data feeds (SCVS-registered sources)
+# ---------------------------------------------------------------------------
+
+
+def _feed_status_dict(source_id: str) -> dict[str, Any]:
+    status = STATE.binance_feed.status()
+    return {
+        "source_id": source_id,
+        "running": status.running,
+        "url": status.url,
+        "symbols": list(status.symbols),
+        "ticks_received": status.ticks_received,
+        "errors": status.errors,
+        "last_tick_ts_ns": status.last_tick_ts_ns,
+    }
+
+
+@app.post("/api/feeds/binance/start")
+def post_binance_feed_start(
+    body: BinanceFeedStartIn | None = None,
+) -> dict[str, Any]:
+    """Start the read-only Binance public WS pump (SRC-MARKET-BINANCE-001).
+
+    Idempotent — returns the current status if already running. Pass
+    ``{"symbols": ["btcusdt", "ethusdt", "solusdt"]}`` to override the
+    default symbol set for this run.
+    """
+    symbols = body.symbols if body is not None else None
+    try:
+        STATE.binance_feed.start(symbols=symbols)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {
+        "started": True,
+        "feed": _feed_status_dict("SRC-MARKET-BINANCE-001"),
+    }
+
+
+@app.post("/api/feeds/binance/stop")
+def post_binance_feed_stop() -> dict[str, Any]:
+    """Stop the Binance public WS pump.
+
+    Idempotent — returns the current status if not running.
+    """
+    STATE.binance_feed.stop()
+    return {
+        "stopped": True,
+        "feed": _feed_status_dict("SRC-MARKET-BINANCE-001"),
+    }
+
+
+@app.get("/api/feeds/binance/status")
+def get_binance_feed_status() -> dict[str, Any]:
+    """Return a telemetry snapshot of the Binance public WS pump."""
+    return {"feed": _feed_status_dict("SRC-MARKET-BINANCE-001")}
 
 
 # ---------------------------------------------------------------------------

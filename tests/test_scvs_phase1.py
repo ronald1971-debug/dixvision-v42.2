@@ -34,8 +34,10 @@ def test_canonical_registry_loads_clean() -> None:
     assert len(reg.sources) > 0
     # IDs are unique by construction (loader rejects duplicates).
     assert len(reg.ids) == len(reg.sources)
-    # Phase 1 ships every row as enabled=False.
-    assert reg.enabled_ids == frozenset()
+    # SRC-MARKET-BINANCE-001 is the first canonical source flipped on
+    # (branch b: read-only public WS pump, no credentials). All others
+    # remain ``enabled: false`` until their adapters land.
+    assert reg.enabled_ids == frozenset({"SRC-MARKET-BINANCE-001"})
 
 
 def test_canonical_registry_has_all_categories() -> None:

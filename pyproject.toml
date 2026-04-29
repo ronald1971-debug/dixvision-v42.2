@@ -22,11 +22,13 @@ dev = [
     "uvicorn>=0.27",
     "httpx>=0.25",
     "pydantic>=2.0",
+    "websockets>=12.0",
 ]
 ui = [
     "fastapi>=0.110",
     "uvicorn>=0.27",
     "pydantic>=2.0",
+    "websockets>=12.0",
 ]
 
 [tool.setuptools.packages.find]
