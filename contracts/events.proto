@@ -91,6 +91,10 @@ enum SystemEventKind {
   SOURCE_HEARTBEAT = 12;
   SOURCE_STALE = 13;
   SOURCE_RECOVERED = 14;
+  // v3.5 SCVS Phase 3 — silent-fallback audit (rule SCVS-10). Engines
+  // that swap to a fallback source MUST emit this event so the ledger
+  // has an explicit record of the substitution.
+  SOURCE_FALLBACK_ACTIVATED = 15;
 }
 
 // EVT-01

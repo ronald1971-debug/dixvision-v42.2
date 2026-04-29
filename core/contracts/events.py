@@ -121,6 +121,15 @@ class SystemEventKind(StrEnum):
     SOURCE_HEARTBEAT = "SOURCE_HEARTBEAT"
     SOURCE_STALE = "SOURCE_STALE"
     SOURCE_RECOVERED = "SOURCE_RECOVERED"
+    # ------------------------------------------------------------------
+    # v3.5 SCVS Phase 3 — silent-fallback audit (rule SCVS-10). When a
+    # registered source fails and the engine activates a fallback, the
+    # engine MUST emit this event so the governance ledger has an
+    # explicit record of the substitution. "Silent fallback" — i.e.
+    # swapping data sources without recording it — is the precise thing
+    # SCVS-10 forbids.
+    # ------------------------------------------------------------------
+    SOURCE_FALLBACK_ACTIVATED = "SOURCE_FALLBACK_ACTIVATED"
 
 
 # ---------------------------------------------------------------------------

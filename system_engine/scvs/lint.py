@@ -1,14 +1,22 @@
-"""SCVS bidirectional-closure lint (Phase 1).
+"""SCVS bidirectional-closure lint.
 
-Implements the two BUILD-FAIL rules:
+Phase 1 BUILD-FAIL rules:
 
 * **SCVS-01** — every ``enabled: true`` source in the registry must be
   referenced by at least one ``consumes.yaml``. No unused live source.
 * **SCVS-02** — every ``source_id`` referenced from any
   ``consumes.yaml`` must exist in the registry. No phantom consumption.
 
-The function is pure: it returns the set of violations for callers
-(tests, CI tool) to surface or raise on.
+Phase 3 WARN rule (does **not** fail the build):
+
+* **SCVS-08** — registry rows that share the same ``(category,
+  provider, endpoint)`` triple are flagged as redundant. The spec
+  ("WARN redundancy") accepts that some redundancy is intentional —
+  e.g. shadow-mode AI providers — so this is surfaced as guidance, not
+  a hard failure.
+
+The functions are pure: they return their results so callers (tests,
+CI tool) can decide how to surface them.
 """
 
 from __future__ import annotations
@@ -22,7 +30,15 @@ from system_engine.scvs.source_registry import SourceRegistry
 
 @dataclass(frozen=True, slots=True)
 class SCVSViolation:
-    """One SCVS lint violation."""
+    """One SCVS lint violation (BUILD-FAIL)."""
+
+    rule: str
+    detail: str
+
+
+@dataclass(frozen=True, slots=True)
+class SCVSWarning:
+    """One SCVS lint warning (non-fatal)."""
 
     rule: str
     detail: str
@@ -77,3 +93,33 @@ def validate_scvs(
             )
 
     return tuple(violations)
+
+
+def find_redundant_sources(registry: SourceRegistry) -> tuple[SCVSWarning, ...]:
+    """SCVS-08 — flag registry rows sharing ``(category, provider, endpoint)``.
+
+    Pure helper. Returns warnings (never violations) — duplicates are
+    sometimes intentional (e.g. shadow-mode AI providers, multi-region
+    failover endpoints), so the spec mandates a WARN, not a fail.
+    """
+
+    groups: dict[tuple[str, str, str], list[str]] = {}
+    for src in registry.sources:
+        key = (src.category.value, src.provider, src.endpoint)
+        groups.setdefault(key, []).append(src.id)
+
+    warnings: list[SCVSWarning] = []
+    for (category, provider, endpoint), ids in groups.items():
+        if len(ids) < 2:
+            continue
+        warnings.append(
+            SCVSWarning(
+                rule="SCVS-08",
+                detail=(
+                    f"redundant sources sharing "
+                    f"category={category!r} provider={provider!r} "
+                    f"endpoint={endpoint!r}: {sorted(ids)}"
+                ),
+            )
+        )
+    return tuple(warnings)
