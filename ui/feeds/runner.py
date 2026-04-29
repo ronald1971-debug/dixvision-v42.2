@@ -26,6 +26,7 @@ from ui.feeds.binance_public_ws import (
     BinancePublicWSPump,
     FeedStatus,
     WSConnect,
+    make_combined_stream_url,
 )
 
 LOG = logging.getLogger(__name__)
@@ -56,21 +57,25 @@ class FeedRunner:
         with self._lock:
             return self._thread is not None and self._thread.is_alive()
 
+    def _provisional_status(self, *, running: bool) -> FeedStatus:
+        """FeedStatus snapshot for the windows where ``self._pump`` is
+        not yet (or no longer) set — i.e. before the background thread
+        has constructed the pump, or after the loop has torn down."""
+
+        return FeedStatus(
+            running=running,
+            symbols=tuple(s.upper() for s in self._symbols),
+            url=make_combined_stream_url(self._symbols),
+            last_tick_ts_ns=None,
+            ticks_received=0,
+            errors=0,
+        )
+
     def status(self) -> FeedStatus:
         with self._lock:
             pump = self._pump
         if pump is None:
-            from ui.feeds.binance_public_ws import (
-                make_combined_stream_url,
-            )
-            return FeedStatus(
-                running=False,
-                symbols=tuple(s.upper() for s in self._symbols),
-                url=make_combined_stream_url(self._symbols),
-                last_tick_ts_ns=None,
-                ticks_received=0,
-                errors=0,
-            )
+            return self._provisional_status(running=False)
         return pump.status()
 
     def start(
@@ -88,6 +93,21 @@ class FeedRunner:
             if self._thread is not None and self._thread.is_alive():
                 if self._pump is not None:
                     return self._pump.status()
+                # The thread has been launched but is still in the
+                # narrow window between ``threading.Thread.start()``
+                # (line below) and the lock-protected
+                # ``self._pump = pump`` assignment in the worker. A
+                # second concurrent ``POST /api/feeds/binance/start``
+                # request (FastAPI runs sync handlers in a thread
+                # pool, so this is reachable) MUST NOT spawn a second
+                # background thread / pump here — otherwise the first
+                # daemon thread is orphaned (its ``self._thread``
+                # reference is overwritten below) and keeps consuming
+                # from the Binance WS forever, double-feeding the
+                # sink. Instead, return a provisional FeedStatus
+                # marked ``running=True`` and let the caller poll
+                # ``status()`` again once the pump is fully wired.
+                return self._provisional_status(running=True)
             symbol_set = tuple(symbols) if symbols else self._symbols
             ready = threading.Event()
 
