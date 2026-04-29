@@ -37,6 +37,8 @@ v2 response models in `core/contracts/api/` by
 ```bash
 python -m tools.codegen.pydantic_to_ts \
     core.contracts.api.credentials.CredentialsStatusResponse \
+    core.contracts.api.operator.OperatorSummaryResponse \
+    core.contracts.api.operator.OperatorActionResponse \
     --out dashboard2026/src/types/generated/api.ts
 ```
 
@@ -49,8 +51,8 @@ drift, so regenerate before committing.
 * Vite 5.
 * Tailwind CSS 3 with a small palette matching the operator dashboard.
 * TanStack Query for server state (refetch on focus, 5s stale window).
-* No client router yet — wave-02 PR-1 ships the credentials page only.
-  Multi-page routing lands when the second page is ported.
+* Hash-based router (no `react-router` dep) — `#/credentials`
+  (default) and `#/operator` are the two ported pages today.
 
 ## Why a separate directory
 

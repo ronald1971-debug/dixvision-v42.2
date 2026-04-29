@@ -38,6 +38,8 @@ _GENERATED_TS = (
 # command in dashboard2026/README.md.
 _DASHBOARD_API_MODELS: tuple[str, ...] = (
     "core.contracts.api.credentials.CredentialsStatusResponse",
+    "core.contracts.api.operator.OperatorSummaryResponse",
+    "core.contracts.api.operator.OperatorActionResponse",
 )
 
 
@@ -58,10 +60,10 @@ def test_checked_in_ts_file_matches_generator() -> None:
         "run `python -m tools.codegen.pydantic_to_ts ...`"
     )
     actual = _GENERATED_TS.read_text(encoding="utf-8")
+    args = " ".join(_DASHBOARD_API_MODELS)
     assert actual == expected, (
         "TypeScript codegen drift detected — regenerate with "
-        "`python -m tools.codegen.pydantic_to_ts "
-        "core.contracts.api.credentials.CredentialsStatusResponse "
+        f"`python -m tools.codegen.pydantic_to_ts {args} "
         "--out dashboard2026/src/types/generated/api.ts`"
     )
 

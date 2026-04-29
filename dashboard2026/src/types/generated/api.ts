@@ -31,3 +31,45 @@ export interface CredentialItem {
   notes: string | null;
   state: PresenceStateApi;
 }
+
+export interface OperatorSummaryResponse {
+  mode: OperatorModeSnapshot;
+  engines: OperatorEngineRow[];
+  strategies: OperatorStrategyCounts;
+  memecoin: OperatorMemecoinSnapshot;
+  decision_chain_count: number;
+}
+
+export interface OperatorModeSnapshot {
+  current_mode: string;
+  legal_targets: string[];
+  is_locked: boolean;
+}
+
+export interface OperatorEngineRow {
+  engine_name: string;
+  bucket: string;
+  detail: string;
+  plugin_count: number;
+}
+
+export interface OperatorStrategyCounts {
+  proposed: number;
+  shadow: number;
+  canary: number;
+  live: number;
+  retired: number;
+  failed: number;
+}
+
+export interface OperatorMemecoinSnapshot {
+  enabled: boolean;
+  killed: boolean;
+  summary: string;
+}
+
+export interface OperatorActionResponse {
+  approved: boolean;
+  summary: string;
+  decision: Record<string, unknown>;
+}
