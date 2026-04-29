@@ -1,6 +1,14 @@
 import { CredentialsPage } from "@/pages/CredentialsPage";
+import { OperatorPage } from "@/pages/OperatorPage";
+import { useHashRoute, type Route } from "@/router";
+
+const TABS: Array<{ key: Route; href: string; label: string }> = [
+  { key: "credentials", href: "#/credentials", label: "credentials" },
+  { key: "operator", href: "#/operator", label: "operator" },
+];
 
 export function App() {
+  const route = useHashRoute();
   return (
     <div className="min-h-full flex flex-col">
       <header className="border-b border-border bg-surface px-6 py-3">
@@ -12,9 +20,27 @@ export function App() {
             wave-02 · operator console
           </span>
         </div>
+        <nav className="mt-2 flex gap-2 font-mono text-xs">
+          {TABS.map((tab) => {
+            const isActive = tab.key === route;
+            return (
+              <a
+                key={tab.key}
+                href={tab.href}
+                className={
+                  isActive
+                    ? "rounded border border-accent bg-accent/10 px-2 py-1 text-accent"
+                    : "rounded border border-border bg-bg px-2 py-1 text-slate-400 hover:border-accent hover:text-accent"
+                }
+              >
+                {tab.label}
+              </a>
+            );
+          })}
+        </nav>
       </header>
       <main className="flex-1 px-6 py-6">
-        <CredentialsPage />
+        {route === "operator" ? <OperatorPage /> : <CredentialsPage />}
       </main>
       <footer className="border-t border-border bg-surface px-6 py-2 text-xs text-slate-500">
         Vanilla pages remain the canonical reference at{" "}

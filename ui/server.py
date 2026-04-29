@@ -50,10 +50,23 @@ from core.contracts.api.credentials import (
     CredentialsSummary,
     PresenceStateApi,
 )
+from core.contracts.api.operator import (
+    OperatorActionResponse,
+    OperatorEngineRow,
+    OperatorKillRequest,
+    OperatorMemecoinSnapshot,
+    OperatorModeSnapshot,
+    OperatorStrategyCounts,
+    OperatorSummaryResponse,
+)
 from core.contracts.events import (
     Event,
     Side,
     SignalEvent,
+)
+from core.contracts.governance import (
+    OperatorAction,
+    OperatorRequest,
 )
 from core.contracts.market import MarketTick
 from dashboard.control_plane.decision_trace import DecisionTracePanel
@@ -665,6 +678,124 @@ def credentials_set(body: CredentialSetIn) -> dict[str, Any]:
         "source_id": matching.source_id,
         "env_var": body.env_var,
     }
+
+
+# ---------------------------------------------------------------------------
+# Operator dashboard typed surface (Wave-02 PR-2)
+# ---------------------------------------------------------------------------
+#
+# The vanilla operator dashboard at ``/operator`` continues to consume
+# the loosely-typed ``/api/dashboard/*`` endpoints (read projections of
+# frozen dataclass snapshots). The React port at ``/dash2/#/operator``
+# consumes the typed parallel surface below, so the wave-02 codegen
+# pipeline (Pydantic → TS) gives it byte-stable types.
+#
+# Both surfaces share the *same* Phase 6 widget instances on ``STATE``
+# — so a kill submitted via either endpoint enters the same
+# ``ControlPlaneRouter`` and is decided by the same Governance bridge
+# (GOV-CP-07). The route handler never bypasses Governance.
+
+
+_STRATEGY_STATE_KEYS = (
+    ("PROPOSED", "proposed"),
+    ("SHADOW", "shadow"),
+    ("CANARY", "canary"),
+    ("LIVE", "live"),
+    ("RETIRED", "retired"),
+    ("FAILED", "failed"),
+)
+
+
+@app.get("/api/operator/summary", response_model=OperatorSummaryResponse)
+def operator_summary() -> OperatorSummaryResponse:
+    """Typed read projection of mode + engines + strategies + memecoin."""
+
+    with STATE.lock:
+        mode_snap = STATE.mode_widget.snapshot()
+        engine_rows = STATE.engines_widget.snapshot()
+        strategies_by_state = STATE.strategies_widget.by_state()
+        memecoin_snap = STATE.memecoin_widget.status()
+        chain_count = len(STATE.decisions_widget.chains(limit=200))
+
+    counts: dict[str, int] = {field: 0 for _, field in _STRATEGY_STATE_KEYS}
+    for state_key, field in _STRATEGY_STATE_KEYS:
+        counts[field] = len(strategies_by_state.get(state_key, ()))
+
+    return OperatorSummaryResponse(
+        mode=OperatorModeSnapshot(
+            current_mode=mode_snap.current_mode,
+            legal_targets=list(mode_snap.legal_targets),
+            is_locked=mode_snap.is_locked,
+        ),
+        engines=[
+            OperatorEngineRow(
+                engine_name=row.engine_name,
+                bucket=row.bucket,
+                detail=row.detail,
+                plugin_count=len(row.plugin_states),
+            )
+            for row in engine_rows
+        ],
+        strategies=OperatorStrategyCounts(**counts),
+        memecoin=OperatorMemecoinSnapshot(
+            enabled=memecoin_snap.enabled,
+            killed=memecoin_snap.killed,
+            summary=memecoin_snap.summary,
+        ),
+        decision_chain_count=chain_count,
+    )
+
+
+@app.post(
+    "/api/operator/action/kill",
+    response_model=OperatorActionResponse,
+)
+def operator_action_kill(body: OperatorKillRequest) -> OperatorActionResponse:
+    """Submit an operator KILL request through the governance bridge.
+
+    The route handler constructs the typed ``OperatorRequest`` and
+    submits it through ``ControlPlaneRouter`` (DASH-CP-01) →
+    ``OperatorInterfaceBridge`` (GOV-CP-07). The decision returned by
+    Governance is forwarded verbatim — both approvals and rejections
+    are visible in the UI. The dashboard never writes the ledger and
+    never bypasses Governance (B7 lint, INV-37).
+    """
+
+    request = OperatorRequest(
+        ts_ns=_next_ts(),
+        requestor=body.requestor,
+        action=OperatorAction.REQUEST_KILL,
+        payload={"reason": body.reason},
+    )
+    with STATE.lock:
+        outcome = STATE.dashboard_router.submit(request)
+    decision_dict = _decision_to_dict(outcome.decision)
+    return OperatorActionResponse(
+        approved=outcome.approved,
+        summary=outcome.summary,
+        decision=decision_dict,
+    )
+
+
+def _decision_to_dict(decision: Any) -> dict[str, Any]:
+    """JSON-friendly conversion for governance decisions.
+
+    Mirrors ``ui.dashboard_routes._to_dict`` semantics — frozen
+    dataclasses are walked by ``asdict``, enums become their string
+    value, and tuples become lists. Used only by the typed operator
+    routes; the legacy dashboard surface keeps its own copy in
+    ``ui.dashboard_routes`` to stay decoupled.
+    """
+
+    if is_dataclass(decision) and not isinstance(decision, type):
+        return _decision_to_dict(asdict(decision))  # type: ignore[no-any-return]
+    if isinstance(decision, dict):
+        return {str(k): _decision_to_dict(v) for k, v in decision.items()}
+    if isinstance(decision, (list, tuple)):
+        return [_decision_to_dict(item) for item in decision]  # type: ignore[return-value]
+    if isinstance(decision, (str, int, float, bool)) or decision is None:
+        return decision  # type: ignore[return-value]
+    return str(decision)  # type: ignore[return-value]
 
 
 @app.post("/api/tick")

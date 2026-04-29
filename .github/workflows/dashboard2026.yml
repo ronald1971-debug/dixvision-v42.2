@@ -67,5 +67,7 @@ jobs:
         run: |
           python -m tools.codegen.pydantic_to_ts \
             core.contracts.api.credentials.CredentialsStatusResponse \
+            core.contracts.api.operator.OperatorSummaryResponse \
+            core.contracts.api.operator.OperatorActionResponse \
             --check \
             --out dashboard2026/src/types/generated/api.ts
