@@ -29,7 +29,13 @@ from governance_engine.control_plane.ledger_authority_writer import (
 from governance_engine.control_plane.operator_interface_bridge import (
     OperatorInterfaceBridge,
 )
-from governance_engine.control_plane.policy_engine import PolicyEngine
+from governance_engine.control_plane.policy_engine import (
+    POLICY_TABLE_HASH_KEY,
+    POLICY_TABLE_INSTALLED_KIND,
+    PolicyEngine,
+    install_policy_table,
+    verify_policy_table_hash,
+)
 from governance_engine.control_plane.risk_evaluator import RiskEvaluator
 from governance_engine.control_plane.state_transition_manager import (
     StateTransitionManager,
@@ -41,7 +47,11 @@ __all__ = [
     "LedgerAuthorityWriter",
     "OperatorInterfaceBridge",
     "PipelineRoute",
+    "POLICY_TABLE_HASH_KEY",
+    "POLICY_TABLE_INSTALLED_KIND",
     "PolicyEngine",
     "RiskEvaluator",
     "StateTransitionManager",
+    "install_policy_table",
+    "verify_policy_table_hash",
 ]
