@@ -12,12 +12,24 @@ from learning_engine.lanes.reward_shaping import (
     compute_reward_breakdown,
     load_reward_shaping_config,
 )
+from learning_engine.lanes.weight_adjuster import (
+    WEIGHT_ADJUSTER_VERSION,
+    WeightAdjustment,
+    WeightAdjustmentConfig,
+    WeightBinding,
+    propose_weight_updates,
+)
 
 __all__ = [
     "PatchOutcomeFeedback",
     "REWARD_SHAPING_VERSION",
     "RewardBreakdown",
     "RewardShapingConfig",
+    "WEIGHT_ADJUSTER_VERSION",
+    "WeightAdjustment",
+    "WeightAdjustmentConfig",
+    "WeightBinding",
     "compute_reward_breakdown",
     "load_reward_shaping_config",
+    "propose_weight_updates",
 ]
