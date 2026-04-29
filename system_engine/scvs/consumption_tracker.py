@@ -105,8 +105,10 @@ def discover_consumption_declarations(
     out: list[ConsumptionDeclaration] = []
     seen_modules: set[str] = set()
     for root in roots:
-        for p in sorted(Path(root).rglob(CONSUMES_FILENAME)):
-            if any(part.startswith(".") for part in p.parts):
+        root_path = Path(root)
+        for p in sorted(root_path.rglob(CONSUMES_FILENAME)):
+            rel = p.relative_to(root_path)
+            if any(part.startswith(".") for part in rel.parts):
                 continue
             decl = load_consumption_declaration(p)
             if decl.module in seen_modules:

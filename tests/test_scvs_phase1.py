@@ -234,6 +234,39 @@ def test_discover_consumption_declarations(tmp_path: Path) -> None:
     assert modules == {"engine_a", "engine_b.sub"}
 
 
+def test_discover_handles_dotted_ancestor_path(tmp_path: Path) -> None:
+    """Hidden-directory filter is relative to the scan root.
+
+    Regression test: an earlier implementation walked ``p.parts`` of the
+    *absolute* path, which silently skipped every ``consumes.yaml``
+    when the repo happened to live under a dotted ancestor directory
+    (e.g. ``/home/user/.projects/myrepo``).
+    """
+
+    hidden_root = tmp_path / ".projects" / "repo" / "engine_a"
+    _write_consumes(
+        hidden_root / "consumes.yaml",
+        {"module": "engine_a", "inputs": [{"source_id": "SRC-MARKET-X-001"}]},
+    )
+    decls = discover_consumption_declarations([hidden_root.parent])
+    assert {d.module for d in decls} == {"engine_a"}
+
+
+def test_discover_still_skips_dotted_subdir(tmp_path: Path) -> None:
+    """A dotted subdir below the scan root is still skipped."""
+
+    _write_consumes(
+        tmp_path / ".cache" / "consumes.yaml",
+        {"module": "junk", "inputs": []},
+    )
+    _write_consumes(
+        tmp_path / "engine_a" / "consumes.yaml",
+        {"module": "engine_a", "inputs": []},
+    )
+    decls = discover_consumption_declarations([tmp_path])
+    assert {d.module for d in decls} == {"engine_a"}
+
+
 def test_discover_rejects_duplicate_module(tmp_path: Path) -> None:
     _write_consumes(
         tmp_path / "a" / "consumes.yaml",
