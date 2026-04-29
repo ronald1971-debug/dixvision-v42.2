@@ -35,6 +35,7 @@ class RuntimeBreakerOpenSensor:
                 source=self.source,
                 detail=f"circuit breaker OPEN for scope {scope!r}",
                 meta={"scope": scope},
+                produced_by_engine="system_engine",
             ),
         )
 

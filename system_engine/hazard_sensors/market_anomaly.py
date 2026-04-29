@@ -58,6 +58,7 @@ class MarketAnomalySensor:
                             "kind": "spread",
                             "spread_bps": f"{spread_bps:.4f}",
                         },
+                        produced_by_engine="system_engine",
                     )
                 )
         prev = self._last_mid.get(tick.symbol)
@@ -76,6 +77,7 @@ class MarketAnomalySensor:
                             "kind": "jump",
                             "jump_bps": f"{jump_bps:.4f}",
                         },
+                        produced_by_engine="system_engine",
                     )
                 )
         self._last_mid[tick.symbol] = mid

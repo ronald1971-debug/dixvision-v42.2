@@ -192,6 +192,13 @@ class SignalEvent:
     confidence: float
     plugin_chain: tuple[str, ...] = ()
     meta: Mapping[str, str] = field(default_factory=dict)
+    # HARDEN-03 / INV-69 — producer engine that constructed this event.
+    # Receivers can assert against
+    # :data:`core.contracts.event_provenance.EVENT_PRODUCERS` to close
+    # the dynamic-dispatch gap that B22 lint cannot see. Default is
+    # ``""`` for backwards compatibility; new producer call sites must
+    # set it. Strict receivers (e.g. the Execution Gate) reject empty.
+    produced_by_engine: str = ""
     kind: EventKind = EventKind.SIGNAL
 
 
@@ -224,6 +231,8 @@ class ExecutionEvent:
     venue: str = ""
     order_id: str = ""
     meta: Mapping[str, str] = field(default_factory=dict)
+    # HARDEN-03 / INV-69 — producer engine that constructed this event.
+    produced_by_engine: str = ""
     kind: EventKind = EventKind.EXECUTION
 
 
@@ -245,6 +254,11 @@ class SystemEvent:
     source: str  # engine name, e.g. "system", "learning"
     payload: Mapping[str, str] = field(default_factory=dict)
     meta: Mapping[str, str] = field(default_factory=dict)
+    # HARDEN-03 / INV-69 — producer engine that constructed this event.
+    # ``source`` already carries an engine label for SystemEvent; this
+    # field is the canonical Triad-Lock provenance the receiver-side
+    # assertion reads against.
+    produced_by_engine: str = ""
     kind: EventKind = EventKind.SYSTEM
 
 
@@ -268,6 +282,8 @@ class HazardEvent:
     source: str
     detail: str = ""
     meta: Mapping[str, str] = field(default_factory=dict)
+    # HARDEN-03 / INV-69 — producer engine that constructed this event.
+    produced_by_engine: str = ""
     kind: EventKind = EventKind.HAZARD
 
 

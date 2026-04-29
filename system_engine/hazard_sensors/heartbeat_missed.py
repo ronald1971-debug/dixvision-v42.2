@@ -47,6 +47,7 @@ class HeartbeatMissedSensor:
                     source=self.source,
                     detail=f"engine {engine!r} missed heartbeat for {gap}ns",
                     meta={"engine": engine, "gap_ns": str(gap)},
+                    produced_by_engine="system_engine",
                 )
             )
         return tuple(out)

@@ -53,6 +53,7 @@ class RiskSnapshotStaleSensor:
                 source=self.source,
                 detail=f"risk snapshot v{version_id} stale for {age}ns",
                 meta={"version_id": str(version_id), "age_ns": str(age)},
+                produced_by_engine="system_engine",
             ),
         )
 

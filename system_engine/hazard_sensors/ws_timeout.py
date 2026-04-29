@@ -55,6 +55,7 @@ class WSTimeoutSensor:
                 source=self.source,
                 detail=f"ws feed silent for {gap}ns",
                 meta={"gap_ns": str(gap)},
+                produced_by_engine="system_engine",
             ),
         )
 
