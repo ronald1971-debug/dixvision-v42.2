@@ -23,6 +23,12 @@ Rule set (ZIP v4):
   read-only public surfaces (``check_self``-style health + the
   strategy lifecycle FSM). Private engine modules and any
   ``learning_engine`` / ``evolution_engine`` imports are forbidden.
+* **B8**  System Intent isolation (INV-38). The
+  ``core/coherence/system_intent.py`` projection is operator-written
+  via GOV-CP-07 + GOV-CP-03 only — the projection module itself must
+  never import any ``*_engine`` package or any other writable surface.
+  Allowed imports: ``core.contracts``, ``core.coherence``, and
+  ``state.ledger.reader``.
 * **B17** Shadow meta-controller is non-acting (INV-52). The
   ``intelligence_engine.meta_controller.policy.shadow_policy`` module
   may not import ``governance_engine``.
@@ -430,6 +436,43 @@ def _check_b7(
     return None
 
 
+SYSTEM_INTENT_MODULE: str = "core.coherence.system_intent"
+
+# System Intent (INV-38) may import only these prefixes beyond the
+# common allow-list; every engine package is forbidden.
+SYSTEM_INTENT_ALLOWED_PREFIXES: tuple[str, ...] = (
+    "core",
+    "core.contracts",
+    "core.coherence",
+    "state.ledger.reader",
+)
+
+
+def _check_b8(
+    importer: str, target: str, file: Path, line: int
+) -> Violation | None:
+    """B8 — System Intent projection isolation (INV-38)."""
+    if importer != SYSTEM_INTENT_MODULE:
+        return None
+    if _check_allow_list(target):
+        return None
+    if _starts_with_any(target, SYSTEM_INTENT_ALLOWED_PREFIXES):
+        return None
+    if _starts_with_any(target, ALL_ENGINE_PACKAGES):
+        return Violation(
+            "B8",
+            file,
+            line,
+            importer,
+            target,
+            "System Intent projection isolation: "
+            "core/coherence/system_intent.py may only import core.*, "
+            "core.coherence.*, and state.ledger.reader. Any *_engine "
+            "import would let the system write its own intent (INV-38).",
+        )
+    return None
+
+
 SHADOW_POLICY_PREFIXES: tuple[str, ...] = (
     "intelligence_engine.meta_controller.policy.shadow_policy",
 )
@@ -587,6 +630,7 @@ RULE_CHECKS = (
     _check_l3,
     _check_b1,
     _check_b7,
+    _check_b8,
     _check_b17,
     _check_b20,
 )

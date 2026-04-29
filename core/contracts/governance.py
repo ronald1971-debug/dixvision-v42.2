@@ -71,6 +71,7 @@ class OperatorAction(StrEnum):
     REQUEST_PLUGIN_LIFECYCLE = "REQUEST_PLUGIN_LIFECYCLE"
     REQUEST_KILL = "REQUEST_KILL"
     REQUEST_UNLOCK = "REQUEST_UNLOCK"
+    REQUEST_INTENT = "REQUEST_INTENT"
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,6 +110,82 @@ class ModeTransitionDecision:
     prev_mode: SystemMode
     new_mode: SystemMode
     reason: str
+    rejection_code: str = ""
+    ledger_seq: int = -1
+
+
+# ---------------------------------------------------------------------------
+# System Intent (Phase 6.T1d, INV-38)
+# ---------------------------------------------------------------------------
+#
+# Intent is the operator-set strategic vector ("what should the system want
+# to do this week?"). Per v3.1 G1 the *operator* writes intent — never the
+# system. Operator proposes an :class:`IntentTransitionRequest` through
+# ``OperatorInterfaceBridge`` (GOV-CP-07); the request is gated by
+# :class:`PolicyEngine` and committed by
+# ``state_transition_manager.propose_intent`` (GOV-CP-03), which is the
+# only writer of ``INTENT_TRANSITION`` ledger rows. The current intent is
+# projected by the read-only ``core.coherence.system_intent`` module.
+
+
+class IntentObjective(StrEnum):
+    """Top-level mission the operator has selected for the system."""
+
+    RISK_ADJUSTED_GROWTH = "RISK_ADJUSTED_GROWTH"
+    ABSOLUTE_RETURN = "ABSOLUTE_RETURN"
+    CAPITAL_PRESERVATION = "CAPITAL_PRESERVATION"
+    EXPLORATION = "EXPLORATION"
+
+
+class IntentRiskMode(StrEnum):
+    """Operator-set risk posture aligned with the Mode FSM ratchet."""
+
+    DEFENSIVE = "DEFENSIVE"
+    BALANCED = "BALANCED"
+    AGGRESSIVE = "AGGRESSIVE"
+
+
+class IntentHorizon(StrEnum):
+    """Operator-set planning horizon for capital deployment."""
+
+    INTRADAY = "INTRADAY"
+    SHORT_TERM = "SHORT_TERM"
+    MEDIUM_TERM = "MEDIUM_TERM"
+    LONG_TERM = "LONG_TERM"
+
+
+@dataclass(frozen=True, slots=True)
+class IntentTransitionRequest:
+    """Operator-originated proposal to overwrite the System Intent vector.
+
+    Constructed by ``OperatorInterfaceBridge`` from a
+    :class:`OperatorRequest` whose action is ``REQUEST_INTENT`` and
+    routed to ``StateTransitionManager.propose_intent``. The ``focus``
+    tuple is the ordered list of strategic foci (e.g.
+    ``("crypto_microstructure", "fx_carry")``) — order is preserved on
+    the ledger.
+    """
+
+    ts_ns: int
+    requestor: str
+    objective: IntentObjective
+    risk_mode: IntentRiskMode
+    horizon: IntentHorizon
+    focus: tuple[str, ...] = ()
+    reason: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class IntentTransitionDecision:
+    """Outcome produced by ``StateTransitionManager.propose_intent``."""
+
+    ts_ns: int
+    approved: bool
+    objective: IntentObjective
+    risk_mode: IntentRiskMode
+    horizon: IntentHorizon
+    focus: tuple[str, ...] = ()
+    reason: str = ""
     rejection_code: str = ""
     ledger_seq: int = -1
 
@@ -186,6 +263,7 @@ class DecisionKind(StrEnum):
     KILL = "KILL"
     REJECTED = "REJECTED"
     NOOP = "NOOP"
+    INTENT_TRANSITION = "INTENT_TRANSITION"
 
 
 @dataclass(frozen=True, slots=True)
@@ -235,6 +313,11 @@ __all__ = [
     "ConstraintScope",
     "DecisionKind",
     "GovernanceDecision",
+    "IntentHorizon",
+    "IntentObjective",
+    "IntentRiskMode",
+    "IntentTransitionDecision",
+    "IntentTransitionRequest",
     "LedgerEntry",
     "ModeTransitionDecision",
     "ModeTransitionRequest",

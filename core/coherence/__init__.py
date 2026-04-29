@@ -33,13 +33,25 @@ from core.coherence.performance_pressure import (
     derive_pressure_vector,
     load_pressure_config,
 )
+from core.coherence.system_intent import (
+    DEFAULT_SYSTEM_INTENT,
+    INTENT_TRANSITION_KIND,
+    SYSTEM_INTENT_VERSION,
+    SystemIntent,
+    derive_system_intent,
+)
 
 __all__ = [
     "BeliefState",
+    "DEFAULT_SYSTEM_INTENT",
+    "INTENT_TRANSITION_KIND",
     "PressureConfig",
     "PressureVector",
     "Regime",
+    "SYSTEM_INTENT_VERSION",
+    "SystemIntent",
     "derive_belief_state",
     "derive_pressure_vector",
+    "derive_system_intent",
     "load_pressure_config",
 ]

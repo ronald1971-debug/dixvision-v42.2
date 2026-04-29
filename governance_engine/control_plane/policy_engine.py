@@ -135,6 +135,14 @@ class PolicyEngine:
         if request.action is OperatorAction.REQUEST_MODE:
             return True, ""
 
+        if request.action is OperatorAction.REQUEST_INTENT:
+            # Intent is operator strategy, not a runtime trade. It is
+            # always policy-permitted while the system is not LOCKED;
+            # the validation of the requested objective / risk_mode /
+            # horizon enums lives in
+            # ``StateTransitionManager.propose_intent``.
+            return True, ""
+
         if request.action is OperatorAction.REQUEST_UNLOCK:
             return False, "POLICY_NOT_LOCKED"
 

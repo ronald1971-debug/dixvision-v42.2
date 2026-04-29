@@ -24,7 +24,21 @@ from __future__ import annotations
 
 from threading import Lock
 
+from core.coherence.system_intent import (
+    INTENT_KEY_FOCUS,
+    INTENT_KEY_HORIZON,
+    INTENT_KEY_OBJECTIVE,
+    INTENT_KEY_REASON,
+    INTENT_KEY_REQUESTOR,
+    INTENT_KEY_RISK_MODE,
+    INTENT_KEY_VERSION,
+    INTENT_TRANSITION_KIND,
+    SYSTEM_INTENT_VERSION,
+    encode_focus,
+)
 from core.contracts.governance import (
+    IntentTransitionDecision,
+    IntentTransitionRequest,
     ModeTransitionDecision,
     ModeTransitionRequest,
     SystemMode,
@@ -202,6 +216,92 @@ class StateTransitionManager:
                 prev_mode=prev,
                 new_mode=normalised.target_mode,
                 reason=normalised.reason,
+                rejection_code="",
+                ledger_seq=entry.seq,
+            )
+
+
+    # ------------------------------------------------------------------
+    # Intent transitions (Phase 6.T1d, INV-38)
+    # ------------------------------------------------------------------
+
+    def propose_intent(
+        self, request: IntentTransitionRequest
+    ) -> IntentTransitionDecision:
+        """Commit (or reject) an operator-set System Intent.
+
+        ``StateTransitionManager.propose_intent`` is the **only** writer
+        of ``INTENT_TRANSITION`` ledger rows (INV-38). Validation is
+        intentionally narrow:
+
+        * ``objective`` / ``risk_mode`` / ``horizon`` must be valid enum
+          values — these are typed at the contracts boundary, so the
+          arrival of an invalid value here means the operator bridge
+          built a malformed request and we ledger a rejection.
+        * ``focus`` is preserved in order; empty is permitted (the
+          operator may unset focus).
+
+        Mode is unaffected — intent is the strategic axis above the Mode
+        FSM. The ledger row is appended under the manager's lock so
+        intent and mode rows never interleave non-deterministically.
+        """
+
+        with self._lock:
+            try:
+                objective = request.objective
+                risk_mode = request.risk_mode
+                horizon = request.horizon
+                # Touching the .name property forces an enum validity
+                # check without changing the value, so a malformed enum
+                # arriving here (e.g. from ``object.__setattr__``) is
+                # caught and rejected rather than silently committed.
+                _ = (objective.name, risk_mode.name, horizon.name)
+            except (AttributeError, ValueError):
+                rejection_payload = {
+                    INTENT_KEY_REQUESTOR: request.requestor,
+                    "rejection_code": "INTENT_INVALID_ENUM",
+                    INTENT_KEY_VERSION: SYSTEM_INTENT_VERSION,
+                }
+                entry = self._ledger.append(
+                    ts_ns=request.ts_ns,
+                    kind="INTENT_TRANSITION_REJECTED",
+                    payload=rejection_payload,
+                )
+                return IntentTransitionDecision(
+                    ts_ns=request.ts_ns,
+                    approved=False,
+                    objective=request.objective,
+                    risk_mode=request.risk_mode,
+                    horizon=request.horizon,
+                    focus=tuple(request.focus),
+                    reason=request.reason,
+                    rejection_code="INTENT_INVALID_ENUM",
+                    ledger_seq=entry.seq,
+                )
+
+            focus = tuple(request.focus)
+            approval_payload = {
+                INTENT_KEY_REQUESTOR: request.requestor,
+                INTENT_KEY_OBJECTIVE: objective.value,
+                INTENT_KEY_RISK_MODE: risk_mode.value,
+                INTENT_KEY_HORIZON: horizon.value,
+                INTENT_KEY_FOCUS: encode_focus(focus),
+                INTENT_KEY_REASON: request.reason,
+                INTENT_KEY_VERSION: SYSTEM_INTENT_VERSION,
+            }
+            entry = self._ledger.append(
+                ts_ns=request.ts_ns,
+                kind=INTENT_TRANSITION_KIND,
+                payload=approval_payload,
+            )
+            return IntentTransitionDecision(
+                ts_ns=request.ts_ns,
+                approved=True,
+                objective=objective,
+                risk_mode=risk_mode,
+                horizon=horizon,
+                focus=focus,
+                reason=request.reason,
                 rejection_code="",
                 ledger_seq=entry.seq,
             )
