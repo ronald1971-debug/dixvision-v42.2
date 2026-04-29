@@ -229,6 +229,26 @@ def test_legacy_process_emits_deprecation_warning():
     assert len(out) == 1
 
 
+def test_guard_hazard_uses_explicit_zero_ts_ns():
+    """Regression for Devin Review BUG_0001 on PR #79.
+
+    The original implementation used ``ts_ns or intent.ts_ns`` which
+    treats ``0`` as falsy, silently substituting ``intent.ts_ns``.
+    A caller that passes ``ts_ns=0`` (legal monotonic origin) must see
+    that exact value carried into the synthetic hazard event.
+    """
+
+    hazards: list[HazardEvent] = []
+    guard = _guard(hazards=hazards)
+    proposal = create_execution_intent(
+        ts_ns=1_000_000_000, origin="tests.fixtures", signal=_signal()
+    )
+    with pytest.raises(UnauthorizedActorError):
+        guard.assert_can_execute(proposal, caller="tests.fixtures", ts_ns=0)
+    assert len(hazards) == 1
+    assert hazards[0].ts_ns == 0
+
+
 def test_real_authority_matrix_loads_with_default_guard():
     """The default :class:`AuthorityGuard` resolves the matrix path
     relative to the package; this test pins that wiring so a future
