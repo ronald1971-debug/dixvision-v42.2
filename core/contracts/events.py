@@ -99,6 +99,17 @@ class SystemEventKind(StrEnum):
     # confidence / sizing components and the final decision.
     # ------------------------------------------------------------------
     META_AUDIT = "META_AUDIT"
+    # ------------------------------------------------------------------
+    # v3.4 Wave 2 — INV-53 reader-side calibration report (Phase
+    # 6.T1c reader). Emitted by
+    # ``learning_engine.calibration.coherence_calibrator`` once per
+    # closed window over BELIEF_STATE_SNAPSHOT /
+    # PRESSURE_VECTOR_SNAPSHOT / META_AUDIT / REWARD_BREAKDOWN ledger
+    # rows. Read-only by Governance — never gates execution; only
+    # surfaces drift between the runtime's projected lenses and the
+    # realised outcome distribution.
+    # ------------------------------------------------------------------
+    CALIBRATION_REPORT = "CALIBRATION_REPORT"
 
 
 # ---------------------------------------------------------------------------
