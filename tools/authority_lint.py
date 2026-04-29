@@ -110,12 +110,24 @@ ALL_ENGINE_PACKAGES: tuple[str, ...] = (
 )
 
 # Common allow-list — these may be imported from any engine package.
+#
+# ``system_engine.authority`` is intentionally on this list: the
+# authority matrix (``registry/authority_matrix.yaml`` + the frozen
+# :class:`AuthorityMatrix` value type) is the *source of truth* every
+# engine consults when proving its own role. It is data, not behaviour;
+# the loader has no side effects beyond reading a registry YAML. The
+# Execution Gate (``execution_engine.execution_gate``) loads it once
+# at construction to validate every :class:`ExecutionIntent`
+# (HARDEN-02 / INV-68). Without this exemption a runtime guard cannot
+# read the registry the lint itself depends on, which would defeat
+# the *"YAML matrix is the source of truth"* contract.
 ALLOWED_SHARED_PREFIXES: tuple[str, ...] = (
     "core",
     "core.contracts",
     "core.contracts.events",
     "core.contracts.engine",
     "state.ledger.reader",
+    "system_engine.authority",
 )
 
 # Hot-path modules subject to T1.
