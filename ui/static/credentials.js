@@ -13,6 +13,20 @@
     missing: 'missing',
   };
 
+  // Outcome → label/CSS class for the verify button result badge.
+  // Mirrors VerifyOutcome in system_engine/credentials/verifiers.py.
+  const VERIFY_OUTCOME = {
+    ok: { label: 'ok', cls: 'verify-ok' },
+    unauthorized: { label: 'unauthorized', cls: 'verify-bad' },
+    rate_limited: { label: 'rate-limited', cls: 'verify-warn' },
+    not_found: { label: 'not found', cls: 'verify-bad' },
+    server_error: { label: 'server error', cls: 'verify-warn' },
+    timeout: { label: 'timeout', cls: 'verify-warn' },
+    network_error: { label: 'network', cls: 'verify-warn' },
+    no_verifier: { label: 'no verifier', cls: 'verify-skip' },
+    missing_key: { label: 'no key set', cls: 'verify-skip' },
+  };
+
   function escapeHtml(s) {
     if (s == null) {
       return '';
@@ -52,11 +66,17 @@
       ? '<a href="' + escapeHtml(item.signup_url) +
         '" target="_blank" rel="noopener noreferrer">sign up</a>'
       : '<span class="muted">no public signup</span>';
+    const sid = escapeHtml(item.source_id);
+    const verifyCell =
+      '<button class="verify-btn" data-source-id="' + sid +
+      '">verify</button>' +
+      '<span class="verify-result" data-source-id="' + sid +
+      '"></span>';
     return (
-      '<tr data-state="' + escapeHtml(item.state) + '">' +
+      '<tr data-state="' + escapeHtml(item.state) +
+      '" data-source-id="' + sid + '">' +
       '<td><div class="src-name">' + escapeHtml(item.source_name) +
-      '</div><div class="src-id muted">' + escapeHtml(item.source_id) +
-      '</div></td>' +
+      '</div><div class="src-id muted">' + sid + '</div></td>' +
       '<td><code>' + escapeHtml(item.category) + '</code></td>' +
       '<td><code>' + escapeHtml(item.provider) + '</code></td>' +
       '<td>' + renderEnvVars(item.env_vars, item.env_vars_present) +
@@ -65,9 +85,83 @@
       '</span></td>' +
       '<td>' + freeTier + '</td>' +
       '<td>' + signup + '</td>' +
+      '<td>' + verifyCell + '</td>' +
       '<td class="muted">' + escapeHtml(item.notes || '') + '</td>' +
       '</tr>'
     );
+  }
+
+  function setVerifyResult(sourceId, outcome, httpStatus, detail) {
+    const node = document.querySelector(
+      '.verify-result[data-source-id="' + sourceId + '"]',
+    );
+    if (!node) {
+      return;
+    }
+    const meta = VERIFY_OUTCOME[outcome] ||
+      { label: outcome, cls: 'verify-warn' };
+    const status = httpStatus ? ' (' + httpStatus + ')' : '';
+    node.className = 'verify-result ' + meta.cls;
+    node.title = detail || '';
+    node.textContent = meta.label + status;
+  }
+
+  async function verifyOne(button) {
+    const sourceId = button.getAttribute('data-source-id');
+    if (!sourceId) {
+      return;
+    }
+    button.disabled = true;
+    setVerifyResult(sourceId, 'pending', null, 'verifying…');
+    const node = document.querySelector(
+      '.verify-result[data-source-id="' + sourceId + '"]',
+    );
+    if (node) {
+      node.className = 'verify-result verify-pending';
+      node.textContent = 'verifying…';
+    }
+    try {
+      const resp = await fetch('/api/credentials/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source_id: sourceId }),
+      });
+      if (!resp.ok) {
+        setVerifyResult(
+          sourceId,
+          'network_error',
+          resp.status,
+          'HTTP ' + resp.status,
+        );
+        return;
+      }
+      const data = await resp.json();
+      setVerifyResult(
+        sourceId,
+        data.outcome,
+        data.http_status,
+        data.detail,
+      );
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
+      setVerifyResult(
+        sourceId,
+        'network_error',
+        null,
+        'fetch failed',
+      );
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function attachVerifyHandlers() {
+    document.querySelectorAll('.verify-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        verifyOne(btn);
+      });
+    });
   }
 
   function renderSummary(summary) {
@@ -95,7 +189,7 @@
     const tbody = document.getElementById('cred-rows');
     if (tbody) {
       tbody.innerHTML =
-        '<tr><td colspan="8" class="cred-error">' +
+        '<tr><td colspan="9" class="cred-error">' +
         escapeHtml(message) + '</td></tr>';
     }
     const summary = document.getElementById('summary');
@@ -129,12 +223,13 @@
     }
     if (!data.items || data.items.length === 0) {
       tbody.innerHTML =
-        '<tr><td colspan="8" class="muted">' +
+        '<tr><td colspan="9" class="muted">' +
         'No <code>auth: required</code> rows.' +
         '</td></tr>';
       return;
     }
     tbody.innerHTML = data.items.map(renderRow).join('');
+    attachVerifyHandlers();
   }
 
   if (document.readyState === 'loading') {
