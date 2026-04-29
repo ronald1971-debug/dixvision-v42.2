@@ -70,8 +70,12 @@ from intelligence_engine.strategy_runtime.state_machine import (
 from learning_engine.engine import LearningEngine
 from state.ledger.reader import LedgerReader
 from system_engine.credentials import (
+    DEFAULT_TIMEOUT_S as CREDENTIAL_VERIFY_TIMEOUT_S,
+)
+from system_engine.credentials import (
     presence_status,
     requirements_for_registry,
+    verify_provider,
 )
 from system_engine.engine import SystemEngine
 from system_engine.scvs.source_registry import (
@@ -507,6 +511,64 @@ def credentials_status() -> dict[str, Any]:
             "missing": summary["missing"],
         },
         "items": items,
+    }
+
+
+class CredentialVerifyIn(BaseModel):
+    """Operator-initiated verification request body.
+
+    The operator picks one row from ``GET /api/credentials/status``
+    and asks the server to live-ping it. The secret value never
+    travels — only the ``source_id`` does. The server reads the env
+    var locally (same way the trading engine would), pings the
+    provider's auth-cheap endpoint, and returns a tri-state-plus
+    outcome. No retries, no caching: each click is one ping.
+    """
+
+    source_id: str = Field(..., min_length=1, max_length=128)
+
+
+@app.post("/api/credentials/verify")
+def credentials_verify(body: CredentialVerifyIn) -> dict[str, Any]:
+    """Live auth-ping for one ``auth: required`` source.
+
+    Returns ``{source_id, provider, outcome, http_status, detail}``.
+    The ``outcome`` is one of:
+    ``ok | unauthorized | rate_limited | not_found | server_error |
+    timeout | network_error | no_verifier | missing_key``. ``detail``
+    is operator-readable and **never** echoes the secret value
+    (covered by ``test_credentials_verify_does_not_leak_value``).
+
+    The endpoint is intentionally synchronous; FastAPI runs sync
+    routes in its threadpool so a slow provider does not stall the
+    event loop. Each verifier has a hard 5 s timeout.
+    """
+
+    requirements = requirements_for_registry(STATE.source_registry)
+    matching = next(
+        (r for r in requirements if r.source_id == body.source_id),
+        None,
+    )
+    if matching is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"unknown or non-auth-required source_id "
+                f"'{body.source_id}'"
+            ),
+        )
+
+    result = verify_provider(
+        matching.provider,
+        os.environ,
+        timeout=CREDENTIAL_VERIFY_TIMEOUT_S,
+    )
+    return {
+        "source_id": matching.source_id,
+        "provider": matching.provider,
+        "outcome": result.outcome.value,
+        "http_status": result.http_status,
+        "detail": result.detail,
     }
 
 

@@ -50,13 +50,27 @@ from system_engine.credentials.status import (
     PresenceState,
     presence_status,
 )
+from system_engine.credentials.verifiers import (
+    DEFAULT_TIMEOUT_S,
+    VERIFIERS,
+    VerifierSpec,
+    VerifyOutcome,
+    VerifyResult,
+    verify_provider,
+)
 
 __all__ = [
     "CREDENTIAL_BLUEPRINTS",
     "CredentialBlueprint",
     "CredentialRequirement",
     "CredentialStatus",
+    "DEFAULT_TIMEOUT_S",
     "PresenceState",
+    "VERIFIERS",
+    "VerifierSpec",
+    "VerifyOutcome",
+    "VerifyResult",
     "presence_status",
     "requirements_for_registry",
+    "verify_provider",
 ]
