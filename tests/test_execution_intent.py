@@ -11,7 +11,6 @@ import pytest
 from core.contracts.events import Side, SignalEvent
 from core.contracts.execution_intent import (
     AUTHORISED_INTENT_ORIGINS,
-    ExecutionIntent,
     UnauthorizedOriginError,
     compute_content_hash,
     compute_intent_id,
