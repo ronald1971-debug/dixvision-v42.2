@@ -17,6 +17,7 @@ from pathlib import Path
 
 from system_engine.scvs import (
     discover_consumption_declarations,
+    find_redundant_sources,
     load_source_registry,
     validate_scvs,
 )
@@ -56,6 +57,16 @@ def main(argv: list[str]) -> int:
     declarations = discover_consumption_declarations(discover_roots)
 
     violations = validate_scvs(registry, declarations)
+    warnings = find_redundant_sources(registry)
+
+    if warnings:
+        print(
+            f"scvs_lint: {len(warnings)} warning(s) (SCVS-08 redundancy, non-fatal)",
+            file=sys.stderr,
+        )
+        for w in warnings:
+            print(f"  [{w.rule}] {w.detail}", file=sys.stderr)
+
     if violations:
         print(
             f"scvs_lint: {len(violations)} violation(s) found",
@@ -68,7 +79,8 @@ def main(argv: list[str]) -> int:
     print(
         f"scvs_lint: 0 violations "
         f"({len(registry.sources)} sources, "
-        f"{len(declarations)} consumes.yaml files)"
+        f"{len(declarations)} consumes.yaml files, "
+        f"{len(warnings)} warning(s))"
     )
     return 0
 
