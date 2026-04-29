@@ -135,6 +135,9 @@ class _State:
     def memecoin(self) -> MemecoinControlPanel:
         return self.memecoin_widget
 
+    def next_ts(self) -> int:
+        return _next_ts()
+
     def record(self, source: str, event: Event) -> None:
         self.event_seq += 1
         self.events.appendleft(
@@ -218,6 +221,16 @@ def index() -> HTMLResponse:
     html_path = STATIC_DIR / "index.html"
     if not html_path.exists():
         raise HTTPException(500, "static/index.html missing")
+    return HTMLResponse(html_path.read_text(encoding="utf-8"))
+
+
+@app.get("/operator", response_class=HTMLResponse)
+def operator() -> HTMLResponse:
+    """DASH-2 — operator dashboard (Phase 6 widgets + action buttons)."""
+
+    html_path = STATIC_DIR / "operator.html"
+    if not html_path.exists():
+        raise HTTPException(500, "static/operator.html missing")
     return HTMLResponse(html_path.read_text(encoding="utf-8"))
 
 
