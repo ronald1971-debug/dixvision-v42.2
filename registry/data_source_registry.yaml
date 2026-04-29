@@ -1,0 +1,270 @@
+# SCVS — Source & Consumption Validation System (Phase 1).
+#
+# Refs:
+#   docs/manifest_v3.5_delta.md §SCVS (INV-57, SAFE-54..56)
+#   system_engine/scvs/source_registry.py  (loader + schema)
+#
+# Every external data input the system can ingest is declared here.
+# Per SCVS-01 / SCVS-02, the relationship between this file and the
+# per-module ``consumes.yaml`` declarations must be bidirectionally
+# closed:
+#
+#   * every ``enabled: true`` source must appear in some
+#     ``consumes.yaml`` (no unused live source) — SCVS-01.
+#   * every ``consumes.yaml`` ``source_id`` must appear here
+#     (no phantom consumption) — SCVS-02.
+#
+# Phase 1 ships the registry skeleton + the lint surface; runtime
+# heartbeats / hazard escalation / schema enforcement land in
+# SCVS Phase 2 + Phase 3. Most rows are ``enabled: false`` until
+# their adapters are actually wired and exercised by a module.
+#
+# Schema (per source):
+#   id:        SRC-<CATEGORY>-<PROVIDER>-<NNN>     (string, unique)
+#   name:      human-readable name                 (string, required)
+#   category:  market | news | social | onchain    (string, required)
+#              | macro | regulatory | dev | alt
+#              | ai | synthetic
+#   provider:  short provider id                   (string, required)
+#   endpoint:  canonical URL / wss / API root       (string, required)
+#   schema:    fully-qualified contract reference  (string, required)
+#   auth:      none | required                     (string, required)
+#   enabled:   feed is wired and live              (bool, default false)
+#   critical:  liveness-fail halts dependents      (bool, default false)
+#   notes:     free-form provenance pointer        (string, optional)
+
+version: v0.1.0
+
+sources:
+  # -----------------------------------------------------------------
+  # Market — centralised exchanges (CEX)
+  # -----------------------------------------------------------------
+  - id: SRC-MARKET-BINANCE-001
+    name: "Binance spot WS+REST"
+    category: market
+    provider: binance
+    endpoint: "wss://stream.binance.com:9443"
+    schema: "core.contracts.market.MarketTick"
+    auth: none
+    enabled: false
+    critical: false
+  - id: SRC-MARKET-COINBASE-001
+    name: "Coinbase Advanced Trade WS"
+    category: market
+    provider: coinbase
+    endpoint: "wss://advanced-trade-ws.coinbase.com"
+    schema: "core.contracts.market.MarketTick"
+    auth: none
+    enabled: false
+    critical: false
+  - id: SRC-MARKET-KRAKEN-001
+    name: "Kraken WS+REST"
+    category: market
+    provider: kraken
+    endpoint: "wss://ws.kraken.com"
+    schema: "core.contracts.market.MarketTick"
+    auth: none
+    enabled: false
+    critical: false
+
+  # -----------------------------------------------------------------
+  # Market — decentralised exchanges (DEX) + derivatives
+  # -----------------------------------------------------------------
+  - id: SRC-MARKET-UNISWAP-001
+    name: "Uniswap V3 subgraph"
+    category: market
+    provider: uniswap
+    endpoint: "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"
+    schema: "core.contracts.market.MarketTick"
+    auth: none
+    enabled: false
+    critical: false
+  - id: SRC-MARKET-DERIBIT-001
+    name: "Deribit WS"
+    category: market
+    provider: deribit
+    endpoint: "wss://www.deribit.com/ws/api/v2"
+    schema: "core.contracts.market.MarketTick"
+    auth: none
+    enabled: false
+    critical: false
+
+  # -----------------------------------------------------------------
+  # News
+  # -----------------------------------------------------------------
+  - id: SRC-NEWS-COINDESK-001
+    name: "CoinDesk RSS"
+    category: news
+    provider: coindesk
+    endpoint: "https://www.coindesk.com/arc/outboundfeeds/rss/"
+    schema: "sensory.web_autolearn.contracts.NewsItem"
+    auth: none
+    enabled: false
+    critical: false
+  - id: SRC-NEWS-REUTERS-001
+    name: "Reuters wire (placeholder — auth required)"
+    category: news
+    provider: reuters
+    endpoint: "https://www.reuters.com"
+    schema: "sensory.web_autolearn.contracts.NewsItem"
+    auth: required
+    enabled: false
+    critical: false
+
+  # -----------------------------------------------------------------
+  # Social / sentiment
+  # -----------------------------------------------------------------
+  - id: SRC-SOCIAL-X-001
+    name: "X (Twitter) v2 API"
+    category: social
+    provider: x
+    endpoint: "https://api.x.com/2"
+    schema: "sensory.web_autolearn.contracts.SocialPost"
+    auth: required
+    enabled: false
+    critical: false
+  - id: SRC-SOCIAL-REDDIT-001
+    name: "Reddit JSON"
+    category: social
+    provider: reddit
+    endpoint: "https://www.reddit.com"
+    schema: "sensory.web_autolearn.contracts.SocialPost"
+    auth: none
+    enabled: false
+    critical: false
+
+  # -----------------------------------------------------------------
+  # On-chain intelligence
+  # -----------------------------------------------------------------
+  - id: SRC-ONCHAIN-GLASSNODE-001
+    name: "Glassnode REST"
+    category: onchain
+    provider: glassnode
+    endpoint: "https://api.glassnode.com/v1"
+    schema: "sensory.onchain.contracts.OnChainMetric"
+    auth: required
+    enabled: false
+    critical: false
+  - id: SRC-ONCHAIN-DUNE-001
+    name: "Dune Analytics API"
+    category: onchain
+    provider: dune
+    endpoint: "https://api.dune.com/api/v1"
+    schema: "sensory.onchain.contracts.OnChainMetric"
+    auth: required
+    enabled: false
+    critical: false
+
+  # -----------------------------------------------------------------
+  # Macro / policy
+  # -----------------------------------------------------------------
+  - id: SRC-MACRO-FRED-001
+    name: "FRED (Federal Reserve)"
+    category: macro
+    provider: fred
+    endpoint: "https://api.stlouisfed.org/fred"
+    schema: "sensory.macro.contracts.MacroSeries"
+    auth: required
+    enabled: false
+    critical: false
+  - id: SRC-MACRO-BLS-001
+    name: "U.S. Bureau of Labor Statistics"
+    category: macro
+    provider: bls
+    endpoint: "https://api.bls.gov/publicAPI/v2"
+    schema: "sensory.macro.contracts.MacroSeries"
+    auth: required
+    enabled: false
+    critical: false
+
+  # -----------------------------------------------------------------
+  # Regulatory / filings
+  # -----------------------------------------------------------------
+  - id: SRC-REG-SEC-EDGAR-001
+    name: "SEC EDGAR full-text search"
+    category: regulatory
+    provider: sec
+    endpoint: "https://efts.sec.gov/LATEST/search-index"
+    schema: "sensory.regulatory.contracts.Filing"
+    auth: none
+    enabled: false
+    critical: false
+
+  # -----------------------------------------------------------------
+  # Developer / technical / code
+  # -----------------------------------------------------------------
+  - id: SRC-DEV-GITHUB-001
+    name: "GitHub REST v3"
+    category: dev
+    provider: github
+    endpoint: "https://api.github.com"
+    schema: "sensory.dev.contracts.RepoEvent"
+    auth: required
+    enabled: false
+    critical: false
+
+  # -----------------------------------------------------------------
+  # Alternative / edge
+  # -----------------------------------------------------------------
+  - id: SRC-ALT-POLYMARKET-001
+    name: "Polymarket prediction markets"
+    category: alt
+    provider: polymarket
+    endpoint: "https://clob.polymarket.com"
+    schema: "sensory.alt.contracts.PredictionMarket"
+    auth: none
+    enabled: false
+    critical: false
+
+  # -----------------------------------------------------------------
+  # AI providers (Cognitive Router Layer — wires next)
+  # -----------------------------------------------------------------
+  - id: SRC-AI-OPENAI-001
+    name: "OpenAI ChatGPT"
+    category: ai
+    provider: openai
+    endpoint: "https://api.openai.com/v1"
+    schema: "sensory.cognitive.contracts.AIResponse"
+    auth: required
+    enabled: false
+    critical: false
+  - id: SRC-AI-GEMINI-001
+    name: "Google Gemini"
+    category: ai
+    provider: google
+    endpoint: "https://generativelanguage.googleapis.com/v1"
+    schema: "sensory.cognitive.contracts.AIResponse"
+    auth: required
+    enabled: false
+    critical: false
+  - id: SRC-AI-GROK-001
+    name: "xAI Grok"
+    category: ai
+    provider: xai
+    endpoint: "https://api.x.ai/v1"
+    schema: "sensory.cognitive.contracts.AIResponse"
+    auth: required
+    enabled: false
+    critical: false
+  - id: SRC-AI-DEEPSEEK-001
+    name: "DeepSeek"
+    category: ai
+    provider: deepseek
+    endpoint: "https://api.deepseek.com/v1"
+    schema: "sensory.cognitive.contracts.AIResponse"
+    auth: required
+    enabled: false
+    critical: false
+
+  # -----------------------------------------------------------------
+  # Synthetic — internal scenario generator + replay
+  # -----------------------------------------------------------------
+  - id: SRC-SYN-REPLAY-001
+    name: "Internal replay buffer (RAL)"
+    category: synthetic
+    provider: internal
+    endpoint: "internal://replay"
+    schema: "core.contracts.market.MarketTick"
+    auth: none
+    enabled: false
+    critical: false
