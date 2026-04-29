@@ -199,12 +199,9 @@ def update_dotenv_file(
             )
 
     if path.exists():
-        original_lines = path.read_text(encoding="utf-8").splitlines(
-            keepends=False
-        )
-        had_trailing_newline = path.read_text(encoding="utf-8").endswith(
-            "\n"
-        )
+        content = path.read_text(encoding="utf-8")
+        original_lines = content.splitlines(keepends=False)
+        had_trailing_newline = content.endswith("\n")
     else:
         original_lines = []
         had_trailing_newline = True
