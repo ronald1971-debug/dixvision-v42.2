@@ -96,6 +96,26 @@ class PatchRecord:
     verdicts: tuple[StageVerdict, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class PatchApprovalDecision:
+    """Frozen record of an approval-bridge decision.
+
+    Lives in ``core.contracts`` so the offline pipeline projection layer
+    (``evolution_engine.patch_pipeline.events``) can serialise decisions
+    into ``PATCH_DECISION`` ledger events without violating the L2
+    cross-engine seam (offline → runtime imports forbidden).
+    Governance owns the *production* of these records via
+    :class:`governance_engine.services.patch_pipeline_bridge.PatchApprovalBridge`.
+    """
+
+    ts_ns: int
+    patch_id: str
+    decision: str
+    reason: str
+    final_stage: PatchStage
+    meta: Mapping[str, str] = field(default_factory=dict)
+
+
 class PatchPipelineProtocol(Protocol):
     """Authority contract for the patch FSM.
 
@@ -124,8 +144,64 @@ class PatchPipelineProtocol(Protocol):
     def all_in(self, stage: PatchStage) -> tuple[PatchRecord, ...]: ...
 
 
+class PatchApprovalBridgeProtocol(Protocol):
+    """Governance authority surface for the patch pipeline.
+
+    Implemented by
+    :class:`governance_engine.services.patch_pipeline_bridge.PatchApprovalBridge`.
+    Lives in ``core.contracts`` so the offline orchestrator
+    (``evolution_engine.patch_pipeline.orchestrator``) can depend on the
+    *contract* rather than the concrete runtime class — preserving the
+    L2 cross-engine seam (offline → runtime imports forbidden).
+
+    Build Compiler Spec §1.1 keeps Governance as the sole authority for
+    APPROVED / REJECTED / ROLLED_BACK transitions; the orchestrator only
+    funnels stage evidence and calls these methods in canonical order.
+    """
+
+    pipeline: PatchPipelineProtocol
+
+    def receive_proposal(self, proposal: object) -> PatchRecord: ...
+
+    def advance(
+        self,
+        *,
+        patch_id: str,
+        new_stage: PatchStage,
+        ts_ns: int,
+        verdict: StageVerdict | None = ...,
+        reason: str = ...,
+    ) -> PatchRecord: ...
+
+    def approve(
+        self,
+        *,
+        patch_id: str,
+        ts_ns: int,
+        reason: str = ...,
+    ) -> PatchApprovalDecision: ...
+
+    def reject(
+        self,
+        *,
+        patch_id: str,
+        ts_ns: int,
+        reason: str,
+    ) -> PatchApprovalDecision: ...
+
+    def rollback(
+        self,
+        *,
+        patch_id: str,
+        ts_ns: int,
+        reason: str,
+    ) -> PatchApprovalDecision: ...
+
+
 __all__ = [
     "LEGAL_PATCH_TRANSITIONS",
+    "PatchApprovalBridgeProtocol",
+    "PatchApprovalDecision",
     "PatchPipelineError",
     "PatchPipelineProtocol",
     "PatchRecord",
