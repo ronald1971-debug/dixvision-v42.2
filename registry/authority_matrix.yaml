@@ -1,0 +1,211 @@
+# registry/authority_matrix.yaml
+#
+# Single source of truth for "who wins in conflict?" across the v42.2
+# control plane. Closes operator concern L3 from the v3.5 critique.
+#
+# Structure:
+#
+# * `actors`        — every authority that can express an intent over
+#                     state. The IDs are the only ones the rest of the
+#                     matrix may reference.
+# * `precedence`    — total ordering used when an explicit conflict row
+#                     is missing. Lower index == higher authority.
+# * `conflicts`     — explicit, documented decision points where two or
+#                     more actors collide. Each row names the domain,
+#                     the winner, and the invariant chain that justifies
+#                     it. The runtime evaluates these in declared order.
+# * `overrides`     — the only legal "exceptional" edges where a lower-
+#                     precedence actor may temporarily outrank a higher-
+#                     precedence one (always through Governance, never
+#                     direct).
+#
+# All references to invariants (INV-XX), safety rules (SAFE-XX), and
+# governance control points (GOV-CP-XX) are validated by
+# `system_engine.authority.matrix.load_authority_matrix(...)`.
+
+version: v0.1.0
+
+actors:
+  - id: governance
+    role: "Sole policy authority — Mode FSM, plugin lifecycle, intent transitions, kill switch."
+    module: governance_engine
+    invariants: [INV-38, INV-56]
+    notes: |
+      Approves, rejects, or constrains. NEVER trades. NEVER constructs
+      SignalEvent or ExecutionEvent directly (B21, B22).
+  - id: intelligence
+    role: "Decider (Indira) — sole SignalEvent constructor."
+    module: intelligence_engine
+    invariants: [INV-56]
+  - id: execution
+    role: "Executor — sole ExecutionEvent constructor; order lifecycle FSM."
+    module: execution_engine
+    invariants: [INV-56]
+  - id: system
+    role: "Dyon — system/health, drift, hazard sensors, source liveness FSM."
+    module: system_engine
+    invariants: [INV-56, INV-58]
+  - id: learning
+    role: "Offline reward shaping + calibration. Read-only against ledger."
+    module: learning_engine
+    invariants: [INV-15, INV-47, INV-53]
+  - id: evolution
+    role: "Offline parameter / patch proposer. Submits to Governance."
+    module: evolution_engine
+    invariants: [INV-15]
+  - id: operator
+    role: "Human operator. Acts only via Governance write path."
+    module: ui
+    invariants: [INV-56, GOV-CP-03, GOV-CP-07]
+  - id: ledger
+    role: "Append-only truth. Read-only consumers; only Governance writes authoritatively."
+    module: state.ledger
+    invariants: [INV-15, INV-47]
+
+# Total ordering used as a tie-breaker when no explicit conflict row
+# matches. Lower index == higher authority.
+precedence:
+  - ledger        # ground truth, immutable past
+  - governance    # only writer of authoritative decisions
+  - operator      # only via governance
+  - system        # hazards interrupt the hot path
+  - intelligence  # decisions
+  - execution     # acts on approved decisions
+  - learning      # offline; never gates runtime
+  - evolution     # offline; never gates runtime
+
+conflicts:
+
+  - id: CONF-01
+    domain: governance_vs_engine
+    description: "Governance constrains/approves runtime actions; engines never bypass it for protected operations."
+    winner: governance
+    invariants: [INV-56]
+    rules: [B20, B21, B22]
+    notes: |
+      Engines may not directly mutate governance state. Operator actions
+      route OperatorInterfaceBridge → ControlPlaneRouter → StateTransitionManager.
+
+  - id: CONF-02
+    domain: hazard_vs_fast_risk_cache
+    description: "A fresh hazard from system_engine overrides any stale FastRiskCache snapshot."
+    winner: system
+    invariants: [INV-56]
+    safety: [SAFE-09]
+    notes: |
+      The cache is fail-closed on staleness; a hazard always interrupts
+      the hot path regardless of cache version_id.
+
+  - id: CONF-03
+    domain: source_liveness_vs_cached_data
+    description: "STALE source classification overrides any cached data still in flight."
+    winner: system
+    invariants: [INV-58]
+    safety: [SAFE-57]
+    rules: [SCVS-05, SCVS-06]
+    notes: |
+      Critical-source STALE additionally emits HAZ-13; non-critical
+      sources only mark consumers degraded.
+
+  - id: CONF-04
+    domain: per_packet_schema_vs_runtime
+    description: "A packet failing SchemaGuard is rejected before any engine consumes it."
+    winner: system
+    invariants: [INV-59]
+    rules: [SCVS-04, SCVS-09]
+
+  - id: CONF-05
+    domain: ai_provider_disagreement
+    description: "Pre-CRL: only one AI provider is consulted at a time. Disagreement resolution is deferred to the Cognitive Router Layer (L2)."
+    winner: deferred
+    notes: |
+      Once CRL ships, this row is replaced with the arbitration policy
+      it codifies (majority vote / weighted confidence / governance
+      override). Until then, the matrix records the deferral so future
+      readers don't assume an implicit policy.
+
+  - id: CONF-06
+    domain: signal_direction_conflict
+    description: "Two plugins emit opposing signals on the same symbol."
+    winner: intelligence
+    notes: |
+      Resolved inside intelligence_engine.signal_pipeline.ConflictResolver
+      via min_net_score (default 0 collapses balanced BUY/SELL → HOLD,
+      see PR #31). Governance never adjudicates signal direction.
+
+  - id: CONF-07
+    domain: operator_vs_running_strategy
+    description: "An operator KILL request always wins over an in-flight strategy decision."
+    winner: operator
+    invariants: [GOV-CP-03]
+    notes: |
+      The kill request still traverses Governance — operators do not
+      bypass GOV-CP-07. But Governance MUST honour the request even if
+      it cancels in-flight orders.
+
+  - id: CONF-08
+    domain: mode_fsm_transition
+    description: "Mode FSM advances only via StateTransitionManager.propose_mode (GOV-CP-03)."
+    winner: governance
+    invariants: [INV-38]
+    notes: |
+      Engines surface preconditions (e.g. liveness, hazards) but never
+      mutate mode directly.
+
+  - id: CONF-09
+    domain: plugin_lifecycle
+    description: "Plugin lifecycle (PROPOSED → SHADOW → CANARY → LIVE → RETIRED) advances only via Governance."
+    winner: governance
+    invariants: [GOV-CP-04, GOV-CP-07]
+
+  - id: CONF-10
+    domain: ledger_vs_in_memory_state
+    description: "On replay or recovery, the ledger is truth; in-memory state is rebuilt from it."
+    winner: ledger
+    invariants: [INV-15, INV-47]
+
+  - id: CONF-11
+    domain: silent_fallback_attempt
+    description: "Engines may not silently swap data sources; a SOURCE_FALLBACK_ACTIVATED event is required."
+    winner: governance
+    rules: [SCVS-10]
+    notes: |
+      Enforcement is by audit, not by gate: a missing event is
+      detectable by replay diff against the ledger.
+
+# The only legal "exceptional" edges where a lower-precedence actor
+# temporarily outranks a higher-precedence one. Every override MUST
+# route through Governance.
+overrides:
+
+  - id: OVR-01
+    name: operator_kill_switch
+    grants: operator
+    overrides: [intelligence, execution]
+    via: governance
+    invariants: [GOV-CP-03, GOV-CP-07]
+    notes: |
+      Operator KILL request flips Mode FSM to LOCKED, which immediately
+      narrows execution to no-op. Cancels in-flight orders.
+
+  - id: OVR-02
+    name: hazard_to_locked
+    grants: system
+    overrides: [intelligence, execution]
+    via: governance
+    invariants: [INV-56]
+    notes: |
+      A CRITICAL hazard from system_engine triggers Governance to
+      auto-advance the Mode FSM toward LOCKED. The hazard is the
+      proximate cause; Governance is the actor that mutates state.
+
+  - id: OVR-03
+    name: governance_constraint_on_signal
+    grants: governance
+    overrides: [intelligence]
+    via: governance
+    invariants: [INV-56]
+    notes: |
+      Governance may reject or constrain a SignalEvent before it reaches
+      execution. It cannot construct a different SignalEvent (B22) — it
+      can only refuse / cap.

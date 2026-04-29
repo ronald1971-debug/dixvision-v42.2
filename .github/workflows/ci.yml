@@ -28,8 +28,11 @@ jobs:
       - name: Authority lint (T1 / C2 / C3 / W1 / L1 / L2 / L3 / B1)
         run: python tools/authority_lint.py --strict .
 
-      - name: SCVS lint (SCVS-01 / SCVS-02)
+      - name: SCVS lint (SCVS-01 / SCVS-02 + SCVS-08 warnings)
         run: python tools/scvs_lint.py .
+
+      - name: Authority matrix lint (registry/authority_matrix.yaml)
+        run: python tools/authority_matrix_lint.py
 
       - name: Pytest
         run: pytest -q
