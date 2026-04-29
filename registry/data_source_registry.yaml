@@ -46,8 +46,12 @@ sources:
     endpoint: "wss://stream.binance.com:9443"
     schema: "core.contracts.market.MarketTick"
     auth: none
-    enabled: false
+    enabled: true
     critical: false
+    notes: >-
+      Read-only public 24hrTicker stream consumed by ui.feeds.binance_public_ws
+      (see ui/feeds/consumes.yaml). No credentials required, no order routing.
+      Pump is opt-in via ``POST /api/feeds/binance/start``.
   - id: SRC-MARKET-COINBASE-001
     name: "Coinbase Advanced Trade WS"
     category: market

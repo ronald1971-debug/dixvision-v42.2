@@ -1,0 +1,21 @@
+# SCVS-01 / SCVS-02 consumption declaration for the harness data feeds.
+#
+# Refs:
+#   docs/manifest_v3.5_delta.md §SCVS (INV-57)
+#   system_engine/scvs/consumption_tracker.py
+#   registry/data_source_registry.yaml
+#
+# This declaration closes the loop for SRC-MARKET-BINANCE-001 — the
+# `BinancePublicWSPump` defined in `ui/feeds/binance_public_ws.py`
+# subscribes to the public 24hrTicker stream and feeds parsed
+# `MarketTick` rows into the harness state on the same code path as
+# `POST /api/tick`.
+#
+# `required: false` — the harness still works without the feed running
+# (paper-broker manual ticks remain available); the pump is opt-in via
+# `POST /api/feeds/binance/start`.
+
+module: ui.feeds
+inputs:
+  - source_id: SRC-MARKET-BINANCE-001
+    required: false
