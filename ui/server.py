@@ -44,6 +44,12 @@ from core.cognitive_router import (
     enabled_ai_providers,
     select_providers,
 )
+from core.contracts.api.credentials import (
+    CredentialItem,
+    CredentialsStatusResponse,
+    CredentialsSummary,
+    PresenceStateApi,
+)
 from core.contracts.events import (
     Event,
     Side,
@@ -378,6 +384,19 @@ if STATIC_DIR.exists():
     )
 
 
+# Wave-02 React build artefact, served under /dash2/* if present.
+# Mount is conditional so operators without Node installed (and CI
+# jobs that don't build the SPA) still get a fully-functional vanilla
+# console at the legacy URLs.
+_DASH2_DIST = Path(__file__).resolve().parent.parent / "dashboard2026" / "dist"
+if _DASH2_DIST.exists():
+    app.mount(
+        "/dash2",
+        StaticFiles(directory=str(_DASH2_DIST), html=True),
+        name="dash2",
+    )
+
+
 @app.get("/api/health")
 def health() -> dict[str, Any]:
     out = {}
@@ -468,8 +487,8 @@ def ai_providers(task: str | None = None) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-@app.get("/api/credentials/status")
-def credentials_status() -> dict[str, Any]:
+@app.get("/api/credentials/status", response_model=CredentialsStatusResponse)
+def credentials_status() -> CredentialsStatusResponse:
     """Return the credential matrix for every ``auth: required`` row.
 
     Each entry tells the operator (a) which env var name(s) must be
@@ -486,37 +505,38 @@ def credentials_status() -> dict[str, Any]:
     env = resolve_env()
     statuses = presence_status(requirements, env)
 
-    items = []
-    summary = {"present": 0, "partial": 0, "missing": 0}
+    items: list[CredentialItem] = []
+    counts = {"present": 0, "partial": 0, "missing": 0}
     for st in statuses:
         req = st.requirement
+        state_api = PresenceStateApi(st.state.value)
         items.append(
-            {
-                "source_id": req.source_id,
-                "source_name": req.source_name,
-                "category": req.category,
-                "provider": req.provider,
-                "env_vars": list(req.env_vars),
-                "env_vars_present": list(st.env_vars_present),
-                "missing_env_vars": list(st.missing_env_vars),
-                "signup_url": req.signup_url,
-                "free_tier": req.free_tier,
-                "notes": req.notes,
-                "state": st.state.value,
-            }
+            CredentialItem(
+                source_id=req.source_id,
+                source_name=req.source_name,
+                category=req.category,
+                provider=req.provider,
+                env_vars=list(req.env_vars),
+                env_vars_present=list(st.env_vars_present),
+                missing_env_vars=list(st.missing_env_vars),
+                signup_url=req.signup_url,
+                free_tier=req.free_tier,
+                notes=req.notes,
+                state=state_api,
+            ),
         )
-        summary[st.state.value] += 1
+        counts[st.state.value] += 1
 
-    return {
-        "summary": {
-            "total": len(items),
-            "present": summary["present"],
-            "partial": summary["partial"],
-            "missing": summary["missing"],
-        },
-        "writable": not is_devin_session(),
-        "items": items,
-    }
+    return CredentialsStatusResponse(
+        summary=CredentialsSummary(
+            total=len(items),
+            present=counts["present"],
+            partial=counts["partial"],
+            missing=counts["missing"],
+        ),
+        writable=not is_devin_session(),
+        items=items,
+    )
 
 
 class CredentialVerifyIn(BaseModel):
