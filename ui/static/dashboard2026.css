@@ -224,3 +224,99 @@ button:disabled {
   font-weight: 600;
   color: var(--accent);
 }
+
+/* --------------------------------------------------------------- */
+/* Credentials matrix (DASH-2026 wave-01.5)                         */
+/* --------------------------------------------------------------- */
+
+.cred-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 12px 0 16px;
+  font-size: 13px;
+}
+
+.cred-table-wrap {
+  overflow-x: auto;
+}
+
+.cred-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.cred-table th,
+.cred-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.cred-table th {
+  background: var(--bg-elev);
+  color: var(--fg-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.cred-table .src-name { font-weight: 600; }
+.cred-table .src-id { font-size: 11px; }
+
+.cred-state {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.cred-state-present {
+  background: #1f3d2a;
+  color: #4ade80;
+}
+.cred-state-partial {
+  background: #3d2f0d;
+  color: var(--accent-warn);
+}
+.cred-state-missing {
+  background: #3d1d1d;
+  color: var(--accent-danger);
+}
+
+.env-ok code { color: #4ade80; }
+.env-miss code { color: var(--accent-danger); }
+.env-ok,
+.env-miss {
+  display: inline-block;
+  margin-right: 6px;
+  white-space: nowrap;
+}
+.env-dot { margin-right: 3px; font-size: 10px; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.badge-free {
+  background: #1f3d2a;
+  color: #4ade80;
+}
+.badge-paid {
+  background: var(--bg-elev);
+  color: var(--fg-muted);
+}
+
+.cred-error {
+  color: var(--accent-danger);
+}

@@ -26,6 +26,7 @@ Endpoints:
 from __future__ import annotations
 
 import json
+import os
 import threading
 from collections import deque
 from collections.abc import Sequence
@@ -68,6 +69,10 @@ from intelligence_engine.strategy_runtime.state_machine import (
 )
 from learning_engine.engine import LearningEngine
 from state.ledger.reader import LedgerReader
+from system_engine.credentials import (
+    presence_status,
+    requirements_for_registry,
+)
 from system_engine.engine import SystemEngine
 from system_engine.scvs.source_registry import (
     SourceRegistry,
@@ -346,6 +351,18 @@ def forms_grid() -> HTMLResponse:
     return _serve_static("forms_grid.html")
 
 
+@app.get("/credentials", response_class=HTMLResponse)
+def credentials_page() -> HTMLResponse:
+    """Dashboard-2026 wave-01.5 — credential discovery matrix.
+
+    Shows every ``auth: required`` registry row with the env-var
+    name(s) that must be set, the signup URL, and a present/missing
+    state derived from the live process environment.
+    """
+
+    return _serve_static("credentials.html")
+
+
 if STATIC_DIR.exists():
     app.mount(
         "/static",
@@ -435,6 +452,61 @@ def ai_providers(task: str | None = None) -> dict[str, Any]:
             for p in providers
         ],
         "task_classes": [t.value for t in TaskClass],
+    }
+
+
+# ---------------------------------------------------------------------------
+# Credential discovery — registry-driven "what API keys do I need" matrix
+# (Dashboard-2026 wave-01.5)
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/credentials/status")
+def credentials_status() -> dict[str, Any]:
+    """Return the credential matrix for every ``auth: required`` row.
+
+    Each entry tells the operator (a) which env var name(s) must be
+    set for that source, (b) whether each is currently present in the
+    process environment, (c) where to sign up for a key, and (d)
+    whether a free tier exists.
+
+    Verification (does the key actually authenticate?) is *not* in
+    this endpoint — it lands separately in ``POST /api/credentials/verify``
+    so the read path stays cheap and side-effect-free.
+    """
+
+    requirements = requirements_for_registry(STATE.source_registry)
+    statuses = presence_status(requirements, os.environ)
+
+    items = []
+    summary = {"present": 0, "partial": 0, "missing": 0}
+    for st in statuses:
+        req = st.requirement
+        items.append(
+            {
+                "source_id": req.source_id,
+                "source_name": req.source_name,
+                "category": req.category,
+                "provider": req.provider,
+                "env_vars": list(req.env_vars),
+                "env_vars_present": list(st.env_vars_present),
+                "missing_env_vars": list(st.missing_env_vars),
+                "signup_url": req.signup_url,
+                "free_tier": req.free_tier,
+                "notes": req.notes,
+                "state": st.state.value,
+            }
+        )
+        summary[st.state.value] += 1
+
+    return {
+        "summary": {
+            "total": len(items),
+            "present": summary["present"],
+            "partial": summary["partial"],
+            "missing": summary["missing"],
+        },
+        "items": items,
     }
 
 
