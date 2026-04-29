@@ -54,6 +54,24 @@ class SourceCategory(StrEnum):
     SYNTHETIC = "synthetic"
 
 
+# Allowed capability tags for ``category: ai`` rows. Chat widgets pick
+# providers per task class by intersecting the operator-requested
+# capabilities with each row's declared set, so adding a capability
+# here is a load-bearing change — every existing AI row's
+# ``capabilities`` must still be a subset of this set.
+ALLOWED_AI_CAPABILITIES: frozenset[str] = frozenset(
+    {
+        "reasoning",
+        "code_gen",
+        "multimodal",
+        "realtime_search",
+        "long_context",
+        "tool_use",
+        "agent_orchestration",
+    }
+)
+
+
 @dataclass(frozen=True, slots=True)
 class SourceDeclaration:
     """One row of ``data_source_registry.yaml``."""
@@ -68,6 +86,11 @@ class SourceDeclaration:
     enabled: bool
     critical: bool
     liveness_threshold_ms: int = 0  # 0 == not liveness-checked
+    # Optional capability tags. Only meaningful for ``category: ai``
+    # rows where the registry-driven Cognitive Router (Dashboard-2026
+    # wave-01) selects providers per task class. Always a tuple so the
+    # dataclass stays hashable; empty for non-AI rows.
+    capabilities: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -134,6 +157,41 @@ def _parse_source(raw: Any, idx: int) -> SourceDeclaration:
             f"{ctx}: liveness_threshold_ms must be >= 0 (got {liveness_ms})"
         )
 
+    capabilities_raw = raw.get("capabilities", ())
+    if capabilities_raw is None:
+        capabilities_tuple: tuple[str, ...] = ()
+    elif isinstance(capabilities_raw, (list, tuple)):
+        seen: set[str] = set()
+        cap_list: list[str] = []
+        for cap in capabilities_raw:
+            if not isinstance(cap, str):
+                raise ValueError(
+                    f"{ctx}: capabilities entries must be strings"
+                    f" (got {type(cap).__name__})"
+                )
+            if cap in seen:
+                raise ValueError(
+                    f"{ctx}: capability '{cap}' listed more than once"
+                )
+            seen.add(cap)
+            cap_list.append(cap)
+        capabilities_tuple = tuple(cap_list)
+    else:
+        raise ValueError(
+            f"{ctx}: capabilities must be a list (got {type(capabilities_raw).__name__})"
+        )
+    if capabilities_tuple and category is not SourceCategory.AI:
+        raise ValueError(
+            f"{ctx}: capabilities only valid on category=ai (got '{category.value}')"
+        )
+    if capabilities_tuple:
+        unknown = set(capabilities_tuple) - ALLOWED_AI_CAPABILITIES
+        if unknown:
+            raise ValueError(
+                f"{ctx}: unknown AI capabilities {sorted(unknown)};"
+                f" allowed = {sorted(ALLOWED_AI_CAPABILITIES)}"
+            )
+
     return SourceDeclaration(
         id=sid,
         name=str(_require(raw, "name", ctx)),
@@ -145,6 +203,7 @@ def _parse_source(raw: Any, idx: int) -> SourceDeclaration:
         enabled=bool(raw.get("enabled", False)),
         critical=bool(raw.get("critical", False)),
         liveness_threshold_ms=liveness_ms,
+        capabilities=capabilities_tuple,
     )
 
 

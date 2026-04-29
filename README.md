@@ -56,6 +56,29 @@ python tools/authority_lint.py --strict .
 pytest -q
 ```
 
+#### Faster: install with `uv` (recommended)
+
+[`uv`](https://github.com/astral-sh/uv) is significantly faster than
+pip for resolution + install and is the **recommended** tool when
+working on the codebase. The Windows launcher still uses pip for
+first-run simplicity (no extra prerequisite), so this is opt-in:
+
+```bash
+# one-time: install uv (Linux / macOS / WSL)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+# Windows: irm https://astral.sh/uv/install.ps1 | iex
+
+# create a venv and install deps
+uv venv .venv -p 3.12
+uv pip install -r requirements-dev.txt
+uv pip install -e .
+```
+
+The full dependency policy (what's in, what's deferred, and what's
+explicitly NOT recommended due to invariant conflicts like INV-15
+replay determinism) is documented in
+[`docs/dependency_roadmap.md`](docs/dependency_roadmap.md).
+
 ### Running on Windows (one-click launcher)
 
 A double-click launcher + desktop shortcut are shipped under

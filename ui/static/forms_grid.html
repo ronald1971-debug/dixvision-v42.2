@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DIX VISION — Per-Form Trading Grid</title>
+    <link rel="stylesheet" href="/static/dashboard2026.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">◆</span>
+        <span>DIX VISION</span>
+      </div>
+      <nav>
+        <a href="/">harness</a>
+        <a href="/operator">operator</a>
+        <a href="/indira-chat">Indira Chat</a>
+        <a href="/dyon-chat">Dyon Chat</a>
+        <a class="active" href="/forms-grid">forms</a>
+      </nav>
+    </header>
+
+    <main>
+      <div class="mode-banner">
+        Active autonomy mode:
+        <span class="mode" id="mode-label">— loading —</span>
+        <span class="muted">
+          (mode is read-only here; change in
+          <a href="/operator">operator</a>)
+        </span>
+      </div>
+
+      <section class="card">
+        <h2>
+          Per-Form Trading Widget Grid
+          <span class="spec">DASH-2026 wave-01 scaffold</span>
+        </h2>
+        <p class="muted">
+          One widget per asset class. Each widget submits orders into
+          its own domain pipeline only — there is no shared state
+          between domains. The memecoin trio
+          (<code>solana</code> / <code>ethereum</code> /
+          <code>bsc</code>) is fully isolated per <strong>W1</strong>:
+          its widgets read only memecoin domain bus events and never
+          import anything from the spot/perps/forex/stocks/DeFi
+          stacks.
+        </p>
+
+        <div class="forms-grid">
+          <!-- Spot -->
+          <div class="form-card" data-domain="spot">
+            <h3>Spot <span class="domain-tag">domain: spot</span></h3>
+            <div class="field">
+              <label>symbol</label>
+              <input type="text" placeholder="BTCUSDT" />
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>side</label>
+                <select>
+                  <option>BUY</option>
+                  <option>SELL</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>size</label>
+                <input type="number" step="0.0001" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>SL %</label>
+                <input type="number" step="0.01" />
+              </div>
+              <div class="field">
+                <label>TP %</label>
+                <input type="number" step="0.01" />
+              </div>
+            </div>
+            <button disabled>submit (wave-02 wires action)</button>
+          </div>
+
+          <!-- Perps -->
+          <div class="form-card" data-domain="perps">
+            <h3>Perps <span class="domain-tag">domain: perps</span></h3>
+            <div class="field">
+              <label>symbol</label>
+              <input type="text" placeholder="BTCUSDT-PERP" />
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>side</label>
+                <select>
+                  <option>BUY</option>
+                  <option>SELL</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>leverage</label>
+                <input type="number" min="1" max="100" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>SL %</label>
+                <input type="number" step="0.01" />
+              </div>
+              <div class="field">
+                <label>TP %</label>
+                <input type="number" step="0.01" />
+              </div>
+            </div>
+            <button disabled>submit (wave-02 wires action)</button>
+          </div>
+
+          <!-- Forex -->
+          <div class="form-card" data-domain="forex">
+            <h3>Forex <span class="domain-tag">domain: forex</span></h3>
+            <div class="field">
+              <label>pair</label>
+              <input type="text" placeholder="EURUSD" />
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>side</label>
+                <select>
+                  <option>BUY</option>
+                  <option>SELL</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>lots</label>
+                <input type="number" step="0.01" />
+              </div>
+            </div>
+            <button disabled>submit (wave-02 wires action)</button>
+          </div>
+
+          <!-- Stocks -->
+          <div class="form-card" data-domain="stocks">
+            <h3>Stocks <span class="domain-tag">domain: stocks</span></h3>
+            <div class="field">
+              <label>symbol</label>
+              <input type="text" placeholder="AAPL" />
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>side</label>
+                <select>
+                  <option>BUY</option>
+                  <option>SELL</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>shares</label>
+                <input type="number" step="1" />
+              </div>
+            </div>
+            <button disabled>submit (wave-02 wires action)</button>
+          </div>
+
+          <!-- DeFi -->
+          <div class="form-card" data-domain="defi">
+            <h3>DeFi <span class="domain-tag">domain: defi</span></h3>
+            <div class="field">
+              <label>pair</label>
+              <input type="text" placeholder="ETH/USDC on Uniswap-V3" />
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>side</label>
+                <select>
+                  <option>BUY</option>
+                  <option>SELL</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>amount</label>
+                <input type="number" step="0.0001" />
+              </div>
+            </div>
+            <button disabled>submit (wave-02 wires action)</button>
+          </div>
+
+          <!-- Memecoin trio (ISOLATED, W1) -->
+          <div class="form-card isolated" data-domain="memecoin">
+            <h3>
+              Memecoin
+              <span class="domain-tag">isolated · W1</span>
+            </h3>
+            <p class="muted" style="font-size: 12px;">
+              Reads only memecoin domain bus events; submits only into
+              the memecoin pipeline. Never shares code or state with
+              the other widgets above.
+            </p>
+            <div class="field">
+              <label>chain</label>
+              <select>
+                <option>solana</option>
+                <option>ethereum</option>
+                <option>bsc</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>token mint / contract</label>
+              <input type="text" placeholder="So11111…  /  0xabc…" />
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>side</label>
+                <select>
+                  <option>BUY</option>
+                  <option>SELL</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>quote size</label>
+                <input type="number" step="0.0001" />
+              </div>
+            </div>
+            <button disabled>submit (wave-02 wires action)</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      (function () {
+        // Read mode from /api/dashboard/mode (DASH-1, already shipped).
+        var modeEl = document.getElementById('mode-label');
+        fetch('/api/dashboard/mode')
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            modeEl.textContent =
+              (d && d.mode && d.mode.current_mode) || 'unknown';
+          })
+          .catch(function () {
+            modeEl.textContent = 'unknown';
+          });
+      })();
+    </script>
+  </body>
+</html>

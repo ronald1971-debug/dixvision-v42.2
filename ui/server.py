@@ -39,6 +39,11 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from core.cognitive_router import (
+    TaskClass,
+    enabled_ai_providers,
+    select_providers,
+)
 from core.contracts.events import (
     Event,
     Side,
@@ -64,12 +69,17 @@ from intelligence_engine.strategy_runtime.state_machine import (
 from learning_engine.engine import LearningEngine
 from state.ledger.reader import LedgerReader
 from system_engine.engine import SystemEngine
+from system_engine.scvs.source_registry import (
+    SourceRegistry,
+    load_source_registry,
+)
 from ui.dashboard_routes import build_dashboard_router
 from ui.feeds.runner import FeedRunner
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 REGISTRY_DIR = REPO_ROOT / "registry"
+SOURCE_REGISTRY_PATH = REGISTRY_DIR / "data_source_registry.yaml"
 
 
 # ---------------------------------------------------------------------------
@@ -82,6 +92,13 @@ class _State:
 
     def __init__(self) -> None:
         self.lock = threading.Lock()
+        # SCVS source registry — single source of truth for AI
+        # providers, market feeds, and every other external source.
+        # Loaded once at process start; the cognitive router reads this
+        # frozen projection (no hot-reload yet — wave-02).
+        self.source_registry: SourceRegistry = load_source_registry(
+            SOURCE_REGISTRY_PATH
+        )
         self.intelligence = IntelligenceEngine(
             microstructure_plugins=(MicrostructureV1(),),
         )
@@ -296,6 +313,39 @@ def operator() -> HTMLResponse:
     return HTMLResponse(html_path.read_text(encoding="utf-8"))
 
 
+def _serve_static(filename: str) -> HTMLResponse:
+    """Helper for the Dashboard-2026 wave-01 vanilla pages — they all
+    render a single .html shell from ``ui/static/`` with no
+    server-side templating."""
+
+    html_path = STATIC_DIR / filename
+    if not html_path.exists():
+        raise HTTPException(500, f"static/{filename} missing")
+    return HTMLResponse(html_path.read_text(encoding="utf-8"))
+
+
+@app.get("/indira-chat", response_class=HTMLResponse)
+def indira_chat() -> HTMLResponse:
+    """Dashboard-2026 wave-01 — Indira Chat skeleton (registry-driven)."""
+
+    return _serve_static("indira_chat.html")
+
+
+@app.get("/dyon-chat", response_class=HTMLResponse)
+def dyon_chat() -> HTMLResponse:
+    """Dashboard-2026 wave-01 — Dyon Chat skeleton (registry-driven)."""
+
+    return _serve_static("dyon_chat.html")
+
+
+@app.get("/forms-grid", response_class=HTMLResponse)
+def forms_grid() -> HTMLResponse:
+    """Dashboard-2026 wave-01 — per-form widget grid (memecoin
+    isolated per W1)."""
+
+    return _serve_static("forms_grid.html")
+
+
 if STATIC_DIR.exists():
     app.mount(
         "/static",
@@ -331,6 +381,61 @@ def registry_engines() -> dict[str, Any]:
 @app.get("/api/registry/plugins")
 def registry_plugins() -> dict[str, Any]:
     return _read_yaml(REGISTRY_DIR / "plugins.yaml")
+
+
+# ---------------------------------------------------------------------------
+# Cognitive Router — registry-driven AI provider list (Dashboard-2026 wave-01)
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/ai/providers")
+def ai_providers(task: str | None = None) -> dict[str, Any]:
+    """Registry-driven list of enabled AI providers.
+
+    Both Indira Chat and Dyon Chat fetch this at boot to populate
+    their provider dropdown. The list is sourced from
+    ``registry/data_source_registry.yaml`` (rows with
+    ``category: ai`` and ``enabled: true``) — provider names are
+    NEVER hard-coded in widget code (``tools/authority_lint.py`` rule
+    B23 enforces this). Adding a new AI provider is a registry-only
+    change; both widgets pick it up automatically on next boot.
+
+    The optional ``task`` query parameter filters by
+    :class:`TaskClass` value (e.g. ``indira_reasoning``,
+    ``dyon_coding``). When omitted, every enabled AI provider is
+    returned in registry order.
+    """
+
+    registry = STATE.source_registry
+    if task is None:
+        providers = enabled_ai_providers(registry)
+        task_value: str | None = None
+    else:
+        try:
+            task_class = TaskClass(task)
+        except ValueError as exc:
+            raise HTTPException(
+                400,
+                f"unknown task class {task!r};"
+                f" expected one of {[t.value for t in TaskClass]}",
+            ) from exc
+        providers = select_providers(registry, task_class)
+        task_value = task_class.value
+
+    return {
+        "task": task_value,
+        "providers": [
+            {
+                "id": p.id,
+                "name": p.name,
+                "provider": p.provider,
+                "endpoint": p.endpoint,
+                "capabilities": list(p.capabilities),
+            }
+            for p in providers
+        ],
+        "task_classes": [t.value for t in TaskClass],
+    }
 
 
 @app.post("/api/tick")

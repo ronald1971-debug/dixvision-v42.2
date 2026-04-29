@@ -221,7 +221,17 @@ sources:
     critical: false
 
   # -----------------------------------------------------------------
-  # AI providers (Cognitive Router Layer — wires next)
+  # AI providers (Cognitive Router Layer — registry-driven)
+  #
+  # Chat widgets (Indira Chat, Dyon Chat) read this section at boot
+  # and on hot-reload; the provider list is NEVER hard-coded in
+  # widget code. Adding a row here makes the provider appear in both
+  # widgets automatically (subject to the chat widgets' authority
+  # lint, which forbids string literals naming a specific provider).
+  #
+  # ``capabilities`` is the small extension that lets the router pick
+  # providers per task class. Allowed tags are listed in
+  # ``system_engine.scvs.source_registry.ALLOWED_AI_CAPABILITIES``.
   # -----------------------------------------------------------------
   - id: SRC-AI-OPENAI-001
     name: "OpenAI ChatGPT"
@@ -232,6 +242,12 @@ sources:
     auth: required
     enabled: false
     critical: false
+    capabilities:
+      - reasoning
+      - code_gen
+      - multimodal
+      - tool_use
+      - long_context
   - id: SRC-AI-GEMINI-001
     name: "Google Gemini"
     category: ai
@@ -241,6 +257,11 @@ sources:
     auth: required
     enabled: false
     critical: false
+    capabilities:
+      - reasoning
+      - multimodal
+      - long_context
+      - tool_use
   - id: SRC-AI-GROK-001
     name: "xAI Grok"
     category: ai
@@ -250,6 +271,10 @@ sources:
     auth: required
     enabled: false
     critical: false
+    capabilities:
+      - reasoning
+      - realtime_search
+      - tool_use
   - id: SRC-AI-DEEPSEEK-001
     name: "DeepSeek"
     category: ai
@@ -259,6 +284,30 @@ sources:
     auth: required
     enabled: false
     critical: false
+    capabilities:
+      - reasoning
+      - code_gen
+      - long_context
+  - id: SRC-AI-DEVIN-001
+    name: "Devin AI"
+    category: ai
+    provider: cognition
+    endpoint: "https://api.devin.ai/v1"
+    schema: "sensory.cognitive.contracts.AIResponse"
+    auth: required
+    enabled: false
+    critical: false
+    capabilities:
+      - code_gen
+      - reasoning
+      - tool_use
+      - agent_orchestration
+      - long_context
+    notes: >-
+      Routed via the Devin MCP (Model Context Protocol) integration.
+      Used by Dyon Chat for delegating multi-step coding / connector
+      tasks; also available to Indira Chat for high-leverage research
+      tasks (e.g. "investigate this anomaly across the ledger").
 
   # -----------------------------------------------------------------
   # Synthetic — internal scenario generator + replay
