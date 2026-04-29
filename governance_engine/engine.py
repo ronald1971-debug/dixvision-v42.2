@@ -50,6 +50,7 @@ from governance_engine.control_plane import (
     StateTransitionManager,
 )
 from governance_engine.control_plane.event_classifier import PipelineStage
+from governance_engine.control_plane.policy_engine import install_policy_table
 
 
 class GovernanceEngine(RuntimeEngine):
@@ -62,6 +63,7 @@ class GovernanceEngine(RuntimeEngine):
         plugin_slots: Mapping[str, Sequence[Plugin]] | None = None,
         constraints: Sequence[Constraint] = (),
         initial_mode: SystemMode = SystemMode.SAFE,
+        policy_table_installed_at_ns: int = 0,
     ) -> None:
         self.plugin_slots: Mapping[str, Sequence[Plugin]] = dict(
             plugin_slots or {}
@@ -69,6 +71,14 @@ class GovernanceEngine(RuntimeEngine):
 
         self.ledger = LedgerAuthorityWriter()
         self.policy = PolicyEngine(constraints=constraints)
+        # GOV-CP-01-PERF — record the precompiled decision-table hash as
+        # the very first ledger row. Replay can re-verify it via
+        # ``verify_policy_table_hash`` (SAFE-47).
+        install_policy_table(
+            self.policy,
+            self.ledger,
+            ts_ns=policy_table_installed_at_ns,
+        )
         self.risk = RiskEvaluator(constraints=tuple(constraints))
         self.compliance = ComplianceValidator()
         self.classifier = EventClassifier()
