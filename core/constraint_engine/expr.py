@@ -52,19 +52,19 @@ class _Cmp:
 
 @dataclass(frozen=True, slots=True)
 class _Not:
-    inner: "Expr"
+    inner: Expr
 
 
 @dataclass(frozen=True, slots=True)
 class _And:
-    left: "Expr"
-    right: "Expr"
+    left: Expr
+    right: Expr
 
 
 @dataclass(frozen=True, slots=True)
 class _Or:
-    left: "Expr"
-    right: "Expr"
+    left: Expr
+    right: Expr
 
 
 Expr = _Cmp | _Not | _And | _Or
