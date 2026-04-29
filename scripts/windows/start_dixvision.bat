@@ -39,7 +39,7 @@ if %errorlevel%==0 (
 )
 if not defined PY_CMD (
     where python >nul 2>&1
-    if %errorlevel%==0 (
+    if !errorlevel!==0 (
         for /f "tokens=2 delims= " %%v in ('python -V 2^>^&1') do set "PY_VER=%%v"
         echo Found python !PY_VER!
         set "PY_CMD=python"
