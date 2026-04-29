@@ -308,3 +308,171 @@ def test_b7_allows_strategy_lifecycle_fsm(fake_repo: Path):
         "import StrategyState\n",
     )
     assert "B7" not in _rule_codes(lint_repo(fake_repo))
+
+
+# ---------------------------------------------------------------------------
+# B17 — shadow meta-controller is non-acting (INV-52)
+# ---------------------------------------------------------------------------
+
+
+def test_b17_fires_on_shadow_to_governance(fake_repo: Path):
+    _write(
+        fake_repo,
+        "intelligence_engine/meta_controller/__init__.py",
+        "",
+    )
+    _write(
+        fake_repo,
+        "intelligence_engine/meta_controller/policy/__init__.py",
+        "",
+    )
+    _write(
+        fake_repo,
+        "intelligence_engine/meta_controller/policy/shadow_policy.py",
+        "from governance_engine import smuggle\n",
+    )
+    assert "B17" in _rule_codes(lint_repo(fake_repo))
+
+
+# ---------------------------------------------------------------------------
+# B20 — Triad Lock: Governance is order-blind (INV-56)
+# ---------------------------------------------------------------------------
+
+
+def test_b20_fires_on_governance_to_execution_engine(fake_repo: Path):
+    _write(
+        fake_repo,
+        "governance_engine/bad.py",
+        "from execution_engine.adapters.paper import PaperBroker\n",
+    )
+    codes = _rule_codes(lint_repo(fake_repo))
+    assert "B20" in codes
+
+
+def test_b20_fires_on_governance_to_execution_hot_path(fake_repo: Path):
+    _write(
+        fake_repo,
+        "governance_engine/bad.py",
+        "from execution_engine.hot_path import fast_execute\n",
+    )
+    assert "B20" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b20_does_not_fire_for_intelligence_to_execution(fake_repo: Path):
+    # B1 still fires here, but B20 must not — B20 is governance-only.
+    _write(
+        fake_repo,
+        "intelligence_engine/bad.py",
+        "from execution_engine.engine import ExecutionEngine\n",
+    )
+    codes = _rule_codes(lint_repo(fake_repo))
+    assert "B20" not in codes
+
+
+def test_b20_does_not_fire_for_governance_to_core_contracts(fake_repo: Path):
+    _write(
+        fake_repo,
+        "governance_engine/ok.py",
+        "from core.contracts.events import SystemEvent\n",
+    )
+    assert "B20" not in _rule_codes(lint_repo(fake_repo))
+
+
+# ---------------------------------------------------------------------------
+# B21 — Triad Lock: only execution_engine constructs ExecutionEvent (INV-56)
+# ---------------------------------------------------------------------------
+
+
+def test_b21_fires_on_governance_constructing_execution_event(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "governance_engine/bad.py",
+        "ExecutionEvent(ts_ns=0)\n",
+    )
+    assert "B21" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b21_fires_on_intelligence_constructing_execution_event(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "intelligence_engine/bad.py",
+        "ExecutionEvent(ts_ns=0)\n",
+    )
+    assert "B21" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b21_allows_execution_engine(fake_repo: Path):
+    _write(
+        fake_repo,
+        "execution_engine/ok.py",
+        "ExecutionEvent(ts_ns=0)\n",
+    )
+    assert "B21" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b21_allows_tests_directory(fake_repo: Path):
+    _write(fake_repo, "tests/__init__.py", "")
+    _write(
+        fake_repo,
+        "tests/test_thing.py",
+        "ExecutionEvent(ts_ns=0)\n",
+    )
+    assert "B21" not in _rule_codes(lint_repo(fake_repo))
+
+
+# ---------------------------------------------------------------------------
+# B22 — Triad Lock: only intelligence_engine constructs SignalEvent (INV-56)
+# ---------------------------------------------------------------------------
+
+
+def test_b22_fires_on_governance_constructing_signal_event(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "governance_engine/bad.py",
+        "SignalEvent(ts_ns=0)\n",
+    )
+    assert "B22" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b22_fires_on_execution_constructing_signal_event(fake_repo: Path):
+    _write(
+        fake_repo,
+        "execution_engine/bad.py",
+        "SignalEvent(ts_ns=0)\n",
+    )
+    assert "B22" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b22_allows_intelligence_engine(fake_repo: Path):
+    _write(
+        fake_repo,
+        "intelligence_engine/ok.py",
+        "SignalEvent(ts_ns=0)\n",
+    )
+    assert "B22" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b22_allows_ui_dev_harness(fake_repo: Path):
+    _write(fake_repo, "ui/__init__.py", "")
+    _write(
+        fake_repo,
+        "ui/server.py",
+        "SignalEvent(ts_ns=0)\n",
+    )
+    assert "B22" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b22_allows_tests_directory(fake_repo: Path):
+    _write(fake_repo, "tests/__init__.py", "")
+    _write(
+        fake_repo,
+        "tests/test_thing.py",
+        "SignalEvent(ts_ns=0)\n",
+    )
+    assert "B22" not in _rule_codes(lint_repo(fake_repo))
