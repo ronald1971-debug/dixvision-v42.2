@@ -23,6 +23,17 @@ Rule set (ZIP v4):
   read-only public surfaces (``check_self``-style health + the
   strategy lifecycle FSM). Private engine modules and any
   ``learning_engine`` / ``evolution_engine`` imports are forbidden.
+* **B17** Shadow meta-controller is non-acting (INV-52). The
+  ``intelligence_engine.meta_controller.policy.shadow_policy`` module
+  may not import ``governance_engine``.
+* **B20** Triad Lock — Governance is order-blind (INV-56).
+  ``governance_engine`` may not import any ``execution_engine``
+  surface. Complements B1 with an explicit triad-lock message.
+* **B21** Triad Lock — only ``execution_engine`` may construct
+  ``ExecutionEvent`` (INV-56). Tests + ``contracts/`` are exempt.
+* **B22** Triad Lock — only ``intelligence_engine`` (and the ``ui/``
+  dev-harness) may construct ``SignalEvent`` (INV-56). Tests +
+  ``contracts/`` are exempt.
 
 Allow-list applies to every rule:
 
@@ -446,6 +457,126 @@ def _check_b17(
     return None
 
 
+# ---------------------------------------------------------------------------
+# Triad Lock (INV-56) — B20 / B21 / B22
+#
+# Three explicit rules that codify the triad invariant:
+#
+#   * Decider  = intelligence_engine (signals + meta-controller)
+#   * Executor = execution_engine (orders + fills)
+#   * Approver = governance_engine (approves / rejects / constrains; never
+#                trades)
+#
+# B20 is import-based and complements B1 with an explicit "governance is
+# order-blind" message. B21 / B22 are construction-based and walk Call
+# nodes to ensure the producing engine is the only one that *creates* the
+# typed bus events.
+# ---------------------------------------------------------------------------
+
+GOVERNANCE_PREFIXES: tuple[str, ...] = ("governance_engine",)
+GOVERNANCE_FORBIDDEN_TARGET_PREFIXES: tuple[str, ...] = ("execution_engine",)
+
+
+def _check_b20(
+    importer: str, target: str, file: Path, line: int
+) -> Violation | None:
+    """B20 — Governance is order-blind (INV-56 Triad Lock)."""
+    if not _starts_with_any(importer, GOVERNANCE_PREFIXES):
+        return None
+    if _starts_with_any(target, GOVERNANCE_FORBIDDEN_TARGET_PREFIXES):
+        return Violation(
+            "B20",
+            file,
+            line,
+            importer,
+            target,
+            "Triad Lock: governance is order-blind — governance_engine "
+            "must never import any execution_engine surface "
+            "(INV-56)",
+        )
+    return None
+
+
+# Modules that may construct ExecutionEvent / SignalEvent directly.
+EXECUTION_EVENT_ALLOWED_PREFIXES: tuple[str, ...] = (
+    "execution_engine",
+)
+SIGNAL_EVENT_ALLOWED_PREFIXES: tuple[str, ...] = (
+    "intelligence_engine",
+    # Dev / operator harness: ui/server.py exposes a synthetic-signal
+    # POST endpoint that flows through Intelligence → Execution. Treated
+    # as a non-runtime fixture; production trading never goes through it.
+    "ui",
+)
+
+# Path prefixes (relative parts) that are exempt from B21/B22 entirely.
+TRIAD_CONSTRUCTOR_TEST_EXEMPT_PARTS: tuple[tuple[str, ...], ...] = (
+    ("tests",),
+    ("contracts",),
+)
+
+
+def _is_triad_constructor_test_exempt(
+    path: Path, repo_root: Path
+) -> bool:
+    try:
+        rel_parts = path.relative_to(repo_root).parts
+    except ValueError:
+        return False
+    for exempt in TRIAD_CONSTRUCTOR_TEST_EXEMPT_PARTS:
+        if rel_parts[: len(exempt)] == exempt:
+            return True
+    return False
+
+
+def _iter_named_calls(tree: ast.AST) -> Iterable[tuple[int, str]]:
+    """Yield ``(lineno, callee_name)`` for every plain ``Name(...)`` call."""
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            yield node.lineno, node.func.id
+
+
+def _check_triad_event_constructions(
+    importer: str, file: Path, repo_root: Path, tree: ast.AST
+) -> list[Violation]:
+    """B21 / B22 — typed-event constructor restrictions (INV-56)."""
+    if _is_triad_constructor_test_exempt(file, repo_root):
+        return []
+    out: list[Violation] = []
+    for line, name in _iter_named_calls(tree):
+        if name == "ExecutionEvent" and not _starts_with_any(
+            importer, EXECUTION_EVENT_ALLOWED_PREFIXES
+        ):
+            out.append(
+                Violation(
+                    "B21",
+                    file,
+                    line,
+                    importer,
+                    "ExecutionEvent",
+                    "Triad Lock: only execution_engine may construct "
+                    "ExecutionEvent — outside callers must request a "
+                    "fill via the typed bus (INV-56)",
+                )
+            )
+        elif name == "SignalEvent" and not _starts_with_any(
+            importer, SIGNAL_EVENT_ALLOWED_PREFIXES
+        ):
+            out.append(
+                Violation(
+                    "B22",
+                    file,
+                    line,
+                    importer,
+                    "SignalEvent",
+                    "Triad Lock: only intelligence_engine may construct "
+                    "SignalEvent — outside callers must publish via "
+                    "the typed bus (INV-56)",
+                )
+            )
+    return out
+
+
 RULE_CHECKS = (
     _check_t1,
     _check_c2,
@@ -457,6 +588,7 @@ RULE_CHECKS = (
     _check_b1,
     _check_b7,
     _check_b17,
+    _check_b20,
 )
 
 
@@ -499,6 +631,10 @@ def lint_repo(repo_root: Path) -> list[Violation]:
                 v = check(importer, target, path, line)
                 if v is not None:
                     violations.append(v)
+        # INV-56 Triad Lock — typed-event constructor restrictions.
+        violations.extend(
+            _check_triad_event_constructions(importer, path, repo_root, tree)
+        )
     return violations
 
 
