@@ -135,8 +135,13 @@ REM is the only safe way to surface uvicorn's exit code through a
 REM PowerShell pipeline (the parent ``%errorlevel%`` would always be 0).
 where powershell >nul 2>&1
 if %errorlevel%==0 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-        "& '%VENV_PY%' -m uvicorn ui.server:app --host 127.0.0.1 --port %DASH_PORT% 2>&1 ^| Tee-Object -FilePath '%LAUNCHER_LOG%'; exit $LASTEXITCODE"
+    REM The `|` lives *inside* the double-quoted -Command string, so cmd
+    REM does not need it escaped. Earlier we used ``^|`` (cmd-style pipe
+    REM escape), which leaked a literal ``^`` into PowerShell's argv and
+    REM caused uvicorn to reject ``^`` as an unexpected positional
+    REM argument ("Got unexpected extra argument (^)"). Plain ``|`` is
+    REM what PowerShell needs to see; cmd leaves it alone within ``"…"``.
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "& '%VENV_PY%' -m uvicorn ui.server:app --host 127.0.0.1 --port %DASH_PORT% 2>&1 | Tee-Object -FilePath '%LAUNCHER_LOG%'; exit $LASTEXITCODE"
     set "EXITCODE=!errorlevel!"
 ) else (
     REM Fallback: no PowerShell available. Capture to log file only;
