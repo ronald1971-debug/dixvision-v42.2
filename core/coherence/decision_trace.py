@@ -28,12 +28,14 @@ import json
 
 from core.contracts.decision_trace import (
     DECISION_TRACE_VERSION,
+    BeliefReference,
     ConfidenceContribution,
     DecisionTrace,
     ExecutionOutcome,
     HazardInfluence,
     PressureSummary,
     ThrottleInfluence,
+    WhyLayer,
 )
 from core.contracts.events import (
     ExecutionStatus,
@@ -92,6 +94,7 @@ def build_decision_trace(
     active_hazards: tuple[HazardInfluence, ...] = (),
     throttle_applied: ThrottleInfluence | None = None,
     execution_outcome: ExecutionOutcome | None = None,
+    why: WhyLayer | None = None,
 ) -> DecisionTrace:
     """Assemble a :class:`DecisionTrace` from the supplied inputs.
 
@@ -138,6 +141,7 @@ def build_decision_trace(
         active_hazards=tuple(active_hazards),
         throttle_applied=throttle_applied,
         execution_outcome=execution_outcome,
+        why=why,
     )
 
 
@@ -173,6 +177,7 @@ def as_system_event(
         "active_hazards": [_hazard_to_json(h) for h in trace.active_hazards],
         "throttle_applied": _throttle_to_json(trace.throttle_applied),
         "execution_outcome": _execution_to_json(trace.execution_outcome),
+        "why": _why_to_json(trace.why),
     }
     payload = {
         "trace": json.dumps(body, sort_keys=True, separators=(",", ":")),
@@ -222,6 +227,7 @@ def trace_from_system_event(event: SystemEvent) -> DecisionTrace:
         ),
         throttle_applied=_throttle_from_json(body["throttle_applied"]),
         execution_outcome=_execution_from_json(body["execution_outcome"]),
+        why=_why_from_json(body.get("why")),
     )
 
 
@@ -344,6 +350,78 @@ def _execution_from_json(body: object) -> ExecutionOutcome | None:
         venue=str(body["venue"]),
         order_id=str(body["order_id"]),
     )
+
+
+def _why_to_json(w: WhyLayer | None) -> dict[str, object] | None:
+    if w is None:
+        return None
+    # ``beliefs`` and ``notes`` are sorted by key on serialise so traces
+    # are byte-identical across replays regardless of caller insertion
+    # order (INV-15).
+    return {
+        "philosophy_id": w.philosophy_id,
+        "beliefs": [
+            {"name": b.name, "strength": b.strength}
+            for b in sorted(w.beliefs, key=lambda b: b.name)
+        ],
+        "entry_logic_id": w.entry_logic_id,
+        "exit_logic_id": w.exit_logic_id,
+        "risk_model_id": w.risk_model_id,
+        "timeframe_id": w.timeframe_id,
+        "market_condition_id": w.market_condition_id,
+        "composition_id": w.composition_id,
+        "notes": [list(n) for n in sorted(w.notes, key=lambda n: n[0])],
+    }
+
+
+def _why_from_json(body: object) -> WhyLayer | None:
+    if body is None:
+        return None
+    if not isinstance(body, dict):
+        raise ValueError("why must be a JSON object or null")
+    raw_beliefs = body.get("beliefs", [])
+    if not isinstance(raw_beliefs, list):
+        raise ValueError("why.beliefs must be a JSON array")
+    beliefs_list: list[BeliefReference] = []
+    for b in raw_beliefs:
+        if not isinstance(b, dict):
+            raise ValueError(
+                "why.beliefs entries must be JSON objects with "
+                "'name' and 'strength'"
+            )
+        beliefs_list.append(
+            BeliefReference(name=str(b["name"]), strength=float(b["strength"]))
+        )
+    beliefs = tuple(beliefs_list)
+    raw_notes = body.get("notes", [])
+    if not isinstance(raw_notes, list):
+        raise ValueError("why.notes must be a JSON array")
+    notes_list: list[tuple[str, str]] = []
+    for n in raw_notes:
+        if not isinstance(n, list) or len(n) != 2:
+            raise ValueError(
+                "why.notes entries must be 2-element JSON arrays "
+                "[key, text]"
+            )
+        notes_list.append((str(n[0]), str(n[1])))
+    notes = tuple(notes_list)
+    return WhyLayer(
+        philosophy_id=_optional_str(body.get("philosophy_id")),
+        beliefs=beliefs,
+        entry_logic_id=_optional_str(body.get("entry_logic_id")),
+        exit_logic_id=_optional_str(body.get("exit_logic_id")),
+        risk_model_id=_optional_str(body.get("risk_model_id")),
+        timeframe_id=_optional_str(body.get("timeframe_id")),
+        market_condition_id=_optional_str(body.get("market_condition_id")),
+        composition_id=_optional_str(body.get("composition_id")),
+        notes=notes,
+    )
+
+
+def _optional_str(value: object) -> str | None:
+    if value is None:
+        return None
+    return str(value)
 
 
 __all__ = [
