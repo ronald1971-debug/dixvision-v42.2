@@ -12,6 +12,14 @@ readme = "README.md"
 authors = [{ name = "Ronald Vervoort" }]
 dependencies = [
     "PyYAML>=6.0",
+    # wave-03 cognitive layer is imported unconditionally by
+    # ``ui.cognitive_chat_runtime`` (which ``ui.server`` imports at module
+    # load), so these MUST be base runtime deps. Hiding them in extras
+    # was correct only while the runtime was opt-in (PR #82); it stopped
+    # being correct at PR #85 when the runtime moved into ui.server's
+    # import graph.
+    "langchain-core>=0.3,<1",
+    "langgraph>=0.2,<1",
 ]
 
 [project.optional-dependencies]
@@ -23,13 +31,11 @@ dev = [
     "httpx>=0.25",
     "pydantic>=2.0",
     "websockets>=12.0",
-    # wave-03 cognitive layer (intelligence_engine.cognitive.* / B24-scoped)
-    "langchain-core>=0.3,<1",
-    "langgraph>=0.2,<1",
 ]
 cognitive = [
-    "langchain-core>=0.3,<1",
-    "langgraph>=0.2,<1",
+    # Kept as a no-op alias for backward compatibility with any
+    # external automation that did ``pip install -e .[cognitive]``.
+    # The actual deps are now in [project.dependencies].
 ]
 ui = [
     "fastapi>=0.110",

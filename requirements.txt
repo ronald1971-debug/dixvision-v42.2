@@ -18,3 +18,12 @@ fastapi>=0.110
 uvicorn>=0.27
 pydantic>=2.0
 websockets>=12.0
+# wave-03 cognitive layer is imported unconditionally by
+# ui.cognitive_chat_runtime (loaded at module-import time by ui.server),
+# so these belong in the base runtime, not the cognitive extras.
+# Promoted from `[cognitive]` extras after PR #85 wired the runtime
+# into ui.server's import graph; without these the Windows launcher
+# fails with `ModuleNotFoundError: No module named 'langchain_core'`
+# before uvicorn can bind the port.
+langchain-core>=0.3,<1
+langgraph>=0.2,<1
