@@ -677,9 +677,16 @@ def _check_b24(
 
 
 # Module prefixes allowed to import langgraph / langchain* / langsmith.
+# ``tests`` is included because the cognitive subsystems' unit tests
+# must exercise those imports to pin the contract (e.g. asserting a
+# ``BaseCheckpointSaver`` subclass round-trips through real LangGraph
+# types, or that ``BaseChatModel`` invocations forward parameters
+# correctly). Production runtime is still confined by the prefixes
+# above — ``tests`` is a non-runtime quarantine of its own.
 COGNITIVE_ALLOWED_PREFIXES: tuple[str, ...] = (
     "intelligence_engine.cognitive",
     "evolution_engine.dyon",
+    "tests",
 )
 
 
