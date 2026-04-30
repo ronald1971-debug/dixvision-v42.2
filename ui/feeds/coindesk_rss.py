@@ -364,13 +364,16 @@ class CoinDeskRSSPump:
         for item in items:
             if item.guid in self._seen_guids:
                 continue
-            self._seen_guids.add(item.guid)
             try:
                 self._sink(item)
             except Exception:  # noqa: BLE001 - never poison the loop
                 self._errors += 1
                 LOG.exception("coindesk_rss: sink failure for %s", item.guid)
                 continue
+            # Mark as seen only after successful delivery so a transient
+            # sink failure (e.g. a downstream restart) gets retried on the
+            # next poll instead of being silently dropped forever.
+            self._seen_guids.add(item.guid)
             self._items_received += 1
             self._last_item_ts_ns = item.ts_ns
 

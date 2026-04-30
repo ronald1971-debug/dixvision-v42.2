@@ -63,9 +63,9 @@ class NewsItem:
             raise ValueError("NewsItem.guid must be non-empty")
         if not self.title:
             raise ValueError("NewsItem.title must be non-empty")
-        if self.published_ts_ns is not None and self.published_ts_ns < 0:
+        if self.published_ts_ns is not None and self.published_ts_ns <= 0:
             raise ValueError(
-                "NewsItem.published_ts_ns must be non-negative or None"
+                "NewsItem.published_ts_ns must be positive or None"
             )
 
 

@@ -190,6 +190,17 @@ def test_news_item_rejects_negative_published_ts() -> None:
         )
 
 
+def test_news_item_rejects_zero_published_ts() -> None:
+    """The contract is "positive or None"; the Unix epoch is rejected so
+    downstream consumers can treat ``published_ts_ns is not None`` as a
+    proof of a real publication timestamp instead of a sentinel.
+    """
+    with pytest.raises(ValueError, match="published_ts_ns"):
+        NewsItem(
+            ts_ns=1, source="X", guid="g", title="t", published_ts_ns=0
+        )
+
+
 def test_news_item_allows_none_published_ts() -> None:
     item = NewsItem(
         ts_ns=1, source="X", guid="g", title="t", published_ts_ns=None

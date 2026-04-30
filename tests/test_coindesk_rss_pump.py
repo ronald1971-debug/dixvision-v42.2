@@ -174,6 +174,48 @@ def test_pump_swallows_sink_exceptions() -> None:
     assert pump.status().items_received == 1
 
 
+def test_pump_retries_item_on_transient_sink_failure() -> None:
+    """An item must NOT be dropped permanently when the sink raises.
+
+    Locks in the fix for the regression where ``_seen_guids`` was added
+    *before* the sink call, so a transient sink failure (downstream
+    restart, momentary DB outage, etc.) caused the item to be silently
+    skipped on every subsequent poll.
+    """
+    delivered: list[str] = []
+    fail_first_call = {"n": 0}
+    pump_ref: dict[str, CoinDeskRSSPump] = {}
+
+    def flaky_sink(item: NewsItem) -> None:
+        if item.guid == "a1" and fail_first_call["n"] == 0:
+            fail_first_call["n"] = 1
+            raise RuntimeError("transient sink outage")
+        delivered.append(item.guid)
+
+    poll = {"n": 0}
+
+    async def fetch(url: str) -> bytes:
+        poll["n"] += 1
+        if poll["n"] >= 2:
+            pump_ref["p"].stop()
+        return _RSS_DOC_A
+
+    pump = CoinDeskRSSPump(
+        sink=flaky_sink,
+        clock_ns=_stable_clock,
+        fetch=fetch,
+        poll_interval_s=0.001,
+    )
+    pump_ref["p"] = pump
+    _run(pump.run())
+
+    # Both items eventually delivered exactly once each.
+    assert sorted(delivered) == ["a1", "a2"]
+    # a1 was retried once (failure counted) and finally landed.
+    assert pump.status().items_received == 2
+    assert pump.status().errors >= 1
+
+
 def test_pump_status_before_first_poll() -> None:
     pump = CoinDeskRSSPump(
         sink=lambda _item: None,
