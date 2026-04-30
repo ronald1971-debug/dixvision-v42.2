@@ -63,6 +63,7 @@ __all__ = [
     "ChatTransport",
     "FallbackAuditSink",
     "NoEligibleProviderError",
+    "ProviderResolver",
     "RegistryDrivenChatModel",
     "TransientProviderError",
 ]
