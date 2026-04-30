@@ -13,6 +13,7 @@ from core.contracts.events import (
     Side,
     SignalEvent,
 )
+from core.contracts.governance import SystemMode
 from core.contracts.market import MarketTick
 from execution_engine.adapters import BrokerAdapter, PaperBroker
 from execution_engine.engine import (
@@ -271,3 +272,108 @@ def test_execution_engine_latency_slo():
 
     assert p50_ms < 2.0, f"p50 too high: {p50_ms:.3f} ms"
     assert p99_ms < 10.0, f"p99 too high: {p99_ms:.3f} ms"
+
+
+# ---------------------------------------------------------------------------
+# Wave-04.6 PR-B — SHADOW = signals-on-execution-off
+#
+# The mode-effect table in core/contracts/mode_effects.py is the single
+# source of truth. Three modes report executions_dispatch=False today
+# (SAFE, SHADOW, LOCKED). The Execution Gate must honour the table by
+# passing the AuthorityGuard but suppressing the broker side effect and
+# returning a synthetic REJECTED ExecutionEvent with a machine-readable
+# reason. PAPER, CANARY, LIVE, AUTO must continue to dispatch.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [SystemMode.SAFE, SystemMode.SHADOW, SystemMode.LOCKED],
+)
+def test_execute_suppresses_dispatch_when_mode_effect_blocks(mode):
+    """SAFE/SHADOW/LOCKED skip broker dispatch via mode-effect table."""
+    engine = ExecutionEngine()
+    engine.on_market(
+        MarketTick(ts_ns=400, symbol="X", bid=99.5, ask=100.5, last=100.0)
+    )
+    sig = SignalEvent(ts_ns=400, symbol="X", side=Side.BUY, confidence=0.7)
+    intent = _intent_for(sig)
+
+    out = engine.execute(intent, current_mode=mode)
+
+    assert len(out) == 1
+    ev = out[0]
+    assert ev.status is ExecutionStatus.REJECTED
+    assert ev.qty == 0.0
+    assert ev.price == 0.0
+    assert ev.order_id == ""
+    assert ev.symbol == "X"
+    assert ev.side is Side.BUY
+    assert ev.produced_by_engine == "execution_engine"
+    assert ev.meta == {"reason": "mode_effect_suppressed", "mode": mode.value}
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [
+        SystemMode.PAPER,
+        SystemMode.CANARY,
+        SystemMode.LIVE,
+        SystemMode.AUTO,
+    ],
+)
+def test_execute_dispatches_when_mode_effect_allows(mode):
+    """PAPER/CANARY/LIVE/AUTO route to the broker as before."""
+    engine = ExecutionEngine()
+    engine.on_market(
+        MarketTick(ts_ns=401, symbol="X", bid=99.5, ask=100.5, last=100.0)
+    )
+    sig = SignalEvent(ts_ns=401, symbol="X", side=Side.BUY, confidence=0.7)
+    intent = _intent_for(sig)
+
+    out = engine.execute(intent, current_mode=mode)
+
+    assert len(out) == 1
+    ev = out[0]
+    assert ev.status is ExecutionStatus.FILLED
+    assert ev.qty > 0.0
+    assert ev.price > 0.0
+    assert ev.order_id.startswith("PAPER-")
+    assert "reason" not in ev.meta
+
+
+def test_execute_without_mode_argument_preserves_legacy_behaviour():
+    """Callers that omit current_mode dispatch unconditionally.
+
+    Replay tests and harness flows already gate upstream; the optional
+    parameter must not regress them.
+    """
+    engine = ExecutionEngine()
+    engine.on_market(
+        MarketTick(ts_ns=402, symbol="X", bid=99.5, ask=100.5, last=100.0)
+    )
+    sig = SignalEvent(ts_ns=402, symbol="X", side=Side.BUY, confidence=0.7)
+    intent = _intent_for(sig)
+
+    out = engine.execute(intent)
+
+    assert len(out) == 1
+    assert out[0].status is ExecutionStatus.FILLED
+
+
+def test_execute_runs_authority_guard_before_mode_check():
+    """Guard failures must not be masked by SHADOW dispatch suppression.
+
+    A signal whose intent fails the AuthorityGuard must still raise
+    even if the mode would have suppressed the broker side effect.
+    The guard is the first invariant in the gate (HARDEN-02); the mode
+    suppression is the second.
+    """
+    from execution_engine.execution_gate import UnauthorizedActorError
+
+    engine = ExecutionEngine()
+    sig = SignalEvent(ts_ns=403, symbol="X", side=Side.BUY, confidence=0.7)
+    intent = _intent_for(sig)
+
+    with pytest.raises(UnauthorizedActorError):
+        engine.execute(intent, caller="not_execution_engine", current_mode=SystemMode.SHADOW)
