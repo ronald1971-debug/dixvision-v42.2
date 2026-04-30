@@ -1,0 +1,48 @@
+name: rust-revival-reminder
+
+# Reviewer #3 (audit v3, item 1) required the dual-backend Python+Rust
+# state to be resolved. We deleted the Rust crates and committed to a
+# 30-day shadow window before any revival PR can land. This workflow
+# is the system-side reminder per the user's directive ("make sure
+# the system gives a notification before the 30 days are up").
+#
+# Behaviour comes entirely from tools/rust_revival_reminder.py and
+# docs/rust_revival_schedule.yaml -- this workflow is just a CI seam.
+
+on:
+  schedule:
+    # Run daily at 14:00 UTC (early afternoon in EU, morning in NA).
+    - cron: "0 14 * * *"
+  workflow_dispatch: {}
+  pull_request:
+    # Also run on every PR that touches the schedule or the script
+    # itself, so a bad config can't slip in unnoticed.
+    paths:
+      - "docs/rust_revival_schedule.yaml"
+      - "tools/rust_revival_reminder.py"
+      - ".github/workflows/rust_revival_reminder.yml"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  reminder:
+    name: Rust revival reminder
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install minimal deps
+        run: pip install pyyaml
+
+      - name: Run reminder
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python tools/rust_revival_reminder.py --open-issue
