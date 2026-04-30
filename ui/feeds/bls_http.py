@@ -513,6 +513,21 @@ class BLSHTTPPump:
             raise ValueError("BLSHTTPPump: registration_key must be non-empty")
         if not series:
             raise ValueError("BLSHTTPPump: at least one series spec required")
+        # Year-range validation must mirror make_bls_request_body so that
+        # a misconfigured pump fails fast at construction rather than
+        # raising on every poll cycle (where the run-loop would simply
+        # increment ``errors`` and back off forever).
+        if (start_year is None) ^ (end_year is None):
+            raise ValueError(
+                "BLSHTTPPump: start_year and end_year must be set together"
+            )
+        if start_year is not None and end_year is not None:
+            if start_year < 1900 or end_year < 1900:
+                raise ValueError("BLSHTTPPump: years must be >= 1900")
+            if end_year < start_year:
+                raise ValueError(
+                    "BLSHTTPPump: end_year must be >= start_year"
+                )
         # Defensive copy + dedup-by-id (preserves first-seen order).
         seen: set[str] = set()
         ordered: list[BLSSeriesSpec] = []

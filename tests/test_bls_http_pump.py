@@ -135,6 +135,51 @@ def test_blsseriesspec_rejects_empty_id() -> None:
         BLSSeriesSpec(series_id="")
 
 
+def test_pump_rejects_partial_year_range() -> None:
+    with pytest.raises(ValueError, match="start_year and end_year must be set together"):
+        BLSHTTPPump(
+            sink=lambda _o: None,
+            registration_key="k",
+            series=(BLSSeriesSpec(series_id="X"),),
+            clock_ns=_FakeClock(),
+            start_year=2024,
+            end_year=None,
+        )
+    with pytest.raises(ValueError, match="start_year and end_year must be set together"):
+        BLSHTTPPump(
+            sink=lambda _o: None,
+            registration_key="k",
+            series=(BLSSeriesSpec(series_id="X"),),
+            clock_ns=_FakeClock(),
+            start_year=None,
+            end_year=2024,
+        )
+
+
+def test_pump_rejects_pre_1900_year() -> None:
+    with pytest.raises(ValueError, match=">= 1900"):
+        BLSHTTPPump(
+            sink=lambda _o: None,
+            registration_key="k",
+            series=(BLSSeriesSpec(series_id="X"),),
+            clock_ns=_FakeClock(),
+            start_year=1800,
+            end_year=2024,
+        )
+
+
+def test_pump_rejects_inverted_year_range() -> None:
+    with pytest.raises(ValueError, match="end_year must be >= start_year"):
+        BLSHTTPPump(
+            sink=lambda _o: None,
+            registration_key="k",
+            series=(BLSSeriesSpec(series_id="X"),),
+            clock_ns=_FakeClock(),
+            start_year=2024,
+            end_year=2020,
+        )
+
+
 def test_pump_dedups_specs_preserving_order() -> None:
     pump = BLSHTTPPump(
         sink=lambda _o: None,
