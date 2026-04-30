@@ -856,6 +856,97 @@ def _check_b26(
 
 
 # ---------------------------------------------------------------------------
+# B27 — LearningUpdate construction restriction (HARDEN-06 / INV-71)
+# ---------------------------------------------------------------------------
+#
+# Authority symmetry with B25/B26: only the learning subsystem may
+# construct a :class:`core.contracts.learning.LearningUpdate`. Outside
+# callers must observe LearningUpdates on the typed bus rather than
+# synthesise them — otherwise a non-learning engine could indirectly
+# trigger parameter mutations under the cover of a "looks legitimate"
+# event class.
+
+B27_ALLOWED_PREFIXES: tuple[str, ...] = (
+    "learning_engine",
+    "core.contracts.learning",
+)
+
+B27_FORBIDDEN_NAMES: frozenset[str] = frozenset({"LearningUpdate"})
+
+
+def _check_b27(
+    importer: str, file: Path, repo_root: Path, tree: ast.AST
+) -> list[Violation]:
+    """B27 — LearningUpdate construction restriction (INV-71)."""
+
+    if _is_triad_constructor_test_exempt(file, repo_root):
+        return []
+    if _starts_with_any(importer, B27_ALLOWED_PREFIXES):
+        return []
+    out: list[Violation] = []
+    for line, name in _iter_named_calls(tree):
+        if name in B27_FORBIDDEN_NAMES:
+            out.append(
+                Violation(
+                    "B27",
+                    file,
+                    line,
+                    importer,
+                    name,
+                    "Authority symmetry (INV-71 / HARDEN-06): only "
+                    "learning_engine.* may construct a LearningUpdate "
+                    "— outside callers must observe parameter "
+                    "mutations on the typed bus.",
+                )
+            )
+    return out
+
+
+# ---------------------------------------------------------------------------
+# B28 — PatchProposal construction restriction (HARDEN-06 / INV-71)
+# ---------------------------------------------------------------------------
+#
+# Symmetric to B27 for the evolution subsystem. ``PatchProposal``
+# carries structural mutations into the patch pipeline; the lint
+# guarantees the only legitimate producer is ``evolution_engine.*``.
+
+B28_ALLOWED_PREFIXES: tuple[str, ...] = (
+    "evolution_engine",
+    "core.contracts.learning",
+)
+
+B28_FORBIDDEN_NAMES: frozenset[str] = frozenset({"PatchProposal"})
+
+
+def _check_b28(
+    importer: str, file: Path, repo_root: Path, tree: ast.AST
+) -> list[Violation]:
+    """B28 — PatchProposal construction restriction (INV-71)."""
+
+    if _is_triad_constructor_test_exempt(file, repo_root):
+        return []
+    if _starts_with_any(importer, B28_ALLOWED_PREFIXES):
+        return []
+    out: list[Violation] = []
+    for line, name in _iter_named_calls(tree):
+        if name in B28_FORBIDDEN_NAMES:
+            out.append(
+                Violation(
+                    "B28",
+                    file,
+                    line,
+                    importer,
+                    name,
+                    "Authority symmetry (INV-71 / HARDEN-06): only "
+                    "evolution_engine.* may construct a PatchProposal "
+                    "— outside callers must observe structural "
+                    "mutations on the typed bus.",
+                )
+            )
+    return out
+
+
+# ---------------------------------------------------------------------------
 # B23 — registry-driven AI providers (Dashboard-2026 wave-01)
 # ---------------------------------------------------------------------------
 
@@ -1022,6 +1113,9 @@ def lint_repo(repo_root: Path) -> list[Violation]:
         violations.extend(_check_b25(importer, path, repo_root, tree))
         # B26 — only the approval edge may stamp the cognitive producer.
         violations.extend(_check_b26(importer, path, repo_root, tree))
+        # B27/B28 — authority symmetry for learning + evolution origins.
+        violations.extend(_check_b27(importer, path, repo_root, tree))
+        violations.extend(_check_b28(importer, path, repo_root, tree))
         # B23 — chat widget Python modules must be registry-driven.
         violations.extend(_check_b23_python(importer, path, tree))
     # B23 — chat widget static files (HTML / JS).
