@@ -67,13 +67,19 @@ class VerifyResult:
 class VerifierSpec:
     """Static description of how to auth-ping one provider.
 
-    Two auth shapes are supported and exhaustive for 2026 LLM /
-    market-data REST APIs:
+    Three auth shapes are supported and exhaustive for the 2026 LLM /
+    market-data / news / on-chain / macro REST APIs we currently
+    register:
 
-    1. ``Authorization: Bearer <key>`` header (most providers).
-    2. ``?key=<key>`` query string (Google AI Studio / Gemini).
+    1. ``Authorization: Bearer <key>`` header (most LLM providers,
+       X v2, etc.).
+    2. ``?<param>=<key>`` query string (Google AI Studio / Gemini,
+       FRED, Glassnode). The parameter name is part of
+       :attr:`url` (e.g. ``...?key={key}`` vs ``...?api_key={key}``).
+    3. Custom request header (Dune ``X-DUNE-API-KEY`` etc.). The
+       header name is carried in :attr:`header_name`.
 
-    A third shape (separate ``key`` + ``secret`` HMAC signing, as
+    A fourth shape (separate ``key`` + ``secret`` HMAC signing, as
     used by some exchange private endpoints) is intentionally
     excluded — the only registry rows that fit are off-limits to
     this PR (no exchange private endpoints are in the SCVS yet).
@@ -81,11 +87,13 @@ class VerifierSpec:
 
     url: str  # may contain ``{key}`` for query-string auth
     primary_env_var: str
-    auth_style: str  # "bearer" | "query"
+    auth_style: str  # "bearer" | "query" | "header"
+    header_name: str | None = None  # used when auth_style == "header"
 
 
 VERIFIERS: Mapping[str, VerifierSpec] = MappingProxyType(
     {
+        # ----- AI providers -----
         "openai": VerifierSpec(
             url="https://api.openai.com/v1/models",
             primary_env_var="OPENAI_API_KEY",
@@ -112,10 +120,72 @@ VERIFIERS: Mapping[str, VerifierSpec] = MappingProxyType(
             primary_env_var="DEEPSEEK_API_KEY",
             auth_style="bearer",
         ),
+        # ----- Dev -----
         "github": VerifierSpec(
             url="https://api.github.com/user",
             primary_env_var="GITHUB_TOKEN",
             auth_style="bearer",
+        ),
+        # ----- Social -----
+        "x": VerifierSpec(
+            # X v2 with App-only Bearer Token. ``users/by/username``
+            # is the cheapest authenticated GET that exists on the
+            # free tier — costs no tweet-cap quota and returns 401
+            # without auth, 200 with valid bearer.
+            url="https://api.x.com/2/users/by/username/X",
+            primary_env_var="X_BEARER_TOKEN",
+            auth_style="bearer",
+        ),
+        # ----- On-chain -----
+        "glassnode": VerifierSpec(
+            # Glassnode uses ``?api_key=`` (not ``?key=``). The free
+            # Tier-1 endpoint ``addresses/active_count`` returns the
+            # daily count for BTC and is reachable on every plan;
+            # 401 on bad key, 200 on good key.
+            url=(
+                "https://api.glassnode.com/v1/metrics/addresses/active_count"
+                "?a=BTC&i=24h&api_key={key}"
+            ),
+            primary_env_var="GLASSNODE_API_KEY",
+            auth_style="query",
+        ),
+        "dune": VerifierSpec(
+            # Dune ``/auth/me`` is the canonical auth-ping endpoint;
+            # uses the ``X-DUNE-API-KEY`` header (not Authorization).
+            url="https://api.dune.com/api/v1/auth/me",
+            primary_env_var="DUNE_API_KEY",
+            auth_style="header",
+            header_name="X-DUNE-API-KEY",
+        ),
+        # ----- Macro -----
+        "fred": VerifierSpec(
+            # FRED uses ``?api_key=`` and demands ``file_type=json``
+            # (otherwise it returns XML). ``sources`` is a no-arg
+            # endpoint that's permissioned identically to a real
+            # series fetch — 200 if the key is valid, 400 + JSON
+            # error body if not.
+            url=(
+                "https://api.stlouisfed.org/fred/sources"
+                "?api_key={key}&file_type=json"
+            ),
+            primary_env_var="FRED_API_KEY",
+            auth_style="query",
+        ),
+        "bls": VerifierSpec(
+            # BLS exposes a public series-popularity endpoint that
+            # accepts the registration key as ``?registrationkey=``.
+            # Returns ``status: REQUEST_SUCCEEDED`` on a valid key,
+            # ``REQUEST_NOT_PROCESSED`` on an invalid one. We treat
+            # 200 as ``OK`` regardless of body text — the operator
+            # still has to look at the response in the dashboard if
+            # the body says NOT_PROCESSED, but at least the network
+            # path is verified.
+            url=(
+                "https://api.bls.gov/publicAPI/v2/timeseries/popular"
+                "?registrationkey={key}"
+            ),
+            primary_env_var="BLS_API_KEY",
+            auth_style="query",
         ),
     }
 )
@@ -134,7 +204,14 @@ DEFAULT_TIMEOUT_S: float = 5.0
 def _build_request(spec: VerifierSpec, key: str) -> urllib.request.Request:
     if spec.auth_style == "query":
         url = spec.url.format(key=urllib.parse.quote(key, safe=""))
-        return urllib.request.Request(url, method="GET")
+        return urllib.request.Request(
+            url,
+            headers={
+                "Accept": "application/json",
+                "User-Agent": "dixvision-credential-verifier/1",
+            },
+            method="GET",
+        )
     if spec.auth_style == "bearer":
         return urllib.request.Request(
             spec.url,
@@ -142,6 +219,21 @@ def _build_request(spec: VerifierSpec, key: str) -> urllib.request.Request:
                 "Authorization": f"Bearer {key}",
                 "Accept": "application/json",
                 # GitHub's API insists on a User-Agent.
+                "User-Agent": "dixvision-credential-verifier/1",
+            },
+            method="GET",
+        )
+    if spec.auth_style == "header":
+        if not spec.header_name:
+            raise ValueError(
+                "VerifierSpec.header_name is required when "
+                "auth_style == 'header'"
+            )
+        return urllib.request.Request(
+            spec.url,
+            headers={
+                spec.header_name: key,
+                "Accept": "application/json",
                 "User-Agent": "dixvision-credential-verifier/1",
             },
             method="GET",
