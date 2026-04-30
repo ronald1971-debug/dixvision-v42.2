@@ -461,8 +461,23 @@ app = FastAPI(
 app.include_router(build_dashboard_router(lambda: STATE))
 
 
+# Wave-Live PR-4 — root URL routes operators to the live SPA. PR #105
+# redirected the named legacy paths (``/operator``, ``/indira-chat`` etc.)
+# but missed ``/`` itself, so the Windows launcher (which opens
+# ``http://127.0.0.1:8080/``) was still landing on the Phase E1 stub.
+# We redirect to ``/dash2/`` when the React build artefact is present;
+# otherwise we fall back to the stub so operators are not left staring at
+# a 404 if the SPA was not built. The ``dashboard2026/dist`` location is
+# resolved here once at handler-registration time — the actual
+# ``StaticFiles`` mount happens further below.
+_DASH2_DIST = Path(__file__).resolve().parent.parent / "dashboard2026" / "dist"
+_DASH2_INDEX = _DASH2_DIST / "index.html"
+
+
 @app.get("/", response_class=HTMLResponse)
-def index() -> HTMLResponse:
+def index() -> Any:
+    if _DASH2_INDEX.exists():
+        return RedirectResponse(url="/dash2/", status_code=307)
     html_path = STATIC_DIR / "index.html"
     if not html_path.exists():
         raise HTTPException(500, "static/index.html missing")
@@ -516,8 +531,8 @@ if STATIC_DIR.exists():
 # Wave-02 React build artefact, served under /dash2/* if present.
 # Mount is conditional so operators without Node installed (and CI
 # jobs that don't build the SPA) still get a fully-functional vanilla
-# console at the legacy URLs.
-_DASH2_DIST = Path(__file__).resolve().parent.parent / "dashboard2026" / "dist"
+# console at the legacy URLs. ``_DASH2_DIST`` is defined above (next to
+# the ``/`` redirect handler that reads it).
 if _DASH2_DIST.exists():
     app.mount(
         "/dash2",

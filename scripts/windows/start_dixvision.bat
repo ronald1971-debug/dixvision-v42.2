@@ -20,7 +20,9 @@ pushd "%REPO_ROOT%" >nul
 set "VENV_DIR=%REPO_ROOT%\.venv"
 set "VENV_PY=%VENV_DIR%\Scripts\python.exe"
 set "VENV_MARKER=%VENV_DIR%\.dixvision_installed"
-set "DASH_URL=http://127.0.0.1:8080/"
+set "DASH2_DIR=%REPO_ROOT%\dashboard2026"
+set "DASH2_DIST=%DASH2_DIR%\dist\index.html"
+set "DASH_URL=http://127.0.0.1:8080/dash2/"
 set "DASH_PORT=8080"
 set "LAUNCHER_LOG=%REPO_ROOT%\launcher.log"
 
@@ -124,6 +126,42 @@ if not exist "%VENV_MARKER%" (
         exit /b 1
     )
 )
+
+REM --- build the React SPA (dashboard2026) if Node is installed ----------------
+REM ``dashboard2026/dist/`` is gitignored, so a fresh clone has only the
+REM Phase E1 stub at ``/`` until the React SPA is built. We build it on
+REM every launch so a ``git pull`` that updates the SPA picks up cleanly.
+REM If Node isn't installed we warn and continue — the FastAPI server's
+REM ``/`` route falls back to the stub harness instead of 404'ing.
+where npm >nul 2>&1
+if %errorlevel%==0 (
+    if exist "%DASH2_DIR%\package.json" (
+        echo Building React dashboard ^(dashboard2026^)...
+        pushd "%DASH2_DIR%" >nul
+        if not exist "node_modules" (
+            call npm ci --silent
+            if errorlevel 1 (
+                echo [WARN] npm ci failed; falling back to stub harness.
+                popd >nul
+                goto :skip_dash2_build
+            )
+        )
+        call npm run build --silent
+        if errorlevel 1 (
+            echo [WARN] npm run build failed; falling back to stub harness.
+            popd >nul
+            goto :skip_dash2_build
+        )
+        popd >nul
+        echo Dashboard built: %DASH2_DIST%
+    ) else (
+        echo [WARN] dashboard2026/package.json missing; using stub harness.
+    )
+) else (
+    echo [WARN] npm not found ^(install Node 20+ from https://nodejs.org/^).
+    echo         Falling back to the Phase E1 stub harness at /.
+)
+:skip_dash2_build
 
 REM --- ensure the desktop shortcut is in place (idempotent, self-healing) ------
 REM Calls install_desktop_shortcut.ps1 in -Quiet mode every launch. The PS
