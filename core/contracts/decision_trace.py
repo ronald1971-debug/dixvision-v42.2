@@ -28,7 +28,7 @@ from dataclasses import dataclass
 
 from core.contracts.events import ExecutionStatus, HazardSeverity, Side
 
-DECISION_TRACE_VERSION: int = 1
+DECISION_TRACE_VERSION: int = 2
 
 
 @dataclass(frozen=True, slots=True)
@@ -177,6 +177,116 @@ class ExecutionOutcome:
 
 
 @dataclass(frozen=True, slots=True)
+class BeliefReference:
+    """A philosophy-belief reference captured in the Why layer.
+
+    Anchors a decision to a specific belief on the trader's
+    :class:`PhilosophyProfile` (e.g. ``("trend_following", 0.8)``) so
+    the offline learning calibrator and the Why widget can answer
+    *which belief was acting* on this decision, not just *what the
+    score was*. Beliefs below the composition engine's
+    ``BELIEF_THRESHOLD`` are noise and should not appear here.
+
+    Attributes:
+        name: Belief key as it appears on
+            :attr:`PhilosophyProfile.belief_system`.
+        strength: Belief strength in ``[0.0, 1.0]``.
+    """
+
+    name: str
+    strength: float
+
+    def __post_init__(self) -> None:
+        if not self.name:
+            raise ValueError("BeliefReference.name must be non-empty")
+        _check_unit("BeliefReference.strength", self.strength)
+
+
+@dataclass(frozen=True, slots=True)
+class WhyLayer:
+    """Structured *why* references for a decision (Wave-04 PR-5).
+
+    A pointer-only projection of the strategy components that produced
+    a decision: the philosophy profile, the active beliefs, the
+    decomposed components (entry/exit/risk/timeframe/market) and, when
+    the decision came from the composition engine, the parent
+    :class:`ComposedStrategy`. Every field is optional so traces
+    emitted before Wave-04 components were wired (i.e. legacy
+    monolithic strategies) still round-trip cleanly.
+
+    The Why layer never embeds the components themselves — only their
+    ``component_id`` strings — so a decision trace stays small and
+    replay-stable even if the underlying registry rows are revised.
+
+    Attributes:
+        philosophy_id: Trader id whose ``PhilosophyProfile`` informed
+            this decision.
+        beliefs: Beliefs above ``BELIEF_THRESHOLD`` that were active.
+        entry_logic_id: ``EntryLogic.component_id`` if known.
+        exit_logic_id: ``ExitLogic.component_id`` if known.
+        risk_model_id: ``RiskModel.component_id`` if known.
+        timeframe_id: ``Timeframe.component_id`` if known.
+        market_condition_id: ``MarketCondition.component_id`` if known.
+        composition_id: ``ComposedStrategy.composition_id`` when this
+            decision was sourced from the composition engine; ``None``
+            for legacy monolithic plugins.
+        notes: Optional human-readable annotations (key → short text).
+            Sorted on serialise so byte-identical replay survives dict
+            ordering.
+    """
+
+    philosophy_id: str | None = None
+    beliefs: tuple[BeliefReference, ...] = ()
+    entry_logic_id: str | None = None
+    exit_logic_id: str | None = None
+    risk_model_id: str | None = None
+    timeframe_id: str | None = None
+    market_condition_id: str | None = None
+    composition_id: str | None = None
+    notes: tuple[tuple[str, str], ...] = ()
+
+    def __post_init__(self) -> None:
+        for fld in (
+            "philosophy_id",
+            "entry_logic_id",
+            "exit_logic_id",
+            "risk_model_id",
+            "timeframe_id",
+            "market_condition_id",
+            "composition_id",
+        ):
+            value = getattr(self, fld)
+            if value is not None and not value:
+                raise ValueError(
+                    f"WhyLayer.{fld} must be non-empty when set; "
+                    "use None to mean 'unknown'"
+                )
+        seen_belief_names: set[str] = set()
+        for belief in self.beliefs:
+            if belief.name in seen_belief_names:
+                raise ValueError(
+                    "WhyLayer.beliefs must not contain duplicate names; "
+                    f"got duplicate {belief.name!r}"
+                )
+            seen_belief_names.add(belief.name)
+        seen_note_keys: set[str] = set()
+        for key, text in self.notes:
+            if not key:
+                raise ValueError("WhyLayer.notes keys must be non-empty")
+            if key in seen_note_keys:
+                raise ValueError(
+                    f"WhyLayer.notes must not contain duplicate keys; "
+                    f"got duplicate {key!r}"
+                )
+            if not isinstance(text, str):
+                raise ValueError(
+                    "WhyLayer.notes values must be strings; "
+                    f"got {type(text).__name__} for key {key!r}"
+                )
+            seen_note_keys.add(key)
+
+
+@dataclass(frozen=True, slots=True)
 class DecisionTrace:
     """Per-decision structured record (BEHAVIOR-P4).
 
@@ -208,6 +318,10 @@ class DecisionTrace:
         throttle_applied: Throttle decision applied to the risk
             snapshot, if any.
         execution_outcome: Execution result, if known.
+        why: Structured Why-layer references back to the strategy
+            components that produced this decision (Wave-04 PR-5);
+            ``None`` for traces emitted by pre-Wave-04 monolithic
+            plugins.
     """
 
     version: int
@@ -224,6 +338,7 @@ class DecisionTrace:
     active_hazards: tuple[HazardInfluence, ...]
     throttle_applied: ThrottleInfluence | None
     execution_outcome: ExecutionOutcome | None
+    why: WhyLayer | None = None
 
     def __post_init__(self) -> None:
         if self.version < 1:
@@ -251,10 +366,12 @@ def _check_unit(name: str, value: float) -> None:
 
 __all__ = [
     "DECISION_TRACE_VERSION",
+    "BeliefReference",
     "ConfidenceContribution",
     "DecisionTrace",
     "ExecutionOutcome",
     "HazardInfluence",
     "PressureSummary",
     "ThrottleInfluence",
+    "WhyLayer",
 ]
