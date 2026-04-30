@@ -35,7 +35,7 @@ from typing import Any
 
 import yaml
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -469,59 +469,40 @@ def index() -> HTMLResponse:
     return HTMLResponse(html_path.read_text(encoding="utf-8"))
 
 
-@app.get("/operator", response_class=HTMLResponse)
-def operator() -> HTMLResponse:
-    """DASH-2 — operator dashboard (Phase 6 widgets + action buttons)."""
-
-    html_path = STATIC_DIR / "operator.html"
-    if not html_path.exists():
-        raise HTTPException(500, "static/operator.html missing")
-    return HTMLResponse(html_path.read_text(encoding="utf-8"))
-
-
-def _serve_static(filename: str) -> HTMLResponse:
-    """Helper for the Dashboard-2026 wave-01 vanilla pages — they all
-    render a single .html shell from ``ui/static/`` with no
-    server-side templating."""
-
-    html_path = STATIC_DIR / filename
-    if not html_path.exists():
-        raise HTTPException(500, f"static/{filename} missing")
-    return HTMLResponse(html_path.read_text(encoding="utf-8"))
+# Wave-Live PR-2 — legacy operator surface retired. The vanilla HTML
+# pages that lived under ``ui/static/`` (operator.html, indira_chat.html,
+# dyon_chat.html, forms_grid.html, credentials.html and their .js/.css
+# siblings) were the Dashboard-2026 wave-01 prototype. They were
+# wholesale superseded by the React/Vite SPA in ``dashboard2026/`` which
+# is mounted at ``/dash2/``. We keep the URLs alive as 307 redirects
+# so any cached link, dashboard tile, or external integrator that still
+# points at ``/operator`` etc. silently lands on the live SPA instead
+# of a 404. ``HTMLResponse`` is intentionally no longer the response
+# class — these endpoints never serve a body, only a Location header.
+_LEGACY_REDIRECTS: tuple[tuple[str, str], ...] = (
+    ("/operator", "/dash2/#/operator"),
+    ("/indira-chat", "/dash2/#/chat"),
+    ("/dyon-chat", "/dash2/#/chat"),
+    ("/forms-grid", "/dash2/#/operator"),
+    ("/credentials", "/dash2/#/credentials"),
+)
 
 
-@app.get("/indira-chat", response_class=HTMLResponse)
-def indira_chat() -> HTMLResponse:
-    """Dashboard-2026 wave-01 — Indira Chat skeleton (registry-driven)."""
+def _make_legacy_redirect(target: str) -> Any:
+    def _handler() -> RedirectResponse:
+        return RedirectResponse(url=target, status_code=307)
 
-    return _serve_static("indira_chat.html")
-
-
-@app.get("/dyon-chat", response_class=HTMLResponse)
-def dyon_chat() -> HTMLResponse:
-    """Dashboard-2026 wave-01 — Dyon Chat skeleton (registry-driven)."""
-
-    return _serve_static("dyon_chat.html")
+    return _handler
 
 
-@app.get("/forms-grid", response_class=HTMLResponse)
-def forms_grid() -> HTMLResponse:
-    """Dashboard-2026 wave-01 — per-form widget grid (memecoin
-    isolated per W1)."""
-
-    return _serve_static("forms_grid.html")
-
-
-@app.get("/credentials", response_class=HTMLResponse)
-def credentials_page() -> HTMLResponse:
-    """Dashboard-2026 wave-01.5 — credential discovery matrix.
-
-    Shows every ``auth: required`` registry row with the env-var
-    name(s) that must be set, the signup URL, and a present/missing
-    state derived from the live process environment.
-    """
-
-    return _serve_static("credentials.html")
+for _legacy_path, _dash2_target in _LEGACY_REDIRECTS:
+    app.add_api_route(
+        _legacy_path,
+        _make_legacy_redirect(_dash2_target),
+        methods=["GET"],
+        response_class=RedirectResponse,
+        include_in_schema=False,
+    )
 
 
 if STATIC_DIR.exists():
