@@ -1,11 +1,11 @@
-"""Tests for ``governance_engine.control_plane.mode_effects`` (Wave-04.6 PR-A)."""
+"""Tests for ``core.contracts.mode_effects`` (Wave-04.6 PR-A)."""
 
 from __future__ import annotations
 
 import pytest
 
 from core.contracts.governance import SystemMode
-from governance_engine.control_plane.mode_effects import (
+from core.contracts.mode_effects import (
     MODE_EFFECTS,
     MODE_EFFECTS_HASH_KEY,
     MODE_EFFECTS_INSTALLED_KIND,

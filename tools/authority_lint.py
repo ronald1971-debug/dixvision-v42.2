@@ -1007,8 +1007,13 @@ def _check_b29(
 # B31 — Mode-effect table is the only mode-conditional decision oracle
 # ---------------------------------------------------------------------------
 #
-# Wave-04.6 PR-A: ``governance_engine.control_plane.mode_effects``
-# canonicalises **what every engine does differently per SystemMode**.
+# Wave-04.6 PR-A: ``core.contracts.mode_effects`` canonicalises **what
+# every engine does differently per SystemMode**. The module lives
+# under ``core/contracts/`` because every runtime engine
+# (intelligence, execution, governance) needs to read from the same
+# table; cross-engine imports are restricted to ``core.contracts.*``
+# under L1/L2/L3/B1.
+#
 # Outside the governance control plane, hard-coding ``SystemMode.X``
 # anywhere — comparisons, ``in {...}`` membership, attribute lookup —
 # silently re-introduces the per-engine mode logic that the table was
@@ -1022,6 +1027,8 @@ def _check_b29(
 #     decision table, the compliance validator, the operator bridge,
 #     and the engine entrypoint all need to enumerate modes by name.
 #   * ``core.contracts.governance`` — defines :class:`SystemMode`.
+#   * ``core.contracts.mode_effects`` — defines the canonical table
+#     itself, which must enumerate every mode by name.
 #   * ``core.contracts.learning_evolution_freeze`` — HARDEN-04 contract;
 #     freeze conditions are part of the contract surface.
 #   * ``dashboard_backend.control_plane.mode_control_bar`` — operator
@@ -1037,6 +1044,7 @@ def _check_b29(
 B31_ALLOWED_PREFIXES: tuple[str, ...] = (
     "governance_engine",
     "core.contracts.governance",
+    "core.contracts.mode_effects",
     "core.contracts.learning_evolution_freeze",
     "dashboard_backend.control_plane.mode_control_bar",
 )
@@ -1048,8 +1056,8 @@ def _check_b31(
     """B31 — only governance + UI-surface code may name SystemMode members.
 
     Engines and adapters must consume :func:`effect_for` from
-    ``governance_engine.control_plane.mode_effects`` rather than
-    hard-coding mode comparisons.
+    ``core.contracts.mode_effects`` rather than hard-coding mode
+    comparisons.
     """
 
     if _is_triad_constructor_test_exempt(file, repo_root):
@@ -1073,9 +1081,9 @@ def _check_b31(
                     "Mode-effect table (Wave-04.6 PR-A): only the "
                     "governance control plane and the mode UI may name "
                     "SystemMode members. Engines and adapters must call "
-                    "governance_engine.control_plane.mode_effects."
-                    "effect_for(mode).<flag> instead of hard-coding a "
-                    "comparison against a specific mode.",
+                    "core.contracts.mode_effects.effect_for(mode).<flag> "
+                    "instead of hard-coding a comparison against a "
+                    "specific mode.",
                 )
             )
     return out
