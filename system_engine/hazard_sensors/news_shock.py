@@ -125,7 +125,15 @@ _SHOCK_KEYWORDS: Final[frozenset[str]] = frozenset(
     }
 )
 
-_TOKEN_PATTERN: Final[re.Pattern[str]] = re.compile(r"[a-z0-9]+")
+# Same pattern as ``intelligence_engine.news.news_projection._TOKEN_PATTERN``
+# — hyphenated compounds like ``post-crash`` stay as one token, not two,
+# so the projector and the sensor agree on what's a "word". Diverging
+# here would let a headline trip the shock sensor while staying invisible
+# to the projection (or vice-versa), and the fanout's "hazard before
+# signal" ordering implicitly assumes the two pipelines see the same
+# tokens. ``test_news_shock_tokenizer_parity_with_news_projection``
+# guards this.
+_TOKEN_PATTERN: Final[re.Pattern[str]] = re.compile(r"[a-z][a-z0-9\-]*")
 
 
 def _tokenize(text: str) -> tuple[str, ...]:

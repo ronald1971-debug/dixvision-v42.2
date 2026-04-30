@@ -178,6 +178,51 @@ def test_keyword_match_is_token_boundary_not_substring() -> None:
     assert out == ()
 
 
+def test_news_shock_tokenizer_parity_with_news_projection() -> None:
+    """The shock sensor and the projection MUST tokenise the same way:
+    diverging would let a headline trip the shock sensor while staying
+    invisible to the projection (or vice-versa) — the fanout's
+    'hazard before signal' ordering implicitly assumes the two
+    pipelines see the same tokens (Devin Review BUG_pr-review-job-
+    2f05103288af44aea37efd6c970b2339_0001 on PR #120)."""
+    from intelligence_engine.news.news_projection import (
+        _TOKEN_PATTERN as PROJECTION_TOKEN_PATTERN,
+    )
+    from system_engine.hazard_sensors.news_shock import (
+        _TOKEN_PATTERN as SHOCK_TOKEN_PATTERN,
+    )
+
+    assert SHOCK_TOKEN_PATTERN.pattern == PROJECTION_TOKEN_PATTERN.pattern
+
+    # Concrete behavioural anchor — hyphenated compounds stay as one
+    # token in both modules.
+    samples = (
+        "post-crash analysis",
+        "self-hack disclosure",
+        "exchange-hack report",
+        "anti-freeze rally",
+    )
+    for text in samples:
+        assert SHOCK_TOKEN_PATTERN.findall(text.lower()) == (
+            PROJECTION_TOKEN_PATTERN.findall(text.lower())
+        ), text
+
+
+def test_hyphenated_compound_does_not_split_into_shock_keyword() -> None:
+    """``post-crash`` is one token (not ``"crash"``) — so a measured
+    retrospective headline doesn't trip the sensor. Mirrors the
+    projection module so the sensor and projector see the same
+    'words' on hyphenated compounds."""
+    sensor = NewsShockSensor()
+    out = sensor.on_news(
+        _news(
+            title="post-crash analysis published today",
+            summary="A measured retrospective with no shock vocabulary.",
+        )
+    )
+    assert out == ()
+
+
 # ---------------------------------------------------------------------------
 # urgency dominates score (HIGH stays HIGH)
 # ---------------------------------------------------------------------------
