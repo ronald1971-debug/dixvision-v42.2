@@ -3,6 +3,13 @@
 Materialises non-structural parameter updates as ``SystemEvent`` records
 with ``sub_kind=UPDATE_PROPOSED``. Emission is deterministic: same input,
 same output. No clocks, no IO, no randomness.
+
+HARDEN-04 / INV-70: an optional :class:`LearningEvolutionFreezePolicy`
+gates :meth:`emit`. When the policy is frozen (default in every mode
+except ``LIVE`` with an explicit operator override), :meth:`emit`
+raises :class:`LearningEvolutionFrozenError` instead of producing a
+``SystemEvent``. Existing offline tests that construct an emitter
+without a policy continue to behave deterministically.
 """
 
 from __future__ import annotations
@@ -11,6 +18,10 @@ from collections.abc import Mapping
 
 from core.contracts.events import SystemEvent, SystemEventKind
 from core.contracts.learning import LearningUpdate
+from core.contracts.learning_evolution_freeze import (
+    LearningEvolutionFreezePolicy,
+    assert_unfrozen,
+)
 
 
 class UpdateEmitter:
@@ -19,14 +30,21 @@ class UpdateEmitter:
     name: str = "update_emitter"
     spec_id: str = "GOV-G18"
 
-    __slots__ = ("_source",)
+    __slots__ = ("_source", "_freeze")
 
-    def __init__(self, *, source: str = "learning") -> None:
+    def __init__(
+        self,
+        *,
+        source: str = "learning",
+        freeze: LearningEvolutionFreezePolicy | None = None,
+    ) -> None:
         if not source:
             raise ValueError("source must be non-empty")
         self._source = source
+        self._freeze = freeze
 
     def emit(self, update: LearningUpdate) -> SystemEvent:
+        assert_unfrozen(self._freeze, action="emit_update")
         payload: dict[str, str] = {
             "strategy_id": update.strategy_id,
             "parameter": update.parameter,

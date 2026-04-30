@@ -14,6 +14,10 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from core.contracts.learning import PatchProposal, StrategyStats
+from core.contracts.learning_evolution_freeze import (
+    LearningEvolutionFreezePolicy,
+    assert_unfrozen,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,17 +41,24 @@ class MutationProposer:
     name: str = "mutation_proposer"
     spec_id: str = "DYN-L01"
 
-    __slots__ = ("_thresholds", "_armed", "_counter")
+    __slots__ = ("_thresholds", "_armed", "_counter", "_freeze")
 
-    def __init__(self, *, thresholds: MutationThresholds | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        thresholds: MutationThresholds | None = None,
+        freeze: LearningEvolutionFreezePolicy | None = None,
+    ) -> None:
         self._thresholds = thresholds or MutationThresholds()
         self._armed: dict[tuple[str, str], bool] = {}
         self._counter = 0
+        self._freeze = freeze
 
     def evaluate(
         self, stats: StrategyStats
     ) -> tuple[PatchProposal, ...]:
         """Return proposals for any newly-breached threshold."""
+        assert_unfrozen(self._freeze, action="propose_patch")
         if stats.n_trades < self._thresholds.min_trades:
             self._clear(stats.strategy_id)
             return ()
