@@ -51,6 +51,13 @@ from governance_engine.control_plane import (
 )
 from governance_engine.control_plane.event_classifier import PipelineStage
 from governance_engine.control_plane.policy_engine import install_policy_table
+from governance_engine.control_plane.update_applier import UpdateApplier
+from governance_engine.control_plane.update_validator import (
+    ProposedUpdate,
+    UpdateValidator,
+    UpdateVerdict,
+)
+from governance_engine.strategy_registry import StrategyRegistry
 
 
 class GovernanceEngine(RuntimeEngine):
@@ -64,12 +71,21 @@ class GovernanceEngine(RuntimeEngine):
         constraints: Sequence[Constraint] = (),
         initial_mode: SystemMode = SystemMode.SAFE,
         policy_table_installed_at_ns: int = 0,
+        strategy_registry: StrategyRegistry | None = None,
     ) -> None:
         self.plugin_slots: Mapping[str, Sequence[Plugin]] = dict(
             plugin_slots or {}
         )
 
-        self.ledger = LedgerAuthorityWriter()
+        # Wave-04.6 PR-E — share one canonical ledger with the
+        # strategy registry when provided so the audit chain stays
+        # coherent (UPDATE_RATIFIED and STRATEGY_PARAMETER_UPDATE
+        # rows on the same chain). Older callers without a registry
+        # get an isolated ledger as before.
+        if strategy_registry is not None:
+            self.ledger = strategy_registry._ledger  # type: ignore[attr-defined]
+        else:
+            self.ledger = LedgerAuthorityWriter()
         self.policy = PolicyEngine(constraints=constraints)
         # GOV-CP-01-PERF — record the precompiled decision-table hash as
         # the very first ledger row. Replay can re-verify it via
@@ -92,6 +108,24 @@ class GovernanceEngine(RuntimeEngine):
             state_transitions=self.state_transitions,
             ledger=self.ledger,
         )
+        # Wave-04.6 PR-E — closed learning loop. When a registry is
+        # injected, ``UPDATE_PROPOSED`` events are validated against
+        # the strategy's mutable-parameter whitelist and either
+        # ratified (and applied) or rejected. With no registry the
+        # engine retains the legacy audit-only behaviour so existing
+        # callers that don't yet wire the learning loop are
+        # unaffected.
+        self.strategy_registry = strategy_registry
+        if strategy_registry is not None:
+            self.update_validator: UpdateValidator | None = UpdateValidator(
+                registry=strategy_registry
+            )
+            self.update_applier: UpdateApplier | None = UpdateApplier(
+                registry=strategy_registry
+            )
+        else:
+            self.update_validator = None
+            self.update_applier = None
 
     # ------------------------------------------------------------------
     # Engine surface
@@ -199,8 +233,19 @@ class GovernanceEngine(RuntimeEngine):
             },
         )
 
-    def _handle_system(self, event: SystemEvent) -> None:
-        if event.sub_kind is SystemEventKind.UPDATE_PROPOSED:
+    def _handle_update_proposed(self, event: SystemEvent) -> None:
+        """Validate and either ratify or reject a learning update.
+
+        Falls back to the legacy ``UPDATE_PROPOSED_AUDIT`` row when
+        no :class:`StrategyRegistry` is wired (callers that haven't
+        yet adopted Wave-04.6 PR-E).
+        """
+
+        if (
+            self.update_validator is None
+            or self.update_applier is None
+            or self.strategy_registry is None
+        ):
             self.ledger.append(
                 ts_ns=event.ts_ns,
                 kind="UPDATE_PROPOSED_AUDIT",
@@ -209,6 +254,69 @@ class GovernanceEngine(RuntimeEngine):
                     **{f"p_{k}": v for k, v in event.payload.items()},
                 },
             )
+            return
+
+        try:
+            update = ProposedUpdate(
+                ts_ns=event.ts_ns,
+                strategy_id=event.payload["strategy_id"],
+                parameter=event.payload["parameter"],
+                old_value=event.payload["old_value"],
+                new_value=event.payload["new_value"],
+                reason=event.payload["reason"],
+                meta=dict(event.meta),
+            )
+        except KeyError as exc:
+            self.ledger.append(
+                ts_ns=event.ts_ns,
+                kind="UPDATE_REJECTED",
+                payload={
+                    "source": event.source,
+                    "code": "MALFORMED_PAYLOAD",
+                    "detail": f"missing field: {exc.args[0]}",
+                },
+            )
+            return
+
+        decision = self.update_validator.validate(
+            update=update,
+            mode=self.state_transitions.current_mode(),
+        )
+        if decision.verdict is UpdateVerdict.REJECT:
+            self.ledger.append(
+                ts_ns=event.ts_ns,
+                kind="UPDATE_REJECTED",
+                payload={
+                    "source": event.source,
+                    "strategy_id": update.strategy_id,
+                    "parameter": update.parameter,
+                    "code": decision.code.value if decision.code else "",
+                    "detail": decision.detail,
+                },
+            )
+            return
+
+        # RATIFY — append a ledger row first, then apply. The
+        # apply step itself appends a ``STRATEGY_PARAMETER_UPDATE``
+        # row, so the chain reads:
+        #   UPDATE_RATIFIED → STRATEGY_PARAMETER_UPDATE
+        self.ledger.append(
+            ts_ns=event.ts_ns,
+            kind="UPDATE_RATIFIED",
+            payload={
+                "source": event.source,
+                "strategy_id": update.strategy_id,
+                "parameter": update.parameter,
+                "old_value": update.old_value,
+                "new_value": update.new_value,
+                "detail": decision.detail,
+            },
+        )
+        self.update_applier.apply(decision=decision, update=update)
+
+    def _handle_system(self, event: SystemEvent) -> None:
+        if event.sub_kind is SystemEventKind.UPDATE_PROPOSED:
+            self._handle_update_proposed(event)
             return
         if event.sub_kind is SystemEventKind.PLUGIN_LIFECYCLE:
             self.ledger.append(

@@ -104,6 +104,17 @@ class StrategyRecord:
             of the most recent lifecycle transition. Equals
             ``created_ts_ns`` while the record is still in DRAFT and
             no transition has occurred.
+        mutable_parameters: Tuple of parameter keys that the
+            ``UpdateValidator`` (Wave-04.6 PR-E) will permit the
+            learning engine to mutate at runtime. Empty tuple means
+            **immutable** — every learning-driven update is rejected
+            for this strategy.
+        parameter_bounds: Optional inclusive ``[lo, hi]`` numeric
+            range per mutable parameter. ``UpdateValidator`` rejects
+            any proposed ``new_value`` whose ``float`` cast falls
+            outside the declared range. Parameters absent from this
+            mapping are accepted on whitelist alone (no numeric
+            range check).
     """
 
     strategy_id: str
@@ -114,6 +125,10 @@ class StrategyRecord:
     why: tuple[str, ...] = ()
     created_ts_ns: int = 0
     last_transition_ts_ns: int = 0
+    mutable_parameters: tuple[str, ...] = ()
+    parameter_bounds: Mapping[str, tuple[float, float]] = field(
+        default_factory=dict
+    )
 
 
 def is_legal_transition(
