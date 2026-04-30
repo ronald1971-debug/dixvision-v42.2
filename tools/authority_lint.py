@@ -52,6 +52,14 @@ Rule set (ZIP v4):
 * **B25** Execution Gate origin restriction (HARDEN-01 / INV-68).
   Only ``intelligence_engine.*`` and ``governance_engine.*`` may call
   ``create_execution_intent`` / ``mark_approved`` / ``mark_rejected``.
+* **B26** Operator-approval edge restriction (Wave-03 PR-5). Only
+  ``intelligence_engine.cognitive.approval_edge`` may construct a
+  ``SignalEvent`` carrying the cognitive ``produced_by_engine`` stamp
+  (``"intelligence_engine.cognitive"``). Every other path that needs
+  to surface a cognitive proposal must go through the operator-
+  approval queue and the typed approve / reject endpoints so the
+  audit ledger captures the operator click before any event
+  reaches the bus.
   Tests use the dedicated ``tests.fixtures`` origin so production
   code paths stay tight.
 
@@ -776,6 +784,78 @@ def _check_b25(
 
 
 # ---------------------------------------------------------------------------
+# B26 — Operator-approval edge restriction (Wave-03 PR-5)
+# ---------------------------------------------------------------------------
+
+# The single module allowed to stamp a SignalEvent with the cognitive
+# producer string. Every other code path that wants to surface a
+# cognitive proposal must enqueue it for operator approval; the
+# operator click is what flips it into a real SignalEvent on the bus.
+B26_COGNITIVE_PRODUCER: str = "intelligence_engine.cognitive"
+B26_ALLOWED_MODULES: tuple[str, ...] = (
+    "intelligence_engine.cognitive.approval_edge",
+)
+
+
+def _signal_event_produced_by_engine(node: ast.Call) -> str | None:
+    """Return the literal value of ``produced_by_engine=...`` on this Call.
+
+    Returns ``None`` if the kwarg is absent or non-literal (covers
+    constants, captures, registry lookups, etc.). B26 only fires on
+    *literal* string matches — dynamic dispatch through a constant
+    is by-construction routed through the approval edge anyway.
+    """
+
+    for kw in node.keywords:
+        if kw.arg != "produced_by_engine":
+            continue
+        if isinstance(kw.value, ast.Constant) and isinstance(
+            kw.value.value, str
+        ):
+            return kw.value.value
+    return None
+
+
+def _check_b26(
+    importer: str, file: Path, repo_root: Path, tree: ast.AST
+) -> list[Violation]:
+    """B26 — only the approval edge may stamp the cognitive producer."""
+
+    if _is_triad_constructor_test_exempt(file, repo_root):
+        return []
+    if _starts_with_any(importer, B26_ALLOWED_MODULES):
+        return []
+    out: list[Violation] = []
+    for node in ast.walk(tree):
+        if not (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "SignalEvent"
+        ):
+            continue
+        stamped = _signal_event_produced_by_engine(node)
+        if stamped != B26_COGNITIVE_PRODUCER:
+            continue
+        out.append(
+            Violation(
+                "B26",
+                file,
+                node.lineno,
+                importer,
+                'SignalEvent(produced_by_engine="intelligence_engine.cognitive")',
+                "Operator-approval edge (Wave-03 PR-5): only "
+                "intelligence_engine.cognitive.approval_edge may "
+                "construct a SignalEvent stamped with the cognitive "
+                "producer — every other cognitive proposal must flow "
+                "through the approval queue + typed approve/reject "
+                "endpoints so the operator click hits the audit ledger "
+                "before the event reaches the bus.",
+            )
+        )
+    return out
+
+
+# ---------------------------------------------------------------------------
 # B23 — registry-driven AI providers (Dashboard-2026 wave-01)
 # ---------------------------------------------------------------------------
 
@@ -940,6 +1020,8 @@ def lint_repo(repo_root: Path) -> list[Violation]:
         )
         # B25 — Execution Gate intent factory restriction (INV-68).
         violations.extend(_check_b25(importer, path, repo_root, tree))
+        # B26 — only the approval edge may stamp the cognitive producer.
+        violations.extend(_check_b26(importer, path, repo_root, tree))
         # B23 — chat widget Python modules must be registry-driven.
         violations.extend(_check_b23_python(importer, path, tree))
     # B23 — chat widget static files (HTML / JS).

@@ -56,6 +56,7 @@ from core.contracts.api.cognitive_chat import (
 from governance_engine.control_plane.ledger_authority_writer import (
     LedgerAuthorityWriter,
 )
+from intelligence_engine.cognitive.approval_queue import ApprovalQueue
 from intelligence_engine.cognitive.chat import (
     AllProvidersFailedError,
     ChatTransport,
@@ -66,6 +67,7 @@ from intelligence_engine.cognitive.chat import (
     ProviderResolver,
     assemble_cognitive_chat,
 )
+from intelligence_engine.cognitive.proposal_parser import extract_proposal
 from system_engine.scvs.source_registry import SourceRegistry
 
 __all__ = [
@@ -204,13 +206,20 @@ class CognitiveChatRuntime:
     stays ``None`` and ``status()`` reports ``enabled=false``.
     Re-assembly happens on the next request after the operator
     flips the env var, so flipping the flag does not require a
-    server restart in dev."""
+    server restart in dev.
+
+    Wave-03 PR-5 adds an :class:`ApprovalQueue`. The runtime no
+    longer just returns the assistant reply — if the reply contains
+    a structured ``propose`` block, it queues the proposal and the
+    response carries the resulting ``proposal_id`` so the dashboard
+    can route the operator to the pending-approvals panel."""
 
     task: TaskClass
     registry: SourceRegistry
     transport: ChatTransport
     ledger_append: Any
     feature_flag: CognitiveChatFeatureFlag
+    approval_queue: ApprovalQueue
     bundle: CognitiveChatBundle | None = None
     # Per-runtime lock guarding `bundle` lazy-init only. The graph
     # invocation itself (an LLM round-trip) must NOT be held under
@@ -298,11 +307,43 @@ class CognitiveChatRuntime:
         except Exception:  # noqa: BLE001 — saver introspection is advisory
             checkpoint_id = ""
 
+        reply_api = _reply_to_api(reply_msg)
+
+        # PR-5: if the reply contains a structured propose block,
+        # drop it onto the approval queue and surface the
+        # request_id so the client can navigate to the panel.
+        # Parsing failures and HOLD proposals are silently
+        # treated as conversational — the chat reply still
+        # reaches the operator.
+        proposal_id = ""
+        proposal = extract_proposal(reply_api.content)
+        if proposal is not None:
+            queued = self.approval_queue.submit(
+                thread_id=req.thread_id,
+                proposal=proposal,
+                requested_at_ts_ns=time.time_ns(),
+            )
+            self.ledger_append(
+                "OPERATOR_APPROVAL_PENDING",
+                {
+                    "approval_id": queued.request_id,
+                    "thread_id": queued.thread_id,
+                    "symbol": queued.proposal.symbol,
+                    "side": queued.proposal.side.value,
+                    "confidence": (
+                        f"{queued.proposal.confidence:.6f}"
+                    ),
+                    "ts_ns": str(queued.requested_at_ts_ns),
+                },
+            )
+            proposal_id = queued.request_id
+
         return ChatTurnResponse(
             thread_id=req.thread_id,
-            reply=_reply_to_api(reply_msg),
+            reply=reply_api,
             provider_id=provider_id,
             checkpoint_id=checkpoint_id,
+            proposal_id=proposal_id,
         )
 
 
@@ -313,6 +354,7 @@ def build_runtime(
     transport: ChatTransport | None = None,
     task: TaskClass = TaskClass.INDIRA_REASONING,
     feature_flag: CognitiveChatFeatureFlag | None = None,
+    approval_queue: ApprovalQueue | None = None,
 ) -> CognitiveChatRuntime:
     """Construct a runtime for the FastAPI process.
 
@@ -320,8 +362,12 @@ def build_runtime(
     fresh deployment is reachable but turns return 502 until a
     real transport is wired. Tests pass a fake transport here.
     ``feature_flag`` defaults to env-driven; tests pass an
-    injected getter."""
+    injected getter. ``approval_queue`` defaults to a fresh
+    in-memory queue using ``time.time_ns`` for stamping; tests
+    inject a deterministic queue."""
 
+    if approval_queue is None:
+        approval_queue = ApprovalQueue(ts_ns=time.time_ns)
     return CognitiveChatRuntime(
         task=task,
         registry=registry,
@@ -330,6 +376,7 @@ def build_runtime(
         feature_flag=(
             feature_flag if feature_flag is not None else CognitiveChatFeatureFlag()
         ),
+        approval_queue=approval_queue,
     )
 
 

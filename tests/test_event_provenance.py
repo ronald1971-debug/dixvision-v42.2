@@ -89,8 +89,13 @@ def test_event_producers_values_are_frozensets():
         assert producers, f"{cls.__name__} producer set is empty"
 
 
-def test_event_producers_signal_is_intelligence_only():
-    assert EVENT_PRODUCERS[SignalEvent] == frozenset({"intelligence_engine"})
+def test_event_producers_signal_includes_intelligence_and_cognitive():
+    # Wave-03 PR-5 added the cognitive sub-prefix so the operator-
+    # approval edge can stamp SignalEvents without tripping
+    # assert_event_provenance. B26 lint pins the inverse.
+    assert EVENT_PRODUCERS[SignalEvent] == frozenset(
+        {"intelligence_engine", "intelligence_engine.cognitive"},
+    )
 
 
 def test_event_producers_execution_is_execution_only():
@@ -110,6 +115,12 @@ def test_event_producers_hazard_includes_execution_for_haz_authority():
 
 def test_signal_with_intelligence_producer_is_accepted():
     assert_event_provenance(_signal())
+
+
+def test_signal_with_cognitive_producer_is_accepted():
+    # Wave-03 PR-5 — the operator-approval edge stamps this prefix when
+    # it promotes a queued ProposedSignalApi to a real SignalEvent.
+    assert_event_provenance(_signal(producer="intelligence_engine.cognitive"))
 
 
 def test_execution_with_execution_producer_is_accepted():

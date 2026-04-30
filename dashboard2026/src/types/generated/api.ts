@@ -7,6 +7,10 @@ export type PresenceStateApi = "present" | "partial" | "missing";
 
 export type ChatRoleApi = "user" | "assistant" | "system";
 
+export type ApprovalSideApi = "BUY" | "SELL" | "HOLD";
+
+export type ApprovalStatusApi = "PENDING" | "APPROVED" | "REJECTED";
+
 export interface CredentialsStatusResponse {
   summary: CredentialsSummary;
   writable: boolean;
@@ -97,4 +101,36 @@ export interface ChatTurnResponse {
   reply: ChatMessageApi;
   provider_id: string;
   checkpoint_id: string;
+  proposal_id?: string;
+}
+
+export interface ApprovalsListResponse {
+  requests: ApprovalRequestApi[];
+}
+
+export interface ApprovalRequestApi {
+  request_id: string;
+  thread_id: string;
+  requested_at_ts_ns: number;
+  proposal: ProposedSignalApi;
+  status: ApprovalStatusApi;
+  decided_at_ts_ns?: number | null;
+  decided_by?: string;
+}
+
+export interface ProposedSignalApi {
+  symbol: string;
+  side: ApprovalSideApi;
+  confidence: number;
+  rationale: string;
+}
+
+export interface ApprovalDecisionRequest {
+  decided_by?: string;
+  note?: string;
+}
+
+export interface ApprovalDecisionResponse {
+  request: ApprovalRequestApi;
+  emitted_signal_id?: string;
 }

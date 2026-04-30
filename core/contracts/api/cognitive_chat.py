@@ -119,6 +119,16 @@ class ChatTurnResponse(BaseModel):
             "``COGNITIVE_CHECKPOINT`` rows in the audit ledger."
         ),
     )
+    proposal_id: str = Field(
+        default="",
+        description=(
+            "Wave-03 PR-5: when the assistant reply contains a "
+            "structured ``propose`` block, the runtime queues an "
+            "``ApprovalRequest`` and returns its id here so the "
+            "client can navigate to the pending-approvals panel. "
+            "Empty string when the reply is conversational only."
+        ),
+    )
 
 
 class ChatStatusResponse(BaseModel):
