@@ -240,11 +240,15 @@ def test_query_auth_uses_api_key_param_for_fred(monkeypatch) -> None:
     assert "file_type=json" in url
 
 
-def test_query_auth_uses_registrationkey_param_for_bls(monkeypatch) -> None:
+def test_bls_intentionally_returns_no_verifier(monkeypatch) -> None:
+    # BLS is intentionally not registered: its endpoints return HTTP
+    # 200 for both valid and invalid keys, so an HTTP-status-only
+    # verifier would always lie. Until a body-aware verifier exists,
+    # ``no_verifier`` is the honest answer (same shape as Reuters).
     calls = _patch_open(monkeypatch, lambda r, t: _FakeResponse(200))
-    verify_provider("bls", {"BLS_API_KEY": "bls-fake"})
-    url = calls[0]["url"]
-    assert "registrationkey=bls-fake" in url
+    result = verify_provider("bls", {"BLS_API_KEY": "bls-fake"})
+    assert result.outcome is VerifyOutcome.NO_VERIFIER
+    assert calls == []  # never reached the network
 
 
 def test_header_auth_sends_custom_header_for_dune(monkeypatch) -> None:
@@ -301,7 +305,6 @@ SECRET = "DO-NOT-LEAK-THIS-VALUE-1234"
         ("glassnode", "GLASSNODE_API_KEY"),
         ("dune", "DUNE_API_KEY"),
         ("fred", "FRED_API_KEY"),
-        ("bls", "BLS_API_KEY"),
     ],
 )
 def test_no_leak_on_ok(monkeypatch, provider, env_var) -> None:

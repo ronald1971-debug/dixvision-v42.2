@@ -171,22 +171,20 @@ VERIFIERS: Mapping[str, VerifierSpec] = MappingProxyType(
             primary_env_var="FRED_API_KEY",
             auth_style="query",
         ),
-        "bls": VerifierSpec(
-            # BLS exposes a public series-popularity endpoint that
-            # accepts the registration key as ``?registrationkey=``.
-            # Returns ``status: REQUEST_SUCCEEDED`` on a valid key,
-            # ``REQUEST_NOT_PROCESSED`` on an invalid one. We treat
-            # 200 as ``OK`` regardless of body text — the operator
-            # still has to look at the response in the dashboard if
-            # the body says NOT_PROCESSED, but at least the network
-            # path is verified.
-            url=(
-                "https://api.bls.gov/publicAPI/v2/timeseries/popular"
-                "?registrationkey={key}"
-            ),
-            primary_env_var="BLS_API_KEY",
-            auth_style="query",
-        ),
+        # BLS is intentionally NOT registered as a live verifier.
+        # Its public-API endpoints return HTTP 200 for both valid
+        # and invalid registration keys (with different body text:
+        # ``REQUEST_SUCCEEDED`` vs ``REQUEST_NOT_PROCESSED``). Because
+        # the verifier only inspects HTTP status, registering BLS
+        # would unconditionally show ``ok`` even with a bad key,
+        # which violates the contract documented at the top of this
+        # module ("does the key actually authenticate?"). When BLS
+        # is wired into a real ingestor, the ingestor itself can
+        # surface ``REQUEST_NOT_PROCESSED`` as a key-side failure;
+        # until then the operator sees ``no_verifier`` here, which
+        # is honest. Reuters is excluded for the same reason (no
+        # public verify endpoint shape we can pin without a paid
+        # contract).
     }
 )
 """Provider → :class:`VerifierSpec`. Adding a verifier here is the
