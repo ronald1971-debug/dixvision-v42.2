@@ -58,6 +58,10 @@ export function CredentialsPage() {
   const { data, isPending, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["credentials", "status"],
     queryFn: ({ signal }) => fetchCredentialsStatus(signal),
+    // Live polling at 5 s — slow enough for the credential matrix
+    // (10 providers, mostly slow-changing) but fast enough that flipping
+    // a key on disk shows up in the UI without a manual refresh.
+    refetchInterval: 5_000,
   });
 
   return (
