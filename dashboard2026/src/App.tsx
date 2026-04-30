@@ -1,3 +1,4 @@
+import { LiveStatusPill } from "@/components/LiveStatusPill";
 import { CognitiveChatPage } from "@/pages/CognitiveChatPage";
 import { CredentialsPage } from "@/pages/CredentialsPage";
 import { OperatorPage } from "@/pages/OperatorPage";
@@ -20,6 +21,9 @@ export function App() {
           </span>
           <span className="text-xs text-slate-400 font-mono">
             wave-02 · operator console
+          </span>
+          <span className="ml-auto self-center">
+            <LiveStatusPill />
           </span>
         </div>
         <nav className="mt-2 flex gap-2 font-mono text-xs">
