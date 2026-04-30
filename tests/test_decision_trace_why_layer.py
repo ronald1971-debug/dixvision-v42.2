@@ -241,6 +241,47 @@ def test_why_serialisation_includes_all_ids() -> None:
     assert {b["name"] for b in why["beliefs"]} == {"trend_following", "risk_seeking"}
 
 
+def test_why_from_json_raises_on_malformed_belief_entry() -> None:
+    """A corrupted ledger row with a non-dict belief must raise, not
+    silently drop the entry (matches the strict contract of every
+    other ``_from_json`` helper)."""
+    trace = build_decision_trace(signal=_signal(), why=_full_why())
+    body = json.loads(as_system_event(trace).payload["trace"])
+    body["why"]["beliefs"].append(None)
+    legacy_payload = {
+        "trace": json.dumps(body, sort_keys=True, separators=(",", ":")),
+    }
+    event = as_system_event(trace)
+    legacy_event = type(event)(
+        ts_ns=event.ts_ns,
+        sub_kind=event.sub_kind,
+        source=event.source,
+        payload=legacy_payload,
+    )
+    with pytest.raises(ValueError, match="why.beliefs"):
+        trace_from_system_event(legacy_event)
+
+
+def test_why_from_json_raises_on_malformed_note_entry() -> None:
+    """A corrupted ledger row with a malformed note entry must raise,
+    not silently drop the entry."""
+    trace = build_decision_trace(signal=_signal(), why=_full_why())
+    body = json.loads(as_system_event(trace).payload["trace"])
+    body["why"]["notes"].append(["only-one-element"])
+    legacy_payload = {
+        "trace": json.dumps(body, sort_keys=True, separators=(",", ":")),
+    }
+    event = as_system_event(trace)
+    legacy_event = type(event)(
+        ts_ns=event.ts_ns,
+        sub_kind=event.sub_kind,
+        source=event.source,
+        payload=legacy_payload,
+    )
+    with pytest.raises(ValueError, match="why.notes"):
+        trace_from_system_event(legacy_event)
+
+
 def test_why_legacy_event_without_why_field_round_trips() -> None:
     """A legacy DECISION_TRACE event payload missing the ``why`` key
     must deserialise to ``why=None`` instead of raising."""

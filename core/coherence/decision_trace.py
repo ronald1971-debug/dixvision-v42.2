@@ -382,19 +382,29 @@ def _why_from_json(body: object) -> WhyLayer | None:
     raw_beliefs = body.get("beliefs", [])
     if not isinstance(raw_beliefs, list):
         raise ValueError("why.beliefs must be a JSON array")
-    beliefs = tuple(
-        BeliefReference(name=str(b["name"]), strength=float(b["strength"]))
-        for b in raw_beliefs
-        if isinstance(b, dict)
-    )
+    beliefs_list: list[BeliefReference] = []
+    for b in raw_beliefs:
+        if not isinstance(b, dict):
+            raise ValueError(
+                "why.beliefs entries must be JSON objects with "
+                "'name' and 'strength'"
+            )
+        beliefs_list.append(
+            BeliefReference(name=str(b["name"]), strength=float(b["strength"]))
+        )
+    beliefs = tuple(beliefs_list)
     raw_notes = body.get("notes", [])
     if not isinstance(raw_notes, list):
         raise ValueError("why.notes must be a JSON array")
-    notes = tuple(
-        (str(n[0]), str(n[1]))
-        for n in raw_notes
-        if isinstance(n, list) and len(n) == 2
-    )
+    notes_list: list[tuple[str, str]] = []
+    for n in raw_notes:
+        if not isinstance(n, list) or len(n) != 2:
+            raise ValueError(
+                "why.notes entries must be 2-element JSON arrays "
+                "[key, text]"
+            )
+        notes_list.append((str(n[0]), str(n[1])))
+    notes = tuple(notes_list)
     return WhyLayer(
         philosophy_id=_optional_str(body.get("philosophy_id")),
         beliefs=beliefs,
