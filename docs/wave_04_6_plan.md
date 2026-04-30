@@ -71,7 +71,7 @@ distinct behaviour across all engines.
 
 ## 2. PR breakdown
 
-### PR-A — Mode-effect table (`docs/MODE_EFFECTS.md` + `governance_engine/control_plane/mode_effects.py`)
+### PR-A — Mode-effect table (`docs/MODE_EFFECTS.md` + `core/contracts/mode_effects.py`)
 
 Single canonical Python module that exports a frozen mapping
 `MODE_EFFECTS: dict[SystemMode, ModeEffect]` where `ModeEffect` is a
