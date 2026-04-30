@@ -290,6 +290,7 @@ class AuthorityGuard:
                 source=self._execution_actor,
                 detail=violation.reason,
                 meta=meta,
+                produced_by_engine="execution_engine",
             )
         )
 

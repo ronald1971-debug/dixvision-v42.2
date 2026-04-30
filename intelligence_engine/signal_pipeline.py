@@ -114,6 +114,7 @@ class SignalPipeline:
                         confidence=s.confidence,
                         plugin_chain=s.plugin_chain,
                         meta=meta,
+                        produced_by_engine="intelligence_engine",
                     )
                 raw.append(s)
 
