@@ -59,6 +59,7 @@ from intelligence_engine.strategy_library.components import (
     MarketCondition,
     MarketRegime,
     RiskModel,
+    SizingStyle,
     StopStyle,
     Timeframe,
 )
@@ -256,6 +257,13 @@ def _check_unknown_discriminators(
             IncompatibilityFinding(
                 reason=IncompatibilityReason.UNKNOWN_DISCRIMINATOR,
                 detail="exit.style is UNKNOWN; refusing to compose",
+            )
+        )
+    if risk.sizing is SizingStyle.UNKNOWN:
+        findings.append(
+            IncompatibilityFinding(
+                reason=IncompatibilityReason.UNKNOWN_DISCRIMINATOR,
+                detail="risk.sizing is UNKNOWN; refusing to compose",
             )
         )
     if risk.stop is StopStyle.UNKNOWN:
