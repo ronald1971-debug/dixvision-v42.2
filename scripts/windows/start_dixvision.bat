@@ -22,12 +22,18 @@ set "VENV_PY=%VENV_DIR%\Scripts\python.exe"
 set "VENV_MARKER=%VENV_DIR%\.dixvision_installed"
 set "DASH_URL=http://127.0.0.1:8080/"
 set "DASH_PORT=8080"
+set "LAUNCHER_LOG=%REPO_ROOT%\launcher.log"
+
+REM Truncate the previous launcher.log so each run starts clean and the
+REM operator (or Devin Review) can paste the latest failure verbatim.
+break > "%LAUNCHER_LOG%" 2>nul
 
 echo.
 echo === DIX VISION v42.2 — Windows launcher ===
 echo Repo:  %REPO_ROOT%
 echo Venv:  %VENV_DIR%
 echo URL:   %DASH_URL%
+echo Log:   %LAUNCHER_LOG%
 echo.
 
 REM --- find a usable Python interpreter ---------------------------------------
@@ -117,12 +123,44 @@ start "" /b cmd /c "timeout /t 3 /nobreak >nul && start "" "%DASH_URL%""
 
 echo.
 echo Starting FastAPI harness on %DASH_URL% ^(Ctrl+C to stop^)
+echo All output is tee'd to %LAUNCHER_LOG% — paste it back if you hit issues.
 echo Tip: run scripts\windows\stop_dixvision.bat to force-kill if needed.
 echo.
 
 REM --- run uvicorn in the foreground so logs are visible -----------------------
-"%VENV_PY%" -m uvicorn ui.server:app --host 127.0.0.1 --port %DASH_PORT%
-set "EXITCODE=%errorlevel%"
+REM PowerShell's Tee-Object mirrors stdout+stderr to the operator's
+REM console *and* to launcher.log so a crash that closes the cmd
+REM window still leaves a paste-able artefact behind. ``$LASTEXITCODE``
+REM is the only safe way to surface uvicorn's exit code through a
+REM PowerShell pipeline (the parent ``%errorlevel%`` would always be 0).
+where powershell >nul 2>&1
+if %errorlevel%==0 (
+    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+        "& '%VENV_PY%' -m uvicorn ui.server:app --host 127.0.0.1 --port %DASH_PORT% 2>&1 ^| Tee-Object -FilePath '%LAUNCHER_LOG%'; exit $LASTEXITCODE"
+    set "EXITCODE=!errorlevel!"
+) else (
+    REM Fallback: no PowerShell available. Capture to log file only;
+    REM real-time visibility is sacrificed but a paste-able artefact
+    REM still exists.
+    echo [WARN] powershell not found; output is captured to %LAUNCHER_LOG% only.
+    "%VENV_PY%" -m uvicorn ui.server:app --host 127.0.0.1 --port %DASH_PORT% > "%LAUNCHER_LOG%" 2>&1
+    set "EXITCODE=!errorlevel!"
+)
+
+echo.
+if not "!EXITCODE!"=="0" (
+    echo [ERROR] uvicorn exited with code !EXITCODE!. Full log: %LAUNCHER_LOG%
+) else (
+    echo Dashboard process exited cleanly. Full log: %LAUNCHER_LOG%
+)
+
+REM --- always pause so the cmd window cannot close before the operator -------
+REM has a chance to read the output. This is the single biggest UX fix
+REM in this script: prior versions exited silently if uvicorn failed at
+REM import time, which made remote diagnosis impossible.
+echo.
+echo Press any key to close this window...
+pause >nul
 
 popd >nul
 endlocal & exit /b %EXITCODE%

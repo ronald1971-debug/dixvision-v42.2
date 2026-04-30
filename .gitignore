@@ -21,6 +21,11 @@ rust/target/
 .env
 .env.local
 
+# Windows launcher tee target (scripts/windows/start_dixvision.bat).
+# Truncated and rewritten on every run; useful for paste-back diagnosis
+# but never committed.
+launcher.log
+
 # Wave-02 React/Vite operator dashboard build artefacts
 dashboard2026/node_modules/
 dashboard2026/dist/
