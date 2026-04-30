@@ -55,15 +55,17 @@ class ChatMessageApi(BaseModel):
 
 
 class ChatTurnRequest(BaseModel):
-    """Operator → server: one user turn plus the prior transcript.
+    """Operator → server: one user turn appended to a thread.
 
-    The client submits the *full* conversation so far. The server
-    is the source of truth for thread state (LangGraph's checkpoint
-    saver), but the request also carries the in-memory transcript
-    so a freshly opened tab can resume a thread without a separate
-    ``GET`` round-trip. The server validates that the last message
-    is from the user; otherwise the request is rejected so the
-    graph never replies to its own message."""
+    The server is the source of truth for thread state (LangGraph's
+    checkpoint saver replays prior messages keyed by ``thread_id``)
+    so clients should send **only the new message(s)** — typically a
+    single ``USER`` entry. The graph's ``add_messages`` reducer
+    appends the request to the checkpoint without de-duplication, so
+    re-sending the full transcript on every turn would compound the
+    history and inflate token cost. The server validates that the
+    last message is from the user; otherwise the request is rejected
+    so the graph never replies to its own message."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -79,9 +81,12 @@ class ChatTurnRequest(BaseModel):
     messages: list[ChatMessageApi] = Field(
         min_length=1,
         description=(
-            "Full conversation so far, in order. The server uses "
-            "the most recent ``USER`` message as the prompt and "
-            "ignores any later assistant messages."
+            "New message(s) to append to the thread, in order — "
+            "typically just the latest ``USER`` turn. Prior turns "
+            "are replayed from the LangGraph checkpoint keyed by "
+            "``thread_id``, so resending the full local transcript "
+            "would double-count every message via the "
+            "``add_messages`` reducer."
         ),
     )
 

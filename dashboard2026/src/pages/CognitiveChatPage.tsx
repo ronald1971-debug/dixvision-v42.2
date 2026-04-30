@@ -59,10 +59,14 @@ export function CognitiveChatPage() {
     if (!trimmed || turn.isPending) return;
     if (!status.data?.enabled) return;
     const userMsg: ChatMessageApi = { role: "user", content: trimmed };
-    const next = [...messages, userMsg];
-    setMessages(next);
+    // Only the *new* user message goes on the wire — the server
+    // replays prior turns from the LangGraph checkpoint keyed by
+    // ``thread_id``. Sending the full local transcript would
+    // double-append every prior message via the ``add_messages``
+    // reducer (Devin Review BUG_0001 on PR #85).
+    setMessages((prev) => [...prev, userMsg]);
     setInput("");
-    turn.mutate(next);
+    turn.mutate([userMsg]);
   }
 
   function reset() {
