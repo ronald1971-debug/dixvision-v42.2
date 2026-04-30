@@ -217,3 +217,37 @@ class ApprovalQueue:
     def __len__(self) -> int:
         with self._lock:
             return len(self._rows)
+
+    # ------------------------------------------------------------------
+    # PR-7 — ledger-backed projection
+    # ------------------------------------------------------------------
+
+    def rehydrate(
+        self,
+        rows: Iterable[tuple[str, ApprovalRequestApi]],
+    ) -> None:
+        """Replace the queue's projection with ``rows`` (insertion order).
+
+        ``rows`` is the output of
+        :func:`intelligence_engine.cognitive.approval_projection.projection_rows_from_payloads`
+        — a tuple of ``(approval_id, ApprovalRequestApi)`` pairs whose
+        terminal state is already resolved. Used by the HTTP layer at
+        startup to reconstruct the queue from the audit ledger so that
+        a process restart doesn't lose pending approvals (Wave-03 PR-7).
+
+        The queue is reset before applying — calling this on a queue
+        that already has rows discards them. In production the call
+        site is the FastAPI startup hook; tests use it to assert
+        projection equivalence.
+        """
+
+        with self._lock:
+            self._rows.clear()
+            self._order.clear()
+            for req_id, row in rows:
+                if req_id in self._rows:
+                    raise RuntimeError(
+                        f"projection rehydrate: duplicate approval id {req_id!r}"
+                    )
+                self._rows[req_id] = row
+                self._order.append(req_id)

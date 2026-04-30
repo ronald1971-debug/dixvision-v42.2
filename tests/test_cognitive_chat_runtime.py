@@ -97,6 +97,28 @@ class _RecordingLedger:
     ) -> None:
         self.rows.append((ts_ns, kind, dict(payload)))
 
+    def read(self) -> tuple[_RecordedEntry, ...]:
+        """Mimic ``LedgerAuthorityWriter.read`` — used by the
+        Wave-03 PR-7 startup rehydrate path. The recording ledger
+        starts empty so the rehydrate is a no-op for these tests."""
+
+        return tuple(
+            _RecordedEntry(ts_ns=ts, kind=kind, payload=payload)
+            for ts, kind, payload in self.rows
+        )
+
+
+class _RecordedEntry:
+    """Minimal ``LedgerEntry`` shim — projection only reads ``kind``
+    and ``payload``."""
+
+    def __init__(
+        self, *, ts_ns: int, kind: str, payload: Mapping[str, str]
+    ) -> None:
+        self.ts_ns = ts_ns
+        self.kind = kind
+        self.payload = dict(payload)
+
 
 def _registry_with(*provider_ids: str) -> SourceRegistry:
     decls = tuple(

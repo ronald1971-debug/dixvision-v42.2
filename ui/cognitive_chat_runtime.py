@@ -56,6 +56,12 @@ from core.contracts.api.cognitive_chat import (
 from governance_engine.control_plane.ledger_authority_writer import (
     LedgerAuthorityWriter,
 )
+from intelligence_engine.cognitive.approval_projection import (
+    DECISION_KINDS,
+    PENDING_KIND,
+    ProjectionLedgerRow,
+    projection_rows_from_payloads,
+)
 from intelligence_engine.cognitive.approval_queue import ApprovalQueue
 from intelligence_engine.cognitive.chat import (
     AllProvidersFailedError,
@@ -333,6 +339,7 @@ class CognitiveChatRuntime:
                     "confidence": (
                         f"{queued.proposal.confidence:.6f}"
                     ),
+                    "rationale": queued.proposal.rationale,
                     "ts_ns": str(queued.requested_at_ts_ns),
                 },
             )
@@ -345,6 +352,34 @@ class CognitiveChatRuntime:
             checkpoint_id=checkpoint_id,
             proposal_id=proposal_id,
         )
+
+
+def rehydrate_approval_queue_from_ledger(
+    queue: ApprovalQueue,
+    ledger_writer: LedgerAuthorityWriter,
+) -> int:
+    """Rebuild ``queue`` from the ``OPERATOR_APPROVAL_*`` rows in the chain.
+
+    Wave-03 PR-7 — single source of truth for the operator approval
+    queue is the audit ledger; the in-memory queue is a projection
+    over those rows. Called once on FastAPI startup so a process
+    restart preserves pending approvals.
+
+    Returns the number of approval ids replayed (a convenience for
+    startup logs and tests). Rows of unrelated kinds are ignored;
+    decisions referencing an unknown id are skipped (see
+    :func:`projection_rows_from_payloads`).
+    """
+
+    projection_rows: list[ProjectionLedgerRow] = []
+    for entry in ledger_writer.read():
+        if entry.kind == PENDING_KIND or entry.kind in DECISION_KINDS:
+            projection_rows.append(
+                ProjectionLedgerRow(kind=entry.kind, payload=entry.payload),
+            )
+    rows = projection_rows_from_payloads(projection_rows)
+    queue.rehydrate(rows)
+    return len(rows)
 
 
 def build_runtime(
@@ -364,10 +399,16 @@ def build_runtime(
     ``feature_flag`` defaults to env-driven; tests pass an
     injected getter. ``approval_queue`` defaults to a fresh
     in-memory queue using ``time.time_ns`` for stamping; tests
-    inject a deterministic queue."""
+    inject a deterministic queue.
+
+    PR-7: when the queue is created here (the production path) the
+    factory replays ``ledger_writer`` so the projection picks up any
+    pending or decided approvals from prior runs. Tests injecting
+    their own queue keep full control — no implicit rehydrate."""
 
     if approval_queue is None:
         approval_queue = ApprovalQueue(ts_ns=time.time_ns)
+        rehydrate_approval_queue_from_ledger(approval_queue, ledger_writer)
     return CognitiveChatRuntime(
         task=task,
         registry=registry,

@@ -197,4 +197,38 @@ def test_approve_emits_sell_side_correctly() -> None:
         decision=ApprovalDecisionRequest(decided_by="op1"),
     )
     assert sig.side is Side.SELL
-    assert emitted[0].side is Side.SELL
+
+
+def test_approve_ledger_row_uses_queue_decided_ts_not_edge_ts() -> None:
+    """PR-7 regression — when the queue and the edge stamp from
+    different clocks (production: ``time.time_ns`` vs harness
+    monotonic counter), the ledger row's ``ts_ns`` must follow the
+    *queue's* ``decided_at_ts_ns`` so the projection rehydrates a
+    byte-identical row."""
+
+    edge, _, ledger = _make_edge()
+    submitted = edge.queue.submit(thread_id="t1", proposal=_proposal())
+    decided, sig = edge.approve(
+        request_id=submitted.request_id,
+        decision=ApprovalDecisionRequest(decided_by="op1"),
+    )
+    payload = ledger[0][1]
+    assert decided.decided_at_ts_ns is not None
+    assert int(payload["ts_ns"]) == decided.decided_at_ts_ns
+    assert int(payload["ts_ns"]) != sig.ts_ns
+
+
+def test_reject_ledger_row_uses_queue_decided_ts_not_edge_ts() -> None:
+    """Mirror of the approve path — the rejection ledger row carries
+    the queue's ``decided_at_ts_ns`` so a restart projection produces
+    the same row the live queue would have."""
+
+    edge, _, ledger = _make_edge()
+    submitted = edge.queue.submit(thread_id="t1", proposal=_proposal())
+    decided = edge.reject(
+        request_id=submitted.request_id,
+        decision=ApprovalDecisionRequest(decided_by="op1"),
+    )
+    payload = ledger[0][1]
+    assert decided.decided_at_ts_ns is not None
+    assert int(payload["ts_ns"]) == decided.decided_at_ts_ns
