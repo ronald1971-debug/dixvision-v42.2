@@ -90,6 +90,9 @@ from dashboard.control_plane.strategy_lifecycle_panel import (
 from evolution_engine.engine import EvolutionEngine
 from execution_engine.engine import ExecutionEngine
 from governance_engine.engine import GovernanceEngine
+from governance_engine.harness_approver import (
+    approve_signal_for_execution,
+)
 from intelligence_engine.cognitive.approval_edge import (
     ApprovalAlreadyDecidedError,
     ApprovalEdge,
@@ -295,7 +298,8 @@ class _State:
             )
             for sig in self.intelligence.on_market(tick):
                 self.record("intelligence", sig)
-                for downstream in self.execution.process(sig):
+                intent = approve_signal_for_execution(sig, ts_ns=_next_ts())
+                for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
 
     def _emit_cognitive_signal_locked(self, sig: SignalEvent) -> None:
@@ -317,7 +321,8 @@ class _State:
             self.record("cognitive_chat", sig)
             for ev in self.intelligence.process(sig):
                 self.record("intelligence", ev)
-                for downstream in self.execution.process(ev):
+                intent = approve_signal_for_execution(ev, ts_ns=_next_ts())
+                for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
 
     def _approval_ledger_append(
@@ -1054,7 +1059,8 @@ def post_tick(body: TickIn) -> dict[str, Any]:
         for sig in STATE.intelligence.on_market(tick):
             STATE.record("intelligence", sig)
             signals_out.append(_event_to_dict(sig))
-            for downstream in STATE.execution.process(sig):
+            intent = approve_signal_for_execution(sig, ts_ns=_next_ts())
+            for downstream in STATE.execution.execute(intent):
                 STATE.record("execution", downstream)
                 executions_out.append(_event_to_dict(downstream))
     return {
@@ -1084,7 +1090,8 @@ def post_signal(body: SignalIn) -> dict[str, Any]:
         STATE.record("ui_harness", sig)
         for ev in STATE.intelligence.process(sig):
             STATE.record("intelligence", ev)
-            for downstream in STATE.execution.process(ev):
+            intent = approve_signal_for_execution(ev, ts_ns=_next_ts())
+            for downstream in STATE.execution.execute(intent):
                 STATE.record("execution", downstream)
                 out_events.append(_event_to_dict(downstream))
     return {"signal": _event_to_dict(sig), "executions": out_events}
