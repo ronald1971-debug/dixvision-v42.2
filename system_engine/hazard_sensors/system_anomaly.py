@@ -51,6 +51,7 @@ class SystemAnomalySensor:
                     source=self.source,
                     detail=f"cpu {cpu_pct:.1f}% > {self._max_cpu_pct:.1f}%",
                     meta={"resource": "cpu", "value": f"{cpu_pct:.4f}"},
+                    produced_by_engine="system_engine",
                 )
             )
         elif cpu_pct <= self._max_cpu_pct:
@@ -65,6 +66,7 @@ class SystemAnomalySensor:
                     source=self.source,
                     detail=f"open_fds {open_fds} > {self._max_open_fds}",
                     meta={"resource": "fds", "value": str(open_fds)},
+                    produced_by_engine="system_engine",
                 )
             )
         elif open_fds <= self._max_open_fds:

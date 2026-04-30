@@ -43,6 +43,7 @@ class MemoryOverflowSensor:
                     source=self.source,
                     detail=f"rss {rss_bytes} >= critical {self._critical_bytes}",
                     meta={"rss_bytes": str(rss_bytes)},
+                    produced_by_engine="system_engine",
                 ),
             )
         if rss_bytes >= self._warn_bytes:
@@ -57,6 +58,7 @@ class MemoryOverflowSensor:
                     source=self.source,
                     detail=f"rss {rss_bytes} >= warn {self._warn_bytes}",
                     meta={"rss_bytes": str(rss_bytes)},
+                    produced_by_engine="system_engine",
                 ),
             )
         # Below the warn band — disarm both so a re-spike re-emits.

@@ -127,6 +127,7 @@ class AIValidator:
                 "outcome": result.outcome.value,
                 "category": decl.category.value,
             },
+            produced_by_engine="system_engine",
         )
         return result, (hazard,)
 

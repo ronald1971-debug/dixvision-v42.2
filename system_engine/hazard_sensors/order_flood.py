@@ -57,6 +57,7 @@ class OrderFloodSensor:
                 source=self.source,
                 detail=f"{n} orders in last {self._window_ns}ns > cap {self._max_orders}",
                 meta={"orders": str(n), "cap": str(self._max_orders)},
+                produced_by_engine="system_engine",
             ),
         )
 

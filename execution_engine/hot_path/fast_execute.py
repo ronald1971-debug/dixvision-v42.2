@@ -292,6 +292,7 @@ class FastExecutor:
             venue="hot_path",
             order_id=order_id,
             meta={"risk_version": str(snapshot.version)},
+            produced_by_engine="execution_engine",
         )
         return HotPathDecision(
             outcome=HotPathOutcome.APPROVED,
@@ -330,6 +331,7 @@ class FastExecutor:
             venue="hot_path",
             order_id="",
             meta={"reason": reason, "risk_version": str(snapshot.version)},
+            produced_by_engine="execution_engine",
         )
         return HotPathDecision(
             outcome=outcome,

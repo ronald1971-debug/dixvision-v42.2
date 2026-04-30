@@ -51,6 +51,7 @@ class ExchangeUnreachableSensor:
                     source=self.source,
                     detail=f"venue {venue!r} unreachable: {count} consecutive failures",
                     meta={"venue": venue, "failures": str(count)},
+                    produced_by_engine="system_engine",
                 )
             )
         return tuple(out)

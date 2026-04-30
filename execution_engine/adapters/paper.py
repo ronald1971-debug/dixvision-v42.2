@@ -61,6 +61,7 @@ class PaperBroker:
                 venue=self.name,
                 order_id="",
                 meta={"reason": "non-positive mark_price"},
+                produced_by_engine="execution_engine",
             )
 
         self._counter += 1
@@ -77,6 +78,7 @@ class PaperBroker:
                 venue=self.name,
                 order_id=order_id,
                 meta={"reason": "HOLD signal"},
+                produced_by_engine="execution_engine",
             )
 
         slip = mark_price * (self._slippage_bps / 10_000.0)
@@ -96,6 +98,7 @@ class PaperBroker:
             venue=self.name,
             order_id=order_id,
             meta={"adapter": self.name},
+            produced_by_engine="execution_engine",
         )
 
     # -- internals ----------------------------------------------------------

@@ -121,6 +121,7 @@ class IntelligenceEngine(RuntimeEngine):
                         confidence=sig.confidence,
                         plugin_chain=sig.plugin_chain,
                         meta=meta,
+                        produced_by_engine="intelligence_engine",
                     )
                 out.append(sig)
         emitted = tuple(out)
