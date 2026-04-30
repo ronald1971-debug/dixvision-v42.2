@@ -20,7 +20,6 @@ from collections.abc import Iterable, Mapping, Sequence
 
 from core.contracts.governance import LedgerEntry
 from core.contracts.strategy_registry import (
-    LEGAL_LIFECYCLE_TRANSITIONS,
     StrategyLifecycle,
     StrategyLifecycleError,
     StrategyRecord,
@@ -153,12 +152,17 @@ class StrategyRegistry:
             created_ts_ns=ts_ns,
             last_transition_ts_ns=ts_ns,
         )
-        self._records[strategy_id] = record
+        # Ledger-first ordering — write the audit row before mutating
+        # the in-memory registry so a failed append cannot leave a
+        # phantom record (no corresponding ledger row). Matches the
+        # ``StateTransitionManager.propose`` pattern (state_transition
+        # _manager.py:207-212). INV-15 / TEST-01.
         self._ledger.append(
             ts_ns=ts_ns,
             kind=LEDGER_KIND_STRATEGY_LIFECYCLE,
             payload=_serialize_strategy_record(record),
         )
+        self._records[strategy_id] = record
         return record
 
     def transition(
@@ -202,14 +206,15 @@ class StrategyRegistry:
             created_ts_ns=record.created_ts_ns,
             last_transition_ts_ns=ts_ns,
         )
-        self._records[strategy_id] = new_record
         payload = _serialize_strategy_record(new_record)
         payload["reason"] = reason
+        # Ledger-first ordering — see :meth:`register_draft`.
         self._ledger.append(
             ts_ns=ts_ns,
             kind=LEDGER_KIND_STRATEGY_LIFECYCLE,
             payload=payload,
         )
+        self._records[strategy_id] = new_record
         return new_record
 
     # -- replay --------------------------------------------------------
