@@ -72,13 +72,20 @@ if not exist "%VENV_PY%" (
     )
 )
 
-REM --- install / update dependencies on first run ------------------------------
+REM --- install / update dependencies -------------------------------------------
 REM Auto-installs everything from requirements-dev.txt (which transitively
 REM pulls in requirements.txt — runtime deps + dev tooling). The package
 REM itself is then installed editable so `ui.server`, `core.contracts`,
 REM `system_engine.scvs`, etc. resolve from the repo source.
+REM
+REM On the FIRST run we print a verbose progress message (this can take
+REM ~2-3 minutes). On every SUBSEQUENT run we still re-run pip in quiet
+REM mode so a `git pull` that introduces a new top-level import (e.g.
+REM ``langchain-core`` after PR #85) does not silently leave the venv
+REM behind and crash uvicorn at module-load time. pip is idempotent and
+REM completes in 2-3s when nothing has changed, so this is cheap.
 if not exist "%VENV_MARKER%" (
-    echo Installing dependencies ^(first-run only, ~2-3 minutes^)...
+    echo Installing dependencies ^(first-run, ~2-3 minutes^)...
     "%VENV_PY%" -m pip install --upgrade pip
     "%VENV_PY%" -m pip install -r requirements-dev.txt
     if errorlevel 1 (
@@ -98,6 +105,24 @@ if not exist "%VENV_MARKER%" (
     )
     echo. > "%VENV_MARKER%"
     echo Dependencies installed.
+) else (
+    echo Syncing dependencies ^(quiet; only installs if requirements drifted^)...
+    "%VENV_PY%" -m pip install -q --disable-pip-version-check -r requirements-dev.txt
+    if errorlevel 1 (
+        echo [ERROR] pip install -r requirements-dev.txt failed.
+        echo         Try deleting the .venv folder and re-running this script.
+        pause
+        popd >nul
+        exit /b 1
+    )
+    "%VENV_PY%" -m pip install -q --disable-pip-version-check -e .
+    if errorlevel 1 (
+        echo [ERROR] pip install -e . failed.
+        echo         Try deleting the .venv folder and re-running this script.
+        pause
+        popd >nul
+        exit /b 1
+    )
 )
 
 REM --- ensure the desktop shortcut is in place (idempotent, self-healing) ------
