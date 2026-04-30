@@ -242,7 +242,16 @@ def _build_request(spec: VerifierSpec, key: str) -> urllib.request.Request:
 
 
 def _classify_http_error(status: int) -> VerifyOutcome:
-    if status in (401, 403):
+    # 400 is grouped with 401/403 because some providers (notably
+    # FRED) return ``400 + JSON error body`` for an invalid API key
+    # rather than 401. The verifiers module only points at endpoints
+    # whose 4xx semantics are documented to mean "auth-side problem"
+    # (i.e. we don't send malformed bodies / unknown query params),
+    # so a 400 from any registered verifier is unambiguously an
+    # auth failure from the operator's point of view. Mapping it to
+    # NETWORK_ERROR misled operators into chasing connectivity bugs
+    # instead of fixing the key.
+    if status in (400, 401, 403):
         return VerifyOutcome.UNAUTHORIZED
     if status == 404:
         return VerifyOutcome.NOT_FOUND

@@ -98,6 +98,21 @@ def test_verify_unauthorized_on_403(monkeypatch) -> None:
     assert result.http_status == 403
 
 
+def test_verify_unauthorized_on_400_for_fred(monkeypatch) -> None:
+    # FRED returns 400 + JSON error body for invalid API keys (not
+    # 401). The classifier groups 400 with 401/403 so the operator
+    # sees an UNAUTHORIZED outcome, not a misleading NETWORK_ERROR.
+    def behaviour(r, t):
+        raise urllib.error.HTTPError(
+            r.full_url, 400, "Bad Request", {}, None
+        )
+
+    _patch_open(monkeypatch, behaviour)
+    result = verify_provider("fred", {"FRED_API_KEY": "fred-bad"})
+    assert result.outcome is VerifyOutcome.UNAUTHORIZED
+    assert result.http_status == 400
+
+
 def test_verify_rate_limited_on_429(monkeypatch) -> None:
     def behaviour(r, t):
         raise urllib.error.HTTPError(r.full_url, 429, "Too Many", {}, None)
