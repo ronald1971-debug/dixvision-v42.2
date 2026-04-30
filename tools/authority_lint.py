@@ -190,8 +190,14 @@ MAIN_WALLET_FORBIDDEN_PREFIXES: tuple[str, ...] = (
     "wallet.main_wallet",
 )
 
-# Dashboard isolation (B7).
-DASHBOARD_PREFIXES: tuple[str, ...] = ("dashboard",)
+# Dashboard isolation (B7). Wave-Live PR-3 (#106) renamed the
+# server-side widget package from ``dashboard`` to ``dashboard_backend``
+# to disambiguate it from the React/Vite SPA in ``dashboard2026/``.
+# B7's enforcement key must follow the rename or the rule silently
+# matches no modules and the architectural isolation it protects
+# (Build Compiler Spec §6 / INV-37: dashboard may not import private
+# engine internals) becomes a no-op.
+DASHBOARD_PREFIXES: tuple[str, ...] = ("dashboard_backend",)
 
 # Imports the dashboard control-plane is permitted to make beyond the
 # common allow-list. Each entry is matched as a dotted prefix.

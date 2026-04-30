@@ -240,15 +240,15 @@ def test_b1_fires_for_each_runtime_pair(fake_repo: Path):
 
 
 def _scaffold_dashboard(fake_repo: Path) -> None:
-    _write(fake_repo, "dashboard/__init__.py", "")
-    _write(fake_repo, "dashboard/control_plane/__init__.py", "")
+    _write(fake_repo, "dashboard_backend/__init__.py", "")
+    _write(fake_repo, "dashboard_backend/control_plane/__init__.py", "")
 
 
 def test_b7_fires_on_dashboard_to_execution_engine(fake_repo: Path):
     _scaffold_dashboard(fake_repo)
     _write(
         fake_repo,
-        "dashboard/control_plane/bad.py",
+        "dashboard_backend/control_plane/bad.py",
         "from execution_engine.hot_path import run\n",
     )
     assert "B7" in _rule_codes(lint_repo(fake_repo))
@@ -258,7 +258,7 @@ def test_b7_fires_on_dashboard_to_learning_engine(fake_repo: Path):
     _scaffold_dashboard(fake_repo)
     _write(
         fake_repo,
-        "dashboard/control_plane/bad.py",
+        "dashboard_backend/control_plane/bad.py",
         "from learning_engine import smuggle\n",
     )
     assert "B7" in _rule_codes(lint_repo(fake_repo))
@@ -268,7 +268,7 @@ def test_b7_allows_core_contracts(fake_repo: Path):
     _scaffold_dashboard(fake_repo)
     _write(
         fake_repo,
-        "dashboard/control_plane/ok.py",
+        "dashboard_backend/control_plane/ok.py",
         "from core.contracts.events import SignalEvent\n",
     )
     assert "B7" not in _rule_codes(lint_repo(fake_repo))
@@ -283,7 +283,7 @@ def test_b7_allows_governance_control_plane(fake_repo: Path):
     )
     _write(
         fake_repo,
-        "dashboard/control_plane/ok.py",
+        "dashboard_backend/control_plane/ok.py",
         "from governance_engine.control_plane import OperatorInterfaceBridge\n",
     )
     assert "B7" not in _rule_codes(lint_repo(fake_repo))
@@ -303,7 +303,7 @@ def test_b7_allows_strategy_lifecycle_fsm(fake_repo: Path):
     )
     _write(
         fake_repo,
-        "dashboard/control_plane/ok.py",
+        "dashboard_backend/control_plane/ok.py",
         "from intelligence_engine.strategy_runtime.state_machine "
         "import StrategyState\n",
     )
