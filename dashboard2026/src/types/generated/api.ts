@@ -5,6 +5,8 @@
 
 export type PresenceStateApi = "present" | "partial" | "missing";
 
+export type ChatRoleApi = "user" | "assistant" | "system";
+
 export interface CredentialsStatusResponse {
   summary: CredentialsSummary;
   writable: boolean;
@@ -72,4 +74,27 @@ export interface OperatorActionResponse {
   approved: boolean;
   summary: string;
   decision: Record<string, unknown>;
+}
+
+export interface ChatStatusResponse {
+  enabled: boolean;
+  eligible_providers: string[];
+  feature_flag_env_var: string;
+}
+
+export interface ChatTurnRequest {
+  thread_id: string;
+  messages: ChatMessageApi[];
+}
+
+export interface ChatMessageApi {
+  role: ChatRoleApi;
+  content: string;
+}
+
+export interface ChatTurnResponse {
+  thread_id: string;
+  reply: ChatMessageApi;
+  provider_id: string;
+  checkpoint_id: string;
 }

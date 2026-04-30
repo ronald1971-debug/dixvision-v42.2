@@ -44,6 +44,11 @@ from core.cognitive_router import (
     enabled_ai_providers,
     select_providers,
 )
+from core.contracts.api.cognitive_chat import (
+    ChatStatusResponse,
+    ChatTurnRequest,
+    ChatTurnResponse,
+)
 from core.contracts.api.credentials import (
     CredentialItem,
     CredentialsStatusResponse,
@@ -104,6 +109,15 @@ from system_engine.scvs.source_registry import (
     SourceRegistry,
     load_source_registry,
 )
+from ui.cognitive_chat_runtime import (
+    ChatTurnDisabled,
+    ChatTurnNoProvider,
+    ChatTurnTransportFailed,
+    CognitiveChatRuntime,
+)
+from ui.cognitive_chat_runtime import (
+    build_runtime as build_cognitive_chat_runtime,
+)
 from ui.dashboard_routes import build_dashboard_router
 from ui.feeds.runner import FeedRunner
 
@@ -156,6 +170,16 @@ class _State:
         self.decisions_widget = DecisionTracePanel(ledger=self.ledger_reader)
         self.memecoin_widget = MemecoinControlPanel(
             router=self.dashboard_router,
+        )
+
+        # Wave-03 PR-4 — cognitive chat runtime. The default
+        # transport (`NotConfiguredTransport`) refuses every turn so
+        # a deployment with the feature flag on but no real provider
+        # transport returns a clean 502 instead of a stack trace.
+        # Tests inject fake transports via `set_chat_runtime`.
+        self.chat_runtime: CognitiveChatRuntime = build_cognitive_chat_runtime(
+            registry=self.source_registry,
+            ledger_writer=self.governance.ledger,
         )
 
         # Live data feeds (SCVS-registered sources). The Binance public
@@ -796,6 +820,55 @@ def _decision_to_dict(decision: Any) -> dict[str, Any]:
     if isinstance(decision, (str, int, float, bool)) or decision is None:
         return decision  # type: ignore[return-value]
     return str(decision)  # type: ignore[return-value]
+
+
+@app.get("/api/cognitive/chat/status", response_model=ChatStatusResponse)
+def cognitive_chat_status() -> ChatStatusResponse:
+    """Wave-03 PR-4 — feature-flag + provider availability snapshot.
+
+    Polled by the operator chat page on mount so the UI can decide
+    whether to render the input box or a "feature disabled" notice.
+    Read-only; never writes the ledger.
+    """
+
+    with STATE.lock:
+        return STATE.chat_runtime.status()
+
+
+@app.post("/api/cognitive/chat/turn", response_model=ChatTurnResponse)
+def cognitive_chat_turn(body: ChatTurnRequest) -> ChatTurnResponse:
+    """Wave-03 PR-4 — drive one turn of the cognitive chat graph.
+
+    Honors ``DIX_COGNITIVE_CHAT_ENABLED`` (off by default — 503 in
+    that case). Dispatches through the registry-driven chat model
+    from PR-1 so no vendor name appears on the wire. State is
+    persisted to the audit ledger via PR-2's saver. Operator-
+    approval edges that gate ``SignalEvent`` proposal emission are
+    deferred to PR-5.
+    """
+
+    # Snapshot the runtime under the process-wide lock, then drop
+    # it before calling ``turn`` — the LLM round-trip can take
+    # seconds, and holding ``STATE.lock`` across it would block
+    # every other endpoint (health, ticks, operator summary, …).
+    # ``CognitiveChatRuntime`` has its own lock guarding the
+    # bundle lazy-init path; the graph itself is invocation-safe
+    # under concurrent calls because LangGraph keys state by
+    # ``thread_id``.
+    with STATE.lock:
+        runtime = STATE.chat_runtime
+    try:
+        return runtime.turn(body)
+    except ChatTurnDisabled as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ChatTurnNoProvider as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except ChatTurnTransportFailed as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except ValueError as exc:
+        # Bad request shape (empty messages / wrong tail role /
+        # SYSTEM message before PR-5 lands).
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/tick")

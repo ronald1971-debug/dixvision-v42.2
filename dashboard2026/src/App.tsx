@@ -1,3 +1,4 @@
+import { CognitiveChatPage } from "@/pages/CognitiveChatPage";
 import { CredentialsPage } from "@/pages/CredentialsPage";
 import { OperatorPage } from "@/pages/OperatorPage";
 import { useHashRoute, type Route } from "@/router";
@@ -5,6 +6,7 @@ import { useHashRoute, type Route } from "@/router";
 const TABS: Array<{ key: Route; href: string; label: string }> = [
   { key: "credentials", href: "#/credentials", label: "credentials" },
   { key: "operator", href: "#/operator", label: "operator" },
+  { key: "chat", href: "#/chat", label: "chat" },
 ];
 
 export function App() {
@@ -40,7 +42,13 @@ export function App() {
         </nav>
       </header>
       <main className="flex-1 px-6 py-6">
-        {route === "operator" ? <OperatorPage /> : <CredentialsPage />}
+        {route === "operator" ? (
+          <OperatorPage />
+        ) : route === "chat" ? (
+          <CognitiveChatPage />
+        ) : (
+          <CredentialsPage />
+        )}
       </main>
       <footer className="border-t border-border bg-surface px-6 py-2 text-xs text-slate-500">
         Vanilla pages remain the canonical reference at{" "}

@@ -6,9 +6,9 @@ import { useEffect, useState } from "react";
  * `/dash2/` root only; deep links use the `#/<route>` form so the
  * server keeps serving `index.html` regardless of path.
  */
-export type Route = "credentials" | "operator";
+export type Route = "credentials" | "operator" | "chat";
 
-const ROUTES: readonly Route[] = ["credentials", "operator"];
+const ROUTES: readonly Route[] = ["credentials", "operator", "chat"];
 
 export function parseRoute(hash: string): Route {
   const cleaned = hash.replace(/^#\/?/, "").trim();
