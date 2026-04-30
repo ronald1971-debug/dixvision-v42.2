@@ -9,20 +9,38 @@ names a vendor; routing is entirely registry-driven via
 :func:`core.cognitive_router.select_providers`.
 """
 
+from intelligence_engine.cognitive.chat.cognitive_chat_graph import (
+    FEATURE_FLAG_ENV_VAR,
+    ChatGraphState,
+    CognitiveChatBundle,
+    CognitiveChatDisabledError,
+    CognitiveChatFeatureFlag,
+    assemble_cognitive_chat,
+    build_cognitive_chat_graph,
+)
 from intelligence_engine.cognitive.chat.registry_driven_chat_model import (
     AllProvidersFailedError,
     ChatTransport,
     FallbackAuditSink,
     NoEligibleProviderError,
+    ProviderResolver,
     RegistryDrivenChatModel,
     TransientProviderError,
 )
 
 __all__ = [
     "AllProvidersFailedError",
+    "ChatGraphState",
     "ChatTransport",
+    "CognitiveChatBundle",
+    "CognitiveChatDisabledError",
+    "CognitiveChatFeatureFlag",
+    "FEATURE_FLAG_ENV_VAR",
     "FallbackAuditSink",
     "NoEligibleProviderError",
+    "ProviderResolver",
     "RegistryDrivenChatModel",
     "TransientProviderError",
+    "assemble_cognitive_chat",
+    "build_cognitive_chat_graph",
 ]
