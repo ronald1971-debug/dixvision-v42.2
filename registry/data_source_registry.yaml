@@ -167,9 +167,9 @@ sources:
     category: macro
     provider: fred
     endpoint: "https://api.stlouisfed.org/fred"
-    schema: "sensory.macro.contracts.MacroSeries"
+    schema: "core.contracts.macro.MacroObservation"
     auth: required
-    enabled: false
+    enabled: true
     critical: false
   - id: SRC-MACRO-BLS-001
     name: "U.S. Bureau of Labor Statistics"
