@@ -1,7 +1,8 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { fetchChatStatus, postChatTurn } from "@/api/cognitive_chat";
+import { ApprovalPanel } from "@/components/ApprovalPanel";
 import type {
   ChatMessageApi,
   ChatTurnResponse,
@@ -28,7 +29,9 @@ export function CognitiveChatPage() {
   const [messages, setMessages] = useState<ChatMessageApi[]>([]);
   const [input, setInput] = useState("");
   const [errorDetail, setErrorDetail] = useState<string | null>(null);
+  const [lastProposalId, setLastProposalId] = useState<string>("");
   const transcriptRef = useRef<HTMLDivElement | null>(null);
+  const queryClient = useQueryClient();
 
   const turn = useMutation({
     mutationFn: (next: ChatMessageApi[]) =>
@@ -36,6 +39,16 @@ export function CognitiveChatPage() {
     onSuccess: (resp: ChatTurnResponse) => {
       setMessages((prev) => [...prev, resp.reply]);
       setErrorDetail(null);
+      const nextProposalId = resp.proposal_id ?? "";
+      setLastProposalId(nextProposalId);
+      if (nextProposalId !== "") {
+        // The chat reply just queued a proposal — kick the approval-
+        // panel cache so it refreshes immediately rather than waiting
+        // for the 2s poll tick.
+        void queryClient.invalidateQueries({
+          queryKey: ["cognitive", "chat", "approvals"],
+        });
+      }
     },
     onError: (err: Error) => {
       setErrorDetail(err.message);
@@ -127,12 +140,11 @@ export function CognitiveChatPage() {
             Cognitive chat
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Wave-03 PR-4 — first end-user-visible cognitive surface.
-            Conversation runs through the registry-driven chat model;
-            state lands in the audit ledger via the cognitive
-            checkpointer. Operator-approval edges that gate signal
-            emission are deferred to PR-5 — this page is read/write
-            chat only.
+            Wave-03 PR-5 — operator-approval edge.  Chat replies that
+            contain a structured ``propose`` block queue an approval
+            request that the operator must approve before any
+            ``SignalEvent`` reaches the bus.  Approve / reject from the
+            panel below.
           </p>
         </div>
         <button
@@ -229,6 +241,8 @@ export function CognitiveChatPage() {
           ) : null}
         </span>
       </div>
+
+      <ApprovalPanel highlightProposalId={lastProposalId} />
     </section>
   );
 }

@@ -28,7 +28,7 @@ from __future__ import annotations
 import json
 import threading
 from collections import deque
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any
@@ -48,6 +48,11 @@ from core.contracts.api.cognitive_chat import (
     ChatStatusResponse,
     ChatTurnRequest,
     ChatTurnResponse,
+)
+from core.contracts.api.cognitive_chat_approvals import (
+    ApprovalDecisionRequest,
+    ApprovalDecisionResponse,
+    ApprovalsListResponse,
 )
 from core.contracts.api.credentials import (
     CredentialItem,
@@ -85,6 +90,11 @@ from dashboard.control_plane.strategy_lifecycle_panel import (
 from evolution_engine.engine import EvolutionEngine
 from execution_engine.engine import ExecutionEngine
 from governance_engine.engine import GovernanceEngine
+from intelligence_engine.cognitive.approval_edge import (
+    ApprovalAlreadyDecidedError,
+    ApprovalEdge,
+    ApprovalNotFoundError,
+)
 from intelligence_engine.engine import IntelligenceEngine
 from intelligence_engine.plugins import MicrostructureV1
 from intelligence_engine.strategy_runtime.state_machine import (
@@ -182,6 +192,20 @@ class _State:
             ledger_writer=self.governance.ledger,
         )
 
+        # Wave-03 PR-5 — operator-approval edge. Binds the chat
+        # runtime's queue to the live intelligence → execution chain
+        # and the audit ledger. Held here (not on the chat runtime
+        # itself) so the cognitive package stays B1-clean: it never
+        # touches IntelligenceEngine / ExecutionEngine / the ledger
+        # writer directly. Constructed eagerly so the routes can
+        # delegate without lazy-init guards.
+        self.approval_edge = ApprovalEdge(
+            queue=self.chat_runtime.approval_queue,
+            signal_emitter=self._emit_cognitive_signal_locked,
+            ledger_append=self._approval_ledger_append,
+            ts_ns=self.next_ts,
+        )
+
         # Live data feeds (SCVS-registered sources). The Binance public
         # WS pump is opt-in via ``POST /api/feeds/binance/start``; the
         # runner here is constructed but not yet started so the harness
@@ -273,6 +297,45 @@ class _State:
                 self.record("intelligence", sig)
                 for downstream in self.execution.process(sig):
                     self.record("execution", downstream)
+
+    def _emit_cognitive_signal_locked(self, sig: SignalEvent) -> None:
+        """``ApprovalEdge`` signal-emitter binding.
+
+        Wave-03 PR-5 — the approval edge is the *only* path that
+        constructs a ``SignalEvent`` carrying
+        ``produced_by_engine="intelligence_engine.cognitive"``
+        (B26 lint pins this). On approve, the edge calls back here
+        with a fully-stamped event; the harness threads it through
+        the same intelligence → execution fan-out as ``/api/signal``
+        so the resulting trade flows through HARDEN-02's execute
+        chokepoint and HARDEN-03's receiver provenance assertion.
+        Holds :attr:`lock` for the duration so the ledger ring and
+        execution state stay consistent with concurrent ticks.
+        """
+
+        with self.lock:
+            self.record("cognitive_chat", sig)
+            for ev in self.intelligence.process(sig):
+                self.record("intelligence", ev)
+                for downstream in self.execution.process(ev):
+                    self.record("execution", downstream)
+
+    def _approval_ledger_append(
+        self, kind: str, payload: Mapping[str, str]
+    ) -> None:
+        """``ApprovalEdge`` ledger-append binding.
+
+        Mirrors :func:`build_ledger_append` from the chat runtime
+        (which already wraps ``LedgerAuthorityWriter``); kept here
+        so the approval edge does not have to import the chat
+        runtime's helper. Stamps ``ts_ns`` from the harness time
+        source for replay determinism (INV-15)."""
+
+        self.governance.ledger.append(
+            ts_ns=_next_ts(),
+            kind=kind,
+            payload=dict(payload),
+        )
 
 
 STATE = _State()
@@ -869,6 +932,92 @@ def cognitive_chat_turn(body: ChatTurnRequest) -> ChatTurnResponse:
         # Bad request shape (empty messages / wrong tail role /
         # SYSTEM message before PR-5 lands).
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get(
+    "/api/cognitive/chat/approvals",
+    response_model=ApprovalsListResponse,
+)
+def cognitive_chat_approvals_list(
+    include_decided: bool = False,
+) -> ApprovalsListResponse:
+    """Wave-03 PR-5 — snapshot the operator-approval queue.
+
+    Default returns ``PENDING``-only rows so the dashboard panel
+    only shows what still needs an operator click. Pass
+    ``?include_decided=true`` to also surface the recent
+    ``APPROVED`` / ``REJECTED`` history (used by the audit panel).
+    Read-only; never writes the ledger.
+    """
+
+    with STATE.lock:
+        rows = STATE.chat_runtime.approval_queue.list(
+            include_decided=include_decided,
+        )
+    return ApprovalsListResponse(requests=list(rows))
+
+
+@app.post(
+    "/api/cognitive/chat/approvals/{request_id}/approve",
+    response_model=ApprovalDecisionResponse,
+)
+def cognitive_chat_approval_approve(
+    request_id: str,
+    body: ApprovalDecisionRequest | None = None,
+) -> ApprovalDecisionResponse:
+    """Wave-03 PR-5 — operator approves a queued cognitive proposal.
+
+    The approval edge stamps ``produced_by_engine=
+    "intelligence_engine.cognitive"`` on the resulting
+    ``SignalEvent`` (B26 / HARDEN-03), routes it through the
+    intelligence → execution chain (HARDEN-02 chokepoint), and
+    writes an ``OPERATOR_APPROVED_SIGNAL`` ledger row. Returns
+    the decided request and the new event's audit-ledger id.
+    """
+
+    decision = body if body is not None else ApprovalDecisionRequest()
+    try:
+        decided, sig = STATE.approval_edge.approve(
+            request_id=request_id,
+            decision=decision,
+        )
+    except ApprovalNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ApprovalAlreadyDecidedError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return ApprovalDecisionResponse(
+        request=decided,
+        emitted_signal_id=f"{sig.symbol}:{sig.side.value}:{sig.ts_ns}",
+    )
+
+
+@app.post(
+    "/api/cognitive/chat/approvals/{request_id}/reject",
+    response_model=ApprovalDecisionResponse,
+)
+def cognitive_chat_approval_reject(
+    request_id: str,
+    body: ApprovalDecisionRequest | None = None,
+) -> ApprovalDecisionResponse:
+    """Wave-03 PR-5 — operator rejects a queued cognitive proposal.
+
+    No event hits the bus; an ``OPERATOR_REJECTED_SIGNAL`` row is
+    written to the ledger so the audit chain captures every
+    decision (not just the approvals). Returns the decided
+    request with ``emitted_signal_id`` left empty.
+    """
+
+    decision = body if body is not None else ApprovalDecisionRequest()
+    try:
+        decided = STATE.approval_edge.reject(
+            request_id=request_id,
+            decision=decision,
+        )
+    except ApprovalNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ApprovalAlreadyDecidedError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return ApprovalDecisionResponse(request=decided, emitted_signal_id="")
 
 
 @app.post("/api/tick")
