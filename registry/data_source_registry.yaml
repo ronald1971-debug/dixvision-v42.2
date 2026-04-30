@@ -101,9 +101,9 @@ sources:
     category: news
     provider: coindesk
     endpoint: "https://www.coindesk.com/arc/outboundfeeds/rss/"
-    schema: "sensory.web_autolearn.contracts.NewsItem"
+    schema: "core.contracts.news.NewsItem"
     auth: none
-    enabled: false
+    enabled: true
     critical: false
   - id: SRC-NEWS-REUTERS-001
     name: "Reuters wire (placeholder — auth required)"
