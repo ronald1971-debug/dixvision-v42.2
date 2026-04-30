@@ -1004,6 +1004,84 @@ def _check_b29(
 
 
 # ---------------------------------------------------------------------------
+# B31 — Mode-effect table is the only mode-conditional decision oracle
+# ---------------------------------------------------------------------------
+#
+# Wave-04.6 PR-A: ``governance_engine.control_plane.mode_effects``
+# canonicalises **what every engine does differently per SystemMode**.
+# Outside the governance control plane, hard-coding ``SystemMode.X``
+# anywhere — comparisons, ``in {...}`` membership, attribute lookup —
+# silently re-introduces the per-engine mode logic that the table was
+# created to delete. B31 forbids ``SystemMode.<member>`` references in
+# non-allowlisted modules; legitimate mode-conditional code paths must
+# call ``mode_effects.effect_for(mode).<flag>`` instead.
+#
+# Allowlist scope is deliberate:
+#
+#   * ``governance_engine.*`` — mode authority. The FSM, the policy
+#     decision table, the compliance validator, the operator bridge,
+#     and the engine entrypoint all need to enumerate modes by name.
+#   * ``core.contracts.governance`` — defines :class:`SystemMode`.
+#   * ``core.contracts.learning_evolution_freeze`` — HARDEN-04 contract;
+#     freeze conditions are part of the contract surface.
+#   * ``dashboard_backend.control_plane.mode_control_bar`` — operator
+#     UI rendering one row per mode is the rule's whole purpose.
+#   * Tests — allowed.
+#
+# Anywhere else (intelligence_engine.*, execution_engine.*,
+# learning_engine.*, evolution_engine.*, dyon.*, indira.*, news_engine.*,
+# scvs.*, audit/*, ui/*) must route mode-conditional behaviour through
+# ``effect_for``. That is exactly the chokepoint reviewer #3 flagged as
+# missing in v42.2's mode FSM coverage.
+
+B31_ALLOWED_PREFIXES: tuple[str, ...] = (
+    "governance_engine",
+    "core.contracts.governance",
+    "core.contracts.learning_evolution_freeze",
+    "dashboard_backend.control_plane.mode_control_bar",
+)
+
+
+def _check_b31(
+    importer: str, file: Path, repo_root: Path, tree: ast.AST
+) -> list[Violation]:
+    """B31 — only governance + UI-surface code may name SystemMode members.
+
+    Engines and adapters must consume :func:`effect_for` from
+    ``governance_engine.control_plane.mode_effects`` rather than
+    hard-coding mode comparisons.
+    """
+
+    if _is_triad_constructor_test_exempt(file, repo_root):
+        return []
+    if _starts_with_any(importer, B31_ALLOWED_PREFIXES):
+        return []
+    out: list[Violation] = []
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Name)
+            and node.value.id == "SystemMode"
+        ):
+            out.append(
+                Violation(
+                    "B31",
+                    file,
+                    node.lineno,
+                    importer,
+                    f"SystemMode.{node.attr}",
+                    "Mode-effect table (Wave-04.6 PR-A): only the "
+                    "governance control plane and the mode UI may name "
+                    "SystemMode members. Engines and adapters must call "
+                    "governance_engine.control_plane.mode_effects."
+                    "effect_for(mode).<flag> instead of hard-coding a "
+                    "comparison against a specific mode.",
+                )
+            )
+    return out
+
+
+# ---------------------------------------------------------------------------
 # B23 — registry-driven AI providers (Dashboard-2026 wave-01)
 # ---------------------------------------------------------------------------
 
@@ -1199,6 +1277,8 @@ def lint_repo(repo_root: Path) -> list[Violation]:
         violations.extend(_check_b27(importer, path, repo_root, tree))
         violations.extend(_check_b28(importer, path, repo_root, tree))
         violations.extend(_check_b29(importer, path, repo_root, tree))
+        # B31 — mode-effect table is the single mode-conditional oracle.
+        violations.extend(_check_b31(importer, path, repo_root, tree))
         # B23 — chat widget Python modules must be registry-driven.
         violations.extend(_check_b23_python(importer, path, tree))
     # B23 — chat widget static files (HTML / JS).

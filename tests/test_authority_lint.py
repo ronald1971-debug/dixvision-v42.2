@@ -476,3 +476,65 @@ def test_b22_allows_tests_directory(fake_repo: Path):
         "SignalEvent(ts_ns=0)\n",
     )
     assert "B22" not in _rule_codes(lint_repo(fake_repo))
+
+
+# ---------------------------------------------------------------------------
+# B31 — mode-effect table is the only mode-conditional decision oracle
+# ---------------------------------------------------------------------------
+
+
+def test_b31_fires_on_engine_hardcoding_mode(fake_repo: Path):
+    _write(
+        fake_repo,
+        "intelligence_engine/regime_router.py",
+        "from core.contracts.governance import SystemMode\n"
+        "def gate(m):\n"
+        "    return m == SystemMode.LIVE\n",
+    )
+    assert "B31" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b31_allows_governance_control_plane(fake_repo: Path):
+    _write(
+        fake_repo,
+        "governance_engine/control_plane/state_transition_manager.py",
+        "from core.contracts.governance import SystemMode\n"
+        "def init():\n"
+        "    return SystemMode.LOCKED\n",
+    )
+    assert "B31" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b31_allows_mode_control_bar(fake_repo: Path):
+    _write(fake_repo, "dashboard_backend/__init__.py", "")
+    _write(fake_repo, "dashboard_backend/control_plane/__init__.py", "")
+    _write(
+        fake_repo,
+        "dashboard_backend/control_plane/mode_control_bar.py",
+        "from core.contracts.governance import SystemMode\n"
+        "ALL = [SystemMode.SAFE, SystemMode.PAPER, SystemMode.LIVE]\n",
+    )
+    assert "B31" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b31_allows_tests(fake_repo: Path):
+    _write(fake_repo, "tests/__init__.py", "")
+    _write(
+        fake_repo,
+        "tests/test_modes.py",
+        "from core.contracts.governance import SystemMode\n"
+        "assert SystemMode.LIVE\n",
+    )
+    assert "B31" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b31_fires_on_execution_engine_set_membership(fake_repo: Path):
+    _write(
+        fake_repo,
+        "execution_engine/dispatcher.py",
+        "from core.contracts.governance import SystemMode\n"
+        "ENABLED = {SystemMode.LIVE, SystemMode.CANARY}\n",
+    )
+    codes = _rule_codes(lint_repo(fake_repo))
+    # Two attribute references → at least two B31 hits.
+    assert codes.count("B31") >= 2
