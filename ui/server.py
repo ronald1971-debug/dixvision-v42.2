@@ -472,11 +472,20 @@ app.include_router(build_dashboard_router(lambda: STATE))
 # ``StaticFiles`` mount happens further below.
 _DASH2_DIST = Path(__file__).resolve().parent.parent / "dashboard2026" / "dist"
 _DASH2_INDEX = _DASH2_DIST / "index.html"
+# Freeze availability at module-load time so the ``GET /`` handler's redirect
+# decision and the conditional ``StaticFiles`` mount below stay in lock-step.
+# A per-request ``_DASH2_INDEX.exists()`` check would silently diverge if a
+# developer ran ``npm run build`` after ``uvicorn --reload`` had already
+# imported the module: ``--reload`` only watches ``.py`` files, so the SPA
+# build wouldn't restart the server, the handler would 307 to ``/dash2/``,
+# and the mount that was never registered would 404. Devin Review BUG_0001
+# on PR #123 caught this.
+_DASH2_AVAILABLE: bool = _DASH2_DIST.exists() and _DASH2_INDEX.exists()
 
 
 @app.get("/", response_class=HTMLResponse)
 def index() -> Any:
-    if _DASH2_INDEX.exists():
+    if _DASH2_AVAILABLE:
         return RedirectResponse(url="/dash2/", status_code=307)
     html_path = STATIC_DIR / "index.html"
     if not html_path.exists():
@@ -531,9 +540,10 @@ if STATIC_DIR.exists():
 # Wave-02 React build artefact, served under /dash2/* if present.
 # Mount is conditional so operators without Node installed (and CI
 # jobs that don't build the SPA) still get a fully-functional vanilla
-# console at the legacy URLs. ``_DASH2_DIST`` is defined above (next to
-# the ``/`` redirect handler that reads it).
-if _DASH2_DIST.exists():
+# console at the legacy URLs. ``_DASH2_AVAILABLE`` is the same module-load
+# boolean the ``/`` handler reads — keeping them on one snapshot prevents
+# the redirect-without-mount race documented above.
+if _DASH2_AVAILABLE:
     app.mount(
         "/dash2",
         StaticFiles(directory=str(_DASH2_DIST), html=True),

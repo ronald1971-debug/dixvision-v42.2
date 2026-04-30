@@ -31,7 +31,7 @@ def test_root_routes_to_live_dashboard(client):
     from receiving a hard 404 at the front door.
     """
     r = client.get("/", follow_redirects=False)
-    if ui_server._DASH2_INDEX.exists():
+    if ui_server._DASH2_AVAILABLE:
         assert r.status_code == 307, (
             "/ must redirect to /dash2/ when the React build is present"
         )
