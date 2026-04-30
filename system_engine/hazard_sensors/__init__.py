@@ -35,6 +35,10 @@ from system_engine.hazard_sensors.heartbeat_missed import (
 from system_engine.hazard_sensors.latency_spike import LatencySpikeSensor
 from system_engine.hazard_sensors.market_anomaly import MarketAnomalySensor
 from system_engine.hazard_sensors.memory_overflow import MemoryOverflowSensor
+from system_engine.hazard_sensors.news_shock import (
+    NEWS_SHOCK_VERSION,
+    NewsShockSensor,
+)
 from system_engine.hazard_sensors.order_flood import OrderFloodSensor
 from system_engine.hazard_sensors.risk_snapshot_stale import (
     RiskSnapshotStaleSensor,
@@ -48,6 +52,7 @@ from system_engine.hazard_sensors.system_anomaly import SystemAnomalySensor
 from system_engine.hazard_sensors.ws_timeout import WSTimeoutSensor
 
 __all__ = [
+    "NEWS_SHOCK_VERSION",
     "ClockDriftSensor",
     "ExchangeUnreachableSensor",
     "HazardSensor",
@@ -55,6 +60,7 @@ __all__ = [
     "LatencySpikeSensor",
     "MarketAnomalySensor",
     "MemoryOverflowSensor",
+    "NewsShockSensor",
     "OrderFloodSensor",
     "RiskSnapshotStaleSensor",
     "RuntimeBreakerOpenSensor",
