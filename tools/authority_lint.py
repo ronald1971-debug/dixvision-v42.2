@@ -1090,6 +1090,146 @@ def _check_b31(
 
 
 # ---------------------------------------------------------------------------
+# B30 — Unify-Intelligence-into-BeliefState
+# ---------------------------------------------------------------------------
+#
+# Reviewer #3 (audit v3, "three things that need honest scrutiny", item 2)
+# observed that the news pipeline ends at ingestion: the CoinDesk RSS
+# adapter ships rows into the system, but nothing folds them into
+# :class:`core.coherence.belief_state.BeliefState`. The Why Layer
+# (Wave-04 PR-5, INV-65) ends up referencing news that the signal
+# pipeline cannot actually use, because no intelligence-side code
+# converts external context into a belief delta before signals reach
+# the meta-controller.
+#
+# B30 enforces the architectural rule "every intelligence-side
+# SignalEvent producer either feeds the belief state, or is one of
+# a small number of canonical *leaf* producers whose output is itself
+# folded into the belief state downstream":
+#
+#   * If a module under ``intelligence_engine/**`` constructs a
+#     :class:`core.contracts.events.SignalEvent`, it must either
+#       (a) appear in :data:`B30_ALLOWED_LEAF_PRODUCERS`, OR
+#       (b) import the BeliefState contract
+#           (``BeliefState`` and/or ``derive_belief_state``) from
+#           ``core.coherence.belief_state``.
+#
+# The leaf-producer allowlist captures the *current* set of legitimate
+# raw signal sources. It is intentionally short and frozen:
+#
+#   * ``intelligence_engine.engine`` — Phase-E2 base engine shell,
+#     pumps raw signals onto the bus from registered plugins.
+#   * ``intelligence_engine.signal_pipeline`` — pipeline orchestration
+#     wrapper around the engine; observes/forwards signals.
+#   * ``intelligence_engine.strategy_runtime.conflict_resolver`` —
+#     the fan-in resolver. Intentionally pre-belief: it reduces a
+#     window of raw signals into a single canonical SignalEvent that
+#     the belief-state derivation then consumes.
+#   * ``intelligence_engine.plugins.microstructure.microstructure_v1``
+#     — raw microstructure leaf producer.
+#   * ``intelligence_engine.cognitive.approval_edge`` — operator-
+#     approval edge (Wave-03 PR-5). Cognitive proposals are *gated by
+#     an operator click*, not by the belief state; B26 and INV-72
+#     already constrain its construction surface.
+#
+# Adding a new entry to this allowlist requires explicit architectural
+# review and a recorded rationale in the PR description: the default
+# expectation for any new intelligence-side signal source (news, FRED,
+# BLS, sentiment, on-chain, multimodal, …) is that it folds through
+# :class:`BeliefState` before emitting a SignalEvent.
+
+B30_ALLOWED_LEAF_PRODUCERS: frozenset[str] = frozenset(
+    {
+        "intelligence_engine.engine",
+        "intelligence_engine.signal_pipeline",
+        "intelligence_engine.strategy_runtime.conflict_resolver",
+        "intelligence_engine.plugins.microstructure.microstructure_v1",
+        "intelligence_engine.cognitive.approval_edge",
+    }
+)
+
+B30_BELIEF_STATE_MODULE: str = "core.coherence.belief_state"
+B30_BELIEF_STATE_NAMES: frozenset[str] = frozenset(
+    {"BeliefState", "derive_belief_state"}
+)
+
+
+def _module_imports_belief_state(tree: ast.AST) -> bool:
+    """Return True iff *tree* imports the BeliefState contract.
+
+    Accepts either ``from core.coherence.belief_state import BeliefState``
+    (the canonical pattern) or any whole-module import that exposes the
+    same symbol — ``import core.coherence.belief_state as bs`` /
+    ``from core.coherence import belief_state``.
+    """
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            if module == B30_BELIEF_STATE_MODULE:
+                for alias in node.names:
+                    if alias.name in B30_BELIEF_STATE_NAMES:
+                        return True
+            if module == "core.coherence":
+                for alias in node.names:
+                    if alias.name == "belief_state":
+                        return True
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == B30_BELIEF_STATE_MODULE:
+                    return True
+    return False
+
+
+def _check_b30(
+    importer: str, file: Path, repo_root: Path, tree: ast.AST
+) -> list[Violation]:
+    """B30 — Unify-Intelligence-into-BeliefState (reviewer #3 v3 §2)."""
+
+    if _is_triad_constructor_test_exempt(file, repo_root):
+        return []
+    if not _starts_with_any(importer, ("intelligence_engine",)):
+        return []
+    if importer in B30_ALLOWED_LEAF_PRODUCERS:
+        return []
+    out: list[Violation] = []
+    has_belief_import: bool | None = None
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        name: str | None = None
+        if isinstance(func, ast.Name):
+            name = func.id
+        elif isinstance(func, ast.Attribute):
+            name = func.attr
+        if name != "SignalEvent":
+            continue
+        if has_belief_import is None:
+            has_belief_import = _module_imports_belief_state(tree)
+        if has_belief_import:
+            continue
+        out.append(
+            Violation(
+                "B30",
+                file,
+                node.lineno,
+                importer,
+                "SignalEvent(...)",
+                "Unify-Intelligence-into-BeliefState (reviewer #3 v3 §2):"
+                " modules under intelligence_engine.* that emit a"
+                " SignalEvent must consume BeliefState (import"
+                " core.coherence.belief_state.BeliefState and use it in"
+                " the producer) so that no new intelligence input —"
+                " news, macro, sentiment, multimodal — bypasses the"
+                " unified belief projection. Add the module to"
+                " B30_ALLOWED_LEAF_PRODUCERS only after explicit"
+                " architectural review.",
+            )
+        )
+    return out
+
+
+# ---------------------------------------------------------------------------
 # B23 — registry-driven AI providers (Dashboard-2026 wave-01)
 # ---------------------------------------------------------------------------
 
@@ -1285,6 +1425,8 @@ def lint_repo(repo_root: Path) -> list[Violation]:
         violations.extend(_check_b27(importer, path, repo_root, tree))
         violations.extend(_check_b28(importer, path, repo_root, tree))
         violations.extend(_check_b29(importer, path, repo_root, tree))
+        # B30 — Unify-Intelligence-into-BeliefState (reviewer #3 v3 §2).
+        violations.extend(_check_b30(importer, path, repo_root, tree))
         # B31 — mode-effect table is the single mode-conditional oracle.
         violations.extend(_check_b31(importer, path, repo_root, tree))
         # B23 — chat widget Python modules must be registry-driven.
