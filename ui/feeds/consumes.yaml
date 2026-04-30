@@ -21,3 +21,5 @@ inputs:
     required: false
   - source_id: SRC-NEWS-COINDESK-001
     required: false
+  - source_id: SRC-MACRO-FRED-001
+    required: false

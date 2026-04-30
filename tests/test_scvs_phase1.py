@@ -54,6 +54,13 @@ def test_canonical_registry_loads_clean() -> None:
     #     (read-only public RSS, no auth). Pump is in
     #     ``ui.feeds.coindesk_rss`` and emits
     #     ``core.contracts.news.NewsItem`` rows into the harness.
+    #   * SRC-MACRO-FRED-001 — Wave-04.5 PR-2 macro ingest path. Pump
+    #     is in ``ui.feeds.fred_http`` and emits
+    #     ``core.contracts.macro.MacroObservation`` rows into the
+    #     harness. ``auth: required`` — the API key is read from
+    #     ``os.environ['FRED_API_KEY']`` at pump construction; absent
+    #     keys keep the row visible in the registry but the pump is
+    #     simply not started, mirroring the AI-provider pattern.
     assert reg.enabled_ids == frozenset(
         {
             "SRC-MARKET-BINANCE-001",
@@ -64,6 +71,7 @@ def test_canonical_registry_loads_clean() -> None:
             "SRC-AI-DEVIN-001",
             "SRC-TRADER-TRADINGVIEW-001",
             "SRC-NEWS-COINDESK-001",
+            "SRC-MACRO-FRED-001",
         }
     )
 
