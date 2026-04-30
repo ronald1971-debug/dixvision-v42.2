@@ -1,0 +1,55 @@
+# Rust Revival Schedule
+#
+# Reviewer #3 (audit v3, item 1) flagged the dual-backend Python+Rust
+# state as a determinism hazard. The conservative resolution per the
+# user's directive ("delete crates -> revisit post-shadow, but make
+# sure the system gives a notification before the 30 days are up to
+# implement again") was to:
+#
+#   1. Delete the Rust crates and the Python `prefer_rust` seam in
+#      execution_engine.hot_path.fast_execute (this commit).
+#   2. Run for 30 days on the Python-only path.
+#   3. After 30 days, re-evaluate whether to revive the Rust port,
+#      this time with a documented bit-identical shadow-equivalence
+#      harness before any dual-backend code lands.
+#
+# tools/rust_revival_reminder.py reads this file and:
+#
+#   - day 0..=24:    silent
+#   - day 25..=29:   prints a CI warning ("Rust revival eligible in N
+#                    days -- review shadow-mode data")
+#   - day >= 30:     opens a GitHub issue (idempotent; will not reopen
+#                    if previously closed) with a checklist of what
+#                    must hold before any revival PR is reviewed.
+
+deletion_iso_date: "2026-04-21"   # day the Rust crates were deleted
+shadow_window_days: 30            # full no-Rust window before revival
+warning_window_days: 5            # CI warning starts this many days
+                                  # before the shadow window ends
+
+reminder_issue:
+  title: "[REMINDER] Rust revival eligible -- review shadow-mode results"
+  labels: ["rust-revival", "reminder", "wave-04.6"]
+  body: |
+    Reviewer #3 (audit v3, item 1) required the dual-backend Python+Rust
+    state to be resolved. We chose deletion + 30-day shadow window over
+    the alternative (immediate bit-identical harness) for delivery speed
+    reasons.
+
+    The shadow window has now elapsed. **Before any Rust revival PR is
+    reviewed** the following must hold:
+
+    - [ ] At least one full week of LIVE-or-CANARY trading on the
+          Python-only hot path with no replay or invariant breaches.
+    - [ ] A documented bit-identical shadow-equivalence harness
+          (`tests/test_fast_execute_parity.py` or successor) covering
+          every branch under both backends.
+    - [ ] A latency benchmark proving the Rust port crosses a
+          measurable hot-path bottleneck (p50 < Python p50, p99 < 5 ms).
+    - [ ] A deletion plan: the Python path is removed in the **same**
+          PR that adds the Rust port (no dual-backend state ever again).
+    - [ ] An update to this schedule (or its successor) so the next
+          window is enforced.
+
+    If any of the above does not hold, this issue should be closed
+    `won't fix` and the reminder re-armed for another shadow window.
