@@ -164,7 +164,7 @@ class ExecutionEngine(RuntimeEngine):
                     order_id="",
                     meta={
                         "reason": "mode_effect_suppressed",
-                        "mode": current_mode.value,
+                        "mode": current_mode.name,
                     },
                     produced_by_engine="execution_engine",
                 ),

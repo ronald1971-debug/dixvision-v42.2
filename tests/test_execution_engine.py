@@ -310,7 +310,7 @@ def test_execute_suppresses_dispatch_when_mode_effect_blocks(mode):
     assert ev.symbol == "X"
     assert ev.side is Side.BUY
     assert ev.produced_by_engine == "execution_engine"
-    assert ev.meta == {"reason": "mode_effect_suppressed", "mode": mode.value}
+    assert ev.meta == {"reason": "mode_effect_suppressed", "mode": mode.name}
 
 
 @pytest.mark.parametrize(
