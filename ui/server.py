@@ -106,6 +106,10 @@ from intelligence_engine.plugins import MicrostructureV1
 from intelligence_engine.strategy_runtime.state_machine import (
     StrategyStateMachine,
 )
+from intelligence_engine.trader_modeling import (
+    make_trader_observation,
+    observation_as_system_event,
+)
 from learning_engine.engine import LearningEngine
 from state.ledger.reader import LedgerReader
 from system_engine.credentials import (
@@ -136,6 +140,10 @@ from ui.cognitive_chat_runtime import (
 )
 from ui.dashboard_routes import build_dashboard_router
 from ui.feeds.runner import FeedRunner
+from ui.feeds.tradingview_ideas import (
+    TRADINGVIEW_SOURCE_FEED,
+    parse_tradingview_idea_payload,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -400,6 +408,28 @@ class SignalIn(BaseModel):
     confidence: float = Field(..., ge=0.0, le=1.0)
     ts_ns: int | None = None
     qty: float | None = None
+
+
+class TradingViewObservationIn(BaseModel):
+    """Envelope for ``POST /api/feeds/tradingview/observation`` (Wave-04 PR-2).
+
+    Schema mirrors :data:`ui.feeds.tradingview_ideas` module docstring.
+    The endpoint is the operator-controlled ingest point for trader
+    observations sourced from TradingView (webhook relay, alert push,
+    or manual paste). The parser-only adapter pattern lets *any*
+    upstream collector feed the same pipeline.
+    """
+
+    payload: dict[str, Any] = Field(
+        ..., description="Decoded TradingView envelope (parser input)."
+    )
+    ts_ns: int | None = Field(
+        default=None,
+        description=(
+            "Optional caller-supplied monotonic timestamp. Defaults to "
+            "the harness's monotonic counter (TimeAuthority surrogate)."
+        ),
+    )
 
 
 class BinanceFeedStartIn(BaseModel):
@@ -1174,6 +1204,55 @@ def post_binance_feed_stop() -> dict[str, Any]:
 def get_binance_feed_status() -> dict[str, Any]:
     """Return a telemetry snapshot of the Binance public WS pump."""
     return {"feed": _feed_status_dict("SRC-MARKET-BINANCE-001")}
+
+
+@app.post("/api/feeds/tradingview/observation")
+def post_tradingview_observation(body: TradingViewObservationIn) -> dict[str, Any]:
+    """Ingest one TradingView trader observation (SRC-TRADER-TRADINGVIEW-001).
+
+    Wave-04 PR-2 — operator-controlled trader-feed ingest. The body's
+    ``payload`` is fed to :func:`ui.feeds.tradingview_ideas.parse_tradingview_idea_payload`,
+    which never constructs a :class:`TraderObservation` directly (B29
+    forbids it). Construction happens inside
+    :func:`intelligence_engine.trader_modeling.aggregator.make_trader_observation`,
+    the only B29-allowed runtime location, and the resulting record is
+    projected into a :class:`SystemEvent` for the audit ledger via
+    :func:`intelligence_engine.trader_modeling.observation.observation_as_system_event`.
+
+    Returns ``{"accepted": False, "reason": "..."}`` (HTTP 200) for
+    malformed payloads so a webhook relay can keep streaming without
+    fragile error handling. Returns ``{"accepted": True, "event": ...}``
+    on success.
+    """
+    ts = body.ts_ns if body.ts_ns is not None else _next_ts()
+    parsed = parse_tradingview_idea_payload(
+        body.payload,
+        ts_ns=ts,
+        source_feed=TRADINGVIEW_SOURCE_FEED,
+    )
+    if parsed is None:
+        return {
+            "accepted": False,
+            "reason": "payload rejected by tradingview parser",
+            "source_feed": TRADINGVIEW_SOURCE_FEED,
+        }
+    model, observation_kind, meta = parsed
+    observation = make_trader_observation(
+        ts_ns=ts,
+        model=model,
+        observation_kind=observation_kind,
+        meta=meta,
+    )
+    event = observation_as_system_event(observation)
+    with STATE.lock:
+        STATE.record("feed.tradingview", event)
+    return {
+        "accepted": True,
+        "source_feed": TRADINGVIEW_SOURCE_FEED,
+        "trader_id": observation.trader_id,
+        "observation_kind": observation.observation_kind,
+        "ts_ns": observation.ts_ns,
+    }
 
 
 # ---------------------------------------------------------------------------

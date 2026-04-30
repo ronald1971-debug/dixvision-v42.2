@@ -34,7 +34,7 @@ def test_canonical_registry_loads_clean() -> None:
     assert len(reg.sources) > 0
     # IDs are unique by construction (loader rejects duplicates).
     assert len(reg.ids) == len(reg.sources)
-    # Enabled rows in the registry as of Wave-03 PR-6:
+    # Enabled rows in the registry as of Wave-04 PR-2:
     #   * SRC-MARKET-BINANCE-001 — read-only public WS pump (no creds).
     #   * SRC-AI-{OPENAI,GEMINI,GROK,DEEPSEEK,DEVIN}-001 — flipped on
     #     by Wave-03 PR-6 so the registry-driven HTTP chat dispatcher
@@ -45,6 +45,11 @@ def test_canonical_registry_loads_clean() -> None:
     #     adapter falls through to the next eligible provider — i.e.
     #     ``enabled: true`` does not commit the operator to keying
     #     every row at startup.
+    #   * SRC-TRADER-TRADINGVIEW-001 — Wave-04 PR-2 trader-feed ingest
+    #     path (read-only structured envelope). Parser is in
+    #     ``ui.feeds.tradingview_ideas``; aggregator (sole B29-allowed
+    #     producer of ``TraderObservation``) is in
+    #     ``intelligence_engine.trader_modeling``.
     assert reg.enabled_ids == frozenset(
         {
             "SRC-MARKET-BINANCE-001",
@@ -53,6 +58,7 @@ def test_canonical_registry_loads_clean() -> None:
             "SRC-AI-GROK-001",
             "SRC-AI-DEEPSEEK-001",
             "SRC-AI-DEVIN-001",
+            "SRC-TRADER-TRADINGVIEW-001",
         }
     )
 

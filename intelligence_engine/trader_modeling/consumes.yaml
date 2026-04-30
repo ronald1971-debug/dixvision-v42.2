@@ -1,0 +1,24 @@
+# SCVS-01 / SCVS-02 consumption declaration for the trader-modeling
+# subsystem.
+#
+# Refs:
+#   docs/manifest_v3.5_delta.md §SCVS (INV-57)
+#   system_engine/scvs/consumption_tracker.py
+#   registry/data_source_registry.yaml
+#
+# Wave-04 PR-2 — first trader-feed adapter (TradingView read-only).
+# The aggregator is the only B29-allowed runtime construction point
+# for ``TraderObservation``; it consumes payloads parsed by
+# ``ui.feeds.tradingview_ideas`` and emits ``SystemEvent
+# (sub_kind=TRADER_OBSERVED)`` rows for the audit ledger.
+#
+# ``required: false`` — the harness still works without the feed
+# running (the trader-modeling factory works on any payload that
+# reaches it; the TradingView adapter is one of many adapters that
+# can feed it). The feed becomes opt-in via
+# ``POST /api/feeds/tradingview/observation``.
+
+module: intelligence_engine.trader_modeling
+inputs:
+  - source_id: SRC-TRADER-TRADINGVIEW-001
+    required: false

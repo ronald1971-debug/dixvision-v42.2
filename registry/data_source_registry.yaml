@@ -24,7 +24,7 @@
 #   name:      human-readable name                 (string, required)
 #   category:  market | news | social | onchain    (string, required)
 #              | macro | regulatory | dev | alt
-#              | ai | synthetic
+#              | trader | ai | synthetic
 #   provider:  short provider id                   (string, required)
 #   endpoint:  canonical URL / wss / API root       (string, required)
 #   schema:    fully-qualified contract reference  (string, required)
@@ -219,6 +219,34 @@ sources:
     auth: none
     enabled: false
     critical: false
+
+  # -----------------------------------------------------------------
+  # Trader feeds (Trader-Intelligence layer — Wave-04 PR-2)
+  #
+  # Producers parse adapter-specific payloads into
+  # ``core.contracts.trader_intelligence.TraderModel`` data and hand
+  # them to ``intelligence_engine.trader_modeling.aggregator``
+  # (the only B29-allowed runtime constructor of ``TraderObservation``).
+  # The aggregator wraps each one as a ``SystemEvent
+  # (sub_kind=TRADER_OBSERVED)`` row on the existing 4-event bus.
+  # -----------------------------------------------------------------
+  - id: SRC-TRADER-TRADINGVIEW-001
+    name: "TradingView ideas / alerts (read-only envelope ingest)"
+    category: trader
+    provider: tradingview
+    endpoint: "https://www.tradingview.com"
+    schema: "core.contracts.trader_intelligence.TraderModel"
+    auth: none
+    enabled: true
+    critical: false
+    notes: >-
+      Read-only structured-envelope ingest path consumed by
+      ui.feeds.tradingview_ideas (parser) and
+      intelligence_engine.trader_modeling (aggregator). No live
+      WebSocket / scrape — envelopes are pushed via
+      ``POST /api/feeds/tradingview/observation`` from a webhook
+      relay or operator. Per Wave-04 PR-2 architectural plan: the
+      pipeline is the load-bearing artefact, not the specific source.
 
   # -----------------------------------------------------------------
   # AI providers (Cognitive Router Layer — registry-driven)
