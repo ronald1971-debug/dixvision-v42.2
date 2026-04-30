@@ -51,6 +51,14 @@ from intelligence_engine.strategy_library.components import (
     StopStyle,
     Timeframe,
 )
+from intelligence_engine.strategy_library.composition import (
+    BELIEF_THRESHOLD,
+    ComposedStrategy,
+    IncompatibilityFinding,
+    IncompatibilityReason,
+    IncompatibleCompositionError,
+    compose,
+)
 from intelligence_engine.strategy_library.decomposition import (
     SIGNATURE_HASH_LEN,
     StrategyDecomposition,
@@ -66,16 +74,21 @@ from intelligence_engine.strategy_library.registry import (
 )
 
 __all__ = [
+    "BELIEF_THRESHOLD",
     "CANONICAL_DECOMPOSITIONS",
     "CANONICAL_ENTRY_LOGIC",
     "CANONICAL_EXIT_LOGIC",
     "CANONICAL_MARKET_CONDITIONS",
     "CANONICAL_RISK_MODELS",
     "CANONICAL_TIMEFRAMES",
+    "ComposedStrategy",
     "EntryLogic",
     "EntryStyle",
     "ExitLogic",
     "ExitStyle",
+    "IncompatibilityFinding",
+    "IncompatibilityReason",
+    "IncompatibleCompositionError",
     "MarketCondition",
     "MarketRegime",
     "RiskModel",
@@ -84,5 +97,6 @@ __all__ = [
     "StopStyle",
     "StrategyDecomposition",
     "Timeframe",
+    "compose",
     "signature_for",
 ]
