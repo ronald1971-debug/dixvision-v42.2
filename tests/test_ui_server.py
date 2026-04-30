@@ -24,10 +24,21 @@ def client():
     return TestClient(ui_server.app)
 
 
-def test_root_serves_html(client):
-    r = client.get("/")
-    assert r.status_code == 200
-    assert "DIX VISION" in r.text
+def test_root_routes_to_live_dashboard(client):
+    """``GET /`` must take operators to the live SPA when the React build
+    is present (Wave-Live PR-4) and otherwise fall back to the Phase E1
+    stub. The fallback path keeps CI jobs and Node-less environments
+    from receiving a hard 404 at the front door.
+    """
+    r = client.get("/", follow_redirects=False)
+    if ui_server._DASH2_AVAILABLE:
+        assert r.status_code == 307, (
+            "/ must redirect to /dash2/ when the React build is present"
+        )
+        assert r.headers["location"] == "/dash2/"
+    else:
+        assert r.status_code == 200
+        assert "DIX VISION" in r.text
 
 
 def test_health_returns_all_six_engines(client):
