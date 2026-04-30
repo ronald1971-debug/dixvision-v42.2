@@ -17,18 +17,18 @@ peer engines' ``check_self``-style read APIs. The dashboard may not
 import private modules of any engine.
 """
 
-from dashboard.control_plane.decision_trace import DecisionTracePanel
-from dashboard.control_plane.engine_status_grid import (
+from dashboard_backend.control_plane.decision_trace import DecisionTracePanel
+from dashboard_backend.control_plane.engine_status_grid import (
     EngineHealthRow,
     EngineStatusGrid,
 )
-from dashboard.control_plane.memecoin_control_panel import (
+from dashboard_backend.control_plane.memecoin_control_panel import (
     MemecoinControlPanel,
     MemecoinSubsystemStatus,
 )
-from dashboard.control_plane.mode_control_bar import ModeControlBar
-from dashboard.control_plane.router import ControlPlaneRouter, RouteOutcome
-from dashboard.control_plane.strategy_lifecycle_panel import (
+from dashboard_backend.control_plane.mode_control_bar import ModeControlBar
+from dashboard_backend.control_plane.router import ControlPlaneRouter, RouteOutcome
+from dashboard_backend.control_plane.strategy_lifecycle_panel import (
     StrategyLifecyclePanel,
     StrategyRow,
 )

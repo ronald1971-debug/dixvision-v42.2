@@ -43,12 +43,12 @@ from core.contracts.governance import (
     OperatorAction,
     OperatorRequest,
 )
-from dashboard.control_plane.decision_trace import DecisionTracePanel
-from dashboard.control_plane.engine_status_grid import EngineStatusGrid
-from dashboard.control_plane.memecoin_control_panel import MemecoinControlPanel
-from dashboard.control_plane.mode_control_bar import ModeControlBar
-from dashboard.control_plane.router import ControlPlaneRouter
-from dashboard.control_plane.strategy_lifecycle_panel import (
+from dashboard_backend.control_plane.decision_trace import DecisionTracePanel
+from dashboard_backend.control_plane.engine_status_grid import EngineStatusGrid
+from dashboard_backend.control_plane.memecoin_control_panel import MemecoinControlPanel
+from dashboard_backend.control_plane.mode_control_bar import ModeControlBar
+from dashboard_backend.control_plane.router import ControlPlaneRouter
+from dashboard_backend.control_plane.strategy_lifecycle_panel import (
     StrategyLifecyclePanel,
 )
 

@@ -29,7 +29,7 @@ from core.contracts.governance import (
     OperatorAction,
     OperatorRequest,
 )
-from dashboard.control_plane.router import ControlPlaneRouter, RouteOutcome
+from dashboard_backend.control_plane.router import ControlPlaneRouter, RouteOutcome
 
 # The memecoin subsystem is treated by Governance as a single plugin
 # group; per-action ``target_status`` matches the bridge's lifecycle

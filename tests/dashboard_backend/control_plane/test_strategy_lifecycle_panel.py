@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dashboard.control_plane.strategy_lifecycle_panel import (
+from dashboard_backend.control_plane.strategy_lifecycle_panel import (
     LIFECYCLE_COLUMNS,
     StrategyLifecyclePanel,
 )
