@@ -103,9 +103,15 @@ def _parse_pub_date(raw: str | None) -> int | None:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=UTC)
     try:
-        return int(dt.astimezone(UTC).timestamp() * 1_000_000_000)
+        ts_ns = int(dt.astimezone(UTC).timestamp() * 1_000_000_000)
     except (OverflowError, ValueError):
         return None
+    # NewsItem.published_ts_ns must be positive or None (per its
+    # contract). Return None for the Unix epoch and any pre-1970
+    # timestamps so we keep the item's title / guid / url instead of
+    # letting NewsItem.__post_init__ raise and the outer except
+    # ValueError discard the whole headline.
+    return ts_ns if ts_ns > 0 else None
 
 
 def _local_name(tag: str) -> str:

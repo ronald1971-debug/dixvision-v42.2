@@ -163,6 +163,48 @@ def test_parse_rss_feed_with_unparseable_pubdate_returns_none() -> None:
     assert items[0].published_ts_ns is None
 
 
+def test_parse_rss_feed_with_unix_epoch_pubdate_keeps_item() -> None:
+    """A pubDate of exactly the Unix epoch must NOT discard the headline.
+
+    Locks in the fix for the cascade bug introduced when
+    ``NewsItem.published_ts_ns`` was tightened from ``< 0`` to ``<= 0``:
+    ``_parse_pub_date`` was returning ``0`` for the epoch and the
+    constructor then raised, getting swallowed by the parser's outer
+    ``except ValueError`` and dropping the whole item. Behaviour now:
+    keep the item, set ``published_ts_ns=None``.
+    """
+    payload = b"""<?xml version="1.0"?>
+<rss><channel>
+  <item>
+    <title>epoch dated</title>
+    <link>https://example.invalid/epoch</link>
+    <pubDate>Thu, 01 Jan 1970 00:00:00 +0000</pubDate>
+  </item>
+</channel></rss>
+"""
+    items = parse_rss_feed(payload, ts_ns=1)
+    assert len(items) == 1
+    assert items[0].title == "epoch dated"
+    assert items[0].published_ts_ns is None
+
+
+def test_parse_rss_feed_with_pre_1970_pubdate_keeps_item() -> None:
+    """A pre-1970 pubDate (negative ns) must NOT discard the headline."""
+    payload = b"""<?xml version="1.0"?>
+<rss><channel>
+  <item>
+    <title>ancient news</title>
+    <link>https://example.invalid/ancient</link>
+    <pubDate>Sun, 01 Jan 1950 00:00:00 +0000</pubDate>
+  </item>
+</channel></rss>
+"""
+    items = parse_rss_feed(payload, ts_ns=1)
+    assert len(items) == 1
+    assert items[0].title == "ancient news"
+    assert items[0].published_ts_ns is None
+
+
 # ---------------------------------------------------------------------------
 # NewsItem validation
 # ---------------------------------------------------------------------------
