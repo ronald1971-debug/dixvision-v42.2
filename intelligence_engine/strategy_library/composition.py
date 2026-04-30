@@ -243,6 +243,7 @@ def _check_unknown_discriminators(
     entry: EntryLogic,
     exit_: ExitLogic,
     risk: RiskModel,
+    market_condition: MarketCondition,
 ) -> tuple[IncompatibilityFinding, ...]:
     findings: list[IncompatibilityFinding] = []
     if entry.style is EntryStyle.UNKNOWN:
@@ -271,6 +272,13 @@ def _check_unknown_discriminators(
             IncompatibilityFinding(
                 reason=IncompatibilityReason.UNKNOWN_DISCRIMINATOR,
                 detail="risk.stop is UNKNOWN; refusing to compose",
+            )
+        )
+    if market_condition.regime is MarketRegime.UNKNOWN:
+        findings.append(
+            IncompatibilityFinding(
+                reason=IncompatibilityReason.UNKNOWN_DISCRIMINATOR,
+                detail="market_condition.regime is UNKNOWN; refusing to compose",
             )
         )
     return tuple(findings)
@@ -403,7 +411,9 @@ def compose(
 
     findings: list[IncompatibilityFinding] = []
 
-    findings.extend(_check_unknown_discriminators(entry, exit_, risk))
+    findings.extend(
+        _check_unknown_discriminators(entry, exit_, risk, market_condition)
+    )
     if philosophy is not None:
         findings.extend(_check_philosophy(philosophy, entry, exit_, risk))
         findings.extend(_check_horizon(philosophy, timeframe))

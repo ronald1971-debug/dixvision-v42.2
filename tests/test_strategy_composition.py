@@ -568,6 +568,23 @@ def test_unknown_sizing_style_rejected() -> None:
     )
 
 
+def test_unknown_market_regime_rejected() -> None:
+    with pytest.raises(IncompatibleCompositionError) as exc:
+        compose(
+            composition_id="c",
+            decomposition_id="d",
+            entry=_entry(),
+            exit_=_exit(),
+            risk=_risk(),
+            timeframe=_timeframe(),
+            market_condition=_market(MarketRegime.UNKNOWN),
+        )
+    assert any(
+        f.reason is IncompatibilityReason.UNKNOWN_DISCRIMINATOR
+        for f in exc.value.findings
+    )
+
+
 def test_unknown_stop_style_rejected() -> None:
     with pytest.raises(IncompatibleCompositionError) as exc:
         compose(
