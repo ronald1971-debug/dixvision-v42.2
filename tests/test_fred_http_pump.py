@@ -231,6 +231,45 @@ def test_pump_increments_errors_and_recovers_after_failure() -> None:
     assert status.observations_received >= 1
 
 
+def test_pump_errors_counter_not_double_incremented_when_all_fail() -> None:
+    """Regression: single-series pump with one fetch failure must count
+    exactly one error, not two. Earlier versions double-counted because
+    ``run`` and ``_poll_once`` both incremented on the same failure
+    (Devin Review BUG_0001 on PR #108).
+    """
+
+    async def _fetch(url: str) -> bytes:
+        raise RuntimeError("always boom")
+
+    async def _scenario() -> MacroFeedStatus:
+        stop = asyncio.Event()
+        pump = FredHTTPPump(
+            sink=lambda obs: None,
+            api_key="k",
+            series=[FredSeriesSpec("DGS10")],
+            clock_ns=_make_clock(),
+            fetch=_fetch,
+            poll_interval_s=0.001,
+            reconnect_delay_s=0.001,
+        )
+
+        async def _stopper() -> None:
+            for _ in range(200):
+                if pump.status().polls >= 1:
+                    break
+                await asyncio.sleep(0.001)
+            stop.set()
+
+        await asyncio.gather(pump.run(stop), _stopper())
+        return pump.status()
+
+    status = asyncio.run(_scenario())
+    # Exactly one error per failed series per cycle, not two — the bug
+    # was that the outer ``run`` loop also incremented on the re-raised
+    # exception that ``_poll_once`` had already counted internally.
+    assert status.errors == status.polls
+
+
 def test_pump_per_series_failure_does_not_reraise_when_other_succeeds() -> None:
     received: list[MacroObservation] = []
 

@@ -436,7 +436,10 @@ class FredHTTPPump:
                 try:
                     await self._poll_once()
                 except Exception:  # noqa: BLE001 — defensive boundary
-                    self._errors += 1
+                    # NB: ``self._errors`` is owned by ``_poll_once`` —
+                    # every per-series fetch failure has already been
+                    # counted there, so we do not double-count here.
+                    # ``run`` only owns the backoff control flow.
                     LOG.exception(
                         "fred_http: poll cycle failed, backing off %.1fs",
                         backoff,
