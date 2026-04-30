@@ -38,11 +38,46 @@ from core.contracts.events import (
 from core.contracts.execution_intent import ExecutionIntent
 from core.contracts.governance import SystemMode
 from core.contracts.market import MarketTick
-from core.contracts.mode_effects import effect_for
+from core.contracts.mode_effects import clamp_qty_for_mode, effect_for
 from execution_engine.adapters import BrokerAdapter, PaperBroker
 from execution_engine.execution_gate import AuthorityGuard
 
 __all__ = ["ExecutionEngine", "LegacyExecutionPathRemovedError"]
+
+
+def _apply_mode_clamp(
+    ev: ExecutionEvent, mode: SystemMode
+) -> ExecutionEvent:
+    """Clamp a fill event's ``qty`` by the active mode's ``size_cap_pct``.
+
+    Wave-04.6 PR-C — CANARY = 1%, LIVE/AUTO = uncapped, the rest pass
+    through. Returns the input unchanged when no clamp applies; when
+    a clamp fires, returns a new :class:`ExecutionEvent` with reduced
+    ``qty`` and a CLAMP_AUDIT trail in ``meta`` (INV-15).
+    """
+    if ev.status is not ExecutionStatus.FILLED or ev.qty <= 0.0:
+        return ev
+    clamped_qty, was_clamped = clamp_qty_for_mode(ev.qty, mode)
+    if not was_clamped:
+        return ev
+    new_meta = dict(ev.meta)
+    new_meta["clamped_to_mode_cap"] = "1"
+    new_meta["mode"] = mode.name
+    new_meta["original_qty"] = f"{ev.qty:.10f}"
+    cap_pct = effect_for(mode).size_cap_pct
+    new_meta["size_cap_pct"] = "" if cap_pct is None else f"{cap_pct:.6f}"
+    return ExecutionEvent(
+        ts_ns=ev.ts_ns,
+        symbol=ev.symbol,
+        side=ev.side,
+        qty=clamped_qty,
+        price=ev.price,
+        status=ev.status,
+        venue=ev.venue,
+        order_id=ev.order_id,
+        meta=new_meta,
+        produced_by_engine=ev.produced_by_engine,
+    )
 
 
 class LegacyExecutionPathRemovedError(RuntimeError):
@@ -169,7 +204,12 @@ class ExecutionEngine(RuntimeEngine):
                     produced_by_engine="execution_engine",
                 ),
             )
-        return self._execute_signal(intent.signal)
+        events = self._execute_signal(intent.signal)
+        if current_mode is None:
+            return events
+        return tuple(
+            _apply_mode_clamp(ev, current_mode) for ev in events
+        )
 
     # ------------------------------------------------------------------
     # HARDEN-05 — the legacy ``process(SignalEvent)`` path is gone. The

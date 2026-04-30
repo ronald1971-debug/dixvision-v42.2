@@ -232,12 +232,56 @@ def effect_for(mode: SystemMode) -> ModeEffect:
         raise ValueError(f"no ModeEffect for mode {mode!r}") from exc
 
 
+# ---------------------------------------------------------------------------
+# Wave-04.6 PR-C — CANARY size cap
+# ---------------------------------------------------------------------------
+
+
+def clamp_qty_for_mode(
+    qty: float, mode: SystemMode
+) -> tuple[float, bool]:
+    """Clamp a candidate fill quantity by the mode-effect ``size_cap_pct``.
+
+    Pure function — no IO, no state, deterministic across replays
+    (INV-15 / TEST-01).
+
+    Semantics of :attr:`ModeEffect.size_cap_pct`:
+
+    * ``None`` — uncapped (LIVE, AUTO).
+    * ``0.0`` — non-applicable / passthrough. Modes whose dispatch is
+      blocked elsewhere (SAFE, SHADOW, LOCKED) or whose venue is not
+      a real venue (PAPER) do not need a positive cap; treating
+      ``0.0`` as "no cap" preserves PAPER fills exactly.
+    * ``> 0.0`` — interpreted as a *percent* of the candidate ``qty``.
+      CANARY's ``1.0`` therefore clamps to ``qty * 0.01``.
+
+    Args:
+        qty: Candidate fill quantity (must be ``>= 0``).
+        mode: Active :class:`SystemMode`.
+
+    Returns:
+        A ``(clamped_qty, was_clamped)`` tuple. ``was_clamped`` is
+        ``True`` only when the cap actually reduced the quantity.
+    """
+
+    if qty < 0.0:
+        raise ValueError("qty must be >= 0")
+    cap_pct = effect_for(mode).size_cap_pct
+    if cap_pct is None or cap_pct <= 0.0:
+        return qty, False
+    max_qty = qty * (cap_pct / 100.0)
+    if qty <= max_qty:
+        return qty, False
+    return max_qty, True
+
+
 __all__ = [
     "MODE_EFFECTS",
     "MODE_EFFECTS_HASH_KEY",
     "MODE_EFFECTS_INSTALLED_KIND",
     "ModeEffect",
     "OversightKind",
+    "clamp_qty_for_mode",
     "effect_for",
     "mode_effect_table_hash",
 ]

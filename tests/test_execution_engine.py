@@ -377,3 +377,137 @@ def test_execute_runs_authority_guard_before_mode_check():
 
     with pytest.raises(UnauthorizedActorError):
         engine.execute(intent, caller="not_execution_engine", current_mode=SystemMode.SHADOW)
+
+
+# ---------------------------------------------------------------------------
+# Wave-04.6 PR-C — CANARY size cap (1% notional clamp)
+# ---------------------------------------------------------------------------
+
+
+def test_canary_clamps_qty_to_one_percent():
+    """CANARY caps the executed quantity at 1% of the broker's chosen qty."""
+    engine = ExecutionEngine()
+    engine.on_market(
+        MarketTick(ts_ns=500, symbol="X", bid=99.5, ask=100.5, last=100.0)
+    )
+    sig = SignalEvent(ts_ns=500, symbol="X", side=Side.BUY, confidence=0.7)
+    intent = _intent_for(sig)
+
+    out = engine.execute(intent, current_mode=SystemMode.CANARY)
+
+    assert len(out) == 1
+    ev = out[0]
+    assert ev.status is ExecutionStatus.FILLED
+    # PaperBroker default qty is 1.0 → CANARY clamps to 0.01.
+    assert ev.qty == pytest.approx(0.01)
+    assert ev.meta.get("clamped_to_mode_cap") == "1"
+    assert ev.meta.get("mode") == "CANARY"
+    assert ev.meta.get("original_qty") == "1.0000000000"
+    assert ev.meta.get("size_cap_pct") == "1.000000"
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [SystemMode.LIVE, SystemMode.AUTO],
+)
+def test_live_and_auto_modes_uncapped(mode):
+    """LIVE and AUTO have ``size_cap_pct=None``; fills pass through unchanged."""
+    engine = ExecutionEngine()
+    engine.on_market(
+        MarketTick(ts_ns=501, symbol="X", bid=99.5, ask=100.5, last=100.0)
+    )
+    sig = SignalEvent(ts_ns=501, symbol="X", side=Side.BUY, confidence=0.7)
+    intent = _intent_for(sig)
+
+    out = engine.execute(intent, current_mode=mode)
+
+    assert len(out) == 1
+    ev = out[0]
+    assert ev.status is ExecutionStatus.FILLED
+    assert ev.qty == pytest.approx(1.0)
+    assert "clamped_to_mode_cap" not in ev.meta
+
+
+def test_paper_mode_passthrough_when_size_cap_is_zero():
+    """PAPER's ``size_cap_pct=0.0`` is treated as 'no cap' (passthrough)."""
+    engine = ExecutionEngine()
+    engine.on_market(
+        MarketTick(ts_ns=502, symbol="X", bid=99.5, ask=100.5, last=100.0)
+    )
+    sig = SignalEvent(ts_ns=502, symbol="X", side=Side.BUY, confidence=0.7)
+    intent = _intent_for(sig)
+
+    out = engine.execute(intent, current_mode=SystemMode.PAPER)
+
+    assert len(out) == 1
+    ev = out[0]
+    assert ev.status is ExecutionStatus.FILLED
+    assert ev.qty == pytest.approx(1.0)
+    assert "clamped_to_mode_cap" not in ev.meta
+
+
+def test_canary_clamp_preserves_price_and_order_id():
+    """CLAMP_AUDIT does not alter the fill price or broker order id."""
+    engine = ExecutionEngine()
+    engine.on_market(
+        MarketTick(ts_ns=503, symbol="X", bid=99.5, ask=100.5, last=100.0)
+    )
+    sig = SignalEvent(ts_ns=503, symbol="X", side=Side.BUY, confidence=0.7)
+    intent = _intent_for(sig)
+
+    out = engine.execute(intent, current_mode=SystemMode.CANARY)
+    ev = out[0]
+
+    assert ev.price == pytest.approx(100.0)
+    assert ev.order_id.startswith("PAPER-")
+    assert ev.symbol == "X"
+    assert ev.side is Side.BUY
+
+
+def test_canary_clamp_skipped_when_no_mark_for_symbol():
+    """A FAILED fill (no mark) is not a FILLED event so the clamp is a no-op."""
+    engine = ExecutionEngine()
+    sig = SignalEvent(ts_ns=504, symbol="UNKNOWN", side=Side.BUY, confidence=0.7)
+    intent = _intent_for(sig)
+
+    out = engine.execute(intent, current_mode=SystemMode.CANARY)
+    ev = out[0]
+
+    assert ev.status is ExecutionStatus.FAILED
+    assert "clamped_to_mode_cap" not in ev.meta
+
+
+def test_clamp_qty_for_mode_pure_helper():
+    """Direct unit test on the pure helper — semantics are mode-table-driven."""
+    from core.contracts.mode_effects import clamp_qty_for_mode
+
+    # Uncapped modes
+    assert clamp_qty_for_mode(1.0, SystemMode.LIVE) == (1.0, False)
+    assert clamp_qty_for_mode(5.0, SystemMode.AUTO) == (5.0, False)
+
+    # Zero / non-applicable modes (treated as no cap)
+    assert clamp_qty_for_mode(2.0, SystemMode.PAPER) == (2.0, False)
+    assert clamp_qty_for_mode(2.0, SystemMode.SHADOW) == (2.0, False)
+    assert clamp_qty_for_mode(2.0, SystemMode.SAFE) == (2.0, False)
+    assert clamp_qty_for_mode(2.0, SystemMode.LOCKED) == (2.0, False)
+
+    # CANARY = 1% — clamp fires for every positive qty
+    clamped, was = clamp_qty_for_mode(1.0, SystemMode.CANARY)
+    assert clamped == pytest.approx(0.01)
+    assert was is True
+
+    clamped, was = clamp_qty_for_mode(0.005, SystemMode.CANARY)
+    # 0.005 * 0.01 = 0.00005, clamp fires (0.005 > 0.00005)
+    assert clamped == pytest.approx(0.00005)
+    assert was is True
+
+    clamped, was = clamp_qty_for_mode(0.0, SystemMode.CANARY)
+    assert clamped == 0.0
+    assert was is False  # zero qty is its own ceiling
+
+
+def test_clamp_qty_for_mode_rejects_negative_qty():
+    from core.contracts.mode_effects import clamp_qty_for_mode
+
+    with pytest.raises(ValueError):
+        clamp_qty_for_mode(-1.0, SystemMode.CANARY)
