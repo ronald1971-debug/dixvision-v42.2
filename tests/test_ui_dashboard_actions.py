@@ -29,24 +29,26 @@ def client():
 # ---------------------------------------------------------------------------
 
 
-def test_operator_html_served(client):
-    r = client.get("/operator")
-    assert r.status_code == 200
-    body = r.text
-    # Must mention each of the five widget spec ids so we catch
-    # accidental section deletions.
-    for spec in ("DASH-02", "DASH-EG-01", "DASH-SLP-01", "DASH-04", "DASH-MCP-01"):
-        assert spec in body, f"operator.html missing {spec}"
-    assert "/api/dashboard/summary" not in body  # JS file is loaded separately
-    assert "/static/operator.js" in body
-    assert "/static/operator.css" in body
+def test_operator_redirects_to_dash2(client):
+    """Wave-Live PR-2 — ``/operator`` redirects to the React SPA.
+
+    The legacy vanilla operator dashboard (``ui/static/operator.html``
+    + ``operator.js`` + ``operator.css``) was retired in favour of
+    ``/dash2/#/operator``. The path is preserved as a 307 redirect so
+    cached links keep working.
+    """
+
+    r = client.get("/operator", follow_redirects=False)
+    assert r.status_code == 307
+    assert r.headers["location"] == "/dash2/#/operator"
 
 
-def test_static_assets_served(client):
-    js = client.get("/static/operator.js")
-    css = client.get("/static/operator.css")
-    assert js.status_code == 200 and "fetch" in js.text
-    assert css.status_code == 200 and "card" in css.text
+def test_legacy_static_assets_are_gone(client):
+    """The vanilla operator JS / CSS files were deleted in Wave-Live PR-2."""
+
+    for path in ("/static/operator.js", "/static/operator.css"):
+        r = client.get(path)
+        assert r.status_code == 404, f"{path} should be gone"
 
 
 # ---------------------------------------------------------------------------

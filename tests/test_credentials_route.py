@@ -24,11 +24,19 @@ def client():
     return TestClient(ui_server.app)
 
 
-def test_credentials_page_is_served(client) -> None:
-    r = client.get("/credentials")
-    assert r.status_code == 200
-    assert "Credentials" in r.text or "credentials" in r.text
-    assert "/api/credentials/status" in r.text or "credentials.js" in r.text
+def test_credentials_page_redirects_to_dash2(client) -> None:
+    """Wave-Live PR-2 — ``/credentials`` redirects to the React SPA.
+
+    The legacy ``ui/static/credentials.html`` was retired in favour of
+    the ``/dash2/#/credentials`` page, but external bookmarks and any
+    cached navigation tile still hit ``/credentials``. The route
+    survives as a 307 redirect so they land on the live page instead
+    of a 404.
+    """
+
+    r = client.get("/credentials", follow_redirects=False)
+    assert r.status_code == 307
+    assert r.headers["location"] == "/dash2/#/credentials"
 
 
 def test_credentials_status_envelope(client, monkeypatch) -> None:

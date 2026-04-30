@@ -1005,6 +1005,15 @@ def _check_b29(
 # byte-by-byte (case-insensitive substring); Python files matching
 # CHAT_WIDGET_PYTHON_PREFIXES are scanned via AST (string constants only)
 # so that hot-path docstrings explaining the rule itself don't trip it.
+#
+# Wave-Live PR-2 retired the actual files at these paths in favour of
+# the React SPA at ``/dash2/#/chat``. The allowlist is preserved on
+# purpose: ``_check_b23_static`` skips paths that don't exist, so the
+# rule is a no-op while the files are gone, but the moment anyone
+# re-adds a chat widget at one of these canonical locations the rule
+# starts scanning again. That's defence in depth — we don't want a
+# future contributor to drop ``chat_widget.js`` back into the repo and
+# silently bypass the registry-driven invariant.
 CHAT_WIDGET_STATIC_RELATIVES: tuple[tuple[str, ...], ...] = (
     ("ui", "static", "chat_widget.js"),
     ("ui", "static", "indira_chat.html"),
