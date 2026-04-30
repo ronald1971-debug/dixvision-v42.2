@@ -969,6 +969,19 @@ CHAT_WIDGET_PYTHON_PREFIXES: tuple[str, ...] = (
     "ui.cognitive.chat",
 )
 
+# Modules that are exempt from B23's Python-string scan because they
+# are *the* registry-to-backend translation point. Vendor names
+# necessarily appear here as dispatch keys (e.g. ``"openai"``,
+# ``"google"``, ``"cognition"``) — that is the file's whole job.
+# The exemption is module-exact (not prefix-based) so anything else
+# in ``intelligence_engine.cognitive.chat`` still has to stay
+# registry-driven.
+B23_PYTHON_EXEMPT_MODULES: frozenset[str] = frozenset(
+    {
+        "intelligence_engine.cognitive.chat.http_chat_transport",
+    }
+)
+
 # Provider tokens that are forbidden in chat widget code. Curated list
 # of known AI vendors / brand names as of 2026 — any string match
 # (case-insensitive) trips the rule. Adding a new token here is FINE;
@@ -1039,6 +1052,8 @@ def _check_b23_python(
     """B23 — scan chat widget Python modules' string literals."""
 
     if not _starts_with_any(importer, CHAT_WIDGET_PYTHON_PREFIXES):
+        return []
+    if importer in B23_PYTHON_EXEMPT_MODULES:
         return []
     out: list[Violation] = []
     for node in ast.walk(tree):

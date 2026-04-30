@@ -1,0 +1,29 @@
+# SCVS-01 / SCVS-02 consumption declaration for the cognitive chat
+# HTTP transports.
+#
+# Refs:
+#   docs/manifest_v3.5_delta.md §SCVS (INV-57)
+#   system_engine/scvs/consumption_tracker.py
+#   registry/data_source_registry.yaml
+#   intelligence_engine/cognitive/chat/http_chat_transport.py
+#
+# Every row below is consumed by ``http_chat_transport.py`` via the
+# ``RegistryDispatchChatTransport`` table. The transport reads each
+# row's API key from ``os.environ`` on every turn, so a row with a
+# missing key fails-fast with :class:`TransientProviderError` and the
+# adapter falls through to the next eligible provider — i.e. these
+# inputs are all ``required: false`` because the chat surface remains
+# functional even if only one provider is keyed.
+
+module: intelligence_engine.cognitive.chat
+inputs:
+  - source_id: SRC-AI-OPENAI-001
+    required: false
+  - source_id: SRC-AI-GEMINI-001
+    required: false
+  - source_id: SRC-AI-GROK-001
+    required: false
+  - source_id: SRC-AI-DEEPSEEK-001
+    required: false
+  - source_id: SRC-AI-DEVIN-001
+    required: false

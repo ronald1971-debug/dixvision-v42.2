@@ -98,6 +98,9 @@ from intelligence_engine.cognitive.approval_edge import (
     ApprovalEdge,
     ApprovalNotFoundError,
 )
+from intelligence_engine.cognitive.chat.http_chat_transport import (
+    build_default_dispatch_transport,
+)
 from intelligence_engine.engine import IntelligenceEngine
 from intelligence_engine.plugins import MicrostructureV1
 from intelligence_engine.strategy_runtime.state_machine import (
@@ -185,14 +188,24 @@ class _State:
             router=self.dashboard_router,
         )
 
-        # Wave-03 PR-4 — cognitive chat runtime. The default
-        # transport (`NotConfiguredTransport`) refuses every turn so
-        # a deployment with the feature flag on but no real provider
-        # transport returns a clean 502 instead of a stack trace.
-        # Tests inject fake transports via `set_chat_runtime`.
+        # Wave-03 PR-4 — cognitive chat runtime.
+        # Wave-03 PR-6 — the production process now wires the
+        # registry-driven HTTP dispatch transport (OpenAI / xAI /
+        # DeepSeek via the OpenAI-compat shape, Google Gemini via
+        # generateContent, and Cognition / Devin via the session
+        # API). Each backend reads its API key from ``os.environ``
+        # on every turn, so adding a key via ``/credentials`` after
+        # the runtime starts takes effect without a restart. A row
+        # whose key is missing fails with
+        # :class:`TransientProviderError`, which the chat model
+        # translates into a clean fall-through to the next eligible
+        # provider — matching the previous ``NotConfiguredTransport``
+        # contract for un-credentialed deployments. Tests inject
+        # fake transports via :func:`set_chat_runtime`.
         self.chat_runtime: CognitiveChatRuntime = build_cognitive_chat_runtime(
             registry=self.source_registry,
             ledger_writer=self.governance.ledger,
+            transport=build_default_dispatch_transport(),
         )
 
         # Wave-03 PR-5 — operator-approval edge. Binds the chat

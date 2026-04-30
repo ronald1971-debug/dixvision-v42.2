@@ -240,7 +240,7 @@ sources:
     endpoint: "https://api.openai.com/v1"
     schema: "sensory.cognitive.contracts.AIResponse"
     auth: required
-    enabled: false
+    enabled: true
     critical: false
     capabilities:
       - reasoning
@@ -252,10 +252,13 @@ sources:
     name: "Google Gemini"
     category: ai
     provider: google
-    endpoint: "https://generativelanguage.googleapis.com/v1"
+    # ``v1beta`` is required for ``generateContent`` with system
+    # prompts and ``responseMimeType``; ``v1`` rejects those fields.
+    # Must stay in sync with ``GoogleGeminiChatTransport.BASE_URL``.
+    endpoint: "https://generativelanguage.googleapis.com/v1beta"
     schema: "sensory.cognitive.contracts.AIResponse"
     auth: required
-    enabled: false
+    enabled: true
     critical: false
     capabilities:
       - reasoning
@@ -269,7 +272,7 @@ sources:
     endpoint: "https://api.x.ai/v1"
     schema: "sensory.cognitive.contracts.AIResponse"
     auth: required
-    enabled: false
+    enabled: true
     critical: false
     capabilities:
       - reasoning
@@ -282,7 +285,7 @@ sources:
     endpoint: "https://api.deepseek.com/v1"
     schema: "sensory.cognitive.contracts.AIResponse"
     auth: required
-    enabled: false
+    enabled: true
     critical: false
     capabilities:
       - reasoning
@@ -295,7 +298,7 @@ sources:
     endpoint: "https://api.devin.ai/v1"
     schema: "sensory.cognitive.contracts.AIResponse"
     auth: required
-    enabled: false
+    enabled: true
     critical: false
     capabilities:
       - code_gen
