@@ -22,7 +22,11 @@ set "VENV_PY=%VENV_DIR%\Scripts\python.exe"
 set "VENV_MARKER=%VENV_DIR%\.dixvision_installed"
 set "DASH2_DIR=%REPO_ROOT%\dashboard2026"
 set "DASH2_DIST=%DASH2_DIR%\dist\index.html"
-set "DASH_URL=http://127.0.0.1:8080/dash2/"
+REM DASH_URL stays at / on purpose: ui/server.py's GET / handler 307s
+REM to /dash2/ when the React build is present, and falls back to the
+REM Phase E1 stub when it is not. Pointing the launcher directly at
+REM /dash2/ would 404 in the npm-missing / build-failed branches above.
+set "DASH_URL=http://127.0.0.1:8080/"
 set "DASH_PORT=8080"
 set "LAUNCHER_LOG=%REPO_ROOT%\launcher.log"
 
