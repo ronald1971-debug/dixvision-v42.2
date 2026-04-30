@@ -166,22 +166,96 @@ def test_b28_allows_contract_module():
 
 
 # ---------------------------------------------------------------------------
-# Production code is clean — neither rule fires when the lint runs over
-# the repo as a whole. Regression guard so a future commit cannot
-# accidentally regress B27 / B28.
+# B29 — TraderObservation construction restriction (Wave-04 PR-1)
 # ---------------------------------------------------------------------------
 
 
-def test_b27_b28_clean_on_repo():
+def _run_b29(source: str, importer: str) -> list:
+    from tools.authority_lint import _check_b29  # type: ignore
+
+    repo_root = Path(__file__).resolve().parent.parent
+    file = repo_root / "learning_engine" / "_synthetic_b29_fixture.py"
+    tree = ast.parse(source)
+    return _check_b29(importer, file, repo_root, tree)
+
+
+def test_b29_blocks_learning_engine_constructing_trader_observation():
+    src = (
+        "from core.contracts.trader_intelligence import "
+        "TraderObservation, TraderModel\n"
+        "TraderObservation(ts_ns=1, trader_id='t', "
+        "observation_kind='PROFILE_UPDATE', "
+        "model=TraderModel(trader_id='t', source_feed='SRC-A'))\n"
+    )
+    violations = _run_b29(src, "learning_engine.trader_aggregator")
+    assert [v.rule for v in violations] == ["B29"]
+
+
+def test_b29_blocks_evolution_engine_constructing_trader_observation():
+    src = "TraderObservation(ts_ns=1, trader_id='t')\n"
+    violations = _run_b29(src, "evolution_engine.trader_compose")
+    assert any(v.rule == "B29" for v in violations)
+
+
+def test_b29_blocks_intelligence_engine_root_constructing_trader_observation():
+    src = "TraderObservation(ts_ns=1, trader_id='t')\n"
+    violations = _run_b29(src, "intelligence_engine.signal_pipeline")
+    assert any(v.rule == "B29" for v in violations)
+
+
+def test_b29_blocks_execution_engine_constructing_trader_observation():
+    src = "TraderObservation(ts_ns=1, trader_id='t')\n"
+    violations = _run_b29(src, "execution_engine.hot_path.fast_execute")
+    assert any(v.rule == "B29" for v in violations)
+
+
+def test_b29_blocks_governance_engine_constructing_trader_observation():
+    src = "TraderObservation(ts_ns=1, trader_id='t')\n"
+    violations = _run_b29(src, "governance_engine.policy_engine")
+    assert any(v.rule == "B29" for v in violations)
+
+
+def test_b29_blocks_system_engine_constructing_trader_observation():
+    src = "TraderObservation(ts_ns=1, trader_id='t')\n"
+    violations = _run_b29(src, "system_engine.dyon.health")
+    assert any(v.rule == "B29" for v in violations)
+
+
+def test_b29_allows_trader_modeling_subsystem():
+    src = "TraderObservation(ts_ns=1, trader_id='t')\n"
+    violations = _run_b29(src, "intelligence_engine.trader_modeling.aggregator")
+    assert violations == []
+
+
+def test_b29_allows_trader_modeling_root():
+    src = "TraderObservation(ts_ns=1, trader_id='t')\n"
+    violations = _run_b29(src, "intelligence_engine.trader_modeling")
+    assert violations == []
+
+
+def test_b29_allows_contract_module():
+    src = "TraderObservation(ts_ns=1, trader_id='t')\n"
+    violations = _run_b29(src, "core.contracts.trader_intelligence")
+    assert violations == []
+
+
+# ---------------------------------------------------------------------------
+# Production code is clean — none of B27 / B28 / B29 fire when the lint
+# runs over the repo as a whole. Regression guard so a future commit
+# cannot accidentally regress any of the symmetric authority rules.
+# ---------------------------------------------------------------------------
+
+
+def test_b27_b28_b29_clean_on_repo():
     from tools.authority_lint import lint_repo
 
     repo_root = Path(__file__).resolve().parent.parent
     violations = [
         v
         for v in lint_repo(repo_root)
-        if v.rule in {"B27", "B28"}
+        if v.rule in {"B27", "B28", "B29"}
     ]
-    assert violations == [], f"unexpected B27/B28 violations: {violations}"
+    assert violations == [], f"unexpected B27/B28/B29 violations: {violations}"
 
 
 # ---------------------------------------------------------------------------
