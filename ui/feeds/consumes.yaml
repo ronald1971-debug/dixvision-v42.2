@@ -19,3 +19,5 @@ module: ui.feeds
 inputs:
   - source_id: SRC-MARKET-BINANCE-001
     required: false
+  - source_id: SRC-NEWS-COINDESK-001
+    required: false

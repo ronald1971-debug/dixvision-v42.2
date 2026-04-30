@@ -50,6 +50,10 @@ def test_canonical_registry_loads_clean() -> None:
     #     ``ui.feeds.tradingview_ideas``; aggregator (sole B29-allowed
     #     producer of ``TraderObservation``) is in
     #     ``intelligence_engine.trader_modeling``.
+    #   * SRC-NEWS-COINDESK-001 — Wave-04.5 PR-1 news ingest path
+    #     (read-only public RSS, no auth). Pump is in
+    #     ``ui.feeds.coindesk_rss`` and emits
+    #     ``core.contracts.news.NewsItem`` rows into the harness.
     assert reg.enabled_ids == frozenset(
         {
             "SRC-MARKET-BINANCE-001",
@@ -59,6 +63,7 @@ def test_canonical_registry_loads_clean() -> None:
             "SRC-AI-DEEPSEEK-001",
             "SRC-AI-DEVIN-001",
             "SRC-TRADER-TRADINGVIEW-001",
+            "SRC-NEWS-COINDESK-001",
         }
     )
 
