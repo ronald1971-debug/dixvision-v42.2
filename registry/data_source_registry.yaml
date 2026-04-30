@@ -240,7 +240,7 @@ sources:
     endpoint: "https://api.openai.com/v1"
     schema: "sensory.cognitive.contracts.AIResponse"
     auth: required
-    enabled: false
+    enabled: true
     critical: false
     capabilities:
       - reasoning
@@ -255,7 +255,7 @@ sources:
     endpoint: "https://generativelanguage.googleapis.com/v1"
     schema: "sensory.cognitive.contracts.AIResponse"
     auth: required
-    enabled: false
+    enabled: true
     critical: false
     capabilities:
       - reasoning
@@ -269,7 +269,7 @@ sources:
     endpoint: "https://api.x.ai/v1"
     schema: "sensory.cognitive.contracts.AIResponse"
     auth: required
-    enabled: false
+    enabled: true
     critical: false
     capabilities:
       - reasoning
@@ -282,7 +282,7 @@ sources:
     endpoint: "https://api.deepseek.com/v1"
     schema: "sensory.cognitive.contracts.AIResponse"
     auth: required
-    enabled: false
+    enabled: true
     critical: false
     capabilities:
       - reasoning
@@ -295,7 +295,7 @@ sources:
     endpoint: "https://api.devin.ai/v1"
     schema: "sensory.cognitive.contracts.AIResponse"
     auth: required
-    enabled: false
+    enabled: true
     critical: false
     capabilities:
       - code_gen

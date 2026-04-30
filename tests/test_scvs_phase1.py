@@ -34,10 +34,27 @@ def test_canonical_registry_loads_clean() -> None:
     assert len(reg.sources) > 0
     # IDs are unique by construction (loader rejects duplicates).
     assert len(reg.ids) == len(reg.sources)
-    # SRC-MARKET-BINANCE-001 is the first canonical source flipped on
-    # (branch b: read-only public WS pump, no credentials). All others
-    # remain ``enabled: false`` until their adapters land.
-    assert reg.enabled_ids == frozenset({"SRC-MARKET-BINANCE-001"})
+    # Enabled rows in the registry as of Wave-03 PR-6:
+    #   * SRC-MARKET-BINANCE-001 — read-only public WS pump (no creds).
+    #   * SRC-AI-{OPENAI,GEMINI,GROK,DEEPSEEK,DEVIN}-001 — flipped on
+    #     by Wave-03 PR-6 so the registry-driven HTTP chat dispatcher
+    #     (``intelligence_engine.cognitive.chat.http_chat_transport``)
+    #     can route to each backend. Each row's API key is read from
+    #     ``os.environ`` on every turn, so a row with a missing key
+    #     fails-fast with :class:`TransientProviderError` and the
+    #     adapter falls through to the next eligible provider — i.e.
+    #     ``enabled: true`` does not commit the operator to keying
+    #     every row at startup.
+    assert reg.enabled_ids == frozenset(
+        {
+            "SRC-MARKET-BINANCE-001",
+            "SRC-AI-OPENAI-001",
+            "SRC-AI-GEMINI-001",
+            "SRC-AI-GROK-001",
+            "SRC-AI-DEEPSEEK-001",
+            "SRC-AI-DEVIN-001",
+        }
+    )
 
 
 def test_canonical_registry_has_all_categories() -> None:
