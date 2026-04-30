@@ -176,9 +176,9 @@ sources:
     category: macro
     provider: bls
     endpoint: "https://api.bls.gov/publicAPI/v2"
-    schema: "sensory.macro.contracts.MacroSeries"
+    schema: "core.contracts.macro.MacroObservation"
     auth: required
-    enabled: false
+    enabled: true
     critical: false
 
   # -----------------------------------------------------------------

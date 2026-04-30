@@ -61,6 +61,12 @@ def test_canonical_registry_loads_clean() -> None:
     #     ``os.environ['FRED_API_KEY']`` at pump construction; absent
     #     keys keep the row visible in the registry but the pump is
     #     simply not started, mirroring the AI-provider pattern.
+    #   * SRC-MACRO-BLS-001 — Wave-04.5 PR-3 macro ingest path. Pump
+    #     is in ``ui.feeds.bls_http`` and emits the same
+    #     ``MacroObservation`` schema as FRED so downstream projection
+    #     can fan both. ``auth: required`` — the registration key is
+    #     read from ``os.environ['BLS_REGISTRATION_KEY']``; same
+    #     opt-in startup pattern as FRED.
     assert reg.enabled_ids == frozenset(
         {
             "SRC-MARKET-BINANCE-001",
@@ -72,6 +78,7 @@ def test_canonical_registry_loads_clean() -> None:
             "SRC-TRADER-TRADINGVIEW-001",
             "SRC-NEWS-COINDESK-001",
             "SRC-MACRO-FRED-001",
+            "SRC-MACRO-BLS-001",
         }
     )
 
