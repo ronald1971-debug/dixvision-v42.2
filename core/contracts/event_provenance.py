@@ -73,7 +73,13 @@ class EventProvenanceError(RuntimeError):
 #   maps to a documented sub-kind in ``core.contracts.events``.
 
 EVENT_PRODUCERS: Final[dict[type, frozenset[str]]] = {
-    SignalEvent: frozenset({"intelligence_engine"}),
+    # ``intelligence_engine.cognitive`` is the Wave-03 PR-5 operator-
+    # approval edge — the only legitimate cognitive-origin signal
+    # producer. B26 lint pins the inverse: only that module may stamp
+    # the cognitive prefix on a SignalEvent construction.
+    SignalEvent: frozenset(
+        {"intelligence_engine", "intelligence_engine.cognitive"},
+    ),
     ExecutionEvent: frozenset({"execution_engine"}),
     HazardEvent: frozenset({"system_engine", "execution_engine"}),
     SystemEvent: frozenset(

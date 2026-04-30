@@ -86,6 +86,10 @@ export function CognitiveChatPage() {
     setThreadId(newThreadId());
     setMessages([]);
     setErrorDetail(null);
+    // Clear the highlight pointer too — otherwise the ApprovalPanel
+    // keeps highlighting a row from the previous thread until the
+    // operator submits a new proposal in the fresh thread.
+    setLastProposalId("");
   }
 
   const banner = (() => {
