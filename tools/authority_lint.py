@@ -947,6 +947,57 @@ def _check_b28(
 
 
 # ---------------------------------------------------------------------------
+# B29 — TraderObservation construction restriction (Wave-04 PR-1 / INV-71)
+# ---------------------------------------------------------------------------
+#
+# Authority symmetry with B27 (LearningUpdate) and B28 (PatchProposal).
+# :class:`core.contracts.trader_intelligence.TraderObservation` is the
+# bus-transport record for the Trader-Intelligence layer. It must only
+# be constructed inside the dedicated trader-modeling subsystem
+# (``intelligence_engine.trader_modeling.*``) — outside callers must
+# observe rows on the typed bus rather than synthesising them. Without
+# this rule, a non-modeling engine could indirectly inject philosophy /
+# performance attributions into the strategy composition pipeline,
+# bypassing the SCVS source-liveness FSM and the operator-approval gate
+# that Wave-04 PR-4 will route compositions through.
+
+B29_ALLOWED_PREFIXES: tuple[str, ...] = (
+    "intelligence_engine.trader_modeling",
+    "core.contracts.trader_intelligence",
+)
+
+B29_FORBIDDEN_NAMES: frozenset[str] = frozenset({"TraderObservation"})
+
+
+def _check_b29(
+    importer: str, file: Path, repo_root: Path, tree: ast.AST
+) -> list[Violation]:
+    """B29 — TraderObservation construction restriction (INV-71)."""
+
+    if _is_triad_constructor_test_exempt(file, repo_root):
+        return []
+    if _starts_with_any(importer, B29_ALLOWED_PREFIXES):
+        return []
+    out: list[Violation] = []
+    for line, name in _iter_named_calls(tree):
+        if name in B29_FORBIDDEN_NAMES:
+            out.append(
+                Violation(
+                    "B29",
+                    file,
+                    line,
+                    importer,
+                    name,
+                    "Authority symmetry (INV-71 / Wave-04 PR-1): only "
+                    "intelligence_engine.trader_modeling.* may construct "
+                    "a TraderObservation — outside callers must observe "
+                    "trader rows on the typed bus.",
+                )
+            )
+    return out
+
+
+# ---------------------------------------------------------------------------
 # B23 — registry-driven AI providers (Dashboard-2026 wave-01)
 # ---------------------------------------------------------------------------
 
@@ -1128,9 +1179,11 @@ def lint_repo(repo_root: Path) -> list[Violation]:
         violations.extend(_check_b25(importer, path, repo_root, tree))
         # B26 — only the approval edge may stamp the cognitive producer.
         violations.extend(_check_b26(importer, path, repo_root, tree))
-        # B27/B28 — authority symmetry for learning + evolution origins.
+        # B27/B28/B29 — authority symmetry for learning + evolution +
+        # trader-modeling origins.
         violations.extend(_check_b27(importer, path, repo_root, tree))
         violations.extend(_check_b28(importer, path, repo_root, tree))
+        violations.extend(_check_b29(importer, path, repo_root, tree))
         # B23 — chat widget Python modules must be registry-driven.
         violations.extend(_check_b23_python(importer, path, tree))
     # B23 — chat widget static files (HTML / JS).

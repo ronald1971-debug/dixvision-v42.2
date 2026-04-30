@@ -95,6 +95,18 @@ enum SystemEventKind {
   // that swap to a fallback source MUST emit this event so the ledger
   // has an explicit record of the substitution.
   SOURCE_FALLBACK_ACTIVATED = 15;
+  // Wave-04 PR-1 — Trader-Intelligence first-class structured layer.
+  // Carries a TraderObservation payload (see
+  // core/contracts/trader_intelligence.py) so external traders are
+  // modelled as data, not imitated. Producer authority is symmetric
+  // to LearningUpdate (B27) and PatchProposal (B28): only
+  // intelligence_engine.trader_modeling.* may construct the payload
+  // (lint rule B29). The wrapping SystemEvent still carries
+  // produced_by_engine and is asserted at receivers via HARDEN-03's
+  // runtime guard. Field number 20 (next available, no renumbering of
+  // existing entries — wire-format stable). Declaration position
+  // mirrors Python source-of-truth ordering in core/contracts/events.py.
+  TRADER_OBSERVED = 20;
   // v3.6 BEHAVIOR-P4 — per-decision audit record. Emitted by
   // core.coherence.decision_trace.as_system_event once per decision so
   // the offline calibrator and the operator dashboard's Decision-Trace

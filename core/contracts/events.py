@@ -131,6 +131,17 @@ class SystemEventKind(StrEnum):
     # ------------------------------------------------------------------
     SOURCE_FALLBACK_ACTIVATED = "SOURCE_FALLBACK_ACTIVATED"
     # ------------------------------------------------------------------
+    # Wave-04 PR-1 — Trader-Intelligence first-class structured layer.
+    # Carries a :class:`core.contracts.trader_intelligence.TraderObservation`
+    # payload so external traders are modeled as data, not imitated.
+    # Producer authority is symmetric to B27 (LearningUpdate) and B28
+    # (PatchProposal): only ``intelligence_engine.trader_modeling.*``
+    # may construct a :class:`TraderObservation` (lint rule **B29**).
+    # The wrapping ``SystemEvent`` still carries ``produced_by_engine``
+    # and is asserted at receivers via HARDEN-03's runtime guard.
+    # ------------------------------------------------------------------
+    TRADER_OBSERVED = "TRADER_OBSERVED"
+    # ------------------------------------------------------------------
     # v3.6 BEHAVIOR-P4 — per-decision audit record. Emitted by
     # ``core.coherence.decision_trace.as_system_event`` once per
     # decision so the offline calibrator and the operator dashboard's
