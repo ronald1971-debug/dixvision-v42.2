@@ -118,6 +118,16 @@ enum SystemEventKind {
   PATCH_PROPOSED = 17;
   PATCH_STAGE_VERDICT = 18;
   PATCH_DECISION = 19;
+  // Wave-04 PR-1 — Trader-Intelligence first-class structured layer.
+  // Carries a TraderObservation payload (see
+  // core/contracts/trader_intelligence.py) so external traders are
+  // modelled as data, not imitated. Producer authority is symmetric
+  // to LearningUpdate (B27) and PatchProposal (B28): only
+  // intelligence_engine.trader_modeling.* may construct the payload
+  // (lint rule B29). The wrapping SystemEvent still carries
+  // produced_by_engine and is asserted at receivers via HARDEN-03's
+  // runtime guard.
+  TRADER_OBSERVED = 20;
 }
 
 // EVT-01
