@@ -847,19 +847,28 @@ def cognitive_chat_turn(body: ChatTurnRequest) -> ChatTurnResponse:
     deferred to PR-5.
     """
 
+    # Snapshot the runtime under the process-wide lock, then drop
+    # it before calling ``turn`` — the LLM round-trip can take
+    # seconds, and holding ``STATE.lock`` across it would block
+    # every other endpoint (health, ticks, operator summary, …).
+    # ``CognitiveChatRuntime`` has its own lock guarding the
+    # bundle lazy-init path; the graph itself is invocation-safe
+    # under concurrent calls because LangGraph keys state by
+    # ``thread_id``.
     with STATE.lock:
-        try:
-            return STATE.chat_runtime.turn(body)
-        except ChatTurnDisabled as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
-        except ChatTurnNoProvider as exc:
-            raise HTTPException(status_code=502, detail=str(exc)) from exc
-        except ChatTurnTransportFailed as exc:
-            raise HTTPException(status_code=502, detail=str(exc)) from exc
-        except ValueError as exc:
-            # Bad request shape (empty messages / wrong tail role /
-            # SYSTEM message before PR-5 lands).
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        runtime = STATE.chat_runtime
+    try:
+        return runtime.turn(body)
+    except ChatTurnDisabled as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ChatTurnNoProvider as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except ChatTurnTransportFailed as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except ValueError as exc:
+        # Bad request shape (empty messages / wrong tail role /
+        # SYSTEM message before PR-5 lands).
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/tick")

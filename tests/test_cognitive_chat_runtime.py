@@ -226,6 +226,46 @@ def test_turn_persists_thread_state_across_calls() -> None:
     assert "second" in contents
 
 
+def test_turn_reports_actual_provider_from_response_metadata() -> None:
+    """``provider_id`` reflects the provider that *served* the turn.
+
+    Regression for Devin Review BUG_0002: if the first eligible
+    provider raises ``TransientProviderError``, the chat model
+    falls back to the next one — and the operator must see that
+    fallback in ``ChatTurnResponse.provider_id``, not the first
+    registry entry.
+    """
+
+    from intelligence_engine.cognitive.chat import TransientProviderError
+
+    class _FallbackTransport:
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        def invoke(
+            self,
+            provider: AIProvider,
+            messages: Sequence[BaseMessage],
+            **kwargs: Any,
+        ) -> str:
+            self.calls.append(provider.id)
+            if provider.id == "provider-A":
+                raise TransientProviderError("provider-A is unavailable")
+            return "served by B"
+
+    transport = _FallbackTransport()
+    runtime = build_runtime(
+        registry=_registry_with("provider-A", "provider-B"),
+        ledger_writer=_RecordingLedger(),
+        transport=transport,
+        feature_flag=_flag("yes"),
+    )
+    resp = runtime.turn(_request("hi"))
+    assert transport.calls == ["provider-A", "provider-B"]
+    assert resp.provider_id == "provider-B"
+    assert resp.reply.content == "served by B"
+
+
 def test_turn_isolates_separate_thread_ids() -> None:
     transport = _RecordingTransport(reply="ack")
     runtime = build_runtime(

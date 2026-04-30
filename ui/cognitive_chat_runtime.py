@@ -32,10 +32,11 @@ Two design constraints govern the shape of this module:
 
 from __future__ import annotations
 
+import threading
 import time
 import uuid
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
@@ -211,6 +212,14 @@ class CognitiveChatRuntime:
     ledger_append: Any
     feature_flag: CognitiveChatFeatureFlag
     bundle: CognitiveChatBundle | None = None
+    # Per-runtime lock guarding `bundle` lazy-init only. The graph
+    # invocation itself (an LLM round-trip) must NOT be held under
+    # this lock — and definitely not under the process-wide
+    # ``STATE.lock`` — so other endpoints stay responsive while a
+    # turn is in flight.
+    _init_lock: threading.Lock = field(
+        default_factory=threading.Lock, repr=False, compare=False
+    )
 
     def status(self) -> ChatStatusResponse:
         from intelligence_engine.cognitive.chat import FEATURE_FLAG_ENV_VAR
@@ -229,20 +238,25 @@ class CognitiveChatRuntime:
         )
 
     def _ensure_bundle(self) -> CognitiveChatBundle:
+        # Double-checked: cheap read first, then lock + re-check so
+        # concurrent first requests do not assemble two bundles.
         if self.bundle is not None:
             return self.bundle
-        try:
-            self.bundle = assemble_cognitive_chat(
-                task=self.task,
-                provider_resolver=_provider_resolver_from_registry(
-                    self.registry, self.task
-                ),
-                transport=self.transport,
-                ledger_append=self.ledger_append,
-                feature_flag=self.feature_flag,
-            )
-        except CognitiveChatDisabledError as exc:
-            raise ChatTurnDisabled(str(exc)) from exc
+        with self._init_lock:
+            if self.bundle is not None:
+                return self.bundle
+            try:
+                self.bundle = assemble_cognitive_chat(
+                    task=self.task,
+                    provider_resolver=_provider_resolver_from_registry(
+                        self.registry, self.task
+                    ),
+                    transport=self.transport,
+                    ledger_append=self.ledger_append,
+                    feature_flag=self.feature_flag,
+                )
+            except CognitiveChatDisabledError as exc:
+                raise ChatTurnDisabled(str(exc)) from exc
         return self.bundle
 
     def turn(self, req: ChatTurnRequest) -> ChatTurnResponse:
@@ -262,11 +276,17 @@ class CognitiveChatRuntime:
             raise ChatTurnTransportFailed(str(exc)) from exc
 
         reply_msg = result["messages"][-1]
+        # The actual provider id is stamped onto the AIMessage's
+        # ``response_metadata`` by RegistryDrivenChatModel so the
+        # value here reflects the provider that *served* the turn —
+        # not just the first one in the registry. Fallback chains
+        # (TransientProviderError on the first try, success on the
+        # second) therefore surface the real id to operators.
         provider_id = ""
-        try:
-            provider_id = select_providers(self.registry, self.task)[0].id
-        except (IndexError, NoEligibleProviderError):
-            provider_id = ""
+        metadata = getattr(reply_msg, "response_metadata", None) or {}
+        candidate = metadata.get("provider_id")
+        if isinstance(candidate, str):
+            provider_id = candidate
 
         checkpoint_id = ""
         try:
