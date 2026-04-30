@@ -169,6 +169,19 @@ class ApprovalEdge:
         # still have a "operator approved this" record. The reverse
         # ordering would let an ack land without provenance if the
         # ledger writer failed.
+        # PR-7: the ledger row's ``ts_ns`` is the queue's decision
+        # timestamp (``decided.decided_at_ts_ns``), not the edge's
+        # emit ``ts``. The two clocks can diverge in production —
+        # the queue stamps via ``time.time_ns`` while the edge uses
+        # the harness monotonic counter — and the projection in
+        # :mod:`approval_projection` reads this field straight back
+        # into ``decided_at_ts_ns`` on rehydrate. Using the edge's
+        # counter here would corrupt the field across restarts.
+        decided_ts = (
+            decided.decided_at_ts_ns
+            if decided.decided_at_ts_ns is not None
+            else ts
+        )
         self.ledger_append(
             "OPERATOR_APPROVED_SIGNAL",
             {
@@ -178,7 +191,7 @@ class ApprovalEdge:
                 "side": pending.proposal.side.value,
                 "confidence": f"{pending.proposal.confidence:.6f}",
                 "decided_by": decision.decided_by,
-                "ts_ns": str(ts),
+                "ts_ns": str(decided_ts),
             },
         )
         self.signal_emitter(sig)
@@ -208,7 +221,17 @@ class ApprovalEdge:
             approved=False,
             decided_by=decision.decided_by,
         )
-        ts = self.ts_ns()
+        # PR-7: the ledger row carries the queue's decision
+        # timestamp so :mod:`approval_projection` rehydrates a
+        # byte-identical ``decided_at_ts_ns``. ``self.ts_ns()`` is
+        # only retained to drive ``self.signal_emitter`` callers
+        # that expect a per-call edge timestamp; the rejection path
+        # has no emitter so ``ts`` is unused here.
+        decided_ts = (
+            decided.decided_at_ts_ns
+            if decided.decided_at_ts_ns is not None
+            else self.ts_ns()
+        )
         payload: dict[str, str] = {
             "approval_id": request_id,
             "thread_id": pending.thread_id,
@@ -216,7 +239,7 @@ class ApprovalEdge:
             "side": pending.proposal.side.value,
             "confidence": f"{pending.proposal.confidence:.6f}",
             "decided_by": decision.decided_by,
-            "ts_ns": str(ts),
+            "ts_ns": str(decided_ts),
         }
         if decision.note:
             payload["approval_note"] = decision.note
