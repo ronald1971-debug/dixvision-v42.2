@@ -98,6 +98,21 @@ def test_verify_unauthorized_on_403(monkeypatch) -> None:
     assert result.http_status == 403
 
 
+def test_verify_unauthorized_on_400_for_fred(monkeypatch) -> None:
+    # FRED returns 400 + JSON error body for invalid API keys (not
+    # 401). The classifier groups 400 with 401/403 so the operator
+    # sees an UNAUTHORIZED outcome, not a misleading NETWORK_ERROR.
+    def behaviour(r, t):
+        raise urllib.error.HTTPError(
+            r.full_url, 400, "Bad Request", {}, None
+        )
+
+    _patch_open(monkeypatch, behaviour)
+    result = verify_provider("fred", {"FRED_API_KEY": "fred-bad"})
+    assert result.outcome is VerifyOutcome.UNAUTHORIZED
+    assert result.http_status == 400
+
+
 def test_verify_rate_limited_on_429(monkeypatch) -> None:
     def behaviour(r, t):
         raise urllib.error.HTTPError(r.full_url, 429, "Too Many", {}, None)
@@ -151,7 +166,8 @@ def test_verify_network_error_on_url_error(monkeypatch) -> None:
 
 
 def test_verify_no_verifier_for_unsupported_provider() -> None:
-    # ``reuters`` is in the registry but has no live verifier yet.
+    # ``reuters`` is in the registry (Reuters Connect, enterprise-only)
+    # but has no public verify endpoint, so it's still NO_VERIFIER.
     result = verify_provider("reuters", {"REUTERS_API_KEY": "x"})
     assert result.outcome is VerifyOutcome.NO_VERIFIER
     assert result.http_status is None
@@ -201,6 +217,68 @@ def test_query_auth_url_encodes_key(monkeypatch) -> None:
     assert "needs%2Fencoding%3Dplus" in calls[0]["url"]
 
 
+def test_query_auth_uses_api_key_param_for_glassnode(monkeypatch) -> None:
+    calls = _patch_open(monkeypatch, lambda r, t: _FakeResponse(200))
+    verify_provider("glassnode", {"GLASSNODE_API_KEY": "gn-fake"})
+    assert len(calls) == 1
+    url = calls[0]["url"]
+    # Glassnode uses ?api_key= (not ?key=), and the URL must keep
+    # the metric path identifier so a 200 actually means "key
+    # authenticated" and not "path 404".
+    assert "api_key=gn-fake" in url
+    assert "/metrics/addresses/active_count" in url
+
+
+def test_query_auth_uses_api_key_param_for_fred(monkeypatch) -> None:
+    calls = _patch_open(monkeypatch, lambda r, t: _FakeResponse(200))
+    verify_provider("fred", {"FRED_API_KEY": "fred-fake"})
+    assert len(calls) == 1
+    url = calls[0]["url"]
+    assert "api_key=fred-fake" in url
+    # ``file_type=json`` is mandatory — without it FRED returns XML
+    # which we don't want to reason about.
+    assert "file_type=json" in url
+
+
+def test_bls_intentionally_returns_no_verifier(monkeypatch) -> None:
+    # BLS is intentionally not registered: its endpoints return HTTP
+    # 200 for both valid and invalid keys, so an HTTP-status-only
+    # verifier would always lie. Until a body-aware verifier exists,
+    # ``no_verifier`` is the honest answer (same shape as Reuters).
+    calls = _patch_open(monkeypatch, lambda r, t: _FakeResponse(200))
+    result = verify_provider("bls", {"BLS_API_KEY": "bls-fake"})
+    assert result.outcome is VerifyOutcome.NO_VERIFIER
+    assert calls == []  # never reached the network
+
+
+def test_header_auth_sends_custom_header_for_dune(monkeypatch) -> None:
+    calls = _patch_open(monkeypatch, lambda r, t: _FakeResponse(200))
+    verify_provider("dune", {"DUNE_API_KEY": "dune-fake"})
+    assert len(calls) == 1
+    headers = calls[0]["headers"]
+    # Header names get title-cased by urllib.request.Request, so
+    # match case-insensitively (Dune docs spell it X-DUNE-API-KEY).
+    canonical = {k.lower(): v for k, v in headers.items()}
+    assert canonical.get("x-dune-api-key") == "dune-fake"
+    # Must NOT also send Authorization — Dune doesn't accept it and
+    # the docs explicitly forbid mixing.
+    assert "Authorization" not in headers
+    # Endpoint must be the canonical /auth/me ping (not a paid path).
+    assert calls[0]["url"] == "https://api.dune.com/api/v1/auth/me"
+
+
+def test_bearer_auth_for_x_uses_users_by_username_endpoint(monkeypatch) -> None:
+    calls = _patch_open(monkeypatch, lambda r, t: _FakeResponse(200))
+    verify_provider("x", {"X_BEARER_TOKEN": "x-bearer-fake"})
+    assert len(calls) == 1
+    headers = calls[0]["headers"]
+    assert headers.get("Authorization") == "Bearer x-bearer-fake"
+    # Endpoint pinning — free-tier compatible, no tweet-cap usage.
+    assert calls[0]["url"].startswith(
+        "https://api.x.com/2/users/by/username/"
+    )
+
+
 def test_timeout_passed_through(monkeypatch) -> None:
     calls = _patch_open(monkeypatch, lambda r, t: _FakeResponse(200))
     verify_provider("openai", {"OPENAI_API_KEY": "k"}, timeout=1.25)
@@ -223,6 +301,10 @@ SECRET = "DO-NOT-LEAK-THIS-VALUE-1234"
         ("xai", "XAI_API_KEY"),
         ("deepseek", "DEEPSEEK_API_KEY"),
         ("github", "GITHUB_TOKEN"),
+        ("x", "X_BEARER_TOKEN"),
+        ("glassnode", "GLASSNODE_API_KEY"),
+        ("dune", "DUNE_API_KEY"),
+        ("fred", "FRED_API_KEY"),
     ],
 )
 def test_no_leak_on_ok(monkeypatch, provider, env_var) -> None:
@@ -237,6 +319,8 @@ def test_no_leak_on_ok(monkeypatch, provider, env_var) -> None:
         ("openai", "OPENAI_API_KEY"),
         ("google", "GEMINI_API_KEY"),
         ("github", "GITHUB_TOKEN"),
+        ("dune", "DUNE_API_KEY"),
+        ("fred", "FRED_API_KEY"),
     ],
 )
 def test_no_leak_on_unauthorized(monkeypatch, provider, env_var) -> None:
