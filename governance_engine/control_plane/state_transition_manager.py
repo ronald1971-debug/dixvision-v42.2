@@ -47,6 +47,7 @@ from governance_engine.control_plane.ledger_authority_writer import (
     LedgerAuthorityWriter,
 )
 from governance_engine.control_plane.policy_engine import PolicyEngine
+from governance_engine.control_plane.promotion_gates import PromotionGates
 
 # The forward ratchet, in order. Index gaps mean: SHADOW → LIVE is
 # illegal (must go SHADOW → CANARY → LIVE).
@@ -105,11 +106,18 @@ class StateTransitionManager:
         policy: PolicyEngine,
         ledger: LedgerAuthorityWriter,
         initial_mode: SystemMode = SystemMode.SAFE,
+        promotion_gates: PromotionGates | None = None,
     ) -> None:
         self._policy = policy
         self._ledger = ledger
         self._mode = initial_mode
         self._lock = Lock()
+        # Reviewer #4 finding 4 -- hash-anchored promotion-gate check.
+        # Optional for backwards compatibility with existing call sites
+        # (tests, harnesses) that don't yet pass a PromotionGates. When
+        # ``None`` the manager skips the gate check entirely; production
+        # call sites must pass an instance so the gate is enforced.
+        self._promotion_gates = promotion_gates
 
     # ------------------------------------------------------------------
     # Public API
@@ -169,6 +177,39 @@ class StateTransitionManager:
                     ledger_seq=entry.seq,
                 )
 
+            # Reviewer #4 finding 4 -- hash-anchored promotion-gate
+            # enforcement. CANARY / LIVE / AUTO refuse to enter unless the
+            # live ``docs/promotion_gates.yaml`` hash matches the hash that
+            # was bound at SHADOW entry. Pre-FSM-state-flip and pre-policy
+            # so the rejection_code surfaces the gate violation, not a
+            # downstream policy code that would obscure the real cause.
+            if self._promotion_gates is not None:
+                gate_ok, gate_code = self._promotion_gates.check(
+                    normalised.target_mode.name
+                )
+                if not gate_ok:
+                    rejection_payload = {
+                        "requestor": normalised.requestor,
+                        "prev_mode": prev.name,
+                        "target_mode": normalised.target_mode.name,
+                        "reason": normalised.reason,
+                        "rejection_code": gate_code,
+                    }
+                    entry = self._ledger.append(
+                        ts_ns=normalised.ts_ns,
+                        kind="MODE_TRANSITION_REJECTED",
+                        payload=rejection_payload,
+                    )
+                    return ModeTransitionDecision(
+                        ts_ns=normalised.ts_ns,
+                        approved=False,
+                        prev_mode=prev,
+                        new_mode=prev,
+                        reason=normalised.reason,
+                        rejection_code=gate_code,
+                        ledger_seq=entry.seq,
+                    )
+
             policy_ok, policy_code = self._policy.permit_mode_transition(
                 normalised
             )
@@ -210,6 +251,23 @@ class StateTransitionManager:
                 payload=approval_payload,
             )
             self._mode = normalised.target_mode
+
+            # Reviewer #4 finding 4 -- bind the live promotion-gates
+            # file hash on every SHADOW entry. ``bind`` writes a
+            # ``PROMOTION_GATES_BOUND`` ledger row immediately after
+            # the ``MODE_TRANSITION`` row so replay sees them as a
+            # paired commit. Re-entry into SHADOW (after a
+            # de-escalation) overwrites the bound hash, which is the
+            # documented "edit the file, restart the clock" path.
+            if (
+                self._promotion_gates is not None
+                and normalised.target_mode is SystemMode.SHADOW
+            ):
+                self._promotion_gates.bind(
+                    ts_ns=normalised.ts_ns,
+                    requestor=normalised.requestor,
+                )
+
             return ModeTransitionDecision(
                 ts_ns=normalised.ts_ns,
                 approved=True,

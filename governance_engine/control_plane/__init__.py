@@ -36,6 +36,13 @@ from governance_engine.control_plane.policy_engine import (
     install_policy_table,
     verify_policy_table_hash,
 )
+from governance_engine.control_plane.promotion_gates import (
+    DEFAULT_PROMOTION_GATES_PATH,
+    LEDGER_KIND_PROMOTION_GATES_BOUND,
+    PromotionGates,
+    PromotionGatesHashMismatchError,
+    compute_file_hash,
+)
 from governance_engine.control_plane.risk_evaluator import RiskEvaluator
 from governance_engine.control_plane.state_transition_manager import (
     StateTransitionManager,
@@ -43,15 +50,20 @@ from governance_engine.control_plane.state_transition_manager import (
 
 __all__ = [
     "ComplianceValidator",
+    "DEFAULT_PROMOTION_GATES_PATH",
     "EventClassifier",
+    "LEDGER_KIND_PROMOTION_GATES_BOUND",
     "LedgerAuthorityWriter",
     "OperatorInterfaceBridge",
     "PipelineRoute",
     "POLICY_TABLE_HASH_KEY",
     "POLICY_TABLE_INSTALLED_KIND",
     "PolicyEngine",
+    "PromotionGates",
+    "PromotionGatesHashMismatchError",
     "RiskEvaluator",
     "StateTransitionManager",
+    "compute_file_hash",
     "install_policy_table",
     "verify_policy_table_hash",
 ]
