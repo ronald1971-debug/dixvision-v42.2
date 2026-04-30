@@ -211,6 +211,20 @@ def test_b30_does_not_fire_on_execution_engine() -> None:
     assert violations == []
 
 
+def test_b30_does_not_match_prefix_lookalike_module() -> None:
+    """Scope guard uses ``_starts_with_any`` (segment-aware), not raw
+    ``str.startswith``. A hypothetical ``intelligence_enginefoo`` module
+    must not be swept into the rule."""
+    src = (
+        "from core.contracts.events import SignalEvent\n"
+        "SignalEvent(ts_ns=1, symbol='X', side='BUY',\n"
+        "            confidence=0.5,\n"
+        "            produced_by_engine='intelligence_engine')\n"
+    )
+    violations = _run(src, "intelligence_enginefoo.news")
+    assert violations == []
+
+
 def test_b30_does_not_fire_on_core_contracts() -> None:
     src = (
         "from core.contracts.events import SignalEvent\n"

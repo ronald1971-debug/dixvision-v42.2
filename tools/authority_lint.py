@@ -1187,7 +1187,7 @@ def _check_b30(
 
     if _is_triad_constructor_test_exempt(file, repo_root):
         return []
-    if not importer.startswith("intelligence_engine"):
+    if not _starts_with_any(importer, ("intelligence_engine",)):
         return []
     if importer in B30_ALLOWED_LEAF_PRODUCERS:
         return []
