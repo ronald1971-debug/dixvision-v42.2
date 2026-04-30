@@ -233,46 +233,49 @@ def effect_for(mode: SystemMode) -> ModeEffect:
 
 
 # ---------------------------------------------------------------------------
-# Wave-04.6 PR-C — CANARY size cap
+# Wave-04.6 PR-C — equity-based notional cap (CANARY = 1% of equity)
 # ---------------------------------------------------------------------------
 
 
-def clamp_qty_for_mode(
-    qty: float, mode: SystemMode
-) -> tuple[float, bool]:
-    """Clamp a candidate fill quantity by the mode-effect ``size_cap_pct``.
+def equity_notional_cap_qty(
+    *,
+    mode: SystemMode,
+    equity: float,
+    price: float,
+) -> float | None:
+    """Convert ``size_cap_pct`` (percent of equity) into a maximum qty.
+
+    The canonical interpretation of :attr:`ModeEffect.size_cap_pct` is
+    *percent of account equity*: a CANARY fill must satisfy
+    ``qty * price <= equity * size_cap_pct / 100``. This helper is the
+    single source of truth that performs that conversion.
 
     Pure function — no IO, no state, deterministic across replays
     (INV-15 / TEST-01).
 
-    Semantics of :attr:`ModeEffect.size_cap_pct`:
-
-    * ``None`` — uncapped (LIVE, AUTO).
-    * ``0.0`` — non-applicable / passthrough. Modes whose dispatch is
-      blocked elsewhere (SAFE, SHADOW, LOCKED) or whose venue is not
-      a real venue (PAPER) do not need a positive cap; treating
-      ``0.0`` as "no cap" preserves PAPER fills exactly.
-    * ``> 0.0`` — interpreted as a *percent* of the candidate ``qty``.
-      CANARY's ``1.0`` therefore clamps to ``qty * 0.01``.
-
     Args:
-        qty: Candidate fill quantity (must be ``>= 0``).
         mode: Active :class:`SystemMode`.
+        equity: Account equity in the same currency unit as
+            ``qty * price``. Must be ``>= 0``.
+        price: Mark / fill price for the symbol. Must be ``> 0``.
 
     Returns:
-        A ``(clamped_qty, was_clamped)`` tuple. ``was_clamped`` is
-        ``True`` only when the cap actually reduced the quantity.
+        The maximum permitted ``qty`` (a non-negative float), or
+        ``None`` when the active mode is uncapped (``size_cap_pct``
+        is ``None``) or the cap is non-applicable for that mode
+        (``size_cap_pct == 0.0`` — moot for dispatch-suppressed modes
+        and for PAPER, which is not an equity-bearing venue).
     """
 
-    if qty < 0.0:
-        raise ValueError("qty must be >= 0")
+    if equity < 0.0:
+        raise ValueError("equity must be >= 0")
+    if price <= 0.0:
+        raise ValueError("price must be > 0")
     cap_pct = effect_for(mode).size_cap_pct
     if cap_pct is None or cap_pct <= 0.0:
-        return qty, False
-    max_qty = qty * (cap_pct / 100.0)
-    if qty <= max_qty:
-        return qty, False
-    return max_qty, True
+        return None
+    notional_cap = equity * (cap_pct / 100.0)
+    return notional_cap / price
 
 
 __all__ = [
@@ -281,7 +284,7 @@ __all__ = [
     "MODE_EFFECTS_INSTALLED_KIND",
     "ModeEffect",
     "OversightKind",
-    "clamp_qty_for_mode",
     "effect_for",
+    "equity_notional_cap_qty",
     "mode_effect_table_hash",
 ]
