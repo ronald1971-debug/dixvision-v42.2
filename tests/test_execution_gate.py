@@ -221,12 +221,22 @@ def test_execute_raises_when_caller_not_authorised():
     assert hazards[0].meta["caller"] == "ui.dashboard"
 
 
-def test_legacy_process_emits_deprecation_warning():
+def test_legacy_process_hard_fails_post_harden_05():
+    """HARDEN-05 — the deprecated ``process`` path raises immediately.
+
+    The previous behaviour was to emit a :class:`DeprecationWarning`
+    and forward to ``_execute_signal``. HARDEN-05 deletes that fallback
+    so any caller still on the old contract surfaces as a runtime
+    error. Trades must construct an :class:`ExecutionIntent` and call
+    :meth:`ExecutionEngine.execute`.
+    """
+
+    from execution_engine.engine import LegacyExecutionPathRemovedError
+
     engine = ExecutionEngine(adapter=PaperBroker())
     engine.on_market(_tick())
-    with pytest.warns(DeprecationWarning, match="HARDEN-02"):
-        out = engine.process(_signal())
-    assert len(out) == 1
+    with pytest.raises(LegacyExecutionPathRemovedError):
+        engine.process(_signal())
 
 
 def test_guard_hazard_uses_explicit_zero_ts_ns():

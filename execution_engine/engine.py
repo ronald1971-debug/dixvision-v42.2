@@ -1,17 +1,17 @@
-"""ExecutionEngine — RUNTIME-ENGINE-02 (Phase E1, hardened in HARDEN-02).
+"""ExecutionEngine — RUNTIME-ENGINE-02 (Phase E1, hardened in HARDEN-02 / 05).
 
 The Execution Gate (INV-68) makes :meth:`ExecutionEngine.execute` the
-*only* runtime path to a venue. The legacy :meth:`process` path that
-accepted a bare :class:`SignalEvent` still works for backwards
-compatibility (the operator UI fixture harness still uses it) but
-emits a :class:`DeprecationWarning` so any production caller is
-visible in CI / pytest output.
+*only* runtime path to a venue. HARDEN-05 removed the legacy
+:meth:`process` shim that previously accepted a bare
+:class:`SignalEvent` — the method now raises
+:class:`LegacyExecutionPathRemovedError` to make any caller that still
+relies on the old contract loud at runtime, instead of silently
+degrading via a :class:`DeprecationWarning`.
 
 Determinism contract (INV-15 / TEST-01):
 
-* :meth:`execute` and :meth:`process` are pure functions of (intent /
-  event, internal mark cache, adapter state). No clocks, no
-  randomness, no external IO.
+* :meth:`execute` is a pure function of (intent, internal mark cache,
+  adapter state). No clocks, no randomness, no external IO.
 * :meth:`on_market` updates the internal mark cache with the last
   trade price; market ticks are *inputs*, not bus events (see
   ``core/contracts/market.py``).
@@ -19,7 +19,6 @@ Determinism contract (INV-15 / TEST-01):
 
 from __future__ import annotations
 
-import warnings
 from collections.abc import Mapping, Sequence
 
 from core.contracts.engine import (
@@ -41,6 +40,19 @@ from core.contracts.market import MarketTick
 from execution_engine.adapters import BrokerAdapter, PaperBroker
 from execution_engine.execution_gate import AuthorityGuard
 
+__all__ = ["ExecutionEngine", "LegacyExecutionPathRemovedError"]
+
+
+class LegacyExecutionPathRemovedError(RuntimeError):
+    """Raised when something calls the removed ``ExecutionEngine.process``.
+
+    HARDEN-05 deleted the deprecated ``process(SignalEvent)`` path
+    that bypassed the :class:`AuthorityGuard`. All trade-producing
+    callers must now construct an :class:`ExecutionIntent` (via the
+    ``governance_engine.harness_approver`` shim or the live governance
+    pipeline) and call :meth:`ExecutionEngine.execute`.
+    """
+
 
 class ExecutionEngine(RuntimeEngine):
     name: str = "execution"
@@ -58,10 +70,10 @@ class ExecutionEngine(RuntimeEngine):
         self.plugin_slots: Mapping[str, Sequence[Plugin]] = dict(
             plugin_slots or {}
         )
-        # The AuthorityGuard is constructed lazily so tests that only
-        # exercise :meth:`process` (legacy path) don't need a matrix
-        # YAML on disk. ``execute`` materialises the guard on first
-        # use unless the caller injected one explicitly.
+        # The AuthorityGuard is constructed lazily so unit tests that
+        # only exercise broker plumbing don't need a matrix YAML on
+        # disk. ``execute`` materialises the guard on first use
+        # unless the caller injected one explicitly.
         self._guard: AuthorityGuard | None = guard
 
     @property
@@ -119,27 +131,23 @@ class ExecutionEngine(RuntimeEngine):
         return self._execute_signal(intent.signal)
 
     # ------------------------------------------------------------------
-    # Legacy path (SignalEvent → ExecutionEvent), retained for backwards
-    # compatibility with the UI fixture harness. Emits a runtime
-    # DeprecationWarning so any production caller is loud in CI.
+    # HARDEN-05 — the legacy ``process(SignalEvent)`` path is gone. The
+    # method is retained as a hard-fail tripwire so any code that still
+    # carries the old call shape lights up at runtime instead of silently
+    # smuggling a SignalEvent past the AuthorityGuard.
     # ------------------------------------------------------------------
 
     def process(self, event: Event) -> Sequence[Event]:
-        if not isinstance(event, SignalEvent):
-            return ()
-        warnings.warn(
-            "ExecutionEngine.process(SignalEvent) is deprecated; route "
-            "trades through ExecutionEngine.execute(ExecutionIntent) "
-            "(HARDEN-02 / INV-68). The legacy path remains for the "
-            "operator UI fixture harness only.",
-            DeprecationWarning,
-            stacklevel=2,
+        raise LegacyExecutionPathRemovedError(
+            "ExecutionEngine.process is removed (HARDEN-05). Construct "
+            "an ExecutionIntent (via governance_engine.harness_approver "
+            ".approve_signal_for_execution or the live governance "
+            "pipeline) and call ExecutionEngine.execute(intent)."
         )
-        return self._execute_signal(event)
 
     # ------------------------------------------------------------------
-    # Shared signal → execution kernel. Both paths reuse this so the
-    # only difference between execute() and process() is the gate.
+    # Internal signal → execution kernel. Reachable only through
+    # :meth:`execute` (post-AuthorityGuard).
     # ------------------------------------------------------------------
 
     def _execute_signal(self, event: SignalEvent) -> Sequence[ExecutionEvent]:
@@ -194,6 +202,3 @@ class ExecutionEngine(RuntimeEngine):
             detail=f"Phase E1 — adapter={self._adapter.name}",
             plugin_states=plugin_states,
         )
-
-
-__all__ = ["ExecutionEngine"]

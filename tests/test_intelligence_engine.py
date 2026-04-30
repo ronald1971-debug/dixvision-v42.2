@@ -20,6 +20,9 @@ from core.contracts.events import (
 )
 from core.contracts.market import MarketTick
 from execution_engine.engine import ExecutionEngine
+from governance_engine.harness_approver import (
+    approve_signal_for_execution,
+)
 from intelligence_engine.engine import IntelligenceEngine
 from intelligence_engine.plugins import MicrostructureV1
 
@@ -220,7 +223,8 @@ def test_end_to_end_tick_drives_filled_execution_when_active():
 
     executions: list[ExecutionEvent] = []
     for sig in signals:
-        for ev in execution.process(sig):
+        intent = approve_signal_for_execution(sig, ts_ns=sig.ts_ns)
+        for ev in execution.execute(intent):
             assert isinstance(ev, ExecutionEvent)
             executions.append(ev)
     assert len(executions) == 1
@@ -247,7 +251,8 @@ def test_end_to_end_shadow_signals_are_rejected_by_execution():
     assert len(signals) == 1
     assert signals[0].meta["shadow"] == "true"
 
-    out = execution.process(signals[0])
+    intent = approve_signal_for_execution(signals[0], ts_ns=signals[0].ts_ns)
+    out = execution.execute(intent)
     assert len(out) == 1
     assert out[0].status is ExecutionStatus.REJECTED
     assert out[0].meta["reason"] == "shadow signal"

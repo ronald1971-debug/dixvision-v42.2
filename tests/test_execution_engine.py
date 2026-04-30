@@ -10,15 +10,31 @@ from core.contracts.events import (
     EventKind,
     ExecutionEvent,
     ExecutionStatus,
-    HazardEvent,
-    HazardSeverity,
     Side,
     SignalEvent,
 )
 from core.contracts.market import MarketTick
 from execution_engine.adapters import BrokerAdapter, PaperBroker
-from execution_engine.engine import ExecutionEngine
+from execution_engine.engine import (
+    ExecutionEngine,
+    LegacyExecutionPathRemovedError,
+)
+from governance_engine.harness_approver import (
+    approve_signal_for_execution,
+)
 from intelligence_engine.engine import IntelligenceEngine
+
+
+def _intent_for(sig: SignalEvent, *, ts_ns: int | None = None):
+    """Build a governance-approved intent for a test signal.
+
+    HARDEN-05 — the legacy ``ExecutionEngine.process`` path is gone;
+    every test that wants a fill goes through the same
+    ``execute(intent)`` chokepoint as production.
+    """
+    return approve_signal_for_execution(
+        sig, ts_ns=ts_ns if ts_ns is not None else sig.ts_ns
+    )
 
 # ---------------------------------------------------------------------------
 # PaperBroker unit tests
@@ -106,7 +122,7 @@ def test_paper_broker_rejects_non_positive_default_qty():
 def test_execution_engine_no_mark_returns_failed_event():
     engine = ExecutionEngine()
     sig = SignalEvent(ts_ns=20, symbol="EURUSD", side=Side.BUY, confidence=0.7)
-    out = engine.process(sig)
+    out = engine.execute(_intent_for(sig))
     assert len(out) == 1
     evt = out[0]
     assert isinstance(evt, ExecutionEvent)
@@ -120,7 +136,7 @@ def test_execution_engine_with_mark_fills_buy():
         MarketTick(ts_ns=21, symbol="EURUSD", bid=1.0998, ask=1.1002, last=1.1)
     )
     sig = SignalEvent(ts_ns=22, symbol="EURUSD", side=Side.BUY, confidence=0.7)
-    out = engine.process(sig)
+    out = engine.execute(_intent_for(sig))
     assert len(out) == 1
     evt = out[0]
     assert isinstance(evt, ExecutionEvent)
@@ -128,12 +144,16 @@ def test_execution_engine_with_mark_fills_buy():
     assert evt.price == pytest.approx(1.1)
 
 
-def test_execution_engine_ignores_non_signal_events():
+def test_execution_engine_legacy_process_hard_fails():
+    """HARDEN-05 — the deprecated ``process`` path raises immediately.
+
+    Any caller still on the old contract must surface as a runtime
+    error, not silently degrade via a deprecation warning.
+    """
     engine = ExecutionEngine()
-    haz = HazardEvent(
-        ts_ns=23, code="API_DOWN", severity=HazardSeverity.HIGH, source="system"
-    )
-    assert engine.process(haz) == ()
+    sig = SignalEvent(ts_ns=23, symbol="X", side=Side.BUY, confidence=0.5)
+    with pytest.raises(LegacyExecutionPathRemovedError):
+        engine.process(sig)
 
 
 def test_execution_engine_reset_mark_with_zero_last_is_ignored():
@@ -145,7 +165,7 @@ def test_execution_engine_reset_mark_with_zero_last_is_ignored():
         MarketTick(ts_ns=25, symbol="X", bid=1.0, ask=1.01, last=0.0)
     )
     sig = SignalEvent(ts_ns=26, symbol="X", side=Side.BUY, confidence=0.5)
-    out = engine.process(sig)
+    out = engine.execute(_intent_for(sig))
     assert out[0].status is ExecutionStatus.FILLED
 
 
@@ -180,7 +200,7 @@ def test_e2e_intelligence_to_execution_round_trip():
 
     execution_events: list = []
     for evt in intelligence_out:
-        execution_events.extend(execution.process(evt))
+        execution_events.extend(execution.execute(_intent_for(evt)))
 
     assert len(execution_events) == 1
     exec_evt = execution_events[0]
@@ -209,7 +229,7 @@ def test_e2e_replay_is_deterministic():
         out: list = []
         for s in signals:
             for ev in intelligence.process(s):
-                out.extend(execution.process(ev))
+                out.extend(execution.execute(_intent_for(ev)))
         return out
 
     a = run()
@@ -232,16 +252,17 @@ def test_execution_engine_latency_slo():
         MarketTick(ts_ns=300, symbol="X", bid=99.5, ask=100.5, last=100.0)
     )
     sig = SignalEvent(ts_ns=300, symbol="X", side=Side.BUY, confidence=0.7)
+    intent = _intent_for(sig)
 
     # warm-up
     for _ in range(200):
-        engine.process(sig)
+        engine.execute(intent)
 
     n = 5_000
     samples = [0] * n
     for i in range(n):
         t0 = time.perf_counter_ns()
-        engine.process(sig)
+        engine.execute(intent)
         samples[i] = time.perf_counter_ns() - t0
 
     samples.sort()
