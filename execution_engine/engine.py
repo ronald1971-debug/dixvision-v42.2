@@ -36,7 +36,9 @@ from core.contracts.events import (
     SignalEvent,
 )
 from core.contracts.execution_intent import ExecutionIntent
+from core.contracts.governance import SystemMode
 from core.contracts.market import MarketTick
+from core.contracts.mode_effects import effect_for
 from execution_engine.adapters import BrokerAdapter, PaperBroker
 from execution_engine.execution_gate import AuthorityGuard
 
@@ -104,6 +106,7 @@ class ExecutionEngine(RuntimeEngine):
         intent: ExecutionIntent,
         *,
         caller: str = "execution_engine",
+        current_mode: SystemMode | None = None,
     ) -> Sequence[ExecutionEvent]:
         """The Execution Gate — single runtime path to a venue.
 
@@ -114,20 +117,58 @@ class ExecutionEngine(RuntimeEngine):
         ``HAZ-AUTHORITY`` :class:`HazardEvent` is emitted via the
         guard's hazard sink (when configured).
 
+        Wave-04.6 PR-B — when ``current_mode`` is supplied and the
+        canonical mode-effect table reports ``executions_dispatch=False``
+        for that mode (today: ``SAFE``, ``SHADOW``, ``LOCKED``), the
+        gate passes the AuthorityGuard normally but **suppresses the
+        broker side effect**, returning a single synthetic
+        :class:`ExecutionEvent` with ``status=REJECTED`` and a
+        machine-readable reason in ``meta``. This is the canonical
+        SHADOW behaviour: signals are observed, ledgered, and audited
+        without ever reaching a venue. Callers that omit
+        ``current_mode`` retain the legacy unconditional-dispatch shape
+        used by replay tests and harness flows that have already been
+        gated upstream.
+
         Args:
             intent: A frozen, governance-approved
                 :class:`ExecutionIntent`.
             caller: Runtime label of the engine invoking the gate.
                 Defaults to ``"execution_engine"`` — the only value
                 accepted by the default matrix.
+            current_mode: Optional canonical :class:`SystemMode` for
+                Wave-04.6 dispatch gating. ``None`` (default) preserves
+                the pre-Wave-04.6 unconditional-dispatch behaviour.
 
         Returns:
             A short, ordered sequence of :class:`ExecutionEvent`
             envelopes — typically one fill per signal, possibly more
-            if the underlying adapter splits.
+            if the underlying adapter splits, or a single mode-suppressed
+            REJECTED event when ``current_mode`` denies dispatch.
         """
 
         self.guard.assert_can_execute(intent, caller=caller, ts_ns=intent.ts_ns)
+        if current_mode is not None and not effect_for(
+            current_mode
+        ).executions_dispatch:
+            signal = intent.signal
+            return (
+                ExecutionEvent(
+                    ts_ns=signal.ts_ns,
+                    symbol=signal.symbol,
+                    side=signal.side,
+                    qty=0.0,
+                    price=0.0,
+                    status=ExecutionStatus.REJECTED,
+                    venue=self._adapter.name,
+                    order_id="",
+                    meta={
+                        "reason": "mode_effect_suppressed",
+                        "mode": current_mode.name,
+                    },
+                    produced_by_engine="execution_engine",
+                ),
+            )
         return self._execute_signal(intent.signal)
 
     # ------------------------------------------------------------------

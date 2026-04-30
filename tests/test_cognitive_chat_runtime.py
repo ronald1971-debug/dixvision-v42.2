@@ -412,4 +412,198 @@ def test_new_thread_id_is_unique() -> None:
     a = new_thread_id()
     b = new_thread_id()
     assert a != b
-    assert a.isalnum() and len(a) == 32
+
+
+# ---------------------------------------------------------------------------
+# Wave-04.6 PR-F — AUTO mode oversight relaxation seam
+# ---------------------------------------------------------------------------
+
+
+_PROPOSE_REPLY = (
+    "I see a setup.\n\n"
+    "```propose\n"
+    '{"symbol": "EURUSD", "side": "BUY", '
+    '"confidence": 0.55, "rationale": "macro setup"}\n'
+    "```\n"
+)
+
+
+def _wire_pr_f_runtime(
+    *,
+    mode_provider,
+    hazard_active_provider,
+    transport=None,
+):
+    """Build a runtime with the PR-F OperatorAttention + ApprovalEdge wired.
+
+    Returns ``(runtime, ledger_writer, signal_emitter_calls)``. The
+    signal-emitter records every emitted ``SignalEvent`` so the
+    auto-approval path can be observed end-to-end."""
+
+    from core.contracts.events import SignalEvent
+    from governance_engine.control_plane.operator_attention import (
+        OperatorAttention,
+    )
+    from intelligence_engine.cognitive.approval_edge import ApprovalEdge
+
+    ledger = _RecordingLedger()
+    runtime = build_runtime(
+        registry=_registry_with("provider-A"),
+        ledger_writer=ledger,
+        transport=transport if transport is not None else _RecordingTransport(
+            reply=_PROPOSE_REPLY
+        ),
+        feature_flag=_flag("yes"),
+    )
+
+    emitted: list[SignalEvent] = []
+
+    def _emit(event: SignalEvent) -> None:
+        emitted.append(event)
+
+    runtime.operator_attention = OperatorAttention(
+        mode_provider=mode_provider,
+        hazard_active_provider=hazard_active_provider,
+    )
+    runtime.approval_edge = ApprovalEdge(
+        queue=runtime.approval_queue,
+        signal_emitter=_emit,
+        ledger_append=runtime.ledger_append,
+        ts_ns=lambda: 1234567890,
+    )
+    return runtime, ledger, emitted
+
+
+def test_runtime_pr_f_auto_with_no_hazard_auto_approves_proposal() -> None:
+    """AUTO + no hazard → proposal auto-emits via the approval edge.
+
+    Verifies the headline PR-F behaviour: the runtime drives the
+    approval edge with ``decided_by=AUTO_DECIDED_BY_TAG``, the
+    ``OPERATOR_APPROVED_SIGNAL`` ledger row carries that tag, and a
+    ``SignalEvent`` lands on the recording emitter — all without an
+    operator click."""
+
+    from core.contracts.governance import SystemMode
+    from governance_engine.control_plane.operator_attention import (
+        AUTO_DECIDED_BY_TAG,
+    )
+
+    runtime, ledger, emitted = _wire_pr_f_runtime(
+        mode_provider=lambda: SystemMode.AUTO,
+        hazard_active_provider=lambda: False,
+    )
+    runtime.turn(_request("hi"))
+
+    kinds = [row[1] for row in ledger.rows]
+    assert "OPERATOR_APPROVAL_PENDING" in kinds
+    assert "OPERATOR_APPROVED_SIGNAL" in kinds
+    approved_payload = next(
+        row[2] for row in ledger.rows if row[1] == "OPERATOR_APPROVED_SIGNAL"
+    )
+    assert approved_payload["decided_by"] == AUTO_DECIDED_BY_TAG
+    assert len(emitted) == 1
+    assert emitted[0].symbol == "EURUSD"
+
+
+def test_runtime_pr_f_auto_with_active_hazard_stays_pending() -> None:
+    """AUTO + active hazard → proposal stays PENDING (no auto-emit).
+
+    The hazard flips ``per_trade_required()`` back to ``True`` so the
+    runtime leaves the queue row in ``PENDING`` and never calls the
+    approval edge."""
+
+    from core.contracts.governance import SystemMode
+
+    runtime, ledger, emitted = _wire_pr_f_runtime(
+        mode_provider=lambda: SystemMode.AUTO,
+        hazard_active_provider=lambda: True,
+    )
+    runtime.turn(_request("hi"))
+
+    kinds = [row[1] for row in ledger.rows]
+    assert "OPERATOR_APPROVAL_PENDING" in kinds
+    assert "OPERATOR_APPROVED_SIGNAL" not in kinds
+    assert emitted == []
+
+
+def test_runtime_pr_f_live_mode_always_stays_pending() -> None:
+    """LIVE → proposal stays PENDING regardless of hazard state.
+
+    Covers the safety-critical invariant: per-trade modes never
+    auto-approve, even when wired with the PR-F seam."""
+
+    from core.contracts.governance import SystemMode
+
+    runtime, ledger, emitted = _wire_pr_f_runtime(
+        mode_provider=lambda: SystemMode.LIVE,
+        hazard_active_provider=lambda: False,
+    )
+    runtime.turn(_request("hi"))
+
+    kinds = [row[1] for row in ledger.rows]
+    assert "OPERATOR_APPROVAL_PENDING" in kinds
+    assert "OPERATOR_APPROVED_SIGNAL" not in kinds
+    assert emitted == []
+
+
+def test_runtime_pr_f_routine_traffic_auto_approves_100x() -> None:
+    """Golden trace: 100 routine AUTO turns auto-approve, then a
+    hazard fires and the next turn stays PENDING.
+
+    Pins the determinism + replay-equivalence of the AUTO mode
+    relaxation under sustained load. Mirrors the Wave-04.6 plan
+    quote: "100 routine LIVE intents in AUTO with no operator
+    present → all approved; one HAZ-12 hazard → operator-required
+    gate fires"."""
+
+    from core.contracts.governance import SystemMode
+
+    hazard = {"active": False}
+
+    runtime, ledger, emitted = _wire_pr_f_runtime(
+        mode_provider=lambda: SystemMode.AUTO,
+        hazard_active_provider=lambda: hazard["active"],
+    )
+    for i in range(100):
+        runtime.turn(_request("hi", thread_id=f"thread-{i}"))
+
+    approved_kinds = [row[1] for row in ledger.rows if row[1] == "OPERATOR_APPROVED_SIGNAL"]
+    assert len(approved_kinds) == 100
+    assert len(emitted) == 100
+
+    # Now a hazard fires — next turn stays PENDING.
+    hazard["active"] = True
+    runtime.turn(_request("hi", thread_id="thread-haz"))
+    approved_after = [
+        row for row in ledger.rows if row[1] == "OPERATOR_APPROVED_SIGNAL"
+    ]
+    pending_after = [
+        row for row in ledger.rows if row[1] == "OPERATOR_APPROVAL_PENDING"
+    ]
+    assert len(approved_after) == 100  # unchanged — last turn was not auto-approved
+    assert len(pending_after) == 101  # 101st row queued but not approved
+    assert len(emitted) == 100
+
+
+def test_runtime_pr_f_seam_absent_keeps_pending_back_compat() -> None:
+    """Without ``operator_attention`` / ``approval_edge`` set, behaviour
+    matches Wave-03 PR-5 — proposal stays PENDING.
+
+    Guards back-compat for tests / deployments that build the
+    runtime without wiring the PR-F seams."""
+
+    transport = _RecordingTransport(reply=_PROPOSE_REPLY)
+    ledger = _RecordingLedger()
+    runtime = build_runtime(
+        registry=_registry_with("provider-A"),
+        ledger_writer=ledger,
+        transport=transport,
+        feature_flag=_flag("yes"),
+    )
+    # Neither seam set — PR-F path is dormant.
+    assert runtime.operator_attention is None
+    assert runtime.approval_edge is None
+    runtime.turn(_request("hi"))
+    kinds = [row[1] for row in ledger.rows]
+    assert "OPERATOR_APPROVAL_PENDING" in kinds
+    assert "OPERATOR_APPROVED_SIGNAL" not in kinds

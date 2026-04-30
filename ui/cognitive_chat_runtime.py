@@ -53,9 +53,17 @@ from core.contracts.api.cognitive_chat import (
     ChatTurnRequest,
     ChatTurnResponse,
 )
+from core.contracts.api.cognitive_chat_approvals import (
+    ApprovalDecisionRequest,
+)
 from governance_engine.control_plane.ledger_authority_writer import (
     LedgerAuthorityWriter,
 )
+from governance_engine.control_plane.operator_attention import (
+    AUTO_DECIDED_BY_TAG,
+    OperatorAttention,
+)
+from intelligence_engine.cognitive.approval_edge import ApprovalEdge
 from intelligence_engine.cognitive.approval_projection import (
     DECISION_KINDS,
     PENDING_KIND,
@@ -227,6 +235,14 @@ class CognitiveChatRuntime:
     feature_flag: CognitiveChatFeatureFlag
     approval_queue: ApprovalQueue
     bundle: CognitiveChatBundle | None = None
+    # Wave-04.6 PR-F: OperatorAttention reads the canonical mode-effect
+    # table to decide whether the proposal needs a per-trade operator
+    # click (LIVE / CANARY / SHADOW / PAPER / SAFE) or may auto-emit
+    # via the approval edge (AUTO with no active hazard). Both seams
+    # are optional so PR-7 / Wave-03 tests that wire only the queue
+    # remain green.
+    operator_attention: OperatorAttention | None = None
+    approval_edge: ApprovalEdge | None = None
     # Per-runtime lock guarding `bundle` lazy-init only. The graph
     # invocation itself (an LLM round-trip) must NOT be held under
     # this lock — and definitely not under the process-wide
@@ -344,6 +360,29 @@ class CognitiveChatRuntime:
                 },
             )
             proposal_id = queued.request_id
+            # Wave-04.6 PR-F: AUTO mode oversight relaxation. When the
+            # mode-effect table reports ``oversight_kind=exception_only``
+            # *and* no hazard is active, OperatorAttention returns
+            # ``per_trade_required() == False`` and the runtime drives
+            # the approval edge directly with
+            # ``decided_by=AUTO_DECIDED_BY_TAG``. The approval edge
+            # writes ``OPERATOR_APPROVED_SIGNAL`` and emits the
+            # ``SignalEvent`` exactly as it would for an operator click,
+            # so HARDEN-02 / HARDEN-03 are unchanged. When either seam
+            # is absent (legacy / test wiring) the proposal stays
+            # PENDING — the conservative back-compat path.
+            if (
+                self.operator_attention is not None
+                and self.approval_edge is not None
+                and not self.operator_attention.per_trade_required()
+            ):
+                decided, _sig = self.approval_edge.approve(
+                    request_id=queued.request_id,
+                    decision=ApprovalDecisionRequest(
+                        decided_by=AUTO_DECIDED_BY_TAG,
+                    ),
+                )
+                proposal_id = decided.request_id
 
         return ChatTurnResponse(
             thread_id=req.thread_id,

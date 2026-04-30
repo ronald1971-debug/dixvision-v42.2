@@ -13,6 +13,7 @@ from core.contracts.events import (
     Side,
     SignalEvent,
 )
+from core.contracts.governance import SystemMode
 from core.contracts.market import MarketTick
 from execution_engine.adapters import BrokerAdapter, PaperBroker
 from execution_engine.engine import (
@@ -271,3 +272,230 @@ def test_execution_engine_latency_slo():
 
     assert p50_ms < 2.0, f"p50 too high: {p50_ms:.3f} ms"
     assert p99_ms < 10.0, f"p99 too high: {p99_ms:.3f} ms"
+
+
+# ---------------------------------------------------------------------------
+# Wave-04.6 PR-B — SHADOW = signals-on-execution-off
+#
+# The mode-effect table in core/contracts/mode_effects.py is the single
+# source of truth. Three modes report executions_dispatch=False today
+# (SAFE, SHADOW, LOCKED). The Execution Gate must honour the table by
+# passing the AuthorityGuard but suppressing the broker side effect and
+# returning a synthetic REJECTED ExecutionEvent with a machine-readable
+# reason. PAPER, CANARY, LIVE, AUTO must continue to dispatch.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [SystemMode.SAFE, SystemMode.SHADOW, SystemMode.LOCKED],
+)
+def test_execute_suppresses_dispatch_when_mode_effect_blocks(mode):
+    """SAFE/SHADOW/LOCKED skip broker dispatch via mode-effect table."""
+    engine = ExecutionEngine()
+    engine.on_market(
+        MarketTick(ts_ns=400, symbol="X", bid=99.5, ask=100.5, last=100.0)
+    )
+    sig = SignalEvent(ts_ns=400, symbol="X", side=Side.BUY, confidence=0.7)
+    intent = _intent_for(sig)
+
+    out = engine.execute(intent, current_mode=mode)
+
+    assert len(out) == 1
+    ev = out[0]
+    assert ev.status is ExecutionStatus.REJECTED
+    assert ev.qty == 0.0
+    assert ev.price == 0.0
+    assert ev.order_id == ""
+    assert ev.symbol == "X"
+    assert ev.side is Side.BUY
+    assert ev.produced_by_engine == "execution_engine"
+    assert ev.meta == {"reason": "mode_effect_suppressed", "mode": mode.name}
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [
+        SystemMode.PAPER,
+        SystemMode.CANARY,
+        SystemMode.LIVE,
+        SystemMode.AUTO,
+    ],
+)
+def test_execute_dispatches_when_mode_effect_allows(mode):
+    """PAPER/CANARY/LIVE/AUTO route to the broker as before."""
+    engine = ExecutionEngine()
+    engine.on_market(
+        MarketTick(ts_ns=401, symbol="X", bid=99.5, ask=100.5, last=100.0)
+    )
+    sig = SignalEvent(ts_ns=401, symbol="X", side=Side.BUY, confidence=0.7)
+    intent = _intent_for(sig)
+
+    out = engine.execute(intent, current_mode=mode)
+
+    assert len(out) == 1
+    ev = out[0]
+    assert ev.status is ExecutionStatus.FILLED
+    assert ev.qty > 0.0
+    assert ev.price > 0.0
+    assert ev.order_id.startswith("PAPER-")
+    assert "reason" not in ev.meta
+
+
+def test_execute_without_mode_argument_preserves_legacy_behaviour():
+    """Callers that omit current_mode dispatch unconditionally.
+
+    Replay tests and harness flows already gate upstream; the optional
+    parameter must not regress them.
+    """
+    engine = ExecutionEngine()
+    engine.on_market(
+        MarketTick(ts_ns=402, symbol="X", bid=99.5, ask=100.5, last=100.0)
+    )
+    sig = SignalEvent(ts_ns=402, symbol="X", side=Side.BUY, confidence=0.7)
+    intent = _intent_for(sig)
+
+    out = engine.execute(intent)
+
+    assert len(out) == 1
+    assert out[0].status is ExecutionStatus.FILLED
+
+
+def test_execute_runs_authority_guard_before_mode_check():
+    """Guard failures must not be masked by SHADOW dispatch suppression.
+
+    A signal whose intent fails the AuthorityGuard must still raise
+    even if the mode would have suppressed the broker side effect.
+    The guard is the first invariant in the gate (HARDEN-02); the mode
+    suppression is the second.
+    """
+    from execution_engine.execution_gate import UnauthorizedActorError
+
+    engine = ExecutionEngine()
+    sig = SignalEvent(ts_ns=403, symbol="X", side=Side.BUY, confidence=0.7)
+    intent = _intent_for(sig)
+
+    with pytest.raises(UnauthorizedActorError):
+        engine.execute(intent, caller="not_execution_engine", current_mode=SystemMode.SHADOW)
+
+
+# ---------------------------------------------------------------------------
+# Wave-04.6 PR-C — equity-based notional cap pure helper.
+#
+# The canonical interpretation of ``ModeEffect.size_cap_pct`` is *percent
+# of account equity* (not percent of broker fill qty). PR-C ships only the
+# pure helper :func:`equity_notional_cap_qty`. The runtime application of
+# that helper is deliberately *not* in ExecutionEngine — it lives in
+# :class:`PolicyEngine` (Wave-04.6 PR-E) as a pre-execution clamp on
+# :class:`ExecutionIntent.notional_pct`. Applying the cap post-broker (as
+# this PR previously did) would create a position-tracking discrepancy
+# with live venues: the venue records the full fill while the system
+# records the clamped 1%. ExecutionEngine therefore continues to dispatch
+# the broker's chosen qty unchanged in CANARY for now; the canonical
+# guarantee is enforced upstream by Governance.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [
+        SystemMode.PAPER,
+        SystemMode.CANARY,
+        SystemMode.LIVE,
+        SystemMode.AUTO,
+    ],
+)
+def test_execute_canary_does_not_clamp_post_broker(mode):
+    """ExecutionEngine no longer applies a post-broker size cap.
+
+    The CANARY safety guarantee is enforced *pre-execution* by the
+    PolicyEngine (Wave-04.6 PR-E). ExecutionEngine in PR-C dispatches
+    the broker's chosen qty for every dispatch-allowed mode, with no
+    mode-driven mutation of ``ExecutionEvent.qty``.
+    """
+    engine = ExecutionEngine()
+    engine.on_market(
+        MarketTick(ts_ns=500, symbol="X", bid=99.5, ask=100.5, last=100.0)
+    )
+    sig = SignalEvent(ts_ns=500, symbol="X", side=Side.BUY, confidence=0.7)
+    intent = _intent_for(sig)
+
+    out = engine.execute(intent, current_mode=mode)
+
+    assert len(out) == 1
+    ev = out[0]
+    assert ev.status is ExecutionStatus.FILLED
+    assert ev.qty == pytest.approx(1.0)
+    assert "clamped_to_mode_cap" not in ev.meta
+    assert "original_qty" not in ev.meta
+
+
+def test_equity_notional_cap_qty_canary_one_percent():
+    """CANARY caps notional at 1% of equity → max_qty = equity * 0.01 / price."""
+    from core.contracts.mode_effects import equity_notional_cap_qty
+
+    cap = equity_notional_cap_qty(
+        mode=SystemMode.CANARY, equity=100_000.0, price=100.0
+    )
+    # 100_000 * 0.01 / 100 = 10.0
+    assert cap == pytest.approx(10.0)
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [SystemMode.LIVE, SystemMode.AUTO],
+)
+def test_equity_notional_cap_qty_uncapped_modes_return_none(mode):
+    """LIVE / AUTO have ``size_cap_pct=None`` → helper returns ``None``."""
+    from core.contracts.mode_effects import equity_notional_cap_qty
+
+    assert (
+        equity_notional_cap_qty(mode=mode, equity=100_000.0, price=100.0)
+        is None
+    )
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [
+        SystemMode.PAPER,
+        SystemMode.SHADOW,
+        SystemMode.SAFE,
+        SystemMode.LOCKED,
+    ],
+)
+def test_equity_notional_cap_qty_non_applicable_modes_return_none(mode):
+    """Modes with ``size_cap_pct=0.0`` are non-applicable → ``None``.
+
+    PAPER is not an equity-bearing venue; SHADOW/SAFE/LOCKED suppress
+    dispatch entirely so the cap is moot. The helper signals this with
+    ``None`` so callers do not erroneously clamp to zero.
+    """
+    from core.contracts.mode_effects import equity_notional_cap_qty
+
+    assert (
+        equity_notional_cap_qty(mode=mode, equity=100_000.0, price=100.0)
+        is None
+    )
+
+
+def test_equity_notional_cap_qty_rejects_negative_equity():
+    from core.contracts.mode_effects import equity_notional_cap_qty
+
+    with pytest.raises(ValueError):
+        equity_notional_cap_qty(
+            mode=SystemMode.CANARY, equity=-1.0, price=100.0
+        )
+
+
+def test_equity_notional_cap_qty_rejects_non_positive_price():
+    from core.contracts.mode_effects import equity_notional_cap_qty
+
+    with pytest.raises(ValueError):
+        equity_notional_cap_qty(
+            mode=SystemMode.CANARY, equity=100_000.0, price=0.0
+        )
+    with pytest.raises(ValueError):
+        equity_notional_cap_qty(
+            mode=SystemMode.CANARY, equity=100_000.0, price=-1.0
+        )

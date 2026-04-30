@@ -232,6 +232,52 @@ def effect_for(mode: SystemMode) -> ModeEffect:
         raise ValueError(f"no ModeEffect for mode {mode!r}") from exc
 
 
+# ---------------------------------------------------------------------------
+# Wave-04.6 PR-C — equity-based notional cap (CANARY = 1% of equity)
+# ---------------------------------------------------------------------------
+
+
+def equity_notional_cap_qty(
+    *,
+    mode: SystemMode,
+    equity: float,
+    price: float,
+) -> float | None:
+    """Convert ``size_cap_pct`` (percent of equity) into a maximum qty.
+
+    The canonical interpretation of :attr:`ModeEffect.size_cap_pct` is
+    *percent of account equity*: a CANARY fill must satisfy
+    ``qty * price <= equity * size_cap_pct / 100``. This helper is the
+    single source of truth that performs that conversion.
+
+    Pure function — no IO, no state, deterministic across replays
+    (INV-15 / TEST-01).
+
+    Args:
+        mode: Active :class:`SystemMode`.
+        equity: Account equity in the same currency unit as
+            ``qty * price``. Must be ``>= 0``.
+        price: Mark / fill price for the symbol. Must be ``> 0``.
+
+    Returns:
+        The maximum permitted ``qty`` (a non-negative float), or
+        ``None`` when the active mode is uncapped (``size_cap_pct``
+        is ``None``) or the cap is non-applicable for that mode
+        (``size_cap_pct == 0.0`` — moot for dispatch-suppressed modes
+        and for PAPER, which is not an equity-bearing venue).
+    """
+
+    if equity < 0.0:
+        raise ValueError("equity must be >= 0")
+    if price <= 0.0:
+        raise ValueError("price must be > 0")
+    cap_pct = effect_for(mode).size_cap_pct
+    if cap_pct is None or cap_pct <= 0.0:
+        return None
+    notional_cap = equity * (cap_pct / 100.0)
+    return notional_cap / price
+
+
 __all__ = [
     "MODE_EFFECTS",
     "MODE_EFFECTS_HASH_KEY",
@@ -239,5 +285,6 @@ __all__ = [
     "ModeEffect",
     "OversightKind",
     "effect_for",
+    "equity_notional_cap_qty",
     "mode_effect_table_hash",
 ]
