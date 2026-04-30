@@ -34,6 +34,7 @@ _DEFAULT_LIVENESS_MS_BY_CATEGORY: Mapping[str, int] = {
     "regulatory": 24 * 60 * 60_000,
     "dev": 60 * 60_000,
     "alt": 5 * 60_000,
+    "trader": 5 * 60_000,
     "ai": 60_000,
     "synthetic": 0,  # 0 == not liveness-checked
 }
@@ -50,6 +51,11 @@ class SourceCategory(StrEnum):
     REGULATORY = "regulatory"
     DEV = "dev"
     ALT = "alt"
+    # Wave-04 PR-2 — external trader feeds (signals + ideas + alerts).
+    # Producers: ``ui.feeds.tradingview_ideas`` and future trader-feed
+    # adapters. Consumers: ``intelligence_engine.trader_modeling`` (the
+    # only B29-allowed runtime constructor for ``TraderObservation``).
+    TRADER = "trader"
     AI = "ai"
     SYNTHETIC = "synthetic"
 
