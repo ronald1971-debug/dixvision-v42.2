@@ -371,3 +371,39 @@ def test_recording_transport_satisfies_chat_transport_protocol() -> None:
 
 def test_scripted_transport_satisfies_chat_transport_protocol() -> None:
     assert isinstance(_ScriptedTransport(script=()), ChatTransport)
+
+
+# ---------------------------------------------------------------------------
+# stop sequences are forwarded to the transport (regression: stop is a
+# named argument in BaseChatModel._generate, not part of **kwargs)
+# ---------------------------------------------------------------------------
+
+
+def test_stop_sequences_are_forwarded_to_transport() -> None:
+    transport = _RecordingTransport(reply="ok")
+    registry = _registry_with_two_reasoning_providers()
+    model = RegistryDrivenChatModel(
+        task=TaskClass.INDIRA_REASONING,
+        provider_resolver=_resolver(registry, TaskClass.INDIRA_REASONING),
+        transport=transport,
+    )
+    model.invoke([HumanMessage(content="x")], stop=["END", "###"])
+    assert len(transport.calls) == 1
+    _provider, _msgs, kwargs = transport.calls[0]
+    # `stop` must reach the transport so the underlying provider can
+    # honour the requested termination tokens. Silently dropping it
+    # would produce non-terminated responses.
+    assert kwargs.get("stop") == ["END", "###"]
+
+
+def test_stop_defaults_to_none_when_not_passed() -> None:
+    transport = _RecordingTransport(reply="ok")
+    registry = _registry_with_two_reasoning_providers()
+    model = RegistryDrivenChatModel(
+        task=TaskClass.INDIRA_REASONING,
+        provider_resolver=_resolver(registry, TaskClass.INDIRA_REASONING),
+        transport=transport,
+    )
+    model.invoke([HumanMessage(content="x")])
+    _provider, _msgs, kwargs = transport.calls[0]
+    assert kwargs.get("stop") is None

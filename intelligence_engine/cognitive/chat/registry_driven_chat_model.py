@@ -201,7 +201,7 @@ class RegistryDrivenChatModel(BaseChatModel):
         for provider in eligible:
             try:
                 text = self.transport.invoke(
-                    provider, tuple(messages), **kwargs
+                    provider, tuple(messages), stop=stop, **kwargs
                 )
             except TransientProviderError as exc:
                 last_error = exc
