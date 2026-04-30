@@ -252,7 +252,10 @@ sources:
     name: "Google Gemini"
     category: ai
     provider: google
-    endpoint: "https://generativelanguage.googleapis.com/v1"
+    # ``v1beta`` is required for ``generateContent`` with system
+    # prompts and ``responseMimeType``; ``v1`` rejects those fields.
+    # Must stay in sync with ``GoogleGeminiChatTransport.BASE_URL``.
+    endpoint: "https://generativelanguage.googleapis.com/v1beta"
     schema: "sensory.cognitive.contracts.AIResponse"
     auth: required
     enabled: true
