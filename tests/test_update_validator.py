@@ -118,6 +118,25 @@ def test_validator_rejects_unknown_strategy():
     assert decision.code is UpdateRejectCode.UNKNOWN_STRATEGY
 
 
+def test_validator_rejects_empty_reason_before_apply():
+    """Empty reason rejected up-front — guards INV-15.
+
+    StrategyRegistry.apply_parameter_update raises ValueError on empty
+    reason. If the validator returned RATIFY, the engine would write
+    UPDATE_RATIFIED to the ledger and *then* the applier would raise,
+    leaving an orphaned ledger row with no STRATEGY_PARAMETER_UPDATE
+    follow-up. EMPTY_REASON closes that gap by rejecting before any
+    ledger row is written.
+    """
+    reg = _approved_strategy(bounds={"alpha": (0.1, 0.9)})
+    decision = UpdateValidator(registry=reg).validate(
+        update=_learning_update(reason=""),
+        mode=SystemMode.LIVE,
+    )
+    assert decision.verdict is UpdateVerdict.REJECT
+    assert decision.code is UpdateRejectCode.EMPTY_REASON
+
+
 @pytest.mark.parametrize(
     "lifecycle",
     [

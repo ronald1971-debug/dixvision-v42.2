@@ -85,6 +85,7 @@ class UpdateRejectCode(StrEnum):
     PARAMETER_NOT_MUTABLE = "PARAMETER_NOT_MUTABLE"
     NEW_VALUE_NOT_NUMERIC = "NEW_VALUE_NOT_NUMERIC"
     NEW_VALUE_OUT_OF_BOUNDS = "NEW_VALUE_OUT_OF_BOUNDS"
+    EMPTY_REASON = "EMPTY_REASON"
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,6 +123,17 @@ class UpdateValidator:
     def validate(
         self, *, update: ProposedUpdate, mode: SystemMode
     ) -> UpdateDecision:
+        if not update.reason:
+            return UpdateDecision(
+                verdict=UpdateVerdict.REJECT,
+                code=UpdateRejectCode.EMPTY_REASON,
+                detail=(
+                    f"empty reason for {update.strategy_id!r}."
+                    f"{update.parameter} \u2014 every ratified update "
+                    "must carry a non-empty reason for the audit chain"
+                ),
+            )
+
         if not effect_for(mode).learning_apply:
             return UpdateDecision(
                 verdict=UpdateVerdict.REJECT,
