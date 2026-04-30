@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from core.contracts.governance import SystemMode
-from dashboard.control_plane.router import ControlPlaneRouter
+from dashboard_backend.control_plane.router import ControlPlaneRouter
 from governance_engine.control_plane import (
     LedgerAuthorityWriter,
     PolicyEngine,

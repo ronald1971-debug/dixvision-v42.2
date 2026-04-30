@@ -28,7 +28,7 @@ from core.contracts.governance import (
     OperatorRequest,
     SystemMode,
 )
-from dashboard.control_plane.router import ControlPlaneRouter, RouteOutcome
+from dashboard_backend.control_plane.router import ControlPlaneRouter, RouteOutcome
 from governance_engine.control_plane.state_transition_manager import (
     StateTransitionManager,
     _is_legal_edge,

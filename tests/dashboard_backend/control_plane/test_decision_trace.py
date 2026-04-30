@@ -12,7 +12,7 @@ from core.contracts.events import (
     SystemEvent,
     SystemEventKind,
 )
-from dashboard.control_plane.decision_trace import DecisionTracePanel
+from dashboard_backend.control_plane.decision_trace import DecisionTracePanel
 from state.ledger.reader import LedgerReader
 
 

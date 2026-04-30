@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from core.contracts.governance import SystemMode
-from dashboard.control_plane.mode_control_bar import ModeControlBar
+from dashboard_backend.control_plane.mode_control_bar import ModeControlBar
 
 
 def test_snapshot_returns_legal_targets_in_safe(governance_stack, router):

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from core.contracts.engine import HealthState, HealthStatus
-from dashboard.control_plane.engine_status_grid import EngineStatusGrid
+from dashboard_backend.control_plane.engine_status_grid import EngineStatusGrid
 
 
 class _FakeEngine:

@@ -7,7 +7,7 @@ from core.contracts.governance import (
     OperatorRequest,
     SystemMode,
 )
-from dashboard.control_plane.memecoin_control_panel import MemecoinControlPanel
+from dashboard_backend.control_plane.memecoin_control_panel import MemecoinControlPanel
 
 
 def _move_to_paper(router) -> None:
