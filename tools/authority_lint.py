@@ -118,6 +118,25 @@ ALLOWED_SHARED_PREFIXES: tuple[str, ...] = (
     "state.ledger.reader",
 )
 
+# B1-only allow-list — extra prefixes that runtime engines may import
+# directly from each other but that *must not* relax the dashboard (B7)
+# or system-intent (B8) isolation rules. Each entry needs an explicit
+# justification.
+#
+# * ``system_engine.authority`` — the authority matrix
+#   (``registry/authority_matrix.yaml`` + the frozen
+#   :class:`AuthorityMatrix` value type) is the *source of truth* every
+#   engine consults when proving its own role. It is data, not
+#   behaviour; the loader has no side effects beyond reading a
+#   registry YAML. The Execution Gate
+#   (``execution_engine.execution_gate``) loads it once at
+#   construction to validate every :class:`ExecutionIntent`
+#   (HARDEN-02 / INV-68). Scoped to B1 so the dashboard and the
+#   system-intent module remain blocked from importing it.
+B1_EXTRA_ALLOWED_PREFIXES: tuple[str, ...] = (
+    "system_engine.authority",
+)
+
 # Hot-path modules subject to T1.
 HOT_PATH_MODULES: tuple[str, ...] = (
     "mind.fast_execute",
@@ -421,6 +440,8 @@ def _check_b1(
     if target_pkg is None or target_pkg == importer_pkg:
         return None
     if _check_allow_list(target):
+        return None
+    if _starts_with_any(target, B1_EXTRA_ALLOWED_PREFIXES):
         return None
     return Violation(
         "B1",
