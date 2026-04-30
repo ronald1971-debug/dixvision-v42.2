@@ -5,8 +5,8 @@ Binance feed, OHLCV ticks) and *its own* internal decisions (Phase 6
 ``DecisionTrace``, ``META_AUDIT``, ``CALIBRATION_REPORT``). It does
 **not** model external *traders* as structured records.
 
-This module fixes that gap. It introduces three frozen / slotted /
-hashable dataclasses — :class:`PhilosophyProfile`,
+This module fixes that gap. It introduces three frozen, slotted
+dataclasses with structural equality — :class:`PhilosophyProfile`,
 :class:`TraderModel`, and :class:`TraderObservation` — that capture
 what an external trader *believes*, *does*, and *consistently
 under/over-performs at*, in a form the offline learning + evolution
@@ -16,8 +16,12 @@ operator-approval edge (Wave-03 PR-5).
 Design constraints (mirror ``core.contracts.events`` /
 ``core.contracts.learning``):
 
-* Frozen, slotted, hashable, structural equality (TEST-01 replay parity,
-  INV-15 deterministic primitives).
+* Frozen, slotted, with structural equality (TEST-01 replay parity,
+  INV-15 deterministic primitives). Instances are **not** hashable
+  because the ``Mapping[...]`` fields default to ``dict``; downstream
+  consumers that need set/dict-key semantics must project to a tuple
+  of ``(key, value)`` pairs explicitly. This mirrors the established
+  pattern in :mod:`core.contracts.learning`.
 * No callables, no IO, no clocks. Producers stamp ``ts_ns`` from the
   TimeAuthority (T0-04).
 * No PII / no secrets. ``trader_id`` is a stable opaque handle from the

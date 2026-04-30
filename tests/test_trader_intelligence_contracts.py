@@ -2,7 +2,9 @@
 
 Pin the structural guarantees that the rest of the wave depends on:
 
-* Frozen / slotted / hashable instances (replay parity, INV-15).
+* Frozen / slotted instances with structural equality (replay parity,
+  INV-15). Instances are intentionally NOT hashable — ``Mapping[...]``
+  fields default to ``dict`` (mirrors :mod:`core.contracts.learning`).
 * Structural equality (same fields → equal).
 * No PII / no callables — only deterministic primitives.
 * Default constructors are pure (no clock, no IO, no side effects).
