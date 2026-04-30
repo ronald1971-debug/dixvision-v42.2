@@ -23,6 +23,11 @@ dev = [
     "httpx>=0.25",
     "pydantic>=2.0",
     "websockets>=12.0",
+    # wave-03 cognitive layer (intelligence_engine.cognitive.* / B24-scoped)
+    "langchain-core>=0.3,<1",
+]
+cognitive = [
+    "langchain-core>=0.3,<1",
 ]
 ui = [
     "fastapi>=0.110",
