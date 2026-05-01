@@ -1,3 +1,6 @@
+@import "react-grid-layout/css/styles.css";
+@import "react-resizable/css/styles.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,6 +12,8 @@ body,
 }
 
 body {
+  background: #0b0d12;
+  color: #e2e8f0;
   font-family:
     ui-sans-serif,
     system-ui,
@@ -18,4 +23,24 @@ body {
     "Helvetica Neue",
     Arial,
     sans-serif;
+}
+
+.react-grid-item.react-grid-placeholder {
+  background: rgba(58, 160, 255, 0.18) !important;
+  border: 1px dashed rgba(58, 160, 255, 0.6);
+  border-radius: 4px;
+  opacity: 1;
+}
+
+.react-grid-item > .react-resizable-handle::after {
+  border-right-color: #1f2330;
+  border-bottom-color: #1f2330;
+}
+
+.widget-drag-handle {
+  cursor: move;
+}
+
+.widget-drag-handle :where(button, a, input, textarea, select) {
+  cursor: auto;
 }

@@ -1,22 +1,76 @@
 import { useEffect, useState } from "react";
 
 /**
- * Minimal hash-based router. Avoids pulling in `react-router` for what
- * is, today, two pages. The FastAPI mount serves the SPA index for the
- * `/dash2/` root only; deep links use the `#/<route>` form so the
- * server keeps serving `index.html` regardless of path.
+ * Hash-based router for the wave-02 SPA.
+ *
+ * The 2026 dashboard rebuild (DASH-A) extends the route space from the
+ * original three system pages (credentials/operator/chat) to also
+ * cover the seven asset-class surfaces called out in PR #2 §3:
+ * spot, perps, dex, memecoin (own dashboard per operator directive),
+ * forex, stocks, nft.
+ *
+ * The FastAPI mount serves the SPA index for the `/dash2/` root only;
+ * deep links use the `#/<route>` form so the server keeps serving
+ * `index.html` regardless of path.
  */
-export type Route = "credentials" | "operator" | "chat";
+export type AssetRoute =
+  | "spot"
+  | "perps"
+  | "dex"
+  | "memecoin"
+  | "forex"
+  | "stocks"
+  | "nft";
 
-const ROUTES: readonly Route[] = ["credentials", "operator", "chat"];
+export type SystemRoute =
+  | "operator"
+  | "credentials"
+  | "chat"
+  | "indira"
+  | "dyon"
+  | "testing";
+
+export type Route = AssetRoute | SystemRoute;
+
+const ASSET_ROUTES: readonly AssetRoute[] = [
+  "spot",
+  "perps",
+  "dex",
+  "memecoin",
+  "forex",
+  "stocks",
+  "nft",
+];
+
+const SYSTEM_ROUTES: readonly SystemRoute[] = [
+  "operator",
+  "credentials",
+  "chat",
+  "indira",
+  "dyon",
+  "testing",
+];
+
+const ALL_ROUTES: readonly Route[] = [...ASSET_ROUTES, ...SYSTEM_ROUTES];
+
+/**
+ * Default landing route. Memecoin is the surface the operator
+ * explicitly wanted as its own dashboard, so it is the first thing
+ * shown when `/dash2/` is opened without a hash.
+ */
+export const DEFAULT_ROUTE: Route = "memecoin";
+
+export function isAssetRoute(route: Route): route is AssetRoute {
+  return (ASSET_ROUTES as readonly string[]).includes(route);
+}
 
 export function parseRoute(hash: string): Route {
   const cleaned = hash.replace(/^#\/?/, "").trim();
-  if (cleaned === "") return "credentials";
-  for (const route of ROUTES) {
+  if (cleaned === "") return DEFAULT_ROUTE;
+  for (const route of ALL_ROUTES) {
     if (cleaned === route) return route;
   }
-  return "credentials";
+  return DEFAULT_ROUTE;
 }
 
 export function useHashRoute(): Route {
@@ -30,3 +84,6 @@ export function useHashRoute(): Route {
   }, []);
   return route;
 }
+
+export const ASSET_ROUTE_LIST = ASSET_ROUTES;
+export const SYSTEM_ROUTE_LIST = SYSTEM_ROUTES;

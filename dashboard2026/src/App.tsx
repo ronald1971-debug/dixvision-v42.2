@@ -1,70 +1,93 @@
+import { useState } from "react";
+
+import { AutonomyRibbon } from "@/components/AutonomyRibbon";
+import { ModeRibbon } from "@/components/ModeRibbon";
 import { LiveStatusPill } from "@/components/LiveStatusPill";
+import { PadlockFloors } from "@/components/PadlockFloors";
+import { PromoteChain } from "@/components/PromoteChain";
+import { Sidebar } from "@/components/Sidebar";
 import { CognitiveChatPage } from "@/pages/CognitiveChatPage";
 import { CredentialsPage } from "@/pages/CredentialsPage";
+import { DyonLearningPage } from "@/pages/DyonLearningPage";
+import { IndiraLearningPage } from "@/pages/IndiraLearningPage";
 import { OperatorPage } from "@/pages/OperatorPage";
+import { TestingPage } from "@/pages/TestingPage";
+import { DexPage } from "@/pages/asset/DexPage";
+import { ForexPage } from "@/pages/asset/ForexPage";
+import { MemecoinPage } from "@/pages/asset/MemecoinPage";
+import { NftPage } from "@/pages/asset/NftPage";
+import { PerpsPage } from "@/pages/asset/PerpsPage";
+import { SpotPage } from "@/pages/asset/SpotPage";
+import { StocksPage } from "@/pages/asset/StocksPage";
 import { useHashRoute, type Route } from "@/router";
 
-const TABS: Array<{ key: Route; href: string; label: string }> = [
-  { key: "credentials", href: "#/credentials", label: "credentials" },
-  { key: "operator", href: "#/operator", label: "operator" },
-  { key: "chat", href: "#/chat", label: "chat" },
-];
+function renderRoute(route: Route) {
+  switch (route) {
+    case "spot":
+      return <SpotPage />;
+    case "perps":
+      return <PerpsPage />;
+    case "dex":
+      return <DexPage />;
+    case "memecoin":
+      return <MemecoinPage />;
+    case "forex":
+      return <ForexPage />;
+    case "stocks":
+      return <StocksPage />;
+    case "nft":
+      return <NftPage />;
+    case "operator":
+      return <OperatorPage />;
+    case "credentials":
+      return <CredentialsPage />;
+    case "chat":
+      return <CognitiveChatPage />;
+    case "indira":
+      return <IndiraLearningPage />;
+    case "dyon":
+      return <DyonLearningPage />;
+    case "testing":
+      return <TestingPage />;
+  }
+}
 
 export function App() {
   const route = useHashRoute();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   return (
-    <div className="min-h-full flex flex-col">
-      <header className="border-b border-border bg-surface px-6 py-3">
-        <div className="flex items-baseline gap-3">
-          <span className="text-lg font-semibold tracking-tight">
+    <div className="flex h-full flex-col">
+      <header className="flex flex-col gap-2 border-b border-border bg-surface px-4 py-2">
+        <div className="flex items-center gap-3">
+          <span className="text-base font-semibold tracking-tight">
             DIX VISION
           </span>
-          <span className="text-xs text-slate-400 font-mono">
-            wave-02 · operator console
+          <span className="font-mono text-[10px] uppercase tracking-widest text-slate-500">
+            /{route}
           </span>
-          <span className="ml-auto self-center">
-            <LiveStatusPill />
-          </span>
+          <div className="ml-4 flex-1 overflow-x-auto">
+            <ModeRibbon />
+          </div>
+          <AutonomyRibbon />
+          <LiveStatusPill />
         </div>
-        <nav className="mt-2 flex gap-2 font-mono text-xs">
-          {TABS.map((tab) => {
-            const isActive = tab.key === route;
-            return (
-              <a
-                key={tab.key}
-                href={tab.href}
-                className={
-                  isActive
-                    ? "rounded border border-accent bg-accent/10 px-2 py-1 text-accent"
-                    : "rounded border border-border bg-bg px-2 py-1 text-slate-400 hover:border-accent hover:text-accent"
-                }
-              >
-                {tab.label}
-              </a>
-            );
-          })}
-        </nav>
+        <div className="flex flex-wrap items-center gap-3">
+          <PromoteChain />
+          <div className="flex-1" />
+          <PadlockFloors />
+        </div>
       </header>
-      <main className="flex-1 px-6 py-6">
-        {route === "operator" ? (
-          <OperatorPage />
-        ) : route === "chat" ? (
-          <CognitiveChatPage />
-        ) : (
-          <CredentialsPage />
-        )}
-      </main>
-      <footer className="border-t border-border bg-surface px-6 py-2 text-xs text-slate-500">
-        Vanilla pages remain the canonical reference at{" "}
-        <a className="text-accent hover:underline" href="/credentials">
-          /credentials
-        </a>
-        ,{" "}
-        <a className="text-accent hover:underline" href="/operator">
-          /operator
-        </a>
-        , and friends. This wave-02 surface is additive.
-      </footer>
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar
+          active={route}
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed((c) => !c)}
+        />
+        <main className="flex-1 overflow-auto px-4 py-3">
+          {renderRoute(route)}
+        </main>
+      </div>
     </div>
   );
 }
