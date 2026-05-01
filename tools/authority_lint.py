@@ -67,6 +67,14 @@ FORBIDDEN_PRIMITIVES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
                          "immutable_core/",
                          "tests/")),
     ("B3", "datetime.utcnow", ("system/time_source.py", "tests/")),
+    # T0-4 rule T1: datetime.now() is banned outside time_source.py + a
+    # documented allowlist. Hot-path callers must use
+    # system.time_source.{now_ns,monotonic_ns,wall_ns,utc_now}.
+    # The cockpit/pairing.py entries are TOTP-window code; migration to
+    # time_source tracked as a follow-up, allowlisted here.
+    ("T1", "datetime.now", ("system/time_source.py",
+                            "cockpit/pairing.py",
+                            "tests/")),
     ("B4", "print", ("system/logger.py", "system/health_monitor.py",
                      "scripts/", "tests/",
                      "dix.py", "main.py", "diagnose_foundation.py",
