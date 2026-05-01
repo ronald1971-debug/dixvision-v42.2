@@ -232,6 +232,27 @@ def test_sandbox_replay_determinism():
     assert run() == run()
 
 
+def test_sandbox_empty_forbidden_prefixes_allows_everything():
+    """Regression: PR #32 review BUG_0001.
+
+    An explicitly empty ``forbidden_prefixes`` must mean "allow all" — not
+    silently fall back to defaults via ``or`` truthiness.
+    """
+    s = SandboxStage(forbidden_prefixes=())
+    _, verdict = s.evaluate(
+        ts_ns=1,
+        touchpoints=("subprocess.run", "socket.socket", "ctypes.cdll"),
+    )
+    assert verdict.passed is True
+
+    s2 = SandboxStage(forbidden_prefixes=[])
+    _, verdict2 = s2.evaluate(
+        ts_ns=1,
+        touchpoints=("subprocess.run",),
+    )
+    assert verdict2.passed is True
+
+
 # ---------------------------------------------------------------------------
 # StaticAnalysisStage
 # ---------------------------------------------------------------------------

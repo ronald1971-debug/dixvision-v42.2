@@ -346,6 +346,27 @@ def test_memory_overflow_replay_determinism():
     assert run() == run()
 
 
+def test_memory_overflow_critical_warn_critical_re_emits():
+    """Regression: PR #32 review BUG_0002.
+
+    Critical → warn → critical must rearm the critical band on the warn
+    transit. Previously ``_armed_critical`` stayed True and the second
+    CRITICAL was silently swallowed.
+    """
+    s = MemoryOverflowSensor(warn_bytes=1_000, critical_bytes=2_000)
+    first = s.observe(ts_ns=1, rss_bytes=3_000)
+    assert len(first) == 1
+    assert first[0].severity is HazardSeverity.CRITICAL
+
+    warn = s.observe(ts_ns=2, rss_bytes=1_500)
+    assert len(warn) == 1
+    assert warn[0].severity is HazardSeverity.MEDIUM
+
+    second = s.observe(ts_ns=3, rss_bytes=3_000)
+    assert len(second) == 1
+    assert second[0].severity is HazardSeverity.CRITICAL
+
+
 # ---------------------------------------------------------------------------
 # HAZ-06 — LatencySpikeSensor
 # ---------------------------------------------------------------------------

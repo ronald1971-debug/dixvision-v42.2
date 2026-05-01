@@ -62,7 +62,7 @@ class AnomalyDetector:
                 value=value,
                 is_anomaly=False,
                 z_score=0.0,
-                sample_count=n + 1,
+                sample_count=min(n + 1, self._window),
             )
         mean = sum(self._buf) / n
         var = sum((x - mean) ** 2 for x in self._buf) / n
@@ -76,7 +76,7 @@ class AnomalyDetector:
             value=value,
             is_anomaly=is_anomaly,
             z_score=z,
-            sample_count=n + 1,
+            sample_count=min(n + 1, self._window),
         )
 
 

@@ -175,6 +175,21 @@ def test_anomaly_replay_determinism():
     assert run() == run()
 
 
+def test_anomaly_sample_count_caps_at_window():
+    """Regression: PR #32 review BUG_0003.
+
+    Once the deque reaches ``maxlen``, ``sample_count`` must cap at
+    ``window`` (the buffer's true size after eviction) instead of
+    monotonically reporting ``n + 1``.
+    """
+    d = AnomalyDetector(metric="x", window=8, z_threshold=3.0, min_samples=4)
+    last: AnomalyVerdict | None = None
+    for i in range(20):
+        last = d.observe(ts_ns=i, value=1.0 + (i * 0.001))
+    assert last is not None
+    assert last.sample_count == 8
+
+
 # ---------------------------------------------------------------------------
 # DriftMonitor
 # ---------------------------------------------------------------------------
