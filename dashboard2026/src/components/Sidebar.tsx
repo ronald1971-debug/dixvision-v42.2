@@ -4,6 +4,7 @@ import {
   BarChart3,
   Bot,
   Brain,
+  CheckSquare,
   ChevronLeft,
   ChevronRight,
   Coins,
@@ -69,6 +70,12 @@ const SYSTEM_NAV: Record<SystemRoute, NavItem<SystemRoute>> = {
     icon: Brain,
   },
   dyon: { key: "dyon", label: "Dyon learn", href: "#/dyon", icon: Wrench },
+  testing: {
+    key: "testing",
+    label: "Testing & Eval",
+    href: "#/testing",
+    icon: CheckSquare,
+  },
 };
 
 export interface SidebarProps {

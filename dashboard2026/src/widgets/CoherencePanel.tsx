@@ -69,12 +69,17 @@ const FALLBACK: CoherenceSnapshot = {
   ],
 };
 
-async function fetchCoherence(): Promise<CoherenceSnapshot> {
+async function fetchCoherence(
+  signal?: AbortSignal,
+): Promise<CoherenceSnapshot> {
   try {
-    const res = await fetch(apiUrl("/api/dashboard/coherence"));
+    const res = await fetch(apiUrl("/api/dashboard/coherence"), { signal });
     if (!res.ok) throw new Error(`status ${res.status}`);
     return (await res.json()) as CoherenceSnapshot;
-  } catch {
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw err;
+    }
     return FALLBACK;
   }
 }
@@ -82,7 +87,7 @@ async function fetchCoherence(): Promise<CoherenceSnapshot> {
 export function CoherencePanel() {
   const { data } = useQuery({
     queryKey: ["dashboard", "coherence"],
-    queryFn: fetchCoherence,
+    queryFn: ({ signal }) => fetchCoherence(signal),
     refetchInterval: 5_000,
     initialData: FALLBACK,
   });

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { apiUrl } from "@/api/base";
 import { getAutonomyMode } from "@/state/autonomy";
@@ -457,6 +457,10 @@ export interface SLTPBuilderProps {
 export function SLTPBuilder({ form }: SLTPBuilderProps) {
   const [presetKey, setPresetKey] = useState<PresetKey>("standard");
   const [draft, setDraft] = useState<Preset>(() => PRESETS[form][presetKey]);
+  // Last successfully committed snapshot — used to fill the `previous`
+  // half of every OPERATOR/SETTINGS_CHANGED audit row so the ledger
+  // captures both before *and* after values per the spec contract.
+  const committedRef = useRef<Preset>(PRESETS[form]["standard"]);
 
   const presetMatrix = useMemo(() => PRESETS[form], [form]);
 
@@ -504,17 +508,21 @@ export function SLTPBuilder({ form }: SLTPBuilderProps) {
   }
 
   function commit() {
+    const previous = committedRef.current;
+    const next = draft;
     void fetch(apiUrl("/api/operator/audit"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         kind: "OPERATOR/SETTINGS_CHANGED",
         setting: `sl_tp/${form}`,
-        next: draft,
+        previous,
+        next,
         autonomy_mode: getAutonomyMode(),
         timestamp_iso: new Date().toISOString(),
       }),
     });
+    committedRef.current = next;
   }
 
   return (
