@@ -19,6 +19,15 @@ decision (INV-15, TEST-01).
 from governance_engine.control_plane.compliance_validator import (
     ComplianceValidator,
 )
+from governance_engine.control_plane.drift_oracle import (
+    DEFAULT_AXIS_WEIGHTS,
+    DEFAULT_COMPOSITE_THRESHOLD,
+    DEFAULT_MIN_SAMPLES,
+    DEFAULT_WINDOW_SIZE,
+    LEDGER_KIND_DRIFT_OBSERVATION,
+    DriftOracle,
+    DriftSample,
+)
 from governance_engine.control_plane.event_classifier import (
     EventClassifier,
     PipelineRoute,
@@ -50,8 +59,15 @@ from governance_engine.control_plane.state_transition_manager import (
 
 __all__ = [
     "ComplianceValidator",
+    "DEFAULT_AXIS_WEIGHTS",
+    "DEFAULT_COMPOSITE_THRESHOLD",
+    "DEFAULT_MIN_SAMPLES",
     "DEFAULT_PROMOTION_GATES_PATH",
+    "DEFAULT_WINDOW_SIZE",
+    "DriftOracle",
+    "DriftSample",
     "EventClassifier",
+    "LEDGER_KIND_DRIFT_OBSERVATION",
     "LEDGER_KIND_PROMOTION_GATES_BOUND",
     "LedgerAuthorityWriter",
     "OperatorInterfaceBridge",
