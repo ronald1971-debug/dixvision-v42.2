@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 
+import { apiUrl } from "@/api/base";
 import { getAutonomyMode } from "@/state/autonomy";
 
 /**
@@ -495,7 +496,7 @@ export function SLTPBuilder({ form }: SLTPBuilderProps) {
     // AI-propose hook (PR-#2 §4 + cognitive chat surface). Routed
     // through the operator-approval edge so the UI sees the proposal
     // only after Governance accepts it.
-    void fetch("/api/cognitive/sl_tp/propose", {
+    void fetch(apiUrl("/api/cognitive/sl_tp/propose"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ form, current: draft }),
@@ -503,7 +504,7 @@ export function SLTPBuilder({ form }: SLTPBuilderProps) {
   }
 
   function commit() {
-    void fetch("/api/operator/audit", {
+    void fetch(apiUrl("/api/operator/audit"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

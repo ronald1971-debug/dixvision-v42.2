@@ -3,6 +3,7 @@ import { useState } from "react";
 import { fetchMode } from "@/api/dashboard";
 import { useQuery } from "@tanstack/react-query";
 
+import { apiUrl } from "@/api/base";
 import { getAutonomyMode } from "@/state/autonomy";
 
 /**
@@ -54,7 +55,7 @@ export function OrderForm({ symbol }: OrderFormProps) {
     e.preventDefault();
     if (orderingDisabled) return;
     const autonomy = getAutonomyMode();
-    void fetch("/api/operator/orders/submit", {
+    void fetch(apiUrl("/api/operator/orders/submit"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

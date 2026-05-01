@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import { apiUrl } from "@/api/base";
+
 /**
  * Dyon chat (Widget #8 — Coding & Configuration) per PR-#2 spec §0.
  *
@@ -47,7 +49,7 @@ export function DyonChat() {
     setDraft("");
     setPending(true);
     try {
-      const res = await fetch("/api/cognitive/chat/turn", {
+      const res = await fetch(apiUrl("/api/cognitive/chat/turn"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: "dyon", text: trimmed }),

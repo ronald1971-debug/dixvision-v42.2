@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { apiUrl } from "@/api/base";
+
 /**
  * Autonomy Mode (PR-#2 spec §0.2 + §6).
  *
@@ -79,7 +81,7 @@ async function emitAudit(
     timestamp_iso: new Date().toISOString(),
   };
   try {
-    await fetch("/api/operator/audit", {
+    await fetch(apiUrl("/api/operator/audit"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

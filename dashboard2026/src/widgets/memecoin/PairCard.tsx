@@ -60,8 +60,9 @@ export function PairCard() {
           <span className="text-2xl text-slate-100">
             ${p.price.toFixed(7)}
           </span>
-          <span className="text-emerald-300">
-            +{p.d24h.toFixed(2)}% 24h
+          <span className={p.d24h >= 0 ? "text-emerald-300" : "text-red-300"}>
+            {p.d24h >= 0 ? "+" : ""}
+            {p.d24h.toFixed(2)}% 24h
           </span>
         </div>
         <div className="grid grid-cols-4 gap-2 font-mono text-[11px]">

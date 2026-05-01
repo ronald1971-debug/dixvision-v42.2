@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
+import { apiUrl } from "@/api/base";
+
 /**
  * Real-time bridge.
  *
@@ -32,7 +34,7 @@ function ensureConnected() {
     return;
   }
   try {
-    source = new EventSource("/api/dashboard/stream");
+    source = new EventSource(apiUrl("/api/dashboard/stream"));
     source.onopen = () => setConnectionState("live");
     source.onerror = () => {
       setConnectionState("error");

@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import { apiUrl } from "@/api/base";
+
 /**
  * Indira chat (Widget #7 — Trading Intelligence) per PR-#2 spec §0.
  *
@@ -49,7 +51,7 @@ export function IndiraChat() {
     setDraft("");
     setPending(true);
     try {
-      const res = await fetch("/api/cognitive/chat/turn", {
+      const res = await fetch(apiUrl("/api/cognitive/chat/turn"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: "indira", text: trimmed }),

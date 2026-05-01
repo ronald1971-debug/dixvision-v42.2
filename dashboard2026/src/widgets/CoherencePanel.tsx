@@ -10,6 +10,8 @@
  */
 import { useQuery } from "@tanstack/react-query";
 
+import { apiUrl } from "@/api/base";
+
 interface BeliefState {
   regime: "bullish" | "neutral" | "bearish";
   confidence: number;
@@ -69,7 +71,7 @@ const FALLBACK: CoherenceSnapshot = {
 
 async function fetchCoherence(): Promise<CoherenceSnapshot> {
   try {
-    const res = await fetch("/api/dashboard/coherence");
+    const res = await fetch(apiUrl("/api/dashboard/coherence"));
     if (!res.ok) throw new Error(`status ${res.status}`);
     return (await res.json()) as CoherenceSnapshot;
   } catch {
