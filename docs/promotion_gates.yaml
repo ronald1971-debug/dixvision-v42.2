@@ -1,0 +1,138 @@
+# SHADOW -> CANARY -> LIVE -> AUTO Promotion Gates
+#
+# Reviewer #4 (audit v4) flagged the missing pre-commitment of exit
+# criteria for the SHADOW -> CANARY transition (and onwards) as the
+# single most operationally important gap in v42.2. The reviewer's
+# exact framing -- "retrospective threshold setting is how
+# overconfidence enters systems" -- is the discipline this file
+# enforces.
+#
+# Mechanism:
+#
+#   1. The thresholds below are committed to the repository BEFORE the
+#      system enters SHADOW mode.
+#   2. governance_engine.control_plane.promotion_gates.PromotionGates
+#      hashes this file (SHA-256 over the canonical bytes) at SHADOW
+#      entry and writes a PROMOTION_GATES_BOUND row to the authority
+#      ledger.
+#   3. StateTransitionManager.propose() refuses any transition into
+#      CANARY / LIVE / AUTO if either:
+#         - the bound hash is missing (SHADOW was never entered cleanly), or
+#         - the live file's hash does not match the bound hash
+#           (someone edited the criteria mid-window)
+#      and emits a MODE_TRANSITION_REJECTED row with rejection_code
+#      "PROMOTION_GATES_HASH_MISMATCH".
+#   4. To change the criteria mid-window: de-escalate to PAPER (or
+#      below), edit this file, re-enter SHADOW. The bound hash is
+#      reset and the SHADOW clock starts over. That cost is
+#      intentional -- it makes hand-fitting expensive and visible.
+#
+# The numbers below are defensible *defaults*. They are NOT meant to
+# be accepted blindly. Review them against the system's actual
+# objectives before the SHADOW window starts. Once SHADOW starts they
+# are immutable for the duration of that window.
+
+schema_version: 1
+
+shadow_to_canary:
+  min_window_days: 30
+  min_signal_count: 500
+
+  # Performance floors. All must hold over the full window.
+  performance:
+    sharpe_ratio_min: 1.0
+    max_drawdown_max: 0.05        # 5%
+    fill_rate_min: 0.95
+    news_attribution_accuracy_min: 0.6
+    decision_trace_coverage_min: 1.0    # every decision must have a why
+
+  # Hazard tolerance during the window.
+  hazards:
+    HAZ-LATENCY-P99:
+      max_count: 0
+      max_duration_pct: 0.0
+    HAZ-NEWS-SHOCK:
+      max_count: null              # any (this is expected to fire)
+      max_duration_pct: 0.10       # but not for >10% of the window
+    HAZ-AUTHORITY-BREACH:
+      max_count: 0
+      max_duration_pct: 0.0
+
+  # Governance invariants that must hold for the entire window.
+  invariants:
+    authority_breaches_total: 0
+    replay_divergence_count: 0    # INV-15
+    triad_lock_violations: 0      # INV-56
+
+canary_to_live:
+  min_window_days: 14
+  min_signal_count: 250
+  size_cap_pct: 0.01               # 1% notional cap during CANARY
+
+  performance:
+    sharpe_ratio_min: 1.2          # tighter than SHADOW
+    max_drawdown_max: 0.03         # 3%
+    fill_rate_min: 0.97
+    news_attribution_accuracy_min: 0.65
+    decision_trace_coverage_min: 1.0
+    realised_vs_paper_correlation_min: 0.85   # CANARY must track the
+                                              # SHADOW paper book closely
+
+  hazards:
+    HAZ-LATENCY-P99:
+      max_count: 0
+      max_duration_pct: 0.0
+    HAZ-AUTHORITY-BREACH:
+      max_count: 0
+      max_duration_pct: 0.0
+
+  invariants:
+    authority_breaches_total: 0
+    replay_divergence_count: 0
+    triad_lock_violations: 0
+
+live_to_auto:
+  min_window_days: 30
+  min_signal_count: 1000
+
+  performance:
+    sharpe_ratio_min: 1.5
+    max_drawdown_max: 0.025        # 2.5%
+    fill_rate_min: 0.98
+    news_attribution_accuracy_min: 0.7
+    decision_trace_coverage_min: 1.0
+
+  # AUTO additionally requires a working drift oracle (Wave-04.x PR
+  # #125+) reporting composite drift below threshold. AUTO removes
+  # per-trade operator review, so the drift oracle is the only thing
+  # that can downgrade AUTO -> CANARY automatically.
+  drift_oracle:
+    required: true
+    composite_score_max: 0.25      # operator-tunable; lower = stricter
+
+  hazards:
+    HAZ-LATENCY-P99:
+      max_count: 0
+      max_duration_pct: 0.0
+    HAZ-AUTHORITY-BREACH:
+      max_count: 0
+      max_duration_pct: 0.0
+    HAZ-DRIFT-COMPOSITE:           # emitted by drift oracle
+      max_count: 0
+      max_duration_pct: 0.0
+
+  invariants:
+    authority_breaches_total: 0
+    replay_divergence_count: 0
+    triad_lock_violations: 0
+    drift_oracle_outages_total: 0
+
+# Sentinel: any extra top-level keys beyond those declared above will
+# cause the loader to refuse to compute a hash, on the assumption that
+# a typo or stray key would silently break the bound-hash contract.
+allowed_top_level_keys:
+  - schema_version
+  - shadow_to_canary
+  - canary_to_live
+  - live_to_auto
+  - allowed_top_level_keys
