@@ -11,6 +11,7 @@ import { CredentialsPage } from "@/pages/CredentialsPage";
 import { DyonLearningPage } from "@/pages/DyonLearningPage";
 import { IndiraLearningPage } from "@/pages/IndiraLearningPage";
 import { OperatorPage } from "@/pages/OperatorPage";
+import { TestingPage } from "@/pages/TestingPage";
 import { DexPage } from "@/pages/asset/DexPage";
 import { ForexPage } from "@/pages/asset/ForexPage";
 import { MemecoinPage } from "@/pages/asset/MemecoinPage";
@@ -46,6 +47,8 @@ function renderRoute(route: Route) {
       return <IndiraLearningPage />;
     case "dyon":
       return <DyonLearningPage />;
+    case "testing":
+      return <TestingPage />;
   }
 }
 
