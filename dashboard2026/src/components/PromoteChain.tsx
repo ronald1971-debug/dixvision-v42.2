@@ -36,7 +36,9 @@ export function PromoteChain() {
     queryFn: ({ signal }) => fetchMode(signal),
     refetchInterval: 2_000,
   });
-  const current = data?.current_mode ?? null;
+  // Sentinel that no STAGES.mode equals — prevents the Backtest chip
+  // (which has mode === null) from looking active before the API resolves.
+  const current = data?.current_mode ?? "__loading__";
   return (
     <div
       className="flex items-center gap-1 font-mono text-[11px] uppercase tracking-wider"
