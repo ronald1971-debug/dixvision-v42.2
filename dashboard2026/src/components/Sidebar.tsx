@@ -4,6 +4,7 @@ import {
   BarChart3,
   Bot,
   Brain,
+  CandlestickChart,
   CheckSquare,
   ChevronLeft,
   ChevronRight,
@@ -83,6 +84,12 @@ const SYSTEM_NAV: Record<SystemRoute, NavItem<SystemRoute>> = {
     label: "On-chain",
     href: "#/onchain",
     icon: Coins,
+  },
+  orderflow: {
+    key: "orderflow",
+    label: "Order Flow",
+    href: "#/orderflow",
+    icon: CandlestickChart,
   },
   governance: {
     key: "governance",

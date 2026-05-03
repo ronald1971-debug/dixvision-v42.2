@@ -16,6 +16,7 @@ import { GovernancePage } from "@/pages/GovernancePage";
 import { IndiraLearningPage } from "@/pages/IndiraLearningPage";
 import { OnChainPage } from "@/pages/OnChainPage";
 import { OperatorPage } from "@/pages/OperatorPage";
+import { OrderFlowPage } from "@/pages/OrderFlowPage";
 import { RiskPage } from "@/pages/RiskPage";
 import { TestingPage } from "@/pages/TestingPage";
 import { DexPage } from "@/pages/asset/DexPage";
@@ -57,6 +58,8 @@ function renderRoute(route: Route) {
       return <TestingPage />;
     case "onchain":
       return <OnChainPage />;
+    case "orderflow":
+      return <OrderFlowPage />;
     case "governance":
       return <GovernancePage />;
     case "risk":
