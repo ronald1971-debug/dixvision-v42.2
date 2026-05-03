@@ -595,3 +595,80 @@ def test_b_clock_passes_when_callsite_uses_authority(fake_repo: Path):
         "def now() -> int:\n    return wall_ns()\n",
     )
     assert "B-CLOCK" not in _rule_codes(lint_repo(fake_repo))
+
+
+# ---------------------------------------------------------------------------
+# B32 — Mode FSM single mutator (P0-6, GOV-CP-03)
+# ---------------------------------------------------------------------------
+
+
+def test_b32_fires_on_runtime_self_mode_assignment(fake_repo: Path):
+    _write(
+        fake_repo,
+        "dashboard_backend/control_plane/foo.py",
+        "from core.contracts.governance import SystemMode\n"
+        "class Sneak:\n"
+        "    def force(self) -> None:\n"
+        "        self._mode = SystemMode.LIVE\n",
+    )
+    assert "B32" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b32_fires_on_state_dot_mode_assignment(fake_repo: Path):
+    _write(
+        fake_repo,
+        "ui/operator_bridge.py",
+        "from core.contracts.governance import SystemMode\n"
+        "def shove(state) -> None:\n"
+        "    state.mode = SystemMode.AUTO\n",
+    )
+    assert "B32" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b32_fires_on_annotated_assignment(fake_repo: Path):
+    _write(
+        fake_repo,
+        "ui/dashboard_route.py",
+        "from core.contracts.governance import SystemMode\n"
+        "class Holder:\n"
+        "    def __init__(self) -> None:\n"
+        "        self.system_mode: SystemMode = SystemMode.LOCKED\n",
+    )
+    assert "B32" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b32_allows_state_transition_manager(fake_repo: Path):
+    _write(
+        fake_repo,
+        "governance_engine/control_plane/state_transition_manager.py",
+        "from core.contracts.governance import SystemMode\n"
+        "class STM:\n"
+        "    def force(self) -> None:\n"
+        "        self._mode = SystemMode.LIVE\n",
+    )
+    assert "B32" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b32_allows_tests_directory(fake_repo: Path):
+    _write(
+        fake_repo,
+        "tests/test_x.py",
+        "from core.contracts.governance import SystemMode\n"
+        "class Stub:\n"
+        "    pass\n"
+        "def test_x():\n"
+        "    s = Stub()\n"
+        "    s._mode = SystemMode.SAFE\n",
+    )
+    assert "B32" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b32_allows_non_systemmode_rhs(fake_repo: Path):
+    _write(
+        fake_repo,
+        "ui/widget.py",
+        "class W:\n"
+        "    def render(self) -> None:\n"
+        "        self.mode = 'compact'\n",
+    )
+    assert "B32" not in _rule_codes(lint_repo(fake_repo))
