@@ -168,13 +168,19 @@ export function ConditionalBracketBuilder() {
             <div className="text-[10px] uppercase tracking-wider text-slate-500">
               TP move
             </div>
-            <div className="text-emerald-400">+{tpPct.toFixed(2)}%</div>
+            <div className={tpPct >= 0 ? "text-emerald-400" : "text-rose-400"}>
+              {tpPct >= 0 ? "+" : ""}
+              {tpPct.toFixed(2)}%
+            </div>
           </div>
           <div>
             <div className="text-[10px] uppercase tracking-wider text-slate-500">
               SL move
             </div>
-            <div className="text-rose-400">-{slPct.toFixed(2)}%</div>
+            <div className={slPct >= 0 ? "text-rose-400" : "text-emerald-400"}>
+              {slPct >= 0 ? "-" : "+"}
+              {Math.abs(slPct).toFixed(2)}%
+            </div>
           </div>
           <div>
             <div className="text-[10px] uppercase tracking-wider text-slate-500">
