@@ -37,16 +37,18 @@ export function CorrelationMatrix() {
 
   useEffect(() => {
     const id = setInterval(() => {
-      setM((prev) =>
-        prev.map((row, i) =>
-          row.map((v, j) => {
-            if (i === j) return 1;
+      setM((prev) => {
+        const next = prev.map((row) => [...row]);
+        for (let i = 0; i < next.length; i += 1) {
+          for (let j = i + 1; j < next[i].length; j += 1) {
             const drift = Math.sin(Date.now() / 9_000 + i * 3 + j) * 0.012;
-            const next = Math.max(-0.99, Math.min(0.99, v + drift));
-            return next;
-          }),
-        ),
-      );
+            const v = Math.max(-0.99, Math.min(0.99, prev[i][j] + drift));
+            next[i][j] = v;
+            next[j][i] = v;
+          }
+        }
+        return next;
+      });
     }, 4_500);
     return () => clearInterval(id);
   }, []);
