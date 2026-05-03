@@ -735,6 +735,54 @@ COGNITIVE_ALLOWED_PREFIXES: tuple[str, ...] = (
 )
 
 
+def _check_b33(
+    importer: str, target: str, file: Path, line: int
+) -> Violation | None:
+    """B33 — no-implicit-approval (Hardening-S1 item 1).
+
+    The harness approval shim
+    (``governance_engine.harness_approver``) is a documented backdoor
+    that wraps a :class:`SignalEvent` in a fully-approved
+    :class:`ExecutionIntent` without going through the live
+    governance loop. Only the harness (``ui.*``) and the test tree
+    may import it. Engines, adapters, dashboard surfaces, and every
+    other module must construct intents through the live governance
+    pipeline so the operator-control critique's "remove all hidden
+    approvals" requirement is enforced statically as well as at
+    runtime (the shim itself raises
+    :class:`HarnessApproverDisabledError` when the env-var gate is
+    closed; this rule prevents the import in the first place).
+    """
+
+    if not _starts_with_any(
+        target, ("governance_engine.harness_approver",)
+    ):
+        return None
+    if _starts_with_any(importer, B33_ALLOWED_PREFIXES):
+        return None
+    return Violation(
+        "B33",
+        file,
+        line,
+        importer,
+        target,
+        "no-implicit-approval (Hardening-S1 item 1): the harness "
+        "approval shim is opt-in only and may only be imported by "
+        "the harness (ui.*) or the test tree (tests.*). Engines, "
+        "adapters, and dashboard surfaces must build intents through "
+        "the live governance pipeline.",
+    )
+
+
+# Modules allowed to import ``governance_engine.harness_approver``.
+# ``ui.*`` is the harness; ``tests.*`` exercises the shim and verifies
+# the gate-closed behaviour. Anything else trips B33.
+B33_ALLOWED_PREFIXES: tuple[str, ...] = (
+    "ui",
+    "tests",
+)
+
+
 RULE_CHECKS = (
     _check_t1,
     _check_c2,
@@ -749,6 +797,7 @@ RULE_CHECKS = (
     _check_b17,
     _check_b20,
     _check_b24,
+    _check_b33,
 )
 
 
