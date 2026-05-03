@@ -56,7 +56,7 @@ function deriveCluster(addr: string): ClusterMember[] {
       });
     }
     out.push({
-      addr: deriveAddr(addr, i + 1),
+      addr: deriveAddr(addr, i),
       role,
       funded_via: i === 0 ? "—" : deriveAddr(addr, 0),
       age_h: (h + i * 13) % 240,
