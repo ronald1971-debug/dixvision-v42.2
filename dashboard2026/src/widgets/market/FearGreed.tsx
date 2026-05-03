@@ -8,12 +8,18 @@ const TODAY = 64;
 const HIST = [42, 48, 51, 55, 58, 61, 64];
 const LABELS = ["7d", "6d", "5d", "4d", "3d", "2d", "now"];
 
-function tone(v: number) {
-  if (v >= 75) return { name: "extreme greed", cls: "emerald-400" };
-  if (v >= 55) return { name: "greed", cls: "lime-400" };
-  if (v >= 45) return { name: "neutral", cls: "amber-400" };
-  if (v >= 25) return { name: "fear", cls: "orange-400" };
-  return { name: "extreme fear", cls: "rose-400" };
+interface Tone {
+  name: string;
+  textCls: string;
+  bgCls: string;
+}
+
+function tone(v: number): Tone {
+  if (v >= 75) return { name: "extreme greed", textCls: "text-emerald-400", bgCls: "bg-emerald-400/40" };
+  if (v >= 55) return { name: "greed", textCls: "text-lime-400", bgCls: "bg-lime-400/40" };
+  if (v >= 45) return { name: "neutral", textCls: "text-amber-400", bgCls: "bg-amber-400/40" };
+  if (v >= 25) return { name: "fear", textCls: "text-orange-400", bgCls: "bg-orange-400/40" };
+  return { name: "extreme fear", textCls: "text-rose-400", bgCls: "bg-rose-400/40" };
 }
 
 export function FearGreed() {
@@ -55,7 +61,7 @@ export function FearGreed() {
           </svg>
         </div>
         <div className="text-center">
-          <div className={`font-mono text-2xl text-${t.cls}`}>{TODAY}</div>
+          <div className={`font-mono text-2xl ${t.textCls}`}>{TODAY}</div>
           <div className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
             {t.name}
           </div>
@@ -66,14 +72,14 @@ export function FearGreed() {
           </div>
           <div className="mt-1 grid grid-cols-7 gap-1">
             {HIST.map((v, i) => {
-              const cls = tone(v).cls;
+              const bgCls = tone(v).bgCls;
               return (
                 <div
                   key={LABELS[i]}
                   className="flex flex-col items-center gap-0.5"
                 >
                   <div
-                    className={`h-2 w-full rounded bg-${cls}/40`}
+                    className={`h-2 w-full rounded ${bgCls}`}
                     title={`${LABELS[i]}: ${v}`}
                   />
                   <div className="font-mono text-[9px] text-slate-500">

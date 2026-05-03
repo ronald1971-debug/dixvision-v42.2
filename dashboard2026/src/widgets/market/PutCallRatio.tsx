@@ -11,10 +11,15 @@ const VOL = { puts: 4_120, calls: 5_340 };
 const OI = { puts: 11_800, calls: 14_900 };
 const HIST = [0.65, 0.71, 0.78, 0.74, 0.79, 0.81, 0.77];
 
-function tone(r: number) {
-  if (r >= 0.9) return "rose-400";
-  if (r >= 0.7) return "amber-400";
-  return "emerald-400";
+interface Tone {
+  textCls: string;
+  bgCls: string;
+}
+
+function tone(r: number): Tone {
+  if (r >= 0.9) return { textCls: "text-rose-400", bgCls: "bg-rose-400/50" };
+  if (r >= 0.7) return { textCls: "text-amber-400", bgCls: "bg-amber-400/50" };
+  return { textCls: "text-emerald-400", bgCls: "bg-emerald-400/50" };
 }
 
 export function PutCallRatio() {
@@ -43,7 +48,7 @@ export function PutCallRatio() {
             {HIST.map((v, i) => (
               <div key={i} className="flex flex-col items-center gap-0.5">
                 <div
-                  className={`h-2 w-full rounded bg-${tone(v)}/50`}
+                  className={`h-2 w-full rounded ${tone(v).bgCls}`}
                   title={`${v.toFixed(2)}`}
                 />
                 <div className="font-mono text-[9px] text-slate-500">
@@ -75,7 +80,7 @@ function Card({
       <div className="font-mono text-[9px] uppercase tracking-wider text-slate-500">
         {label}
       </div>
-      <div className={`mt-1 font-mono text-xl text-${t}`}>
+      <div className={`mt-1 font-mono text-xl ${t.textCls}`}>
         {ratio.toFixed(2)}
       </div>
       <div className="font-mono text-[10px] text-slate-400">

@@ -34,9 +34,9 @@ export function Watchlist() {
   useEffect(() => {
     const t = setInterval(() => {
       setRows((prev) =>
-        prev.map((r) => {
+        prev.map((r, i) => {
           // tiny deterministic drift based on row order so the spark animates without PRNG
-          const drift = (r.spark.length % 3) === 0 ? 0.0008 : -0.0006;
+          const drift = (i % 3 === 0 ? 0.0008 : i % 3 === 1 ? -0.0006 : 0.0003);
           const next = r.last * (1 + drift);
           const spark = [...r.spark.slice(1), next];
           return { ...r, last: next, spark };

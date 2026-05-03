@@ -15,16 +15,16 @@ const COMPONENTS = [
 export function SentimentGauge() {
   const composite = COMPONENTS.reduce((s, c) => s + c.value * c.weight, 0);
   const angle = (composite - 0.5) * 180; // -90..+90
-  const tone =
+  const t =
     composite >= 0.65
-      ? "emerald"
+      ? { name: "very bullish", textCls: "text-emerald-400" }
       : composite >= 0.55
-        ? "lime"
+        ? { name: "bullish", textCls: "text-lime-400" }
         : composite >= 0.45
-          ? "amber"
+          ? { name: "neutral", textCls: "text-amber-400" }
           : composite >= 0.35
-            ? "orange"
-            : "rose";
+            ? { name: "bearish", textCls: "text-orange-400" }
+            : { name: "very bearish", textCls: "text-rose-400" };
 
   return (
     <section className="flex h-full flex-col rounded border border-border bg-surface">
@@ -68,21 +68,13 @@ export function SentimentGauge() {
         </div>
         <div className="text-center">
           <div
-            className={`font-mono text-2xl text-${tone}-400`}
+            className={`font-mono text-2xl ${t.textCls}`}
             data-testid="sentiment-score"
           >
             {(composite * 100).toFixed(0)}
           </div>
           <div className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
-            {tone === "emerald"
-              ? "very bullish"
-              : tone === "lime"
-                ? "bullish"
-                : tone === "amber"
-                  ? "neutral"
-                  : tone === "orange"
-                    ? "bearish"
-                    : "very bearish"}
+            {t.name}
           </div>
         </div>
         <table className="w-full font-mono text-[10px] text-slate-400">
