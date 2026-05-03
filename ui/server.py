@@ -96,8 +96,19 @@ from governance_engine.control_plane.ledger_authority_writer import (
 )
 from governance_engine.engine import GovernanceEngine
 from governance_engine.harness_approver import (
+    HARNESS_APPROVER_ENV_VAR,
     approve_signal_for_execution,
 )
+
+# Hardening-S1 item 1 — explicit opt-in for the harness approval shim.
+# ``ui.server`` is the harness, by definition. Setting the env var at
+# import time means *every* call to ``approve_signal_for_execution``
+# from within this process passes the gate without each call site
+# needing ``enabled=True``. Engines, adapters, and dashboard surfaces
+# do NOT set this env var; if any of them imports the shim the
+# authority lint B33 rule fires at CI time and at runtime the call
+# raises :class:`HarnessApproverDisabledError`.
+os.environ.setdefault(HARNESS_APPROVER_ENV_VAR, "1")
 from intelligence_engine.cognitive.approval_edge import (
     ApprovalAlreadyDecidedError,
     ApprovalEdge,
