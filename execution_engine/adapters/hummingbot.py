@@ -43,7 +43,7 @@ from execution_engine.adapters._live_base import (
     AdapterState,
     LiveAdapterBase,
 )
-from system.time_source import now_ns
+from system.time_source import wall_ns
 
 # Connector identifiers Hummingbot tags as DEX-AMM. Anything not in this
 # tuple goes through the CLOB path (binance / kraken / dydx / etc.).
@@ -144,7 +144,12 @@ class HummingbotAdapter(LiveAdapterBase):
         if ok:
             self._state = AdapterState.READY
             self._detail = f"connected to {self._gateway_url}"
-            self._last_heartbeat_ns = now_ns()
+            # ``_last_heartbeat_ns`` is rendered by the operator
+            # dashboard as ``Date.now() - heartbeat_ns / 1e6``, i.e.
+            # subtracted from a wall-clock epoch ms value. Use
+            # ``wall_ns()`` (epoch-aligned) here, not ``now_ns()``
+            # which is the monotonic clock relative to boot.
+            self._last_heartbeat_ns = wall_ns()
         else:
             self._state = AdapterState.DEGRADED
             self._detail = "gateway /healthz did not return status=ok"
