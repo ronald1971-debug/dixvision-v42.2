@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Coins,
+  Gauge,
   Image as ImageIcon,
   KeyRound,
   Layers,
@@ -75,6 +76,12 @@ const SYSTEM_NAV: Record<SystemRoute, NavItem<SystemRoute>> = {
     label: "Testing & Eval",
     href: "#/testing",
     icon: CheckSquare,
+  },
+  risk: {
+    key: "risk",
+    label: "Risk",
+    href: "#/risk",
+    icon: Gauge,
   },
 };
 
