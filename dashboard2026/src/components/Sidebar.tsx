@@ -4,6 +4,7 @@ import {
   BarChart3,
   Bot,
   Brain,
+  Briefcase,
   CandlestickChart,
   CheckSquare,
   ChevronLeft,
@@ -123,6 +124,12 @@ const SYSTEM_NAV: Record<SystemRoute, NavItem<SystemRoute>> = {
     label: "Market",
     href: "#/market",
     icon: Compass,
+  },
+  positions: {
+    key: "positions",
+    label: "Positions",
+    href: "#/positions",
+    icon: Briefcase,
   },
   trading: {
     key: "trading",
