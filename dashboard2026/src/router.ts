@@ -30,6 +30,7 @@ export type SystemRoute =
   | "dyon"
   | "testing"
   | "ai"
+  | "orderflow"
   | "governance"
   | "risk";
 
@@ -53,6 +54,7 @@ const SYSTEM_ROUTES: readonly SystemRoute[] = [
   "dyon",
   "testing",
   "ai",
+  "orderflow",
   "governance",
   "risk",
 ];
