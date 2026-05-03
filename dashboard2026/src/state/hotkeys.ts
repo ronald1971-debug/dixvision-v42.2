@@ -39,6 +39,22 @@ const KEY = "dix.dash2.hotkeys.v1";
 
 type HotkeyMap = Record<HotkeyAction, string>;
 
+/**
+ * Normalize a raw ``KeyboardEvent.key`` to a token that survives the
+ * combo-string format. The format uses ``+`` as a delimiter and treats
+ * whitespace as separation, so the literal ``" "`` (Space) and ``"+"``
+ * keys must be replaced with explicit names. Any other key passes
+ * through lower-cased. This must be applied identically at capture
+ * time (``HotkeyConfigurator``) and at compare time (``comboMatches``)
+ * so a captured combo round-trips correctly.
+ */
+export function normalizeKey(key: string): string {
+  const lower = key.toLowerCase();
+  if (lower === " ") return "space";
+  if (lower === "+") return "plus";
+  return lower;
+}
+
 function defaultMap(): HotkeyMap {
   const m = {} as HotkeyMap;
   for (const b of HOTKEY_DEFAULTS) m[b.action] = b.combo;
@@ -86,7 +102,11 @@ export function getHotkeys(): HotkeyMap {
 }
 
 export function setHotkey(action: HotkeyAction, combo: string) {
-  current = { ...current, [action]: combo.trim().toLowerCase() };
+  // Do NOT ``trim()`` here -- a trailing ``" "`` (Space-key combo) was
+  // previously stripped, producing a permanently-dead binding
+  // (Devin Review BUG_0001 on PR #162). Capture-side normalization in
+  // ``HotkeyConfigurator`` already canonicalizes Space/Plus keys.
+  current = { ...current, [action]: combo.toLowerCase() };
   persist();
   emit();
 }
@@ -109,14 +129,23 @@ export function useHotkeys(): HotkeyMap {
 }
 
 export function comboMatches(combo: string, e: KeyboardEvent): boolean {
-  const parts = combo.toLowerCase().split("+").map((p) => p.trim());
-  const key = parts[parts.length - 1];
-  if (!key) return false;
+  // Token-aware split: the LAST token is the key (already normalized
+  // via ``normalizeKey`` at capture time so ``"plus"`` / ``"space"``
+  // appear as their own tokens), and all earlier non-empty tokens are
+  // modifiers. Avoid ``.trim()`` on the parts -- whitespace-only parts
+  // would mean ``+`` or `` `` got into the combo unencoded, which is
+  // already prevented by capture-side normalization. Filter empty
+  // tokens defensively so a malformed legacy combo (e.g.
+  // ``"ctrl++"`` from a pre-fix saved binding) still parses.
+  const tokens = combo.toLowerCase().split("+").filter((p) => p.length > 0);
+  if (tokens.length === 0) return false;
+  const key = tokens[tokens.length - 1];
+  const modifiers = tokens.slice(0, -1);
   const want = {
-    ctrl: parts.includes("ctrl"),
-    shift: parts.includes("shift"),
-    alt: parts.includes("alt"),
-    meta: parts.includes("meta") || parts.includes("cmd"),
+    ctrl: modifiers.includes("ctrl"),
+    shift: modifiers.includes("shift"),
+    alt: modifiers.includes("alt"),
+    meta: modifiers.includes("meta") || modifiers.includes("cmd"),
   };
   // Treat ``ctrl`` as either ctrlKey or metaKey so the same combo works
   // on macOS without forcing a separate ⌘ binding.
@@ -124,7 +153,7 @@ export function comboMatches(combo: string, e: KeyboardEvent): boolean {
   if (want.ctrl !== ctrlOrMeta) return false;
   if (want.shift !== e.shiftKey) return false;
   if (want.alt !== e.altKey) return false;
-  return e.key.toLowerCase() === key;
+  return normalizeKey(e.key) === key;
 }
 
 /**

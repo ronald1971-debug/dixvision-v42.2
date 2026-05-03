@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import {
   HOTKEY_DEFAULTS,
+  normalizeKey,
   resetHotkeys,
   setHotkey,
   useHotkeys,
@@ -37,7 +38,10 @@ export function HotkeyConfigurator() {
     if (e.ctrlKey || e.metaKey) parts.push("ctrl");
     if (e.shiftKey) parts.push("shift");
     if (e.altKey) parts.push("alt");
-    parts.push(e.key.toLowerCase());
+    // ``normalizeKey`` maps ``" "`` -> ``"space"`` and ``"+"`` ->
+    // ``"plus"`` so those keys survive the ``+``-delimited combo
+    // format (Devin Review BUG_0001/BUG_0002 on PR #162).
+    parts.push(normalizeKey(e.key));
     const combo = parts.join("+");
     setHotkey(capturing, combo);
     setCapturing(null);
