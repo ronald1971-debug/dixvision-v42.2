@@ -1391,7 +1391,9 @@ def _check_b23_python(
 #   * ``tools/`` — utility scripts may use the clock; not on hot path.
 #   * ``scripts/`` — same.
 #   * ``tests/`` — test fixtures regularly read the clock.
-#   * ``ui/dev_*`` / ``ui/feeds/*runner*`` — runner shutdown timeouts.
+#
+# Adapter runners (``ui/feeds/runner.py`` etc.) take an injected
+# ``clock_ns`` callable and therefore do not need an allowlist entry.
 
 B_CLOCK_FORBIDDEN_ATTRS: tuple[tuple[str, str], ...] = (
     ("datetime", "now"),
