@@ -74,13 +74,14 @@ export function LaunchFirehose() {
   useEffect(() => {
     const tick = () => {
       seq.current += 1;
+      const currentSeq = seq.current;
       const now = Date.now();
       setFeed((prev) => {
         const aged = prev.map((l) => ({
           ...l,
           age_s: Math.floor((now - l.ts) / 1000),
         }));
-        return [newLaunch(seq.current, now), ...aged].slice(0, 14);
+        return [newLaunch(currentSeq, now), ...aged].slice(0, 14);
       });
     };
     // Seed a handful so the panel isn't empty on mount.
