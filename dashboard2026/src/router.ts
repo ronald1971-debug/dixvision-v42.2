@@ -29,6 +29,7 @@ export type SystemRoute =
   | "indira"
   | "dyon"
   | "testing"
+  | "governance"
   | "risk";
 
 export type Route = AssetRoute | SystemRoute;
@@ -50,6 +51,7 @@ const SYSTEM_ROUTES: readonly SystemRoute[] = [
   "indira",
   "dyon",
   "testing",
+  "governance",
   "risk",
 ];
 

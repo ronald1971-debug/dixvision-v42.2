@@ -144,6 +144,7 @@ from ui.feeds.tradingview_ideas import (
     TRADINGVIEW_SOURCE_FEED,
     parse_tradingview_idea_payload,
 )
+from ui.governance_routes import build_governance_router
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -275,6 +276,16 @@ class _State:
 
     def next_ts(self) -> int:
         return _next_ts()
+
+    def current_ts(self) -> int:
+        """Read the monotonic counter WITHOUT incrementing it.
+
+        Read-only diagnostic surfaces (e.g. governance JSON GETs) need a
+        ``now_ns`` value to compute gaps without consuming a sequence
+        number. ``next_ts()`` is reserved for write paths that emit a
+        sequenced event into the ledger.
+        """
+        return int(_TS_COUNTER["v"])
 
     def record(self, source: str, event: Event) -> None:
         self.event_seq += 1
@@ -459,6 +470,11 @@ app = FastAPI(
 
 # DASH-1 — read-only widget projections for the operator dashboard.
 app.include_router(build_dashboard_router(lambda: STATE))
+
+# Tier-1 governance widgets — promotion gates, drift oracle, SCVS source
+# liveness, hazard monitor. Read-only JSON projections consumed by the
+# /dash2 governance page.
+app.include_router(build_governance_router(lambda: STATE))
 
 
 # Wave-Live PR-4 — root URL routes operators to the live SPA. PR #105
