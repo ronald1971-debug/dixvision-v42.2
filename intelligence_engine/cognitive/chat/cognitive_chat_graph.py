@@ -74,14 +74,17 @@ __all__ = [
 FEATURE_FLAG_ENV_VAR = "DIX_COGNITIVE_CHAT_ENABLED"
 """Environment variable that gates :func:`assemble_cognitive_chat`.
 
-Accepts a small, explicit set of truthy values (``"1"``, ``"true"``,
-``"yes"``, ``"on"`` — case-insensitive). Anything else is treated as
-disabled. This avoids the well-known ``bool("False") is True``
-pitfall and matches the convention used by other DIX VISION feature
-flags."""
+Cognitive chat is **on by default**. The flag is read whenever the
+runtime evaluates :attr:`CognitiveChatFeatureFlag.enabled`; only the
+explicit falsy set (``"0"``, ``"false"``, ``"no"``, ``"off"`` —
+case-insensitive) flips it off. Unset / empty / unknown values keep
+it enabled. Truthy values (``"1"``, ``"true"``, ``"yes"``, ``"on"``)
+are accepted for symmetry with operator muscle memory but are
+redundant given the on-by-default behaviour."""
 
 
 _TRUTHY = frozenset({"1", "true", "yes", "on"})
+_FALSY = frozenset({"0", "false", "no", "off"})
 
 
 class ChatGraphState(TypedDict):
@@ -116,8 +119,11 @@ class CognitiveChatFeatureFlag:
 
     @property
     def enabled(self) -> bool:
-        raw = self.getter(FEATURE_FLAG_ENV_VAR, "")
-        return raw.strip().lower() in _TRUTHY
+        raw = self.getter(FEATURE_FLAG_ENV_VAR, "").strip().lower()
+        if raw in _FALSY:
+            return False
+        # Empty / unset / unknown / truthy → enabled.
+        return True
 
 
 @dataclass(frozen=True)

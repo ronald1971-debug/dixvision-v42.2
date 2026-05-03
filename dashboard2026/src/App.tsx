@@ -20,6 +20,7 @@ import { MarketContextPage } from "@/pages/MarketContextPage";
 import { OnChainPage } from "@/pages/OnChainPage";
 import { OperatorPage } from "@/pages/OperatorPage";
 import { OrderFlowPage } from "@/pages/OrderFlowPage";
+import { PluginsPage } from "@/pages/PluginsPage";
 import { PositionsPage } from "@/pages/PositionsPage";
 import { RiskPage } from "@/pages/RiskPage";
 import { TestingPage } from "@/pages/TestingPage";
@@ -82,6 +83,8 @@ function renderRoute(route: Route) {
       return <PositionsPage />;
     case "trading":
       return <TradingPage />;
+    case "plugins":
+      return <PluginsPage />;
   }
 }
 

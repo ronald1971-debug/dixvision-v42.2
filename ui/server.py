@@ -103,6 +103,12 @@ from intelligence_engine.cognitive.approval_edge import (
     ApprovalEdge,
     ApprovalNotFoundError,
 )
+from intelligence_engine.cognitive.chat import (
+    FEATURE_FLAG_ENV_VAR as COGNITIVE_CHAT_FEATURE_FLAG_ENV_VAR,
+)
+from intelligence_engine.cognitive.chat import (
+    CognitiveChatFeatureFlag,
+)
 from intelligence_engine.cognitive.chat.http_chat_transport import (
     build_default_dispatch_transport,
 )
@@ -157,6 +163,11 @@ from ui.feeds.tradingview_ideas import (
     parse_tradingview_idea_payload,
 )
 from ui.governance_routes import build_governance_router
+from ui.plugin_routes import (
+    PluginRegistry,
+    PluginToggleState,
+    build_plugin_router,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -239,10 +250,45 @@ class _State:
         # provider — matching the previous ``NotConfiguredTransport``
         # contract for un-credentialed deployments. Tests inject
         # fake transports via :func:`set_chat_runtime`.
+        # Plugin-manager toggle state — holds in-process overrides
+        # for env-gated plugins (cognitive chat today; future:
+        # learning-engine, evolution-engine). Constructed before
+        # the chat runtime so we can hand its custom getter into
+        # ``CognitiveChatFeatureFlag``: the override wins when set,
+        # otherwise the env var is consulted (which itself defaults
+        # ON after the cognitive_chat_graph default-on flip).
+        self.plugin_toggle_state = PluginToggleState()
+
+        def _cognitive_chat_flag_getter(name: str, default: str) -> str:
+            if name != COGNITIVE_CHAT_FEATURE_FLAG_ENV_VAR:
+                return os.getenv(name, default)
+            override = self.plugin_toggle_state.cognitive_chat
+            if override is True:
+                return "1"
+            if override is False:
+                return "0"
+            return os.getenv(name, default)
+
         self.chat_runtime: CognitiveChatRuntime = build_cognitive_chat_runtime(
             registry=self.source_registry,
             ledger_writer=self.governance.ledger,
             transport=build_default_dispatch_transport(),
+            feature_flag=CognitiveChatFeatureFlag(
+                getter=_cognitive_chat_flag_getter
+            ),
+        )
+
+        # Plugin manager registry — references the live plugin
+        # objects so a lifecycle mutation through the dashboard is
+        # observed immediately by the engines on the next tick.
+        self.plugin_registry = PluginRegistry(
+            microstructure_plugins=tuple(
+                self.intelligence.microstructure_plugins
+            ),
+            toggle_state=self.plugin_toggle_state,
+            cognitive_chat_env_enabled=lambda: (
+                CognitiveChatFeatureFlag().enabled
+            ),
         )
 
         # Wave-03 PR-5 — operator-approval edge. Binds the chat
@@ -628,6 +674,17 @@ app = FastAPI(
 
 # DASH-1 — read-only widget projections for the operator dashboard.
 app.include_router(build_dashboard_router(lambda: STATE))
+
+# Plugin manager — operator-toggleable plugin lifecycles. Powers the
+# /dash2 "Plugins" page and writes a PLUGIN_LIFECYCLE row to the
+# authority ledger on every successful toggle.
+app.include_router(
+    build_plugin_router(
+        registry_provider=lambda: STATE.plugin_registry,
+        ledger_provider=lambda: STATE.governance.ledger,
+        ts_provider=lambda: STATE.next_ts(),
+    )
+)
 
 # Tier-1 governance widgets — promotion gates, drift oracle, SCVS source
 # liveness, hazard monitor. Read-only JSON projections consumed by the
