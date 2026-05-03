@@ -141,8 +141,18 @@ ALLOWED_SHARED_PREFIXES: tuple[str, ...] = (
 #   construction to validate every :class:`ExecutionIntent`
 #   (HARDEN-02 / INV-68). Scoped to B1 so the dashboard and the
 #   system-intent module remain blocked from importing it.
+#
+# * ``system_engine.coupling`` — the hazard throttle chain
+#   (``HazardThrottleAdapter`` / ``apply_throttle``) is pure data
+#   transformation: ``HazardEvent`` window + frozen ``RiskSnapshot``
+#   -> tightened ``RiskSnapshot``. No clock reads, no I/O, no
+#   side-effects. The Execution Gate (P0-2 closure) consults the
+#   adapter to short-circuit dispatch when an active hazard window
+#   raises ``halted=True``. Scoped to B1 -- the dashboard and
+#   system-intent surfaces remain blocked from importing it.
 B1_EXTRA_ALLOWED_PREFIXES: tuple[str, ...] = (
     "system_engine.authority",
+    "system_engine.coupling",
 )
 
 # Hot-path modules subject to T1.
