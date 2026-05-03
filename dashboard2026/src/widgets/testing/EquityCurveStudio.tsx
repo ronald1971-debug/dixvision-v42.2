@@ -43,7 +43,11 @@ function metrics(curve: number[]) {
     const dd = (v - peak) / peak;
     if (dd < maxDD) maxDD = dd;
   }
-  const cagr = (curve[curve.length - 1] / curve[0]) ** (365 / curve.length) - 1;
+  // CAGR exponent uses the number of return periods (n) — `seededCurve`
+  // returns n+1 points (initial value + n daily steps), so we divide by
+  // `curve.length - 1`, not `curve.length`.
+  const cagr =
+    (curve[curve.length - 1] / curve[0]) ** (365 / (curve.length - 1)) - 1;
   return { sharpe, maxDD, cagr, finalPnl: curve[curve.length - 1] - curve[0] };
 }
 
