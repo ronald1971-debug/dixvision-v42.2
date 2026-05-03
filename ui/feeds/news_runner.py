@@ -177,11 +177,26 @@ class CoinDeskRSSFeedRunner:
             loop = self._loop
             thread = self._thread
         if pump is not None and loop is not None:
-            loop.call_soon_threadsafe(pump.stop)
+            try:
+                loop.call_soon_threadsafe(pump.stop)
+            except RuntimeError:
+                # TOCTOU: the worker thread may have closed the loop
+                # between the lock-protected snapshot above and this
+                # call. Treat as already-stopped (mirrors
+                # ``FeedRunner.stop`` PR #68 narrow-window handling).
+                pass
         if thread is not None:
             thread.join(timeout=5.0)
         with self._lock:
-            self._thread = None
+            # Only clear when the join actually drained this thread; if
+            # join timed out the thread is still alive and a subsequent
+            # ``start()`` must NOT bypass the idempotency guard and
+            # spawn a second pump (mirrors ``FeedRunner.stop``
+            # ``ui/feeds/runner.py:168-170``).
+            if self._thread is thread and (
+                thread is None or not thread.is_alive()
+            ):
+                self._thread = None
         return self._provisional_status(running=False)
 
 
