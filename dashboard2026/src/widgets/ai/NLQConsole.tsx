@@ -28,7 +28,6 @@ interface ParsedIntent {
 const SYMBOL_RE = /\b([A-Z]{2,5})(?:[-/]?(?:USDT|USD|USDC))?\b/g;
 const PAIRED_SYMBOL_RE = /\b([A-Z]{2,5})[-/](?:USDT|USD|USDC)\b/;
 const CONTEXTUAL_SYMBOL_RE = /\b(?:on|of|for|in)\s+([A-Z]{2,5})\b/;
-const PRICE_RE = /\$?\s?([0-9]{1,7}(?:\.[0-9]+)?)\b/;
 const SIZE_RE = /\b(\d+(?:\.\d+)?)\s?(USDT|USD|coins|shares|sol|btc|eth)?\b/i;
 
 // Common uppercase tokens that look like tickers but are technical
@@ -122,8 +121,12 @@ function parse(raw: string): ParsedIntent {
   if (dropMatch) trigger = `< ${dropMatch[1]}`;
   else if (riseMatch) trigger = `> ${riseMatch[1]}`;
   else {
-    const p = raw.match(PRICE_RE);
-    if (p && /\bat\b/.test(lc)) trigger = `@ ${p[1]}`;
+    // Anchor the price extraction to the number that immediately
+    // follows "at" — otherwise PRICE_RE greedily matches the first
+    // number in the string, which for "Short SOL 25 coins at 178"
+    // is the size (25), not the price (178).
+    const atMatch = lc.match(/\bat\s+\$?\s?([\d.]+)/);
+    if (atMatch) trigger = `@ ${atMatch[1]}`;
   }
 
   const sz = raw.match(SIZE_RE);
