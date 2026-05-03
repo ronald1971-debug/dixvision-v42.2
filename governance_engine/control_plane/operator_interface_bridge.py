@@ -48,6 +48,7 @@ from governance_engine.control_plane.policy_engine import PolicyEngine
 from governance_engine.control_plane.state_transition_manager import (
     StateTransitionManager,
 )
+from system.kill_switch import KillSwitch
 
 
 def _parse_mode(name: str) -> SystemMode | None:
@@ -92,6 +93,10 @@ class OperatorInterfaceBridge:
         self._policy = policy
         self._state = state_transitions
         self._ledger = ledger
+        # P0-1b -- system-wide kills route through the SAFE-01
+        # primitive. Constructed lazily here so existing callers
+        # don't have to thread the primitive through.
+        self._kill_switch = KillSwitch(state_transitions=state_transitions)
 
     # ------------------------------------------------------------------
     # Public API
@@ -213,27 +218,17 @@ class OperatorInterfaceBridge:
     def _handle_kill(
         self, request: OperatorRequest, current: SystemMode
     ) -> GovernanceDecision:
-        decision = self._state.propose(
-            ModeTransitionRequest(
-                ts_ns=request.ts_ns,
-                requestor=request.requestor,
-                current_mode=current,
-                target_mode=SystemMode.LOCKED,
-                reason=request.payload.get("reason", "operator kill"),
-                operator_authorized=True,
-            )
-        )
-        return GovernanceDecision(
-            ts_ns=decision.ts_ns,
-            kind=DecisionKind.KILL,
-            approved=decision.approved,
-            summary=(
-                f"system locked (was {decision.prev_mode.name})"
-                if decision.approved
-                else f"kill denied ({decision.rejection_code})"
-            ),
-            rejection_code=decision.rejection_code,
-            ledger_seq=decision.ledger_seq,
+        # P0-1b -- delegate to the SAFE-01 kill-switch primitive so the
+        # operator-initiated kill edge and any future hazard-initiated
+        # kill share one named seam. ``current`` is intentionally
+        # ignored because the primitive re-resolves the current mode
+        # under the StateTransitionManager lock to avoid races with
+        # other transitions.
+        del current
+        return self._kill_switch.engage_operator(
+            requestor=request.requestor,
+            reason=request.payload.get("reason", "operator kill"),
+            ts_ns=request.ts_ns,
         )
 
     def _handle_unlock(
