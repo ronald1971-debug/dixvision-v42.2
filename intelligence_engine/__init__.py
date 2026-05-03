@@ -14,9 +14,17 @@ from intelligence_engine.engine import (
     IntelligenceEngine,
 )
 from intelligence_engine.runtime_context import RuntimeContext
+from intelligence_engine.runtime_context_builder import (
+    DEFAULT_LATENCY_BUDGET_NS,
+    RuntimeMonitorView,
+    build_runtime_context,
+)
 
 __all__ = [
+    "DEFAULT_LATENCY_BUDGET_NS",
     "DEFAULT_SIGNAL_WINDOW_SIZE",
     "IntelligenceEngine",
     "RuntimeContext",
+    "RuntimeMonitorView",
+    "build_runtime_context",
 ]
