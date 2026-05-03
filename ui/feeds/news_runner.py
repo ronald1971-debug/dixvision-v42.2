@@ -138,6 +138,12 @@ class CoinDeskRSSFeedRunner:
                         reconnect_delay_s=self._reconnect_delay_s,
                         reconnect_delay_max_s=self._reconnect_delay_max_s,
                         url=self._url,
+                        # Pin the SCVS source tag so live status() (after
+                        # pump construction) and provisional status()
+                        # (before / after the worker thread exits) agree
+                        # on ``source="SRC-NEWS-COINDESK-001"``. The
+                        # pump's default is ``SOURCE_TAG = "COINDESK"``.
+                        source="SRC-NEWS-COINDESK-001",
                     )
                     with self._lock:
                         self._loop = loop
