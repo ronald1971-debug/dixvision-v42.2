@@ -53,6 +53,7 @@ const ROUTE_LABELS: Record<Route, string> = {
   orderflow: "Order Flow",
   governance: "Governance",
   risk: "Risk & Greeks",
+  charting: "Charting",
 };
 
 function buildNavActions(onNavigate: (route: Route) => void): CommandAction[] {

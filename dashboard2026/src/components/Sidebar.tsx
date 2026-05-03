@@ -110,6 +110,12 @@ const SYSTEM_NAV: Record<SystemRoute, NavItem<SystemRoute>> = {
     href: "#/risk",
     icon: Gauge,
   },
+  charting: {
+    key: "charting",
+    label: "Charting",
+    href: "#/charting",
+    icon: LineChart,
+  },
 };
 
 export interface SidebarProps {
