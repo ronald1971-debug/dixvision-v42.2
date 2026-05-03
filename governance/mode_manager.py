@@ -60,20 +60,24 @@ class ModeManager:
             return True
 
     def halt(self, reason: str = "") -> None:
-        # Capture the previous mode BEFORE we overwrite it so the ledger
-        # event records the actual transition (manifest §7: ledger records
-        # every mode change, including forced halts).
-        prev_mode = self._state_mgr.get().governance_mode
-        self._cache.halt_trading(reason=reason)
-        self._state_mgr.update(governance_mode=SystemMode.EMERGENCY_HALT.value,
-                               trading_allowed=False)
-        try:
-            append_event("GOVERNANCE", "MODE_CHANGE", "mode_manager",
-                         {"from": prev_mode,
-                          "to": SystemMode.EMERGENCY_HALT.value,
-                          "reason": reason, "forced": True})
-        except Exception:
-            pass
+        # Serialize through the same lock as transition() so a concurrent
+        # transition(NORMAL) cannot resume trading after halt has fired
+        # (hazard_axioms.lean H6: EMERGENCY_HALT must imply !trading_allowed).
+        with self._lock:
+            # Capture the previous mode BEFORE we overwrite it so the ledger
+            # event records the actual transition (manifest §7: ledger records
+            # every mode change, including forced halts).
+            prev_mode = self._state_mgr.get().governance_mode
+            self._cache.halt_trading(reason=reason)
+            self._state_mgr.update(governance_mode=SystemMode.EMERGENCY_HALT.value,
+                                   trading_allowed=False)
+            try:
+                append_event("GOVERNANCE", "MODE_CHANGE", "mode_manager",
+                             {"from": prev_mode,
+                              "to": SystemMode.EMERGENCY_HALT.value,
+                              "reason": reason, "forced": True})
+            except Exception:
+                pass
 
 _mgr: ModeManager | None = None
 _mgr_lock = threading.Lock()
