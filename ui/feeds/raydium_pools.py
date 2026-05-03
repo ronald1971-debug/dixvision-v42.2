@@ -91,12 +91,12 @@ def parse_pair(
     quote_symbol = str(row.get("quoteSymbol") or quote_symbol)
     price = _to_float(row.get("price"))
     liquidity_usd = _to_float(
-        row.get("liquidity") or row.get("tvl") or row.get("liquidityUsd")
+        _first_present(row, "liquidity", "tvl", "liquidityUsd")
     )
     volume_24h_usd = _to_float(
-        row.get("volume24h")
-        or row.get("volume_24h")
-        or row.get("volumeUsd24h")
+        _first_present(
+            row, "volume24h", "volume_24h", "volumeUsd24h"
+        )
     )
     return PoolSnapshot(
         ts_ns=ts_ns,
@@ -111,6 +111,22 @@ def parse_pair(
         liquidity_usd=liquidity_usd,
         volume_24h_usd=volume_24h_usd,
     )
+
+
+def _first_present(
+    payload: Mapping[str, Any], *keys: str
+) -> Any:
+    """Return the value of the first key whose value is not ``None``.
+
+    Unlike an ``or`` chain, this preserves legitimate zero values on
+    the *preferred* key (e.g. a brand-new pool with ``volume24h == 0``)
+    instead of silently falling through to a fallback key.
+    """
+    for k in keys:
+        v = payload.get(k)
+        if v is not None:
+            return v
+    return None
 
 
 def _to_float(raw: Any) -> float:

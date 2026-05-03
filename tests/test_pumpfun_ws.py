@@ -71,6 +71,45 @@ def test_parse_other_tx_types_skipped() -> None:
     assert parse_new_token({"txType": "sell", "mint": "X"}, ts_ns=1) is None
 
 
+def test_parse_preserves_zero_on_preferred_key() -> None:
+    """Regression: ``or``-chain dropped legitimate zero values.
+
+    A fresh-mint Pump.fun token has ``marketCapSol == 0`` for the first
+    block. The previous ``or``-chain treated 0 as falsy and silently
+    fell through to ``usdMarketCap``. The ``_first_present`` helper
+    must keep the preferred key's zero.
+    """
+    ev = parse_new_token(
+        {
+            "txType": "create",
+            "mint": "Mint",
+            "marketCapSol": 0,
+            "usdMarketCap": 5000,
+            "vSolInBondingCurve": 0.0,
+            "liquidityUsd": 9999,
+        },
+        ts_ns=1,
+    )
+    assert ev is not None
+    assert ev.market_cap_usd == 0.0
+    assert ev.liquidity_usd == 0.0
+
+
+def test_parse_falls_through_when_preferred_key_absent() -> None:
+    ev = parse_new_token(
+        {
+            "txType": "create",
+            "mint": "Mint",
+            "usdMarketCap": 5000,
+            "liquidityUsd": 9999,
+        },
+        ts_ns=1,
+    )
+    assert ev is not None
+    assert ev.market_cap_usd == pytest.approx(5000.0)
+    assert ev.liquidity_usd == pytest.approx(9999.0)
+
+
 def test_parse_handles_string_numerics() -> None:
     ev = parse_new_token(
         {
