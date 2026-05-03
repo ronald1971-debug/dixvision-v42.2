@@ -29,7 +29,7 @@ import { PerpsPage } from "@/pages/asset/PerpsPage";
 import { SpotPage } from "@/pages/asset/SpotPage";
 import { StocksPage } from "@/pages/asset/StocksPage";
 import { useApplyPreferences } from "@/preferences/store";
-import { useHashRoute, useIsPopout, type Route } from "@/router";
+import { isPopoutRoute, useHashRoute, useIsPopout, type Route } from "@/router";
 import { useGlobalHotkeys } from "@/state/hotkeys";
 import { pushToast } from "@/state/toast";
 
@@ -83,21 +83,21 @@ export function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   useApplyPreferences();
 
+  // Pop-out windows must keep the `#/popout/` prefix when the operator
+  // navigates with hotkeys, otherwise `useIsPopout` flips back to chromed
+  // mode and the second-monitor docking surface suddenly grows the full
+  // sidebar + ribbons.
+  const goRoute = (target: string) => {
+    const prefix = isPopoutRoute(window.location.hash) ? "#/popout/" : "#/";
+    window.location.hash = `${prefix}${target}`;
+  };
   useGlobalHotkeys({
     "toggle-palette": () => setPaletteOpen((o) => !o),
     "toggle-sidebar": () => setSidebarCollapsed((c) => !c),
-    "go-operator": () => {
-      window.location.hash = "#/operator";
-    },
-    "go-governance": () => {
-      window.location.hash = "#/governance";
-    },
-    "go-testing": () => {
-      window.location.hash = "#/testing";
-    },
-    "go-ai": () => {
-      window.location.hash = "#/ai";
-    },
+    "go-operator": () => goRoute("operator"),
+    "go-governance": () => goRoute("governance"),
+    "go-testing": () => goRoute("testing"),
+    "go-ai": () => goRoute("ai"),
     "kill-switch": () => {
       pushToast("Kill switch armed", {
         tone: "danger",
