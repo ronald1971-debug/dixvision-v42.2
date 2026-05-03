@@ -87,11 +87,9 @@ export function Fundamentals({ symbol = "AAPL" }: { symbol?: string }) {
                       <td className={`py-0.5 text-right ${TONE[r.tone ?? "neutral"]}`}>
                         {r.value}
                       </td>
-                      {r.context !== undefined && (
-                        <td className="py-0.5 pl-2 text-[10px] text-slate-500">
-                          {r.context}
-                        </td>
-                      )}
+                      <td className="py-0.5 pl-2 text-[10px] text-slate-500">
+                        {r.context ?? ""}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

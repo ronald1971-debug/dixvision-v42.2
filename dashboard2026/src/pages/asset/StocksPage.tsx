@@ -157,7 +157,7 @@ export function StocksPage() {
       asset="STOCKS"
       description="Equities surface (Alpaca · IBKR · Tradier · Schwab/ToS bridge). Pro pack: Fundamentals · AnalystRatings · InsiderTx · ShortInterest · SectorHeatmap. Tax-lot aware, options-chain aware."
     >
-      <AssetGrid storageKey="stocks" defaultItems={ITEMS} />
+      <AssetGrid storageKey="stocks-v2" defaultItems={ITEMS} />
     </AssetPageShell>
   );
 }
