@@ -73,6 +73,7 @@ class GovernanceEngine(RuntimeEngine):
         initial_mode: SystemMode = SystemMode.SAFE,
         policy_table_installed_at_ns: int = 0,
         strategy_registry: StrategyRegistry | None = None,
+        ledger: LedgerAuthorityWriter | None = None,
     ) -> None:
         self.plugin_slots: Mapping[str, Sequence[Plugin]] = dict(
             plugin_slots or {}
@@ -83,10 +84,25 @@ class GovernanceEngine(RuntimeEngine):
         # coherent (UPDATE_RATIFIED and STRATEGY_PARAMETER_UPDATE
         # rows on the same chain). Older callers without a registry
         # get an isolated ledger as before.
+        #
+        # Sprint-1 / Class-B "Trust the Ledger" — a caller (typically
+        # ``ui.server.STATE``) may inject a ``LedgerAuthorityWriter``
+        # constructed with ``db_path=...`` so every governance row is
+        # persisted to SQLite. The injected ledger is shared with the
+        # strategy registry when both are provided; passing two
+        # different ledgers is a wiring mistake and is rejected
+        # eagerly.
         if strategy_registry is not None:
-            self.ledger = strategy_registry._ledger  # type: ignore[attr-defined]
+            registry_ledger = strategy_registry._ledger  # type: ignore[attr-defined]
+            if ledger is not None and ledger is not registry_ledger:
+                raise ValueError(
+                    "GovernanceEngine: ``ledger`` and "
+                    "``strategy_registry._ledger`` must be the same "
+                    "instance so the audit chain stays coherent"
+                )
+            self.ledger = registry_ledger
         else:
-            self.ledger = LedgerAuthorityWriter()
+            self.ledger = ledger if ledger is not None else LedgerAuthorityWriter()
         self.policy = PolicyEngine(constraints=constraints)
         # GOV-CP-01-PERF — record the precompiled decision-table hash as
         # the very first ledger row. Replay can re-verify it via

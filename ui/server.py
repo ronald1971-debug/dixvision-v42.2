@@ -26,6 +26,7 @@ Endpoints:
 from __future__ import annotations
 
 import json
+import os
 import threading
 from collections import deque
 from collections.abc import Mapping, Sequence
@@ -90,6 +91,9 @@ from dashboard_backend.control_plane.strategy_lifecycle_panel import (
 )
 from evolution_engine.engine import EvolutionEngine
 from execution_engine.engine import ExecutionEngine
+from governance_engine.control_plane.ledger_authority_writer import (
+    LedgerAuthorityWriter,
+)
 from governance_engine.engine import GovernanceEngine
 from governance_engine.harness_approver import (
     approve_signal_for_execution,
@@ -115,6 +119,7 @@ from intelligence_engine.trader_modeling import (
 )
 from learning_engine.engine import LearningEngine
 from state.ledger.reader import LedgerReader
+from system.time_source import wall_ns
 from system_engine.credentials import (
     DEFAULT_TIMEOUT_S as CREDENTIAL_VERIFY_TIMEOUT_S,
 )
@@ -181,7 +186,23 @@ class _State:
         )
         self.execution = ExecutionEngine()
         self.system = SystemEngine()
-        self.governance = GovernanceEngine()
+        # Sprint-1 / Class-B "Trust the Ledger" — if the operator sets
+        # ``DIXVISION_LEDGER_PATH`` the harness opens a SQLite-backed
+        # authority ledger; every governance decision (mode
+        # transition, strategy lifecycle, operator approval) is then
+        # persisted before the in-memory chain is mutated, so a
+        # crash / Ctrl+C / kill -9 between rows is survivable. The
+        # writer replays existing rows on construction and runs a
+        # boot-time hash-chain verification gate so a tampered file
+        # aborts startup loudly.
+        ledger_path = os.environ.get("DIXVISION_LEDGER_PATH")
+        ledger = (
+            LedgerAuthorityWriter(db_path=ledger_path)
+            if ledger_path
+            else LedgerAuthorityWriter()
+        )
+        self.ledger_writer = ledger
+        self.governance = GovernanceEngine(ledger=ledger)
         self.learning = LearningEngine()
         self.evolution = EvolutionEngine()
         self.events: deque[dict[str, Any]] = deque(maxlen=500)
@@ -242,13 +263,14 @@ class _State:
         # WS pump is opt-in via ``POST /api/feeds/binance/start``; the
         # runner here is constructed but not yet started so the harness
         # boots quickly with no external network dependency.
-        # Lambda defers the ``_next_ts`` lookup until the first tick
-        # arrives — ``_next_ts`` is defined later in this module, so a
-        # bare reference would NameError at import time when ``STATE``
-        # is instantiated.
+        # Sprint-1 / Class-B — ``wall_ns`` is the canonical TimeAuthority
+        # hot-path API (``system/time_source.py``); replaces the
+        # legacy ``_TS_COUNTER`` integer counter so ledger rows carry
+        # real wall-clock nanoseconds across process restarts
+        # (architectural-review P0-3 / INV-15).
         self.binance_feed = FeedRunner(
             sink=self._ingest_market_tick_locked,
-            clock_ns=lambda: _next_ts(),
+            clock_ns=wall_ns,
         )
 
         # P0-5 — close the news loop. Wave-news-fusion shipped the
@@ -271,7 +293,7 @@ class _State:
             signal_sink=self._ingest_news_signal_locked,
             hazard_sink=self._ingest_news_hazard_locked,
             index_sink=self.news_index.add,
-            clock_ns=lambda: _next_ts(),
+            clock_ns=wall_ns,
         )
 
         # D2 — Pump.fun launches + Raydium pool snapshots. Both runners
@@ -288,11 +310,11 @@ class _State:
         )
         self.pumpfun_feed = PumpFunFeedRunner(
             sink=self._ingest_pumpfun_launch_locked,
-            clock_ns=lambda: _next_ts(),
+            clock_ns=wall_ns,
         )
         self.raydium_feed = RaydiumPoolFeedRunner(
             sink=self._ingest_raydium_snapshot_locked,
-            clock_ns=lambda: _next_ts(),
+            clock_ns=wall_ns,
         )
 
     def all_engines(self) -> dict[str, Any]:
@@ -326,7 +348,7 @@ class _State:
         return self.memecoin_widget
 
     def next_ts(self) -> int:
-        return _next_ts()
+        return wall_ns()
 
     def current_ts(self) -> int:
         """Read the monotonic counter WITHOUT incrementing it.
@@ -336,7 +358,7 @@ class _State:
         number. ``next_ts()`` is reserved for write paths that emit a
         sequenced event into the ledger.
         """
-        return int(_TS_COUNTER["v"])
+        return wall_ns()
 
     def record(self, source: str, event: Event) -> None:
         self.event_seq += 1
@@ -381,7 +403,7 @@ class _State:
             )
             for sig in self.intelligence.on_market(tick):
                 self.record("intelligence", sig)
-                intent = approve_signal_for_execution(sig, ts_ns=_next_ts())
+                intent = approve_signal_for_execution(sig, ts_ns=wall_ns())
                 for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
 
@@ -404,7 +426,7 @@ class _State:
             self.record("cognitive_chat", sig)
             for ev in self.intelligence.process(sig):
                 self.record("intelligence", ev)
-                intent = approve_signal_for_execution(ev, ts_ns=_next_ts())
+                intent = approve_signal_for_execution(ev, ts_ns=wall_ns())
                 for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
 
@@ -424,7 +446,7 @@ class _State:
             self.record("news.coindesk", sig)
             for ev in self.intelligence.process(sig):
                 self.record("intelligence", ev)
-                intent = approve_signal_for_execution(ev, ts_ns=_next_ts())
+                intent = approve_signal_for_execution(ev, ts_ns=wall_ns())
                 for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
 
@@ -505,7 +527,7 @@ class _State:
         source for replay determinism (INV-15)."""
 
         self.governance.ledger.append(
-            ts_ns=_next_ts(),
+            ts_ns=wall_ns(),
             kind=kind,
             payload=dict(payload),
         )
@@ -1059,7 +1081,7 @@ def operator_action_kill(body: OperatorKillRequest) -> OperatorActionResponse:
     """
 
     request = OperatorRequest(
-        ts_ns=_next_ts(),
+        ts_ns=wall_ns(),
         requestor=body.requestor,
         action=OperatorAction.REQUEST_KILL,
         payload={"reason": body.reason},
@@ -1232,7 +1254,7 @@ def cognitive_chat_approval_reject(
 
 @app.post("/api/tick")
 def post_tick(body: TickIn) -> dict[str, Any]:
-    ts = body.ts_ns if body.ts_ns is not None else _next_ts()
+    ts = body.ts_ns if body.ts_ns is not None else wall_ns()
     tick = MarketTick(
         ts_ns=ts,
         symbol=body.symbol,
@@ -1264,7 +1286,7 @@ def post_tick(body: TickIn) -> dict[str, Any]:
         for sig in STATE.intelligence.on_market(tick):
             STATE.record("intelligence", sig)
             signals_out.append(_event_to_dict(sig))
-            intent = approve_signal_for_execution(sig, ts_ns=_next_ts())
+            intent = approve_signal_for_execution(sig, ts_ns=wall_ns())
             for downstream in STATE.execution.execute(intent):
                 STATE.record("execution", downstream)
                 executions_out.append(_event_to_dict(downstream))
@@ -1278,7 +1300,7 @@ def post_tick(body: TickIn) -> dict[str, Any]:
 
 @app.post("/api/signal")
 def post_signal(body: SignalIn) -> dict[str, Any]:
-    ts = body.ts_ns if body.ts_ns is not None else _next_ts()
+    ts = body.ts_ns if body.ts_ns is not None else wall_ns()
     meta: dict[str, str] = {}
     if body.qty is not None:
         meta["qty"] = str(body.qty)
@@ -1295,7 +1317,7 @@ def post_signal(body: SignalIn) -> dict[str, Any]:
         STATE.record("ui_harness", sig)
         for ev in STATE.intelligence.process(sig):
             STATE.record("intelligence", ev)
-            intent = approve_signal_for_execution(ev, ts_ns=_next_ts())
+            intent = approve_signal_for_execution(ev, ts_ns=wall_ns())
             for downstream in STATE.execution.execute(intent):
                 STATE.record("execution", downstream)
                 out_events.append(_event_to_dict(downstream))
@@ -1546,7 +1568,7 @@ def post_tradingview_observation(body: TradingViewObservationIn) -> dict[str, An
     fragile error handling. Returns ``{"accepted": True, "event": ...}``
     on success.
     """
-    ts = body.ts_ns if body.ts_ns is not None else _next_ts()
+    ts = body.ts_ns if body.ts_ns is not None else wall_ns()
     parsed = parse_tradingview_idea_payload(
         body.payload,
         ts_ns=ts,
@@ -1593,25 +1615,6 @@ def _event_to_dict_tick(tick: MarketTick) -> dict[str, Any]:
         "volume": tick.volume,
         "venue": tick.venue,
     }
-
-
-_TS_COUNTER = {"v": 0}
-_TS_LOCK = threading.Lock()
-
-
-def _next_ts() -> int:
-    """Monotonic timestamp counter — must be atomic across threads.
-
-    FastAPI runs sync endpoint handlers in a thread pool, so concurrent
-    ``POST /api/tick`` / ``POST /api/signal`` requests would otherwise
-    race on the read-modify-write of ``_TS_COUNTER`` and emit duplicate
-    ``ts_ns`` values, violating the monotonic-timestamp contract (INV-15
-    / TimeAuthority T0-04). The dedicated lock keeps this function
-    independently thread-safe regardless of where it is called from.
-    """
-    with _TS_LOCK:
-        _TS_COUNTER["v"] += 1
-        return _TS_COUNTER["v"]
 
 
 __all__: Sequence[str] = ("app", "STATE")

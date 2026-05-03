@@ -26,7 +26,6 @@ verifiers = importlib.import_module("system_engine.credentials.verifiers")
 @pytest.fixture
 def client():
     ui_server.STATE = ui_server._State()  # type: ignore[attr-defined]
-    ui_server._TS_COUNTER["v"] = 0  # type: ignore[attr-defined]
     return TestClient(ui_server.app)
 
 
