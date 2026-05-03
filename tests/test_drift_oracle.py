@@ -243,3 +243,89 @@ def test_breach_logs_mode_transition_in_authority_ledger() -> None:
     assert last.payload["new_mode"] == "CANARY"
     assert last.payload["requestor"] == "drift_oracle"
     assert "drift_composite_breach" in last.payload["reason"]
+
+
+# ---------------------------------------------------------------------------
+# P0-7 followup — Devin Review BUG_0001:
+# `_downgrade_threshold` and `_component_ids` were stored but unused.
+# These tests pin the public properties + the composite-level breach gate.
+# ---------------------------------------------------------------------------
+
+
+def test_expected_components_property_surfaces_canonical_set() -> None:
+    oracle = DriftCompositeOracle()
+    assert oracle.expected_components == ("model", "exec", "latency", "causal")
+
+    custom = DriftCompositeOracle(component_ids=("a", "b"))
+    assert custom.expected_components == ("a", "b")
+
+
+def test_downgrade_threshold_property_surfaces_value() -> None:
+    assert DriftCompositeOracle().downgrade_threshold == 0.25
+    assert DriftCompositeOracle(downgrade_threshold=0.5).downgrade_threshold == 0.5
+
+
+def test_composite_only_breach_triggers_downgrade() -> None:
+    """A high composite with no per-component breach still downgrades.
+
+    Build readings whose individual deviations are *under* their own
+    per-component thresholds but whose max is at/above the oracle's
+    composite gate. The oracle should still surface ``is_breaching``
+    and propose a downgrade.
+    """
+
+    oracle = DriftCompositeOracle(downgrade_threshold=0.10)
+    stm = _stm()
+    _ratchet_to(stm, SystemMode.LIVE)
+
+    # Each per-component threshold is 0.50 so none individually
+    # breaches; the max (0.20) is above the composite gate (0.10).
+    readings = (
+        DriftComponentReading(component_id="model", deviation=0.20, threshold=0.50),
+        DriftComponentReading(component_id="exec", deviation=0.05, threshold=0.50),
+    )
+
+    reading, decision = oracle.evaluate_and_downgrade(
+        ts_ns=1_000, readings=readings, stm=stm
+    )
+
+    assert reading.is_breaching is True
+    assert reading.breached_components == ()
+    assert decision is not None
+    assert decision.approved is True
+    assert stm.current_mode() is SystemMode.CANARY
+    assert "composite=0.2000" in decision.reason
+    assert "threshold=0.1000" in decision.reason
+    assert " >= " in decision.reason
+
+
+def test_composite_below_oracle_threshold_no_downgrade() -> None:
+    """Composite below the oracle gate AND no per-component breach -> no-op."""
+
+    oracle = DriftCompositeOracle(downgrade_threshold=0.50)
+    stm = _stm()
+    _ratchet_to(stm, SystemMode.LIVE)
+
+    readings = (
+        DriftComponentReading(component_id="model", deviation=0.10, threshold=0.30),
+        DriftComponentReading(component_id="exec", deviation=0.20, threshold=0.30),
+    )
+
+    reading, decision = oracle.evaluate_and_downgrade(
+        ts_ns=1_000, readings=readings, stm=stm
+    )
+
+    assert reading.is_breaching is False
+    assert decision is None
+    assert stm.current_mode() is SystemMode.LIVE
+
+
+def test_invalid_constructor_args_raise() -> None:
+    import pytest
+
+    with pytest.raises(ValueError):
+        DriftCompositeOracle(component_ids=())
+    with pytest.raises(ValueError):
+        DriftCompositeOracle(downgrade_threshold=0.0)
+    with pytest.raises(ValueError):
+        DriftCompositeOracle(downgrade_threshold=-0.1)
