@@ -45,9 +45,13 @@ function winner(s: Stat): "champion" | "challenger" | "tie" {
 export function ChampionChallenger() {
   const [challenger, setChallenger] = useState("strat_meanrev_v3");
   const challengerWins = STATS.filter((s) => winner(s) === "challenger").length;
-  const verdict = challengerWins >= 6 ? "promote" : challengerWins >= 4 ? "extend canary" : "reject";
-  const verdictTone =
-    verdict === "promote" ? "emerald-400" : verdict === "extend canary" ? "amber-400" : "rose-400";
+  const verdict: "promote" | "extend canary" | "reject" =
+    challengerWins >= 6 ? "promote" : challengerWins >= 4 ? "extend canary" : "reject";
+  const verdictCls = {
+    promote: "border-emerald-400/40 bg-emerald-400/10 text-emerald-400",
+    "extend canary": "border-amber-400/40 bg-amber-400/10 text-amber-400",
+    reject: "border-rose-400/40 bg-rose-400/10 text-rose-400",
+  }[verdict];
 
   return (
     <section className="flex h-full flex-col rounded border border-border bg-surface">
@@ -66,7 +70,7 @@ export function ChampionChallenger() {
             <option value="strat_breakout_v2">strat_breakout_v2 (SHADOW)</option>
             <option value="strat_funding_v1">strat_funding_v1 (SHADOW)</option>
           </select>
-          <span className={`ml-auto rounded border border-${verdictTone}/40 bg-${verdictTone}/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-${verdictTone}`}>
+          <span className={`ml-auto rounded border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${verdictCls}`}>
             verdict: {verdict}
           </span>
         </div>

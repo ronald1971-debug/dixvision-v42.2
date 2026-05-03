@@ -59,13 +59,18 @@ export function MonteCarloPaths() {
     return { paths: list, mean: meanFinal, p5: p5Final, p95: p95Final };
   }, [n, horizon]);
 
+  // Avoid spreading the flattened array into Math.min/max — at large
+  // n × horizon (e.g. 200 × 365 ≈ 73k elements) Safari/JSC throws a
+  // RangeError because the function-arguments cap is ~65k.
   const allValues = paths.flat();
-  const min = Math.min(...allValues);
-  const max = Math.max(...allValues);
+  const min = allValues.reduce((a, b) => (b < a ? b : a), Infinity);
+  const max = allValues.reduce((a, b) => (b > a ? b : a), -Infinity);
   const xAt = (i: number) => PAD_X + (i / horizon) * (W - PAD_X * 2);
   const yAt = (v: number) => H - PAD_Y - ((v - min) / (max - min || 1)) * (H - PAD_Y * 2);
 
-  const ruinPaths = paths.filter((p) => Math.min(...p) < 50_000).length;
+  const ruinPaths = paths.filter(
+    (p) => p.reduce((a, b) => (b < a ? b : a), Infinity) < 50_000,
+  ).length;
 
   return (
     <section className="flex h-full flex-col rounded border border-border bg-surface">
