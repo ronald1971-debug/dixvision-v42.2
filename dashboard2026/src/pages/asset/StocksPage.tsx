@@ -1,5 +1,4 @@
 import { AssetGrid, type GridItemSpec } from "@/components/AssetGrid";
-import { PlaceholderWidget } from "@/components/PlaceholderWidget";
 import { ChartPanel } from "@/widgets/ChartPanel";
 import { CoherencePanel } from "@/widgets/CoherencePanel";
 import { DepthLadder } from "@/widgets/DepthLadder";
@@ -8,6 +7,11 @@ import { OrderForm } from "@/widgets/OrderForm";
 import { PositionsPanel } from "@/widgets/PositionsPanel";
 import { SLTPBuilder } from "@/widgets/SLTPBuilder";
 import { TimeAndSalesTape } from "@/widgets/TimeAndSalesTape";
+import { AnalystRatings } from "@/widgets/stocks/AnalystRatings";
+import { Fundamentals } from "@/widgets/stocks/Fundamentals";
+import { InsiderTransactions } from "@/widgets/stocks/InsiderTransactions";
+import { SectorHeatmap } from "@/widgets/stocks/SectorHeatmap";
+import { ShortInterest } from "@/widgets/stocks/ShortInterest";
 
 import { AssetPageShell } from "./AssetPageShell";
 
@@ -75,43 +79,59 @@ const ITEMS: GridItemSpec[] = [
     render: () => <SLTPBuilder form="stocks" />,
   },
   {
-    i: "options",
+    i: "fundamentals",
     x: 0,
     y: 17,
-    w: 4,
-    h: 7,
-    minW: 3,
-    minH: 4,
-    render: () => (
-      <PlaceholderWidget
-        title="Options Chain"
-        subtitle="calls/puts · IV skew · OI · greeks (ToS-style)"
-        badge="DASH-K"
-        status="stub"
-      />
-    ),
+    w: 6,
+    h: 9,
+    minW: 4,
+    minH: 5,
+    render: () => <Fundamentals symbol={SYMBOL} />,
   },
   {
-    i: "fundamentals",
-    x: 4,
+    i: "ratings",
+    x: 6,
     y: 17,
-    w: 4,
+    w: 6,
+    h: 9,
+    minW: 4,
+    minH: 5,
+    render: () => <AnalystRatings symbol={SYMBOL} />,
+  },
+  {
+    i: "insider",
+    x: 0,
+    y: 26,
+    w: 6,
+    h: 8,
+    minW: 4,
+    minH: 5,
+    render: () => <InsiderTransactions symbol={SYMBOL} />,
+  },
+  {
+    i: "short",
+    x: 6,
+    y: 26,
+    w: 6,
+    h: 8,
+    minW: 4,
+    minH: 5,
+    render: () => <ShortInterest symbol={SYMBOL} />,
+  },
+  {
+    i: "sectors",
+    x: 0,
+    y: 34,
+    w: 8,
     h: 7,
-    minW: 3,
-    minH: 4,
-    render: () => (
-      <PlaceholderWidget
-        title="Fundamentals"
-        subtitle="P/E · P/B · FCF · debt · insider · institutional · short interest"
-        badge="DASH-K"
-        status="stub"
-      />
-    ),
+    minW: 4,
+    minH: 5,
+    render: () => <SectorHeatmap />,
   },
   {
     i: "earnings",
     x: 8,
-    y: 17,
+    y: 34,
     w: 4,
     h: 7,
     minW: 3,
@@ -121,7 +141,7 @@ const ITEMS: GridItemSpec[] = [
   {
     i: "coherence",
     x: 0,
-    y: 24,
+    y: 41,
     w: 12,
     h: 7,
     minW: 4,
@@ -135,7 +155,7 @@ export function StocksPage() {
     <AssetPageShell
       title="Stocks"
       asset="STOCKS"
-      description="Equities surface (Alpaca · IBKR · Tradier · Schwab/ToS bridge). Tax-lot aware, options-chain aware. Default widgets per PR-#2 spec §3.6."
+      description="Equities surface (Alpaca · IBKR · Tradier · Schwab/ToS bridge). Pro pack: Fundamentals · AnalystRatings · InsiderTx · ShortInterest · SectorHeatmap. Tax-lot aware, options-chain aware."
     >
       <AssetGrid storageKey="stocks" defaultItems={ITEMS} />
     </AssetPageShell>
