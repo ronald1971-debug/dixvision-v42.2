@@ -71,6 +71,7 @@ from core.contracts.api.operator import (
 )
 from core.contracts.events import (
     Event,
+    HazardEvent,
     Side,
     SignalEvent,
 )
@@ -139,6 +140,7 @@ from ui.cognitive_chat_runtime import (
     build_runtime as build_cognitive_chat_runtime,
 )
 from ui.dashboard_routes import build_dashboard_router
+from ui.feeds.news_runner import CoinDeskRSSFeedRunner
 from ui.feeds.runner import FeedRunner
 from ui.feeds.tradingview_ideas import (
     TRADINGVIEW_SOURCE_FEED,
@@ -241,6 +243,22 @@ class _State:
         # is instantiated.
         self.binance_feed = FeedRunner(
             sink=self._ingest_market_tick_locked,
+            clock_ns=lambda: _next_ts(),
+        )
+
+        # P0-5 — close the news loop. Wave-news-fusion shipped the
+        # NewsItem -> SignalEvent projection (PR #118), the
+        # NewsShockSensor (PR #119) and the NewsFanout composer
+        # (PR #120), but no caller ran them in the live process. The
+        # runner here wraps a CoinDeskRSSPump with a NewsFanout whose
+        # signal/hazard sinks hand each emitted event back into the
+        # in-process intelligence -> execution and governance fan-outs
+        # used by the Binance pump and POST /api/signal. Idle by
+        # default; opt-in via POST /api/feeds/coindesk/start so the
+        # harness boots without an external network dependency.
+        self.coindesk_feed = CoinDeskRSSFeedRunner(
+            signal_sink=self._ingest_news_signal_locked,
+            hazard_sink=self._ingest_news_hazard_locked,
             clock_ns=lambda: _next_ts(),
         )
 
@@ -356,6 +374,41 @@ class _State:
                 intent = approve_signal_for_execution(ev, ts_ns=_next_ts())
                 for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
+
+    def _ingest_news_signal_locked(self, sig: SignalEvent) -> None:
+        """``NewsFanout`` signal-sink binding.
+
+        P0-5 — runs the same intelligence -> execution fan-out the
+        Binance pump uses (``_ingest_market_tick_locked``) and the
+        cognitive approval edge uses (``_emit_cognitive_signal_locked``)
+        so a news-projected ``SignalEvent`` flows through HARDEN-02's
+        execute chokepoint without bypassing AuthorityGuard. Holds
+        :attr:`lock` for the duration so the ledger ring and execution
+        state stay consistent with concurrent ticks. Called from the
+        runner's asyncio thread, so the lock is mandatory.
+        """
+        with self.lock:
+            self.record("news.coindesk", sig)
+            for ev in self.intelligence.process(sig):
+                self.record("intelligence", ev)
+                intent = approve_signal_for_execution(ev, ts_ns=_next_ts())
+                for downstream in self.execution.execute(intent):
+                    self.record("execution", downstream)
+
+    def _ingest_news_hazard_locked(self, hazard: HazardEvent) -> None:
+        """``NewsFanout`` hazard-sink binding.
+
+        P0-5 — feeds the news-shock hazard event into the live
+        ``GovernanceEngine`` so the throttle / mode-FSM machinery
+        registered by the wave-news-fusion shock sensor (HAZ-NEWS-SHOCK)
+        actually fires in production. Mirrors the
+        ``_ingest_news_signal_locked`` lock discipline; called from the
+        runner's asyncio thread.
+        """
+        with self.lock:
+            self.record("hazard.news", hazard)
+            for downstream in self.governance.process(hazard):
+                self.record("governance", downstream)
 
     def _approval_ledger_append(
         self, kind: str, payload: Mapping[str, str]
@@ -1226,6 +1279,53 @@ def post_binance_feed_stop() -> dict[str, Any]:
 def get_binance_feed_status() -> dict[str, Any]:
     """Return a telemetry snapshot of the Binance public WS pump."""
     return {"feed": _feed_status_dict("SRC-MARKET-BINANCE-001")}
+
+
+def _coindesk_feed_status_dict() -> dict[str, Any]:
+    status = STATE.coindesk_feed.status()
+    return {
+        "source_id": status.source,
+        "running": status.running,
+        "url": status.url,
+        "items_received": status.items_received,
+        "polls": status.polls,
+        "errors": status.errors,
+        "last_poll_ts_ns": status.last_poll_ts_ns,
+        "last_item_ts_ns": status.last_item_ts_ns,
+    }
+
+
+@app.post("/api/feeds/coindesk/start")
+def post_coindesk_feed_start() -> dict[str, Any]:
+    """Start the read-only CoinDesk RSS pump (SRC-NEWS-COINDESK-001).
+
+    P0-5 — closes the news loop. Each polled :class:`NewsItem` flows
+    through :class:`NewsFanout`, fanning out to a projected
+    :class:`SignalEvent` (intelligence -> execution chain) and any
+    emitted :class:`HazardEvent` (governance throttle / mode FSM).
+    Idempotent.
+    """
+    STATE.coindesk_feed.start()
+    return {
+        "started": True,
+        "feed": _coindesk_feed_status_dict(),
+    }
+
+
+@app.post("/api/feeds/coindesk/stop")
+def post_coindesk_feed_stop() -> dict[str, Any]:
+    """Stop the CoinDesk RSS pump. Idempotent."""
+    STATE.coindesk_feed.stop()
+    return {
+        "stopped": True,
+        "feed": _coindesk_feed_status_dict(),
+    }
+
+
+@app.get("/api/feeds/coindesk/status")
+def get_coindesk_feed_status() -> dict[str, Any]:
+    """Return a telemetry snapshot of the CoinDesk RSS pump."""
+    return {"feed": _coindesk_feed_status_dict()}
 
 
 @app.post("/api/feeds/tradingview/observation")
