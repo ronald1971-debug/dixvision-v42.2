@@ -18,7 +18,7 @@ intent is exactly the same as ``re`` / ``json`` in the standard
 library: a single named import for a layer that is conceptually one
 thing even though the implementation is several files.
 
-Five enforcement layers are exposed:
+Six enforcement layers are exposed:
 
   1. **Authority matrix** (``AuthorityMatrix``, ``load_authority_matrix``)
      — declarative source of truth for "who wins in conflict?".
