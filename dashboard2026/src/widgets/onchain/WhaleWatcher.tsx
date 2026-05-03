@@ -81,8 +81,9 @@ export function WhaleWatcher() {
   useEffect(() => {
     const tick = () => {
       seq.current += 1;
+      const s = seq.current;
       const now = Date.now();
-      setFeed((prev) => [newTransfer(seq.current, now), ...prev].slice(0, 18));
+      setFeed((prev) => [newTransfer(s, now), ...prev].slice(0, 18));
     };
     for (let i = 0; i < 6; i += 1) tick();
     const id = setInterval(tick, 3_500);
