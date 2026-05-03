@@ -141,6 +141,8 @@ from ui.cognitive_chat_runtime import (
 )
 from ui.dashboard_routes import build_dashboard_router
 from ui.feeds.news_runner import CoinDeskRSSFeedRunner
+from ui.feeds.pumpfun_runner import PumpFunFeedRunner
+from ui.feeds.raydium_runner import RaydiumPoolFeedRunner
 from ui.feeds.runner import FeedRunner
 from ui.feeds.tradingview_ideas import (
     TRADINGVIEW_SOURCE_FEED,
@@ -259,6 +261,27 @@ class _State:
         self.coindesk_feed = CoinDeskRSSFeedRunner(
             signal_sink=self._ingest_news_signal_locked,
             hazard_sink=self._ingest_news_hazard_locked,
+            clock_ns=lambda: _next_ts(),
+        )
+
+        # D2 — Pump.fun launches + Raydium pool snapshots. Both runners
+        # are constructed idle; opt-in via
+        # ``POST /api/feeds/{pumpfun,raydium}/start`` so the harness
+        # boots without an external network dependency. The sinks
+        # publish into bounded ring buffers exposed by
+        # ``GET /api/feeds/{pumpfun,raydium}/recent``; downstream
+        # memecoin-tier consumers (LaunchFirehose, BundleDetector,
+        # PoolSnapshotPanel, etc.) read from the same buffers.
+        self.recent_launches: deque[dict[str, Any]] = deque(maxlen=200)
+        self.recent_pool_snapshots: deque[dict[str, Any]] = deque(
+            maxlen=500
+        )
+        self.pumpfun_feed = PumpFunFeedRunner(
+            sink=self._ingest_pumpfun_launch_locked,
+            clock_ns=lambda: _next_ts(),
+        )
+        self.raydium_feed = RaydiumPoolFeedRunner(
+            sink=self._ingest_raydium_snapshot_locked,
             clock_ns=lambda: _next_ts(),
         )
 
@@ -409,6 +432,56 @@ class _State:
             self.record("hazard.news", hazard)
             for downstream in self.governance.process(hazard):
                 self.record("governance", downstream)
+
+    def _ingest_pumpfun_launch_locked(self, ev: Any) -> None:
+        """``PumpFunFeedRunner`` sink — D2.
+
+        Pushes one row per :class:`LaunchEvent` into the
+        ``recent_launches`` ring (bounded by ``maxlen=200``). Called
+        from the runner's asyncio thread, so we acquire the harness
+        lock to keep writes serialized with the event dict reads on
+        the FastAPI sync handlers.
+        """
+
+        with self.lock:
+            self.recent_launches.appendleft(
+                {
+                    "ts_ns": int(ev.ts_ns),
+                    "venue": str(ev.venue),
+                    "chain": str(ev.chain),
+                    "mint": str(ev.mint),
+                    "symbol": str(ev.symbol),
+                    "name": str(ev.name),
+                    "creator": str(ev.creator),
+                    "market_cap_usd": float(ev.market_cap_usd),
+                    "liquidity_usd": float(ev.liquidity_usd),
+                }
+            )
+
+    def _ingest_raydium_snapshot_locked(self, snap: Any) -> None:
+        """``RaydiumPoolFeedRunner`` sink — D2.
+
+        Pushes one row per :class:`PoolSnapshot` into the
+        ``recent_pool_snapshots`` ring (bounded by ``maxlen=500``).
+        Called from the runner's asyncio thread.
+        """
+
+        with self.lock:
+            self.recent_pool_snapshots.appendleft(
+                {
+                    "ts_ns": int(snap.ts_ns),
+                    "venue": str(snap.venue),
+                    "chain": str(snap.chain),
+                    "pool_id": str(snap.pool_id),
+                    "base_mint": str(snap.base_mint),
+                    "quote_mint": str(snap.quote_mint),
+                    "base_symbol": str(snap.base_symbol),
+                    "quote_symbol": str(snap.quote_symbol),
+                    "price": float(snap.price),
+                    "liquidity_usd": float(snap.liquidity_usd),
+                    "volume_24h_usd": float(snap.volume_24h_usd),
+                }
+            )
 
     def _approval_ledger_append(
         self, kind: str, payload: Mapping[str, str]
@@ -1326,6 +1399,119 @@ def post_coindesk_feed_stop() -> dict[str, Any]:
 def get_coindesk_feed_status() -> dict[str, Any]:
     """Return a telemetry snapshot of the CoinDesk RSS pump."""
     return {"feed": _coindesk_feed_status_dict()}
+
+
+def _pumpfun_feed_status_dict() -> dict[str, Any]:
+    status = STATE.pumpfun_feed.status()
+    return {
+        "source_id": "SRC-LAUNCH-PUMPFUN-001",
+        "running": status.running,
+        "url": status.url,
+        "launches_received": status.launches_received,
+        "errors": status.errors,
+        "last_launch_ts_ns": status.last_launch_ts_ns,
+    }
+
+
+@app.post("/api/feeds/pumpfun/start")
+def post_pumpfun_feed_start() -> dict[str, Any]:
+    """Start the read-only Pump.fun PumpPortal WS pump (D2).
+
+    Streams new-token mint events from
+    ``wss://pumpportal.fun/api/data`` into the ``recent_launches``
+    ring exposed by ``GET /api/feeds/pumpfun/recent``.
+    """
+    STATE.pumpfun_feed.start()
+    return {
+        "started": True,
+        "feed": _pumpfun_feed_status_dict(),
+    }
+
+
+@app.post("/api/feeds/pumpfun/stop")
+def post_pumpfun_feed_stop() -> dict[str, Any]:
+    """Stop the Pump.fun WS pump. Idempotent."""
+    STATE.pumpfun_feed.stop()
+    return {
+        "stopped": True,
+        "feed": _pumpfun_feed_status_dict(),
+    }
+
+
+@app.get("/api/feeds/pumpfun/status")
+def get_pumpfun_feed_status() -> dict[str, Any]:
+    """Return a telemetry snapshot of the Pump.fun WS pump."""
+    return {"feed": _pumpfun_feed_status_dict()}
+
+
+@app.get("/api/feeds/pumpfun/recent")
+def get_pumpfun_recent(limit: int = 50) -> dict[str, Any]:
+    """Return the most recent Pump.fun launches (newest first)."""
+    cap = max(1, min(int(limit), 200))
+    with STATE.lock:
+        launches = list(STATE.recent_launches)[:cap]
+    return {
+        "launches": launches,
+        "count": len(launches),
+        "feed": _pumpfun_feed_status_dict(),
+    }
+
+
+def _raydium_feed_status_dict() -> dict[str, Any]:
+    status = STATE.raydium_feed.status()
+    return {
+        "source_id": "SRC-POOL-RAYDIUM-001",
+        "running": status.running,
+        "url": status.url,
+        "snapshots_emitted": status.snapshots_emitted,
+        "errors": status.errors,
+        "last_poll_ts_ns": status.last_poll_ts_ns,
+    }
+
+
+@app.post("/api/feeds/raydium/start")
+def post_raydium_feed_start() -> dict[str, Any]:
+    """Start the read-only Raydium AMM pool poller (D2).
+
+    Polls ``https://api.raydium.io/v2/main/pairs`` on a fixed
+    interval and emits one :class:`PoolSnapshot` per pair into the
+    ``recent_pool_snapshots`` ring exposed by
+    ``GET /api/feeds/raydium/recent``.
+    """
+    STATE.raydium_feed.start()
+    return {
+        "started": True,
+        "feed": _raydium_feed_status_dict(),
+    }
+
+
+@app.post("/api/feeds/raydium/stop")
+def post_raydium_feed_stop() -> dict[str, Any]:
+    """Stop the Raydium pool poller. Idempotent."""
+    STATE.raydium_feed.stop()
+    return {
+        "stopped": True,
+        "feed": _raydium_feed_status_dict(),
+    }
+
+
+@app.get("/api/feeds/raydium/status")
+def get_raydium_feed_status() -> dict[str, Any]:
+    """Return a telemetry snapshot of the Raydium pool poller."""
+    return {"feed": _raydium_feed_status_dict()}
+
+
+@app.get("/api/feeds/raydium/recent")
+def get_raydium_recent(limit: int = 100) -> dict[str, Any]:
+    """Return the most recent Raydium pool snapshots (newest first)."""
+    cap = max(1, min(int(limit), 500))
+    with STATE.lock:
+        snaps = list(STATE.recent_pool_snapshots)[:cap]
+    return {
+        "snapshots": snaps,
+        "count": len(snaps),
+        "feed": _raydium_feed_status_dict(),
+    }
 
 
 @app.post("/api/feeds/tradingview/observation")
