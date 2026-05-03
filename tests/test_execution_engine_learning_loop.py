@@ -15,6 +15,8 @@ from __future__ import annotations
 from core.contracts.events import (
     ExecutionEvent,
     ExecutionStatus,
+    HazardEvent,
+    HazardSeverity,
     Side,
     SignalEvent,
 )
@@ -24,6 +26,7 @@ from core.contracts.execution_intent import (
 )
 from core.contracts.governance import SystemMode
 from core.contracts.market import MarketTick
+from core.contracts.risk import RiskSnapshot
 from execution_engine.adapters.paper import PaperBroker
 from execution_engine.engine import ExecutionEngine
 from execution_engine.execution_gate import AuthorityGuard
@@ -32,6 +35,7 @@ from intelligence_engine.learning_interface import (
     FeedbackRecord,
     LearningInterface,
 )
+from system_engine.coupling import HazardThrottleAdapter
 
 
 def _signal(*, ts_ns: int = 1_000_000_000, plugin: str = "microstructure_v1") -> SignalEvent:
@@ -245,3 +249,58 @@ def test_sink_record_failures_propagate() -> None:
         assert "sink down" in str(exc)
     else:  # pragma: no cover - test failure path
         raise AssertionError("expected sink failure to propagate")
+
+
+def _baseline_snapshot(ts_ns: int = 0) -> RiskSnapshot:
+    return RiskSnapshot(
+        version=1,
+        ts_ns=ts_ns,
+        max_position_qty=10.0,
+        max_signal_confidence=0.0,
+        symbol_caps={},
+        halted=False,
+    )
+
+
+def test_hazard_throttled_event_still_feeds_loop() -> None:
+    """A REJECTED hazard_throttled event must reach both sinks.
+
+    Regression for the merge-conflict bug between P0-2 (throttle short
+    circuit) and P0-3 (learning sinks): the early-return path skipped
+    ``_feed_learning_loop``, so refusal windows silently never reached
+    the learning loop. Mirrors ``test_mode_suppressed_event_still_feeds_loop``
+    for the parallel suppression path.
+    """
+
+    fc = FeedbackCollector()
+    li = LearningInterface()
+    adapter = HazardThrottleAdapter()
+    engine = ExecutionEngine(
+        adapter=PaperBroker(),
+        guard=_guard(),
+        feedback_collector=fc,
+        intelligence_feedback=li,
+        throttle_adapter=adapter,
+        risk_baseline=_baseline_snapshot(),
+    )
+    engine.on_market(_tick())
+
+    engine.on_hazard(
+        HazardEvent(
+            ts_ns=1_000_000_000,
+            code="HAZ-DATA-STALENESS",
+            severity=HazardSeverity.CRITICAL,
+            detail="critical staleness",
+            source="system",
+            produced_by_engine="system",
+        )
+    )
+
+    events = engine.execute(_intent(), caller="tests.fixtures")
+
+    assert events[0].status is ExecutionStatus.REJECTED
+    assert events[0].meta["reason"] == "hazard_throttled"
+    assert len(fc.drain()) == 1
+    rows = li.drain()
+    assert len(rows) == 1
+    assert rows[0].execution_status is ExecutionStatus.REJECTED
