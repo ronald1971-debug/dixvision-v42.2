@@ -219,7 +219,7 @@ class ExecutionEngine(RuntimeEngine):
             )
             if throttled.halted:
                 signal = intent.signal
-                return (
+                throttled_events: tuple[ExecutionEvent, ...] = (
                     ExecutionEvent(
                         ts_ns=signal.ts_ns,
                         symbol=signal.symbol,
@@ -233,6 +233,12 @@ class ExecutionEngine(RuntimeEngine):
                         produced_by_engine="execution_engine",
                     ),
                 )
+                # P0-3 — every terminal ExecutionEvent must reach the
+                # learning loop, including hazard-throttled REJECTs.
+                # Without this the freeze policy + outcome buffers
+                # silently lose entire windows of refusal data.
+                self._feed_learning_loop(intent.signal, throttled_events)
+                return throttled_events
 
         if current_mode is not None and not effect_for(
             current_mode
