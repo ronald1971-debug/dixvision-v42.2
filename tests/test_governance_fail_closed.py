@@ -42,7 +42,6 @@ from governance_engine.control_plane.event_classifier import (
 )
 from governance_engine.engine import GovernanceEngine
 
-
 # ---------------------------------------------------------------------------
 # Allowlist invariants
 # ---------------------------------------------------------------------------
