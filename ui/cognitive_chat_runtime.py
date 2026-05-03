@@ -33,7 +33,6 @@ Two design constraints govern the shape of this module:
 from __future__ import annotations
 
 import threading
-import time
 import uuid
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
@@ -82,6 +81,7 @@ from intelligence_engine.cognitive.chat import (
     assemble_cognitive_chat,
 )
 from intelligence_engine.cognitive.proposal_parser import extract_proposal
+from system.time_source import wall_ns
 from system_engine.scvs.source_registry import SourceRegistry
 
 __all__ = [
@@ -145,7 +145,7 @@ def build_ledger_append(
     """
 
     def _append(kind: str, payload: Mapping[str, str]) -> None:
-        writer.append(ts_ns=time.time_ns(), kind=kind, payload=dict(payload))
+        writer.append(ts_ns=wall_ns(), kind=kind, payload=dict(payload))
 
     return _append
 
@@ -343,7 +343,7 @@ class CognitiveChatRuntime:
             queued = self.approval_queue.submit(
                 thread_id=req.thread_id,
                 proposal=proposal,
-                requested_at_ts_ns=time.time_ns(),
+                requested_at_ts_ns=wall_ns(),
             )
             self.ledger_append(
                 "OPERATOR_APPROVAL_PENDING",
@@ -437,7 +437,7 @@ def build_runtime(
     real transport is wired. Tests pass a fake transport here.
     ``feature_flag`` defaults to env-driven; tests pass an
     injected getter. ``approval_queue`` defaults to a fresh
-    in-memory queue using ``time.time_ns`` for stamping; tests
+    in-memory queue using :func:`system.time_source.wall_ns` for stamping; tests
     inject a deterministic queue.
 
     PR-7: when the queue is created here (the production path) the
@@ -446,7 +446,7 @@ def build_runtime(
     their own queue keep full control — no implicit rehydrate."""
 
     if approval_queue is None:
-        approval_queue = ApprovalQueue(ts_ns=time.time_ns)
+        approval_queue = ApprovalQueue(ts_ns=wall_ns)
         rehydrate_approval_queue_from_ledger(approval_queue, ledger_writer)
     return CognitiveChatRuntime(
         task=task,
