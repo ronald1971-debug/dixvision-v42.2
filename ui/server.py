@@ -140,13 +140,13 @@ from ui.cognitive_chat_runtime import (
     build_runtime as build_cognitive_chat_runtime,
 )
 from ui.dashboard_routes import build_dashboard_router
+from ui.execution_routes import build_execution_router
 from ui.feeds.news_runner import CoinDeskRSSFeedRunner
 from ui.feeds.runner import FeedRunner
 from ui.feeds.tradingview_ideas import (
     TRADINGVIEW_SOURCE_FEED,
     parse_tradingview_idea_payload,
 )
-from ui.execution_routes import build_execution_router
 from ui.governance_routes import build_governance_router
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
