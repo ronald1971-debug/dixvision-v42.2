@@ -31,6 +31,13 @@ dev = [
     "httpx>=0.25",
     "pydantic>=2.0",
     "websockets>=12.0",
+    # D3 — UniswapX EIP-712 signer + quote client. ``eth-account`` is
+    # the canonical Python implementation of EIP-712 typed-data signing
+    # used by Uniswap Labs / Foundation tooling.
+    "eth-account>=0.13,<1",
+]
+evm = [
+    "eth-account>=0.13,<1",
 ]
 cognitive = [
     # Kept as a no-op alias for backward compatibility with any
