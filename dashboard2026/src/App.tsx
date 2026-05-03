@@ -15,6 +15,7 @@ import { DyonLearningPage } from "@/pages/DyonLearningPage";
 import { IndiraLearningPage } from "@/pages/IndiraLearningPage";
 import { OperatorPage } from "@/pages/OperatorPage";
 import { OrderFlowPage } from "@/pages/OrderFlowPage";
+import { RiskPage } from "@/pages/RiskPage";
 import { TestingPage } from "@/pages/TestingPage";
 import { DexPage } from "@/pages/asset/DexPage";
 import { ForexPage } from "@/pages/asset/ForexPage";
@@ -55,6 +56,8 @@ function renderRoute(route: Route) {
       return <TestingPage />;
     case "orderflow":
       return <OrderFlowPage />;
+    case "risk":
+      return <RiskPage />;
   }
 }
 

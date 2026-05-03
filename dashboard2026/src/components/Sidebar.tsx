@@ -83,6 +83,12 @@ const SYSTEM_NAV: Record<SystemRoute, NavItem<SystemRoute>> = {
     href: "#/orderflow",
     icon: Gauge,
   },
+  risk: {
+    key: "risk",
+    label: "Risk",
+    href: "#/risk",
+    icon: Gauge,
+  },
 };
 
 export interface SidebarProps {
