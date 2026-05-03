@@ -38,11 +38,13 @@ from core.contracts.events import (
 )
 from core.contracts.execution_intent import ExecutionIntent
 from core.contracts.governance import SystemMode
+from core.contracts.learning_sink import IntelligenceFeedbackSink
 from core.contracts.market import MarketTick
 from core.contracts.mode_effects import effect_for
 from core.contracts.risk import RiskSnapshot
 from execution_engine.adapters import BrokerAdapter, PaperBroker
 from execution_engine.execution_gate import AuthorityGuard
+from execution_engine.protections.feedback import FeedbackCollector
 from system_engine.coupling import HazardThrottleAdapter
 
 __all__ = ["ExecutionEngine", "LegacyExecutionPathRemovedError"]
@@ -69,6 +71,8 @@ class ExecutionEngine(RuntimeEngine):
         plugin_slots: Mapping[str, Sequence[Plugin]] | None = None,
         *,
         guard: AuthorityGuard | None = None,
+        feedback_collector: FeedbackCollector | None = None,
+        intelligence_feedback: IntelligenceFeedbackSink | None = None,
         throttle_adapter: HazardThrottleAdapter | None = None,
         risk_baseline: RiskSnapshot | None = None,
     ) -> None:
@@ -82,6 +86,21 @@ class ExecutionEngine(RuntimeEngine):
         # disk. ``execute`` materialises the guard on first use
         # unless the caller injected one explicitly.
         self._guard: AuthorityGuard | None = guard
+        # P0-3 — closed learning loop. Both sinks are optional so
+        # offline harness flows that never construct them retain their
+        # pre-P0-3 dispatch shape. Production wiring (cockpit /
+        # bootstrap_kernel) injects real instances so terminal
+        # ExecutionEvents flow into the learning + evolution
+        # pipeline (Build Compiler Spec §8). The intelligence sink is
+        # duck-typed via ``IntelligenceFeedbackSink`` so the import
+        # arrow stays one-way: execution_engine → core.contracts
+        # only (B1).
+        self._feedback_collector: FeedbackCollector | None = (
+            feedback_collector
+        )
+        self._intelligence_feedback: IntelligenceFeedbackSink | None = (
+            intelligence_feedback
+        )
         # P0-2: hazard throttle chain closure. The adapter is the
         # single seam through which observed HazardEvents tighten the
         # hot-path RiskSnapshot via apply_throttle(). Both attributes
@@ -219,7 +238,7 @@ class ExecutionEngine(RuntimeEngine):
             current_mode
         ).executions_dispatch:
             signal = intent.signal
-            return (
+            suppressed = (
                 ExecutionEvent(
                     ts_ns=signal.ts_ns,
                     symbol=signal.symbol,
@@ -236,7 +255,11 @@ class ExecutionEngine(RuntimeEngine):
                     produced_by_engine="execution_engine",
                 ),
             )
-        return self._execute_signal(intent.signal)
+            self._feed_learning_loop(intent.signal, suppressed)
+            return suppressed
+        events = self._execute_signal(intent.signal)
+        self._feed_learning_loop(intent.signal, events)
+        return events
 
     # ------------------------------------------------------------------
     # HARDEN-05 — the legacy ``process(SignalEvent)`` path is gone. The
@@ -299,6 +322,66 @@ class ExecutionEngine(RuntimeEngine):
             return (self._adapter.submit(event, mark),)
 
         return (self._adapter.submit(event, mark),)
+
+    # ------------------------------------------------------------------
+    # P0-3 — closed learning loop. Pure dispatch helper. Pushes terminal
+    # ExecutionEvents into the configured FeedbackCollector and
+    # IntelligenceFeedbackSink. Empty when neither sink is wired so
+    # offline harness flows are unchanged.
+    # ------------------------------------------------------------------
+
+    def _feed_learning_loop(
+        self,
+        signal: SignalEvent,
+        events: Sequence[ExecutionEvent],
+    ) -> None:
+        if (
+            self._feedback_collector is None
+            and self._intelligence_feedback is None
+        ):
+            return
+        mark = self._marks.get(signal.symbol)
+        strategy_id = signal.plugin_chain[0] if signal.plugin_chain else ""
+        for event in events:
+            if self._feedback_collector is not None and strategy_id:
+                self._feedback_collector.record(
+                    ts_ns=event.ts_ns,
+                    strategy_id=strategy_id,
+                    symbol=event.symbol,
+                    qty=event.qty,
+                    pnl=self._realised_pnl(
+                        side=event.side,
+                        qty=event.qty,
+                        entry_price=event.price,
+                        mark_price=mark,
+                    ),
+                    status=event.status,
+                    venue=event.venue,
+                    order_id=event.order_id,
+                    meta=event.meta,
+                )
+            if self._intelligence_feedback is not None:
+                self._intelligence_feedback.record(
+                    signal=signal,
+                    execution=event,
+                    mark_price=mark,
+                )
+
+    @staticmethod
+    def _realised_pnl(
+        *,
+        side: Side,
+        qty: float,
+        entry_price: float,
+        mark_price: float | None,
+    ) -> float:
+        if mark_price is None or qty == 0.0 or entry_price == 0.0:
+            return 0.0
+        if side is Side.BUY:
+            return qty * (mark_price - entry_price)
+        if side is Side.SELL:
+            return qty * (entry_price - mark_price)
+        return 0.0
 
     def check_self(self) -> HealthStatus:
         plugin_states = {
