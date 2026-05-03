@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { AutonomyRibbon } from "@/components/AutonomyRibbon";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -8,6 +8,7 @@ import { PadlockFloors } from "@/components/PadlockFloors";
 import { PreferencesBar } from "@/components/PreferencesBar";
 import { PromoteChain } from "@/components/PromoteChain";
 import { Sidebar } from "@/components/Sidebar";
+import { ToastHost } from "@/components/ToastHost";
 import { AIPage } from "@/pages/AIPage";
 import { ChartingPage } from "@/pages/ChartingPage";
 import { CognitiveChatPage } from "@/pages/CognitiveChatPage";
@@ -31,7 +32,9 @@ import { PerpsPage } from "@/pages/asset/PerpsPage";
 import { SpotPage } from "@/pages/asset/SpotPage";
 import { StocksPage } from "@/pages/asset/StocksPage";
 import { useApplyPreferences } from "@/preferences/store";
-import { useHashRoute, type Route } from "@/router";
+import { isPopoutRoute, useHashRoute, useIsPopout, type Route } from "@/router";
+import { useGlobalHotkeys } from "@/state/hotkeys";
+import { pushToast } from "@/state/toast";
 
 function renderRoute(route: Route) {
   switch (route) {
@@ -84,24 +87,54 @@ function renderRoute(route: Route) {
 
 export function App() {
   const route = useHashRoute();
+  const popout = useIsPopout();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   useApplyPreferences();
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setPaletteOpen((o) => !o);
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
+  // Pop-out windows must keep the `#/popout/` prefix when the operator
+  // navigates with hotkeys, otherwise `useIsPopout` flips back to chromed
+  // mode and the second-monitor docking surface suddenly grows the full
+  // sidebar + ribbons.
+  const goRoute = (target: string) => {
+    const prefix = isPopoutRoute(window.location.hash) ? "#/popout/" : "#/";
+    window.location.hash = `${prefix}${target}`;
+  };
+  useGlobalHotkeys({
+    "toggle-palette": () => setPaletteOpen((o) => !o),
+    "toggle-sidebar": () => setSidebarCollapsed((c) => !c),
+    "go-operator": () => goRoute("operator"),
+    "go-governance": () => goRoute("governance"),
+    "go-testing": () => goRoute("testing"),
+    "go-ai": () => goRoute("ai"),
+    "kill-switch": () => {
+      pushToast("Kill switch armed", {
+        tone: "danger",
+        hint: "release ctrl+shift+k to abort all autonomous activity",
+      });
+    },
+  });
+
+  if (popout) {
+    // J-track pop-out window: chromeless render — no sidebar, no
+    // top ribbons, no command palette so the operator can dock the
+    // route into a second monitor with maximum vertical real estate.
+    return (
+      <div className="flex h-full flex-col">
+        <main className="flex-1 overflow-auto px-3 py-2">
+          {renderRoute(route)}
+        </main>
+        <ToastHost />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex flex-col gap-2 border-b border-border bg-surface px-4 py-2">
+      <header
+        data-layout-glow
+        className="flex flex-col gap-2 border-b border-border bg-surface px-4 py-2"
+      >
         <div className="flex items-center gap-3">
           <span className="text-base font-semibold tracking-tight">
             DIX VISION
@@ -148,6 +181,7 @@ export function App() {
           },
         ]}
       />
+      <ToastHost />
     </div>
   );
 }
