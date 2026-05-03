@@ -55,6 +55,7 @@ const ROUTE_LABELS: Record<Route, string> = {
   risk: "Risk & Greeks",
   charting: "Charting",
   positions: "Positions",
+  trading: "Trading",
 };
 
 function buildNavActions(onNavigate: (route: Route) => void): CommandAction[] {
