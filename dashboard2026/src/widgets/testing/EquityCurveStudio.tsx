@@ -141,7 +141,17 @@ function Stat({ label, value, tone }: { label: string; value: string; tone: "eme
   return (
     <div className="rounded border border-border/60 bg-bg/30 px-2 py-1.5">
       <div className="font-mono text-[9px] uppercase tracking-wider text-slate-500">{label}</div>
-      <div className={`font-mono text-sm text-${tone}-400`}>{value}</div>
+      <div
+        className={`font-mono text-sm ${
+          tone === "emerald"
+            ? "text-emerald-400"
+            : tone === "amber"
+              ? "text-amber-400"
+              : "text-rose-400"
+        }`}
+      >
+        {value}
+      </div>
     </div>
   );
 }
