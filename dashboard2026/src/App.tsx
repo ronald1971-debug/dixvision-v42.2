@@ -20,6 +20,7 @@ import { OperatorPage } from "@/pages/OperatorPage";
 import { OrderFlowPage } from "@/pages/OrderFlowPage";
 import { RiskPage } from "@/pages/RiskPage";
 import { TestingPage } from "@/pages/TestingPage";
+import { TradingPage } from "@/pages/TradingPage";
 import { DexPage } from "@/pages/asset/DexPage";
 import { ForexPage } from "@/pages/asset/ForexPage";
 import { MemecoinPage } from "@/pages/asset/MemecoinPage";
@@ -70,6 +71,8 @@ function renderRoute(route: Route) {
       return <RiskPage />;
     case "charting":
       return <ChartingPage />;
+    case "trading":
+      return <TradingPage />;
   }
 }
 
