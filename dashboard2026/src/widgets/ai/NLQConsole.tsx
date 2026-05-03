@@ -42,9 +42,9 @@ function parse(raw: string): ParsedIntent {
   } else if (/\bsell\b|\bshort\b|\bclose\b/.test(lc)) {
     action = "SELL";
     side = "SELL";
-  } else if (/\balert|notify|tell me\b/.test(lc)) {
+  } else if (/\balert\b|\bnotify\b|\btell me\b/.test(lc)) {
     action = "ALERT";
-  } else if (/\bstrategy|backtest|forward test\b/.test(lc)) {
+  } else if (/\bstrategy\b|\bbacktest\b|\bforward test\b/.test(lc)) {
     action = "STRATEGY";
   }
 
