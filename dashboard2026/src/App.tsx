@@ -10,6 +10,7 @@ import { CognitiveChatPage } from "@/pages/CognitiveChatPage";
 import { CredentialsPage } from "@/pages/CredentialsPage";
 import { DyonLearningPage } from "@/pages/DyonLearningPage";
 import { IndiraLearningPage } from "@/pages/IndiraLearningPage";
+import { OnChainPage } from "@/pages/OnChainPage";
 import { OperatorPage } from "@/pages/OperatorPage";
 import { TestingPage } from "@/pages/TestingPage";
 import { DexPage } from "@/pages/asset/DexPage";
@@ -49,6 +50,8 @@ function renderRoute(route: Route) {
       return <DyonLearningPage />;
     case "testing":
       return <TestingPage />;
+    case "onchain":
+      return <OnChainPage />;
   }
 }
 
