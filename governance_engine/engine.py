@@ -49,6 +49,7 @@ from governance_engine.control_plane import (
     RiskEvaluator,
     StateTransitionManager,
 )
+from governance_engine.control_plane.drift_oracle import DriftCompositeOracle
 from governance_engine.control_plane.event_classifier import PipelineStage
 from governance_engine.control_plane.policy_engine import install_policy_table
 from governance_engine.control_plane.update_applier import UpdateApplier
@@ -108,6 +109,15 @@ class GovernanceEngine(RuntimeEngine):
             state_transitions=self.state_transitions,
             ledger=self.ledger,
         )
+        # GOV-CP-08 / P0-7 -- drift composite oracle. Computes the
+        # max-component composite drift on demand and proposes a
+        # one-step backward transition through the FSM (AUTO -> LIVE
+        # -> CANARY -> SHADOW) when any component breaches its
+        # threshold. Routes every proposal through
+        # ``state_transitions`` so the FSM legality check, policy
+        # gate, promotion-gate hash anchor, and authority-ledger row
+        # all remain in the loop (B32 single-mutator invariant).
+        self.drift_oracle = DriftCompositeOracle()
         # Wave-04.6 PR-E — closed learning loop. When a registry is
         # injected, ``UPDATE_PROPOSED`` events are validated against
         # the strategy's mutable-parameter whitelist and either

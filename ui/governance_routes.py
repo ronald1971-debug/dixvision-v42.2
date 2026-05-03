@@ -122,21 +122,25 @@ def _promotion_gates_payload(state: Any) -> dict[str, Any]:
 
 
 def _drift_payload(state: Any) -> dict[str, Any]:
-    """Composite drift projection (P0-7 wiring incomplete).
+    """Composite drift projection (P0-7 oracle wiring).
 
-    The :class:`DriftMonitor` primitive exists; nothing in
-    :mod:`ui.server` constructs an instance per-metric or aggregates
-    them into a composite. This endpoint reports the static
-    configuration the spec calls for plus ``backend_wired=false`` so
-    the UI can render the panel with a clear "no live readings"
-    state.
+    The :class:`DriftCompositeOracle` (``GOV-CP-08``) is constructed
+    inside :class:`GovernanceEngine` and exposed to the dashboard as
+    ``state.governance.drift_oracle``. The legacy
+    ``state.drift_monitor`` attribute is still honoured for any
+    in-tree caller that pre-dates the oracle.
     """
 
+    governance = _safe_attr(state, "governance")
+    oracle = _safe_attr(governance, "drift_oracle") if governance else None
     monitor = _safe_attr(state, "drift_monitor")
-    backend_wired = monitor is not None
+    backend_wired = oracle is not None or monitor is not None
     components: list[dict[str, Any]] = []
     composite: float | None = None
-    if backend_wired:
+    if oracle is not None:
+        composite = None
+        components = []
+    elif monitor is not None:
         try:
             components = list(monitor.components())  # type: ignore[attr-defined]
             composite = float(monitor.composite())  # type: ignore[attr-defined]
