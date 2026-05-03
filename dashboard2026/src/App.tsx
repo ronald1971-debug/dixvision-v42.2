@@ -12,6 +12,7 @@ import { useApplyPreferences } from "@/preferences/store";
 import { CognitiveChatPage } from "@/pages/CognitiveChatPage";
 import { CredentialsPage } from "@/pages/CredentialsPage";
 import { DyonLearningPage } from "@/pages/DyonLearningPage";
+import { GovernancePage } from "@/pages/GovernancePage";
 import { IndiraLearningPage } from "@/pages/IndiraLearningPage";
 import { OnChainPage } from "@/pages/OnChainPage";
 import { OperatorPage } from "@/pages/OperatorPage";
@@ -56,6 +57,8 @@ function renderRoute(route: Route) {
       return <TestingPage />;
     case "onchain":
       return <OnChainPage />;
+    case "governance":
+      return <GovernancePage />;
     case "risk":
       return <RiskPage />;
   }

@@ -49,6 +49,7 @@ const ROUTE_LABELS: Record<Route, string> = {
   dyon: "Dyon learn",
   testing: "Testing & Eval",
   onchain: "On-chain",
+  governance: "Governance",
   risk: "Risk & Greeks",
 };
 
