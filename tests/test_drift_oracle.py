@@ -296,6 +296,7 @@ def test_composite_only_breach_triggers_downgrade() -> None:
     assert stm.current_mode() is SystemMode.CANARY
     assert "composite=0.2000" in decision.reason
     assert "threshold=0.1000" in decision.reason
+    assert " >= " in decision.reason
 
 
 def test_composite_below_oracle_threshold_no_downgrade() -> None:

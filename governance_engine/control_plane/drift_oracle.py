@@ -232,7 +232,7 @@ class DriftCompositeOracle:
         else:
             reason = (
                 f"drift_composite_breach: composite={reading.composite:.4f}"
-                f">=threshold={self._downgrade_threshold:.4f}"
+                f" >= threshold={self._downgrade_threshold:.4f}"
             )
         request = ModeTransitionRequest(
             ts_ns=ts_ns,
