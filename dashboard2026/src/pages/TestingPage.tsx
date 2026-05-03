@@ -1,5 +1,10 @@
 import { Backtester } from "@/widgets/testing/Backtester";
+import { CalibrationReliability } from "@/widgets/testing/CalibrationReliability";
+import { ChampionChallenger } from "@/widgets/testing/ChampionChallenger";
+import { EquityCurveStudio } from "@/widgets/testing/EquityCurveStudio";
 import { ForwardTester } from "@/widgets/testing/ForwardTester";
+import { MonteCarloPaths } from "@/widgets/testing/MonteCarloPaths";
+import { ParameterSweep } from "@/widgets/testing/ParameterSweep";
 import { RegimeShiftBoard } from "@/widgets/testing/RegimeShiftBoard";
 import { ReplayHarness } from "@/widgets/testing/ReplayHarness";
 import { WalkForwardHarness } from "@/widgets/testing/WalkForwardHarness";
@@ -40,6 +45,21 @@ export function TestingPage() {
         <div className="grid gap-3 lg:grid-cols-2">
           <div className="lg:col-span-2">
             <Backtester />
+          </div>
+          <div className="min-h-[360px] lg:col-span-2">
+            <EquityCurveStudio />
+          </div>
+          <div className="min-h-[360px]">
+            <ChampionChallenger />
+          </div>
+          <div className="min-h-[360px]">
+            <CalibrationReliability />
+          </div>
+          <div className="min-h-[360px]">
+            <ParameterSweep />
+          </div>
+          <div className="min-h-[360px]">
+            <MonteCarloPaths />
           </div>
           <ForwardTester />
           <WalkForwardHarness />
