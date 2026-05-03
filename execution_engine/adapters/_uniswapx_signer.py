@@ -234,6 +234,95 @@ class SignedIntent:
     signer_address: str
 
 
+def intent_from_quote_payload(
+    payload: dict[str, Any],
+    *,
+    default_chain_id: int,
+    default_reactor: str,
+    default_swapper: str,
+) -> ExclusiveDutchOrderIntent:
+    """Parse a UniswapX ``/v2/quote`` ``order`` payload into an intent.
+
+    The signature MUST cover the same data the server's ``encodedOrder``
+    encodes. This helper extracts every order parameter (nonce,
+    deadline, decay window, input/output amounts, exclusivity) directly
+    from the server-provided payload so the locally-built typed-data
+    matches the bytes the Reactor will recover on-chain.
+
+    Args:
+        payload: ``order`` dict from the ``/v2/quote`` response.
+        default_chain_id: Fallback when the payload omits ``chainId``.
+        default_reactor: Fallback when the payload omits ``reactor``.
+        default_swapper: Fallback when the payload omits ``swapper``;
+            typically the operator's wallet address.
+
+    Returns:
+        Frozen :class:`ExclusiveDutchOrderIntent` ready to feed into
+        :func:`build_exclusive_dutch_order_typed_data`.
+
+    Raises:
+        ValueError: Required fields missing or malformed.
+    """
+
+    def _int(key: str, *, default: int | None = None) -> int:
+        if key not in payload:
+            if default is None:
+                raise ValueError(f"quote.order missing '{key}'")
+            return default
+        v = payload[key]
+        return int(v) if not isinstance(v, int) else v
+
+    def _str(key: str, *, default: str | None = None) -> str:
+        if key not in payload:
+            if default is None:
+                raise ValueError(f"quote.order missing '{key}'")
+            return default
+        return str(payload[key])
+
+    raw_input = payload.get("input")
+    if not isinstance(raw_input, dict):
+        raise ValueError("quote.order.input missing or malformed")
+    raw_outputs = payload.get("outputs")
+    if not isinstance(raw_outputs, list) or not raw_outputs:
+        raise ValueError("quote.order.outputs missing or empty")
+    parsed_outputs: list[DutchOutput] = []
+    for i, out in enumerate(raw_outputs):
+        if not isinstance(out, dict):
+            raise ValueError(f"quote.order.outputs[{i}] malformed")
+        parsed_outputs.append(
+            DutchOutput(
+                token=str(out["token"]),
+                start_amount=int(out["startAmount"]),
+                end_amount=int(out["endAmount"]),
+                recipient=str(
+                    out.get("recipient", default_swapper)
+                ),
+            )
+        )
+
+    return ExclusiveDutchOrderIntent(
+        chain_id=_int("chainId", default=default_chain_id),
+        reactor=_str("reactor", default=default_reactor),
+        swapper=_str("swapper", default=default_swapper),
+        nonce=_int("nonce"),
+        deadline_unix_s=_int("deadline"),
+        decay_start_time_unix_s=_int("decayStartTime"),
+        decay_end_time_unix_s=_int("decayEndTime"),
+        exclusive_filler=_str(
+            "exclusiveFiller", default="0x" + "0" * 40
+        ),
+        exclusivity_override_bps=_int(
+            "exclusivityOverrideBps", default=0
+        ),
+        input=DutchInput(
+            token=str(raw_input["token"]),
+            start_amount=int(raw_input["startAmount"]),
+            end_amount=int(raw_input["endAmount"]),
+        ),
+        outputs=tuple(parsed_outputs),
+    )
+
+
 def sign_typed_data(
     *, private_key: str, typed_data: dict[str, Any]
 ) -> SignedIntent:
@@ -271,5 +360,6 @@ __all__ = [
     "ExclusiveDutchOrderIntent",
     "SignedIntent",
     "build_exclusive_dutch_order_typed_data",
+    "intent_from_quote_payload",
     "sign_typed_data",
 ]

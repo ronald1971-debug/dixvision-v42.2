@@ -24,27 +24,34 @@ _PRIVATE_KEY = "0x" + "11" * 32
 _SIGNER = Account.from_key(_PRIVATE_KEY).address
 
 
-def _quote_payload() -> dict[str, object]:
-    return {
-        "order": {
-            "reactor": "0x" + "a" * 40,
-            "swapper": _SIGNER,
-            "outputs": [
-                {
-                    "token": "0x" + "d" * 40,
-                    "startAmount": "900000",
-                    "endAmount": "890000",
-                    "recipient": _SIGNER,
-                }
-            ],
-            "input": {
-                "token": "0x" + "c" * 40,
-                "startAmount": "1000000",
-                "endAmount": "1000000",
-            },
-            "encodedOrder": "0xdeadbeef",
-        }
+def _quote_payload(**overrides: object) -> dict[str, object]:
+    order: dict[str, object] = {
+        "chainId": 1,
+        "reactor": "0x" + "a" * 40,
+        "swapper": _SIGNER,
+        "nonce": "424242",
+        "deadline": 1_700_000_120,
+        "decayStartTime": 1_700_000_000,
+        "decayEndTime": 1_700_000_060,
+        "exclusiveFiller": "0x" + "0" * 40,
+        "exclusivityOverrideBps": "0",
+        "outputs": [
+            {
+                "token": "0x" + "d" * 40,
+                "startAmount": "900000",
+                "endAmount": "890000",
+                "recipient": _SIGNER,
+            }
+        ],
+        "input": {
+            "token": "0x" + "c" * 40,
+            "startAmount": "1000000",
+            "endAmount": "1000000",
+        },
+        "encodedOrder": "0xdeadbeef",
     }
+    order.update(overrides)
+    return {"order": order}
 
 
 def _signal(meta: dict[str, str] | None = None) -> SignalEvent:
@@ -183,7 +190,10 @@ def test_submit_full_flow_quote_sign_submit(tmp_path: Path) -> None:
     assert ev.status is ExecutionStatus.SUBMITTED, ev.meta
     assert ev.order_id == "0xabc123"
     assert ev.meta["signer"] == _SIGNER
-    assert ev.meta["amount_in"] == "1000000"
+    assert ev.meta["amount_in_request"] == "1000000"
+    assert ev.meta["amount_in_signed"] == "1000000"
+    assert ev.meta["nonce"] == "424242"
+    assert ev.meta["deadline"] == "1700000120"
     assert ev.meta["amount_out_quote"] == "900000"
     assert ev.meta["amount_out_min"] == "890000"
     assert ev.meta["execution_kind"] == "uniswapx_intent"
@@ -280,6 +290,132 @@ def test_submit_falls_back_to_size_usd(tmp_path: Path) -> None:
     body = captured[0]
     # 250 USD → 250 * 1e6 base units (6-decimal stablecoin assumption).
     assert body["amount"] == "250000000"
+
+
+def test_submit_rejects_when_quote_input_token_mismatches(
+    tmp_path: Path,
+) -> None:
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.path == "/v2/health":
+            return httpx.Response(200, json={"ok": True})
+        if req.url.path == "/v2/quote":
+            payload = _quote_payload()
+            order = payload["order"]
+            assert isinstance(order, dict)
+            order["input"] = {
+                "token": "0x" + "e" * 40,
+                "startAmount": "1000000",
+                "endAmount": "1000000",
+            }
+            return httpx.Response(200, json=payload)
+        pytest.fail("/v2/order must not be hit on parse-mismatch reject")
+        return httpx.Response(500)
+
+    a = _adapter(
+        handler=httpx.MockTransport(handler),
+        private_key_path=_write_key(tmp_path),
+    )
+    a.connect()
+    ev = a.submit(_signal(), mark_price=1.0)
+    assert ev.status is ExecutionStatus.REJECTED
+    assert ev.meta["reason"] == "quote_input_token_mismatch"
+
+
+def test_submit_rejects_when_quote_output_token_mismatches(
+    tmp_path: Path,
+) -> None:
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.path == "/v2/health":
+            return httpx.Response(200, json={"ok": True})
+        if req.url.path == "/v2/quote":
+            payload = _quote_payload()
+            order = payload["order"]
+            assert isinstance(order, dict)
+            order["outputs"] = [
+                {
+                    "token": "0x" + "f" * 40,
+                    "startAmount": "900000",
+                    "endAmount": "890000",
+                    "recipient": _SIGNER,
+                }
+            ]
+            return httpx.Response(200, json=payload)
+        pytest.fail("/v2/order must not be hit on parse-mismatch reject")
+        return httpx.Response(500)
+
+    a = _adapter(
+        handler=httpx.MockTransport(handler),
+        private_key_path=_write_key(tmp_path),
+    )
+    a.connect()
+    ev = a.submit(_signal(), mark_price=1.0)
+    assert ev.status is ExecutionStatus.REJECTED
+    assert ev.meta["reason"] == "quote_output_token_mismatch"
+
+
+def test_submit_rejects_when_quote_payload_missing_nonce(
+    tmp_path: Path,
+) -> None:
+    def handler(req: httpx.Request) -> httpx.Response:
+        if req.url.path == "/v2/health":
+            return httpx.Response(200, json={"ok": True})
+        if req.url.path == "/v2/quote":
+            payload = _quote_payload()
+            order = payload["order"]
+            assert isinstance(order, dict)
+            order.pop("nonce")
+            return httpx.Response(200, json=payload)
+        pytest.fail("/v2/order must not be hit on parse-fail reject")
+        return httpx.Response(500)
+
+    a = _adapter(
+        handler=httpx.MockTransport(handler),
+        private_key_path=_write_key(tmp_path),
+    )
+    a.connect()
+    ev = a.submit(_signal(), mark_price=1.0)
+    assert ev.status is ExecutionStatus.REJECTED
+    assert ev.meta["reason"].startswith("quote_parse_failed")
+
+
+def test_submit_signature_matches_server_encoded_order_params(
+    tmp_path: Path,
+) -> None:
+    """The signed typed-data must use the SERVER's nonce / deadline /
+    decay times — not values pulled from the local clock — so the
+    on-chain Reactor can recover the same digest from ``encodedOrder``.
+    """
+    captured: list[dict[str, object]] = []
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        path = req.url.path
+        if path == "/v2/health":
+            return httpx.Response(200, json={"ok": True})
+        if path == "/v2/quote":
+            return httpx.Response(200, json=_quote_payload())
+        if path == "/v2/order":
+            captured.append(json.loads(req.content.decode()))
+            return httpx.Response(200, json={"hash": "0xfeedface"})
+        return httpx.Response(404)
+
+    # Local clock + nonce providers return values that DIFFER from the
+    # quote payload. If the adapter still signed locally-computed data
+    # the assertions below would fail.
+    a = _adapter(
+        handler=httpx.MockTransport(handler),
+        private_key_path=_write_key(tmp_path),
+        time_s=9_999_999_999,
+        nonce_seed=7_777_777,
+    )
+    a.connect()
+    ev = a.submit(_signal(), mark_price=1.0)
+    assert ev.status is ExecutionStatus.SUBMITTED, ev.meta
+    # The server's nonce / deadline (424242 / 1_700_000_120) wins over
+    # the local providers' (7_777_777 / 9_999_999_999 + …).
+    assert ev.meta["nonce"] == "424242"
+    assert ev.meta["deadline"] == "1700000120"
+    body = captured[0]
+    assert body["encodedOrder"] == "0xdeadbeef"
 
 
 def test_disconnect_clears_signer(tmp_path: Path) -> None:

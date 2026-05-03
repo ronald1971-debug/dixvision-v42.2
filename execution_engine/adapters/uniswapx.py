@@ -50,10 +50,8 @@ from execution_engine.adapters._uniswapx_quote import (
     UniswapXQuoteClient,
 )
 from execution_engine.adapters._uniswapx_signer import (
-    DutchInput,
-    DutchOutput,
-    ExclusiveDutchOrderIntent,
     build_exclusive_dutch_order_typed_data,
+    intent_from_quote_payload,
     sign_typed_data,
 )
 from system.time_source import wall_ns
@@ -287,35 +285,40 @@ class UniswapXAdapter(LiveAdapterBase):
                 signal, mark_price, f"quote_transport_error: {exc!s}"
             )
 
-        # 2. Build EIP-712 typed-data --------------------------------------
-        now_s = self._time_unix_s()
-        decay_start = now_s
-        decay_end = now_s + self._decay_window_s
-        deadline = decay_end + self._deadline_padding_s
-        outputs = self._extract_outputs(quote.order_payload, signal)
-        if not outputs:
-            return self._reject_with(
-                signal, mark_price, "quote_missing_outputs"
+        # 2. Parse server's order payload + validate vs signal -------------
+        # The signature MUST cover the same data the server's
+        # ``encodedOrder`` encodes, so every field (nonce, deadline,
+        # decay window, amounts) comes from the quote response, not the
+        # local clock. Local validation rejects payloads that don't match
+        # what the operator's signal asked for.
+        try:
+            intent = intent_from_quote_payload(
+                dict(quote.order_payload),
+                default_chain_id=self._chain_id,
+                default_reactor=self._reactor,
+                default_swapper=self._signer_address or "",
             )
-        intent = ExclusiveDutchOrderIntent(
-            chain_id=self._chain_id,
-            reactor=str(
-                quote.order_payload.get("reactor") or self._reactor
-            ),
-            swapper=self._signer_address or "",
-            nonce=self._nonce_provider(),
-            deadline_unix_s=deadline,
-            decay_start_time_unix_s=decay_start,
-            decay_end_time_unix_s=decay_end,
-            exclusive_filler="0x" + "0" * 40,
-            exclusivity_override_bps=0,
-            input=DutchInput(
-                token=token_in,
-                start_amount=amount_in,
-                end_amount=amount_in,
-            ),
-            outputs=outputs,
-        )
+        except (KeyError, ValueError, TypeError) as exc:
+            return self._reject_with(
+                signal, mark_price, f"quote_parse_failed: {exc!s}"
+            )
+        if intent.input.token.lower() != token_in.lower():
+            return self._reject_with(
+                signal, mark_price, "quote_input_token_mismatch"
+            )
+        if not any(
+            out.token.lower() == token_out.lower()
+            for out in intent.outputs
+        ):
+            return self._reject_with(
+                signal, mark_price, "quote_output_token_mismatch"
+            )
+        if intent.swapper.lower() != (
+            self._signer_address or ""
+        ).lower():
+            return self._reject_with(
+                signal, mark_price, "quote_swapper_mismatch"
+            )
         typed_data = build_exclusive_dutch_order_typed_data(intent)
 
         # 3. Sign ----------------------------------------------------------
@@ -355,12 +358,16 @@ class UniswapXAdapter(LiveAdapterBase):
                 f"venue_rejected: {resp.raw!r}"[:200],
             )
 
+        signed_amount_in = intent.input.start_amount
         meta: Mapping[str, str] = {
             "order_hash": resp.order_hash,
             "signer": self._signer_address or "",
             "chain_id": str(self._chain_id),
             "execution_kind": "uniswapx_intent",
-            "amount_in": str(amount_in),
+            "amount_in_request": str(amount_in),
+            "amount_in_signed": str(signed_amount_in),
+            "nonce": str(intent.nonce),
+            "deadline": str(intent.deadline_unix_s),
             "amount_out_quote": str(quote.amount_out_quote),
             "amount_out_min": str(quote.amount_out_min),
         }
@@ -372,7 +379,7 @@ class UniswapXAdapter(LiveAdapterBase):
             ts_ns=signal.ts_ns,
             symbol=signal.symbol,
             side=signal.side,
-            qty=float(amount_in),
+            qty=float(signed_amount_in),
             price=mark_price,
             status=ExecutionStatus.SUBMITTED,
             venue=self.venue,
@@ -446,40 +453,6 @@ class UniswapXAdapter(LiveAdapterBase):
             return self._max_slippage_bps
         return max(0, min(v, self._max_slippage_bps))
 
-    def _extract_outputs(
-        self,
-        order_payload: Mapping[str, object],
-        signal: SignalEvent,
-    ) -> tuple[DutchOutput, ...]:
-        outputs_raw = order_payload.get("outputs")
-        if not isinstance(outputs_raw, list) or not outputs_raw:
-            return ()
-        out: list[DutchOutput] = []
-        recipient = self._signer_address or ""
-        for row in outputs_raw:
-            if not isinstance(row, Mapping):
-                continue
-            token = str(row.get("token") or "")
-            start = _to_int(row.get("startAmount"))
-            end = _to_int(row.get("endAmount"))
-            row_recipient = str(row.get("recipient") or recipient)
-            if not token or start <= 0:
-                continue
-            out.append(
-                DutchOutput(
-                    token=token,
-                    start_amount=start,
-                    end_amount=end if end > 0 else start,
-                    recipient=row_recipient,
-                )
-            )
-        # Force the SELL side to mean "swap input -> output", BUY to
-        # mean the same with reversed legs at the call-site (left to
-        # the caller's signal construction). We do not reorder here;
-        # the quote endpoint already encoded the correct direction.
-        del signal  # unused — direction was applied to the quote
-        return tuple(out)
-
     def _reject_with(
         self,
         signal: SignalEvent,
@@ -504,18 +477,6 @@ class UniswapXAdapter(LiveAdapterBase):
             meta=meta,
             produced_by_engine="execution_engine",
         )
-
-
-def _to_int(raw: object) -> int:
-    if raw is None:
-        return 0
-    try:
-        return int(raw)  # type: ignore[arg-type]
-    except (TypeError, ValueError):
-        try:
-            return int(float(raw))  # type: ignore[arg-type]
-        except (TypeError, ValueError):
-            return 0
 
 
 __all__ = [
