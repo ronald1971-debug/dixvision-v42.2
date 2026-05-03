@@ -79,12 +79,15 @@ export function SweepIcebergMonitor() {
       trade,
       ts: now,
     }));
-    tradeBuffer.current = [...tradeBuffer.current, ...fresh].filter(
-      (e) => now - e.ts < 5000,
-    );
 
     const detected: FlowEvent[] = [];
     for (const incoming of fresh) {
+      // Insert this trade into the buffer BEFORE pattern detection so it
+      // can only see itself + previously-arrived trades, never lookahead
+      // into later items in the same batch (all of which share `ts = now`).
+      tradeBuffer.current = [...tradeBuffer.current, incoming].filter(
+        (e) => now - e.ts < 5000,
+      );
       const t = incoming.trade;
       const side = (String(t.side).toUpperCase() === "BUY"
         ? "BUY"
