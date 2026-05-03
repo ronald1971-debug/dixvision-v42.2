@@ -232,10 +232,19 @@ class HummingbotGatewayClient:
             data = r.json()
         except json.JSONDecodeError as exc:
             raise GatewayError(f"non-json body: {r.text[:200]}") from exc
-        accepted = bool(
-            data.get("accepted")
-            or data.get("status") in ("submitted", "filled", "ok", "OK")
-        )
+        # Explicit ``accepted`` wins over the status fallback so a
+        # gateway response of ``{"accepted": false, "status": "submitted"}``
+        # is reported as REJECTED, not FILLED (INV-65 audit truthfulness).
+        raw_accepted = data.get("accepted")
+        if raw_accepted is not None:
+            accepted = bool(raw_accepted)
+        else:
+            accepted = data.get("status") in (
+                "submitted",
+                "filled",
+                "ok",
+                "OK",
+            )
         venue_order_id = str(
             data.get("orderId") or data.get("txHash") or ""
         )

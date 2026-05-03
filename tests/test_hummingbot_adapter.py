@@ -189,6 +189,42 @@ def test_amm_trade_rejected_status():
     assert resp.accepted is False
 
 
+def test_amm_trade_explicit_accepted_false_overrides_friendly_status():
+    """Regression: explicit ``accepted: False`` must beat ``status: submitted``.
+
+    Devin Review BUG_pr-review-job-2b50590e2b95497984d494c9287a3468_0001.
+    Without the fix, ``False or True`` collapses to ``True`` and a
+    rejected order is reported as FILLED — phantom fill, INV-65 violation.
+    """
+
+    def h(_req: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "accepted": False,
+                "status": "submitted",
+                "reason": "insufficient_balance",
+            },
+        )
+
+    with _mk_client(h) as c:
+        resp = c.amm_trade(
+            GatewayTradeRequest(
+                connector="uniswap",
+                chain="ethereum",
+                network="mainnet",
+                base="ETH",
+                quote="USDC",
+                side="BUY",
+                amount=0.5,
+                limit_price=None,
+                client_order_id="dix-1",
+            ),
+            address="0xCAFE",
+        )
+    assert resp.accepted is False
+
+
 def test_clob_order_routes_to_clob_endpoint():
     seen: dict[str, Any] = {}
 
