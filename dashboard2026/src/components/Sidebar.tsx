@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Coins,
+  Compass,
   Gauge,
   Image as ImageIcon,
   KeyRound,
@@ -117,6 +118,12 @@ const SYSTEM_NAV: Record<SystemRoute, NavItem<SystemRoute>> = {
     label: "Charting",
     href: "#/charting",
     icon: LineChart,
+  },
+  market: {
+    key: "market",
+    label: "Market",
+    href: "#/market",
+    icon: Compass,
   },
   positions: {
     key: "positions",

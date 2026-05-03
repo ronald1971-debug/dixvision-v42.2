@@ -15,6 +15,7 @@ import { CredentialsPage } from "@/pages/CredentialsPage";
 import { DyonLearningPage } from "@/pages/DyonLearningPage";
 import { GovernancePage } from "@/pages/GovernancePage";
 import { IndiraLearningPage } from "@/pages/IndiraLearningPage";
+import { MarketContextPage } from "@/pages/MarketContextPage";
 import { OnChainPage } from "@/pages/OnChainPage";
 import { OperatorPage } from "@/pages/OperatorPage";
 import { OrderFlowPage } from "@/pages/OrderFlowPage";
@@ -72,6 +73,8 @@ function renderRoute(route: Route) {
       return <RiskPage />;
     case "charting":
       return <ChartingPage />;
+    case "market":
+      return <MarketContextPage />;
     case "positions":
       return <PositionsPage />;
     case "trading":
