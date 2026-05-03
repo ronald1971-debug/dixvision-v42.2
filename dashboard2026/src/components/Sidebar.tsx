@@ -18,6 +18,7 @@ import {
   Puzzle,
   Rocket,
   ShieldCheck,
+  Sparkles,
   Wrench,
 } from "lucide-react";
 import { type ComponentType } from "react";
@@ -78,6 +79,12 @@ const SYSTEM_NAV: Record<SystemRoute, NavItem<SystemRoute>> = {
     label: "Testing & Eval",
     href: "#/testing",
     icon: CheckSquare,
+  },
+  ai: {
+    key: "ai",
+    label: "AI · ASKB",
+    href: "#/ai",
+    icon: Sparkles,
   },
   orderflow: {
     key: "orderflow",
