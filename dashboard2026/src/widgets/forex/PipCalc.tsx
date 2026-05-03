@@ -30,6 +30,16 @@ function pipSize(pair: string): number {
   return pair.endsWith("JPY") ? 0.01 : 0.0001;
 }
 
+/** Returns how many USD one unit of `ccy` is worth, using direct or inverse cross. */
+function ccyToUsd(ccy: string): number {
+  if (ccy === "USD") return 1;
+  const direct = RATE[`${ccy}/USD`];
+  if (direct !== undefined) return direct;
+  const inverse = RATE[`USD/${ccy}`];
+  if (inverse !== undefined && inverse !== 0) return 1 / inverse;
+  return 1;
+}
+
 export function PipCalc() {
   const [pair, setPair] = useState<string>("EUR/USD");
   const [lots, setLots] = useState<number>(1);
@@ -42,16 +52,14 @@ export function PipCalc() {
     const rate = RATE[pair] ?? 1;
     // pip value in quote ccy
     const pipQuote = ps * units;
-    // convert to account ccy
+    // convert to account ccy via USD as bridge.
+    //   quote -> USD: multiply by ccyToUsd(quote)
+    //   USD   -> account: divide by ccyToUsd(account)
     let pipAccount = pipQuote;
     if (quote !== account) {
-      // simple cross-rate via USD
-      const quoteToUsd =
-        quote === "USD" ? 1 : quote === "JPY" ? 1 / RATE["USD/JPY"] : 1 / (RATE[`${quote}/USD`] ?? 1);
-      const accountToUsd =
-        account === "USD" ? 1 : 1 / (RATE[`${account}/USD`] ?? RATE[`USD/${account}`] ?? 1);
-      const accountFromUsd = 1 / accountToUsd;
-      pipAccount = pipQuote * quoteToUsd * accountFromUsd;
+      const quoteToUsd = ccyToUsd(quote);
+      const accountToUsd = ccyToUsd(account);
+      pipAccount = (pipQuote * quoteToUsd) / accountToUsd;
     }
     return {
       pipQuote,
