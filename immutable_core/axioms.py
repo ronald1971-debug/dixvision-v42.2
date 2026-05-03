@@ -296,6 +296,14 @@ _AXIOMS: tuple[Axiom, ...] = (
 )
 
 
+_seen_ids: set[str] = set()
+for _axiom in _AXIOMS:
+    if _axiom.id in _seen_ids:
+        raise RuntimeError(f"duplicate axiom id {_axiom.id!r} in immutable_core/axioms.py")
+    _seen_ids.add(_axiom.id)
+del _seen_ids, _axiom
+
+
 AXIOM_REGISTRY: Mapping[str, Axiom] = MappingProxyType({axiom.id: axiom for axiom in _AXIOMS})
 
 

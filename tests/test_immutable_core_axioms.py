@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from immutable_core import AXIOM_REGISTRY, AxiomKind, get_axiom, is_axiom
+from immutable_core.axioms import _AXIOMS
 
 
 def test_registry_is_frozen():
@@ -12,10 +13,17 @@ def test_registry_is_frozen():
         AXIOM_REGISTRY["INV-99"] = None  # type: ignore[index]
 
 
-def test_registry_ids_are_unique_and_well_formed():
-    ids = list(AXIOM_REGISTRY.keys())
-    assert len(ids) == len(set(ids)), "registry contains duplicate ids"
-    for axiom_id in ids:
+def test_no_duplicate_ids_in_source_tuple():
+    """Catch a duplicate axiom id in ``_AXIOMS`` -- silently dropped by
+    dict construction otherwise."""
+
+    assert len(_AXIOMS) == len(AXIOM_REGISTRY), (
+        "_AXIOMS contains duplicate ids -- one was silently dropped by dict construction"
+    )
+
+
+def test_registry_ids_are_well_formed():
+    for axiom_id in AXIOM_REGISTRY:
         assert axiom_id.startswith(("INV-", "SAFE-"))
         suffix = axiom_id.split("-", 1)[1]
         assert suffix.isdigit(), f"non-numeric axiom id suffix: {axiom_id}"
