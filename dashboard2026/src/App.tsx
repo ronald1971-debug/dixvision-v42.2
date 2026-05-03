@@ -8,7 +8,7 @@ import { PadlockFloors } from "@/components/PadlockFloors";
 import { PreferencesBar } from "@/components/PreferencesBar";
 import { PromoteChain } from "@/components/PromoteChain";
 import { Sidebar } from "@/components/Sidebar";
-import { useApplyPreferences } from "@/preferences/store";
+import { AIPage } from "@/pages/AIPage";
 import { CognitiveChatPage } from "@/pages/CognitiveChatPage";
 import { CredentialsPage } from "@/pages/CredentialsPage";
 import { DyonLearningPage } from "@/pages/DyonLearningPage";
@@ -26,6 +26,7 @@ import { NftPage } from "@/pages/asset/NftPage";
 import { PerpsPage } from "@/pages/asset/PerpsPage";
 import { SpotPage } from "@/pages/asset/SpotPage";
 import { StocksPage } from "@/pages/asset/StocksPage";
+import { useApplyPreferences } from "@/preferences/store";
 import { useHashRoute, type Route } from "@/router";
 
 function renderRoute(route: Route) {
@@ -58,6 +59,8 @@ function renderRoute(route: Route) {
       return <TestingPage />;
     case "onchain":
       return <OnChainPage />;
+    case "ai":
+      return <AIPage />;
     case "orderflow":
       return <OrderFlowPage />;
     case "governance":
