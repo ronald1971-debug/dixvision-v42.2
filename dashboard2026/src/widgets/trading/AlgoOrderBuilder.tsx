@@ -146,7 +146,9 @@ export function AlgoOrderBuilder() {
             <input
               type="number"
               value={form.notional}
-              onChange={(e) => update("notional", Number(e.target.value) || 0)}
+              onChange={(e) =>
+                update("notional", Math.max(0, Number(e.target.value) || 0))
+              }
               className="rounded border border-border bg-bg/60 px-2 py-1 text-slate-200 focus:border-accent focus:outline-none"
             />
           </label>

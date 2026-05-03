@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 /**
  * F-track widget — Basket order editor.
@@ -24,12 +24,13 @@ const SEED: BasketLeg[] = [
   { id: "4", symbol: "AVAX-USDT", weight: 10, side: "BUY" },
 ];
 
-let SEQ = SEED.length;
-
 export function BasketOrderEditor() {
   const [legs, setLegs] = useState<BasketLeg[]>(SEED);
   const [notional, setNotional] = useState(250_000);
   const [staged, setStaged] = useState(false);
+  // Per-instance id counter — module-level mutation inside a state
+  // updater would double-increment under React 18 Strict Mode.
+  const seqRef = useRef(SEED.length);
 
   const total = legs.reduce((acc, l) => acc + (Number.isFinite(l.weight) ? l.weight : 0), 0);
 
@@ -40,13 +41,12 @@ export function BasketOrderEditor() {
     setLegs((prev) => prev.filter((l) => l.id !== id));
 
   const add = () => {
-    setLegs((prev) => {
-      SEQ += 1;
-      return [
-        ...prev,
-        { id: String(SEQ), symbol: "NEW-USDT", weight: 0, side: "BUY" },
-      ];
-    });
+    seqRef.current += 1;
+    const id = String(seqRef.current);
+    setLegs((prev) => [
+      ...prev,
+      { id, symbol: "NEW-USDT", weight: 0, side: "BUY" },
+    ]);
   };
 
   const normalized = legs.map((l) => ({
