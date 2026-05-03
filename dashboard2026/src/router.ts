@@ -35,7 +35,8 @@ export type SystemRoute =
   | "governance"
   | "risk"
   | "charting"
-  | "market";
+  | "market"
+  | "trading";
 
 export type Route = AssetRoute | SystemRoute;
 
@@ -63,6 +64,7 @@ const SYSTEM_ROUTES: readonly SystemRoute[] = [
   "risk",
   "charting",
   "market",
+  "trading",
 ];
 
 const ALL_ROUTES: readonly Route[] = [...ASSET_ROUTES, ...SYSTEM_ROUTES];

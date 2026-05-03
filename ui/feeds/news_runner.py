@@ -32,6 +32,7 @@ from collections.abc import Callable
 
 from core.coherence.belief_state import BeliefState
 from core.contracts.events import HazardEvent, SignalEvent
+from core.contracts.news import NewsItem
 from system_engine.hazard_sensors import NewsShockSensor
 from ui.feeds.coindesk_rss import (
     DEFAULT_POLL_INTERVAL_S,
@@ -57,6 +58,7 @@ class CoinDeskRSSFeedRunner:
         clock_ns: Callable[[], int],
         sensor: NewsShockSensor | None = None,
         current_belief: Callable[[], BeliefState | None] | None = None,
+        index_sink: Callable[[NewsItem], None] | None = None,
         fetch: HTTPFetch | None = None,
         poll_interval_s: float = DEFAULT_POLL_INTERVAL_S,
         reconnect_delay_s: float = DEFAULT_RECONNECT_DELAY_S,
@@ -68,6 +70,7 @@ class CoinDeskRSSFeedRunner:
         self._clock_ns = clock_ns
         self._sensor = sensor if sensor is not None else NewsShockSensor()
         self._current_belief = current_belief
+        self._index_sink = index_sink
         self._fetch = fetch
         self._poll_interval_s = poll_interval_s
         self._reconnect_delay_s = reconnect_delay_s
@@ -109,6 +112,7 @@ class CoinDeskRSSFeedRunner:
             hazard_sink=self._hazard_sink,
             sensor=self._sensor,
             current_belief=self._current_belief,
+            index_sink=self._index_sink,
         )
 
     def start(self) -> NewsFeedStatus:

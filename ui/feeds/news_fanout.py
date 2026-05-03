@@ -47,6 +47,7 @@ from system_engine.hazard_sensors import NewsShockSensor
 
 SignalSink = Callable[[SignalEvent], None]
 HazardSink = Callable[[HazardEvent], None]
+NewsItemSink = Callable[[NewsItem], None]
 BeliefStateView = Callable[[], BeliefState | None]
 
 
@@ -87,8 +88,15 @@ class NewsFanout:
     hazard_sink: HazardSink
     sensor: NewsShockSensor
     current_belief: BeliefStateView | None = None
+    index_sink: NewsItemSink | None = None
 
     def __call__(self, news: NewsItem) -> None:
+        # Index first so the knowledge store records the raw item even
+        # when the projection / sensor short-circuit. The index is a
+        # pure in-memory append; it does not affect downstream logic.
+        if self.index_sink is not None:
+            self.index_sink(news)
+
         for hazard in self.sensor.on_news(news):
             self.hazard_sink(hazard)
 
@@ -106,5 +114,6 @@ __all__ = [
     "BeliefStateView",
     "HazardSink",
     "NewsFanout",
+    "NewsItemSink",
     "SignalSink",
 ]
