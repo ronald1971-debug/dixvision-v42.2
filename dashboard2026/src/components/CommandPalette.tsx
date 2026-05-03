@@ -48,6 +48,7 @@ const ROUTE_LABELS: Record<Route, string> = {
   indira: "Indira learn",
   dyon: "Dyon learn",
   testing: "Testing & Eval",
+  orderflow: "Order Flow",
 };
 
 function buildNavActions(onNavigate: (route: Route) => void): CommandAction[] {
