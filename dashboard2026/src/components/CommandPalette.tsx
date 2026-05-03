@@ -49,6 +49,7 @@ const ROUTE_LABELS: Record<Route, string> = {
   dyon: "Dyon learn",
   testing: "Testing & Eval",
   ai: "AI",
+  risk: "Risk & Greeks",
 };
 
 function buildNavActions(onNavigate: (route: Route) => void): CommandAction[] {
