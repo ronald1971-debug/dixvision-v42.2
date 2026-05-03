@@ -47,7 +47,7 @@ const KEEP_EVENTS = 30;
 export function SweepIcebergMonitor() {
   const trades = useEventStream<Trade>("ticks", [], 200);
   const [events, setEvents] = useState<FlowEvent[]>([]);
-  const lastIndex = useRef(0);
+  const prevTrades = useRef<Trade[]>([]);
   const tradeBuffer = useRef<{ trade: Trade; ts: number }[]>([]);
 
   // rolling average size — derived from the trade window
@@ -58,16 +58,24 @@ export function SweepIcebergMonitor() {
   }, [trades]);
 
   useEffect(() => {
-    if (trades.length <= lastIndex.current) {
-      lastIndex.current = trades.length;
-      return;
+    // Identify newly-arrived trades by reference. `useEventStream` slides a
+    // fixed-size window so `trades.length` plateaus at the cap once full —
+    // tracking by index is unsafe. Instead, find the position in `trades`
+    // immediately after the last item we saw on the previous render.
+    const prev = prevTrades.current;
+    prevTrades.current = trades;
+    const lastSeen = prev.length > 0 ? prev[prev.length - 1] : undefined;
+    let startIdx = 0;
+    if (lastSeen !== undefined) {
+      const found = trades.lastIndexOf(lastSeen);
+      startIdx = found >= 0 ? found + 1 : 0;
     }
+    if (startIdx >= trades.length) return;
     const now = Date.now();
-    const fresh = trades.slice(lastIndex.current).map((trade) => ({
+    const fresh = trades.slice(startIdx).map((trade) => ({
       trade,
       ts: now,
     }));
-    lastIndex.current = trades.length;
     tradeBuffer.current = [...tradeBuffer.current, ...fresh].filter(
       (e) => now - e.ts < 5000,
     );
