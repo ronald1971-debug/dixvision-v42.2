@@ -18,13 +18,18 @@ def test_snapshot_returns_legal_targets_in_safe(governance_stack, router):
 
 
 def test_request_transition_routes_through_router(governance_stack, router):
-    ledger, _, state, _ = governance_stack
+    ledger, policy, state, _ = governance_stack
     bar = ModeControlBar(state_transitions=state, router=router)
     outcome = bar.request_transition(
         ts_ns=10,
         requestor="op",
         target_mode="PAPER",
         reason="bring up paper",
+        # Hardening-S1 item 8 — SAFE→PAPER is a consent-required edge.
+        consent_operator_id="op",
+        consent_policy_hash=policy.table_hash,
+        consent_nonce="mode-bar-safe-to-paper",
+        consent_ts_ns=10,
     )
     assert outcome.approved is True
     assert state.current_mode() is SystemMode.PAPER

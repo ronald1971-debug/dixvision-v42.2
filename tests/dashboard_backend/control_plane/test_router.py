@@ -19,18 +19,21 @@ from core.contracts.governance import (
 )
 
 
-def test_router_forwards_approved_mode_request(governance_stack, router):
+def test_router_forwards_approved_mode_request(governance_stack, router, consent_payload):
     ledger, _, state, _ = governance_stack
     outcome = router.submit(
         OperatorRequest(
             ts_ns=1,
             requestor="op",
             action=OperatorAction.REQUEST_MODE,
-            payload={
-                "target_mode": "PAPER",
-                "reason": "bring up paper",
-                "operator_authorized": "false",
-            },
+            payload=consent_payload(
+                ts_ns=1,
+                target_mode="PAPER",
+                extra={
+                    "reason": "bring up paper",
+                    "operator_authorized": "false",
+                },
+            ),
         )
     )
     assert outcome.approved is True

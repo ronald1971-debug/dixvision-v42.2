@@ -33,6 +33,7 @@ from core.contracts.governance import (
     OperatorRequest,
     SystemMode,
 )
+from core.contracts.operator_consent import OperatorConsent
 from governance_engine.control_plane import (
     ComplianceValidator,
     EventClassifier,
@@ -105,8 +106,30 @@ def _build_state(initial: SystemMode = SystemMode.SAFE) -> tuple[
     return state, ledger, policy
 
 
+def _consent(
+    *,
+    ts_ns: int,
+    mode_from: SystemMode,
+    mode_to: SystemMode,
+    policy: PolicyEngine,
+    operator_id: str = "op",
+    nonce: str | None = None,
+) -> OperatorConsent:
+    """Build a fresh, valid OperatorConsent for the SAFE→PAPER and
+    LIVE→AUTO consent-required edges (Hardening-S1 item 8)."""
+
+    return OperatorConsent(
+        ts_ns=ts_ns,
+        operator_id=operator_id,
+        mode_from=mode_from,
+        mode_to=mode_to,
+        policy_hash=policy.table_hash,
+        nonce=nonce or f"nonce-{ts_ns}-{mode_from.name}-{mode_to.name}",
+    )
+
+
 def test_mode_fsm_forward_ratchet_one_step():
-    state, ledger, _ = _build_state()
+    state, ledger, policy = _build_state()
     decision = state.propose(
         ModeTransitionRequest(
             ts_ns=10,
@@ -114,12 +137,24 @@ def test_mode_fsm_forward_ratchet_one_step():
             current_mode=SystemMode.SAFE,
             target_mode=SystemMode.PAPER,
             reason="bring up paper trading",
+            consent=_consent(
+                ts_ns=10,
+                mode_from=SystemMode.SAFE,
+                mode_to=SystemMode.PAPER,
+                policy=policy,
+            ),
         )
     )
     assert decision.approved is True
     assert state.current_mode() is SystemMode.PAPER
-    assert decision.ledger_seq == 0
-    assert ledger.read()[0].kind == "MODE_TRANSITION"
+    # Hardening-S1 item 8 — OPERATOR_CONSENT_ACCEPTED row is
+    # paired with the MODE_TRANSITION row (consent first, then
+    # transition). decision.ledger_seq points at the
+    # MODE_TRANSITION row.
+    rows = ledger.read()
+    assert rows[0].kind == "OPERATOR_CONSENT_ACCEPTED"
+    assert rows[1].kind == "MODE_TRANSITION"
+    assert decision.ledger_seq == 1
 
 
 def test_mode_fsm_forward_skip_rejected():
@@ -157,7 +192,12 @@ def test_mode_fsm_live_requires_operator_authorisation():
 
 
 def test_mode_fsm_auto_requires_operator_authorisation():
-    state, _, _ = _build_state(initial=SystemMode.LIVE)
+    state, _, policy = _build_state(initial=SystemMode.LIVE)
+    # Hardening-S1 item 8 — LIVE → AUTO requires a typed consent
+    # envelope. The legacy ``operator_authorized=False`` path now
+    # surfaces ``CONSENT_MISSING`` instead of the old
+    # ``POLICY_OPERATOR_REQUIRED`` because the consent gate runs
+    # before the policy gate.
     no_op = state.propose(
         ModeTransitionRequest(
             ts_ns=13,
@@ -169,7 +209,7 @@ def test_mode_fsm_auto_requires_operator_authorisation():
         )
     )
     assert no_op.approved is False
-    assert no_op.rejection_code == "POLICY_OPERATOR_REQUIRED"
+    assert no_op.rejection_code == "CONSENT_MISSING"
 
     ok = state.propose(
         ModeTransitionRequest(
@@ -178,7 +218,12 @@ def test_mode_fsm_auto_requires_operator_authorisation():
             current_mode=SystemMode.LIVE,
             target_mode=SystemMode.AUTO,
             reason="autonomous",
-            operator_authorized=True,
+            consent=_consent(
+                ts_ns=14,
+                mode_from=SystemMode.LIVE,
+                mode_to=SystemMode.AUTO,
+                policy=policy,
+            ),
         )
     )
     assert ok.approved is True
@@ -456,6 +501,31 @@ def _build_engine() -> GovernanceEngine:
     return GovernanceEngine()
 
 
+def _consent_payload(
+    *,
+    eng: GovernanceEngine,
+    ts_ns: int,
+    target_mode: str,
+    operator_id: str = "ronald",
+    extra: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """Build a REQUEST_MODE payload with the four ``consent_*`` fields
+    expected by ``OperatorInterfaceBridge._handle_mode`` for
+    consent-required edges (Hardening-S1 item 8).
+    """
+
+    payload: dict[str, str] = {
+        "target_mode": target_mode,
+        "consent_operator_id": operator_id,
+        "consent_policy_hash": eng.policy.table_hash,
+        "consent_nonce": f"nonce-bridge-{ts_ns}-{target_mode}",
+        "consent_ts_ns": str(ts_ns),
+    }
+    if extra:
+        payload.update(extra)
+    return payload
+
+
 def test_operator_bridge_mode_transition_approved():
     eng = _build_engine()
     decision = eng.operator.submit(
@@ -463,7 +533,12 @@ def test_operator_bridge_mode_transition_approved():
             ts_ns=1,
             requestor="ronald",
             action=OperatorAction.REQUEST_MODE,
-            payload={"target_mode": "PAPER", "reason": "bring up"},
+            payload=_consent_payload(
+                eng=eng,
+                ts_ns=1,
+                target_mode="PAPER",
+                extra={"reason": "bring up"},
+            ),
         )
     )
     assert decision.approved is True
@@ -479,7 +554,7 @@ def test_operator_bridge_kill_locks_system():
             ts_ns=1,
             requestor="ronald",
             action=OperatorAction.REQUEST_MODE,
-            payload={"target_mode": "PAPER"},
+            payload=_consent_payload(eng=eng, ts_ns=1, target_mode="PAPER"),
         )
     )
     decision = eng.operator.submit(
@@ -550,7 +625,9 @@ def test_operator_bridge_plugin_lifecycle_logs_audit_row():
             ts_ns=1,
             requestor="op",
             action=OperatorAction.REQUEST_MODE,
-            payload={"target_mode": "PAPER"},
+            payload=_consent_payload(
+                eng=eng, ts_ns=1, target_mode="PAPER", operator_id="op"
+            ),
         )
     )
     decision = eng.operator.submit(
@@ -686,7 +763,9 @@ def test_two_engines_same_inputs_produce_same_ledger():
             ts_ns=1,
             requestor="op",
             action=OperatorAction.REQUEST_MODE,
-            payload={"target_mode": "PAPER"},
+            payload=_consent_payload(
+                eng=a, ts_ns=1, target_mode="PAPER", operator_id="op"
+            ),
         ),
         OperatorRequest(
             ts_ns=2,

@@ -93,6 +93,13 @@ class ModeActionIn(BaseModel):
     reason: str = Field("", max_length=512)
     operator_authorized: bool = False
     requestor: str = Field("operator", min_length=1, max_length=64)
+    # Hardening-S1 item 8 — typed OperatorConsent envelope. The four
+    # ``consent_*`` fields are required on consent-required edges
+    # (SAFE→PAPER, LIVE→AUTO); for other edges they are ignored.
+    consent_operator_id: str = Field("", max_length=64)
+    consent_policy_hash: str = Field("", max_length=128)
+    consent_nonce: str = Field("", max_length=128)
+    consent_ts_ns: str = Field("", max_length=32)
 
 
 class IntentActionIn(BaseModel):
@@ -200,17 +207,31 @@ def build_dashboard_router(provider: _WidgetsProvider) -> APIRouter:
     @router.post("/action/mode")
     def action_mode(body: ModeActionIn) -> dict[str, Any]:
         widgets = provider()
+        payload = {
+            "target_mode": body.target_mode,
+            "reason": body.reason,
+            "operator_authorized": "true"
+            if body.operator_authorized
+            else "false",
+        }
+        # Hardening-S1 item 8 — forward consent envelope fields when
+        # the dashboard supplies them. Empty strings are treated as
+        # "no consent supplied" by ``OperatorInterfaceBridge`` and
+        # the state manager rejects the edge with ``CONSENT_MISSING``
+        # if it required one.
+        if body.consent_operator_id:
+            payload["consent_operator_id"] = body.consent_operator_id
+        if body.consent_policy_hash:
+            payload["consent_policy_hash"] = body.consent_policy_hash
+        if body.consent_nonce:
+            payload["consent_nonce"] = body.consent_nonce
+        if body.consent_ts_ns:
+            payload["consent_ts_ns"] = body.consent_ts_ns
         request = OperatorRequest(
             ts_ns=widgets.next_ts(),
             requestor=body.requestor,
             action=OperatorAction.REQUEST_MODE,
-            payload={
-                "target_mode": body.target_mode,
-                "reason": body.reason,
-                "operator_authorized": "true"
-                if body.operator_authorized
-                else "false",
-            },
+            payload=payload,
         )
         return _submit(widgets, request)
 

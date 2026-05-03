@@ -41,6 +41,10 @@ from core.contracts.governance import (
     OperatorRequest,
     SystemMode,
 )
+from core.contracts.operator_consent import (
+    OperatorConsent,
+    edge_requires_consent,
+)
 from governance_engine.control_plane.ledger_authority_writer import (
     LedgerAuthorityWriter,
 )
@@ -192,6 +196,42 @@ class OperatorInterfaceBridge:
         operator_authorized = (
             request.payload.get("operator_authorized", "false").lower() == "true"
         )
+
+        # Hardening-S1 item 8 — extract OperatorConsent envelope from
+        # the dashboard payload when the requested edge requires it.
+        # The dashboard / CLI must pass:
+        #   * ``consent_operator_id``
+        #   * ``consent_policy_hash``
+        #   * ``consent_nonce``
+        #   * ``consent_ts_ns`` (string of int)
+        # If any field is missing on a consent-required edge, the
+        # state transition manager rejects with ``CONSENT_MISSING``
+        # at the next step.
+        consent: OperatorConsent | None = None
+        if edge_requires_consent(current, target):
+            consent_operator_id = request.payload.get("consent_operator_id", "")
+            consent_policy_hash = request.payload.get("consent_policy_hash", "")
+            consent_nonce = request.payload.get("consent_nonce", "")
+            consent_ts_raw = request.payload.get("consent_ts_ns", "")
+            try:
+                consent_ts_ns = int(consent_ts_raw) if consent_ts_raw else 0
+            except (TypeError, ValueError):
+                consent_ts_ns = 0
+            if (
+                consent_operator_id
+                and consent_policy_hash
+                and consent_nonce
+                and consent_ts_ns > 0
+            ):
+                consent = OperatorConsent(
+                    ts_ns=consent_ts_ns,
+                    operator_id=consent_operator_id,
+                    mode_from=current,
+                    mode_to=target,
+                    policy_hash=consent_policy_hash,
+                    nonce=consent_nonce,
+                )
+
         decision = self._state.propose(
             ModeTransitionRequest(
                 ts_ns=request.ts_ns,
@@ -200,6 +240,7 @@ class OperatorInterfaceBridge:
                 target_mode=target,
                 reason=request.payload.get("reason", ""),
                 operator_authorized=operator_authorized,
+                consent=consent,
             )
         )
         return GovernanceDecision(
