@@ -65,12 +65,16 @@ export function AlgoOrderBuilder() {
     if (form.algo === "Iceberg") {
       const visible = (form.notional * form.display_pct) / 100;
       const n = Math.max(1, Math.ceil(form.notional / Math.max(visible, 1)));
-      return Array.from({ length: n }, (_, i) => ({
-        ts_offset_min: 0,
-        size_pct: form.display_pct,
-        notional: visible,
-        wave: i + 1,
-      }));
+      return Array.from({ length: n }, (_, i) => {
+        const remaining = form.notional - i * visible;
+        const sliceNotional = Math.min(visible, remaining);
+        return {
+          ts_offset_min: 0,
+          size_pct: (sliceNotional / form.notional) * 100,
+          notional: sliceNotional,
+          wave: i + 1,
+        };
+      });
     }
     return [
       {

@@ -40,11 +40,13 @@ export function BasketOrderEditor() {
     setLegs((prev) => prev.filter((l) => l.id !== id));
 
   const add = () => {
-    SEQ += 1;
-    setLegs((prev) => [
-      ...prev,
-      { id: String(SEQ), symbol: "NEW-USDT", weight: 0, side: "BUY" },
-    ]);
+    setLegs((prev) => {
+      SEQ += 1;
+      return [
+        ...prev,
+        { id: String(SEQ), symbol: "NEW-USDT", weight: 0, side: "BUY" },
+      ];
+    });
   };
 
   const normalized = legs.map((l) => ({
