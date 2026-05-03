@@ -192,7 +192,12 @@ def _sources_payload(state: Any) -> dict[str, Any]:
         runtime_reports: dict[str, Any] = {}
         if runtime_wired:
             try:
-                now_ns = int(state.next_ts())
+                # Read-only GET: do NOT advance the global monotonic
+                # counter. Use the read-only ``current_ts`` accessor so
+                # the source-liveness gap can still be computed in the
+                # harness's synthetic-time space without consuming a
+                # ledger sequence number.
+                now_ns = int(state.current_ts())
                 for r in manager.reports(now_ns):  # type: ignore[attr-defined]
                     runtime_reports[r.source_id] = r
             except Exception:  # pragma: no cover -- diagnostic

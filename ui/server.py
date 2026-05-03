@@ -277,6 +277,16 @@ class _State:
     def next_ts(self) -> int:
         return _next_ts()
 
+    def current_ts(self) -> int:
+        """Read the monotonic counter WITHOUT incrementing it.
+
+        Read-only diagnostic surfaces (e.g. governance JSON GETs) need a
+        ``now_ns`` value to compute gaps without consuming a sequence
+        number. ``next_ts()`` is reserved for write paths that emit a
+        sequenced event into the ledger.
+        """
+        return int(_TS_COUNTER["v"])
+
     def record(self, source: str, event: Event) -> None:
         self.event_seq += 1
         self.events.appendleft(
