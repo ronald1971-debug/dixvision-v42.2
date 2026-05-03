@@ -4,6 +4,8 @@ import { useState } from "react";
 import { fetchOperatorSummary, postOperatorKill } from "@/api/operator";
 import { AdapterStatusGrid } from "@/components/AdapterStatusGrid";
 import { EngineBucketBadge } from "@/components/EngineBucketBadge";
+import { HotkeyConfigurator } from "@/components/HotkeyConfigurator";
+import { PopoutButton } from "@/components/PopoutButton";
 import type {
   OperatorActionResponse,
   OperatorStrategyCounts,
@@ -69,14 +71,17 @@ export function OperatorPage() {
             every 5 s.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => refetch()}
-          className="rounded border border-border bg-surface px-3 py-1.5 text-xs hover:border-accent disabled:opacity-50"
-          disabled={isFetching}
-        >
-          {isFetching ? "refreshing…" : "refresh"}
-        </button>
+        <div className="flex items-center gap-2">
+          <PopoutButton route="operator" />
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="rounded border border-border bg-surface px-3 py-1.5 text-xs hover:border-accent disabled:opacity-50"
+            disabled={isFetching}
+          >
+            {isFetching ? "refreshing…" : "refresh"}
+          </button>
+        </div>
       </div>
 
       {isPending && <p className="text-sm text-slate-400">Loading…</p>}
@@ -103,6 +108,7 @@ export function OperatorPage() {
             log={actionLog}
             isLocked={data.mode.is_locked}
           />
+          <HotkeyConfigurator />
         </>
       )}
     </section>

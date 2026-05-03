@@ -77,12 +77,19 @@ export function isAssetRoute(route: Route): route is AssetRoute {
 }
 
 export function parseRoute(hash: string): Route {
-  const cleaned = hash.replace(/^#\/?/, "").trim();
+  const cleaned = hash
+    .replace(/^#\/?/, "")
+    .replace(/^popout\//, "")
+    .trim();
   if (cleaned === "") return DEFAULT_ROUTE;
   for (const route of ALL_ROUTES) {
     if (cleaned === route) return route;
   }
   return DEFAULT_ROUTE;
+}
+
+export function isPopoutRoute(hash: string): boolean {
+  return hash.startsWith("#/popout/");
 }
 
 export function useHashRoute(): Route {
@@ -95,6 +102,18 @@ export function useHashRoute(): Route {
     return () => window.removeEventListener("hashchange", handler);
   }, []);
   return route;
+}
+
+export function useIsPopout(): boolean {
+  const [popout, setPopout] = useState<boolean>(() =>
+    isPopoutRoute(window.location.hash),
+  );
+  useEffect(() => {
+    const handler = () => setPopout(isPopoutRoute(window.location.hash));
+    window.addEventListener("hashchange", handler);
+    return () => window.removeEventListener("hashchange", handler);
+  }, []);
+  return popout;
 }
 
 export const ASSET_ROUTE_LIST = ASSET_ROUTES;

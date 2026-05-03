@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { fuzzyScore } from "@/lib/fuzzy";
 import {
   ASSET_ROUTE_LIST,
   SYSTEM_ROUTE_LIST,
@@ -83,9 +84,15 @@ export function CommandPalette({
   );
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
     if (q === "") return actions;
-    return actions.filter((a) => a.label.toLowerCase().includes(q));
+    const scored: Array<{ a: CommandAction; score: number }> = [];
+    for (const a of actions) {
+      const r = fuzzyScore(q, a.label);
+      if (r !== null) scored.push({ a, score: r.score });
+    }
+    scored.sort((x, y) => x.score - y.score);
+    return scored.map((s) => s.a);
   }, [actions, query]);
 
   useEffect(() => {

@@ -19,6 +19,17 @@ export default defineConfig({
     outDir: "dist",
     sourcemap: true,
     emptyOutDir: true,
+    chunkSizeWarningLimit: 700,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // J-track: split heavy vendor libs out of the main bundle so
+          // first paint isn't gated on a 800-kB monolith.
+          react: ["react", "react-dom"],
+          grid: ["react-grid-layout"],
+        },
+      },
+    },
   },
   server: {
     port: 5173,
