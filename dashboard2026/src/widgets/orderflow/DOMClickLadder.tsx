@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { useLatestEvent } from "@/state/realtime";
 
@@ -15,6 +15,7 @@ interface DepthSnapshot {
 type Side = "BUY" | "SELL";
 
 interface PendingOrder {
+  id: string;
   side: Side;
   price: number;
   size: number;
@@ -38,6 +39,7 @@ export function DOMClickLadder({ symbol = "BTC-USDT" }: { symbol?: string }) {
   const snapshot = useLatestEvent<DepthSnapshot>("depth");
   const [size, setSize] = useState(DEFAULT_SIZE);
   const [pending, setPending] = useState<PendingOrder[]>([]);
+  const seq = useRef(0);
 
   const bids = snapshot?.bids ?? [];
   const asks = snapshot?.asks ?? [];
@@ -48,12 +50,16 @@ export function DOMClickLadder({ symbol = "BTC-USDT" }: { symbol?: string }) {
   );
 
   const stage = (side: Side, price: number) => {
+    const ts = Date.now();
+    seq.current += 1;
+    const id = `${ts}-${seq.current}`;
     if (size <= 0) {
       const blocked: PendingOrder = {
+        id,
         side,
         price,
         size,
-        ts: Date.now(),
+        ts,
         status: "BLOCKED",
         reason: "size must be > 0",
       };
@@ -61,10 +67,11 @@ export function DOMClickLadder({ symbol = "BTC-USDT" }: { symbol?: string }) {
       return;
     }
     const staged: PendingOrder = {
+      id,
       side,
       price,
       size,
-      ts: Date.now(),
+      ts,
       status: "STAGED",
       reason: "awaits operator-approval edge",
     };
@@ -143,7 +150,7 @@ export function DOMClickLadder({ symbol = "BTC-USDT" }: { symbol?: string }) {
           <ul className="divide-y divide-border/40 font-mono">
             {pending.map((o) => (
               <li
-                key={o.ts}
+                key={o.id}
                 className="flex items-baseline gap-2 px-3 py-0.5"
               >
                 <span
