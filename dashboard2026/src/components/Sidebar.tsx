@@ -19,6 +19,7 @@ import {
   Rocket,
   ShieldCheck,
   Sparkles,
+  Target,
   Wrench,
 } from "lucide-react";
 import { type ComponentType } from "react";
@@ -115,6 +116,12 @@ const SYSTEM_NAV: Record<SystemRoute, NavItem<SystemRoute>> = {
     label: "Charting",
     href: "#/charting",
     icon: LineChart,
+  },
+  trading: {
+    key: "trading",
+    label: "Trading",
+    href: "#/trading",
+    icon: Target,
   },
 };
 
