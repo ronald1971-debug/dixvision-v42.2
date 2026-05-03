@@ -80,6 +80,12 @@ const SYSTEM_NAV: Record<SystemRoute, NavItem<SystemRoute>> = {
     href: "#/testing",
     icon: CheckSquare,
   },
+  onchain: {
+    key: "onchain",
+    label: "On-chain",
+    href: "#/onchain",
+    icon: Coins,
+  },
   ai: {
     key: "ai",
     label: "AI · ASKB",

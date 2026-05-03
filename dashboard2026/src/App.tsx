@@ -14,6 +14,7 @@ import { CredentialsPage } from "@/pages/CredentialsPage";
 import { DyonLearningPage } from "@/pages/DyonLearningPage";
 import { GovernancePage } from "@/pages/GovernancePage";
 import { IndiraLearningPage } from "@/pages/IndiraLearningPage";
+import { OnChainPage } from "@/pages/OnChainPage";
 import { OperatorPage } from "@/pages/OperatorPage";
 import { OrderFlowPage } from "@/pages/OrderFlowPage";
 import { RiskPage } from "@/pages/RiskPage";
@@ -56,6 +57,8 @@ function renderRoute(route: Route) {
       return <DyonLearningPage />;
     case "testing":
       return <TestingPage />;
+    case "onchain":
+      return <OnChainPage />;
     case "ai":
       return <AIPage />;
     case "orderflow":

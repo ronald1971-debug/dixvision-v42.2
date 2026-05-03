@@ -29,6 +29,7 @@ export type SystemRoute =
   | "indira"
   | "dyon"
   | "testing"
+  | "onchain"
   | "ai"
   | "orderflow"
   | "governance"
@@ -53,6 +54,7 @@ const SYSTEM_ROUTES: readonly SystemRoute[] = [
   "indira",
   "dyon",
   "testing",
+  "onchain",
   "ai",
   "orderflow",
   "governance",
