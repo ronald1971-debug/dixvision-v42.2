@@ -32,6 +32,7 @@ from core.contracts.events import (
     Event,
     ExecutionEvent,
     ExecutionStatus,
+    HazardEvent,
     Side,
     SignalEvent,
 )
@@ -39,8 +40,10 @@ from core.contracts.execution_intent import ExecutionIntent
 from core.contracts.governance import SystemMode
 from core.contracts.market import MarketTick
 from core.contracts.mode_effects import effect_for
+from core.contracts.risk import RiskSnapshot
 from execution_engine.adapters import BrokerAdapter, PaperBroker
 from execution_engine.execution_gate import AuthorityGuard
+from system_engine.coupling import HazardThrottleAdapter
 
 __all__ = ["ExecutionEngine", "LegacyExecutionPathRemovedError"]
 
@@ -66,6 +69,8 @@ class ExecutionEngine(RuntimeEngine):
         plugin_slots: Mapping[str, Sequence[Plugin]] | None = None,
         *,
         guard: AuthorityGuard | None = None,
+        throttle_adapter: HazardThrottleAdapter | None = None,
+        risk_baseline: RiskSnapshot | None = None,
     ) -> None:
         self._adapter: BrokerAdapter = adapter or PaperBroker()
         self._marks: dict[str, float] = {}
@@ -77,6 +82,13 @@ class ExecutionEngine(RuntimeEngine):
         # disk. ``execute`` materialises the guard on first use
         # unless the caller injected one explicitly.
         self._guard: AuthorityGuard | None = guard
+        # P0-2: hazard throttle chain closure. The adapter is the
+        # single seam through which observed HazardEvents tighten the
+        # hot-path RiskSnapshot via apply_throttle(). Both attributes
+        # are optional so existing harness flows that never touch the
+        # hazard bus retain their pre-P0-2 behaviour.
+        self._throttle_adapter: HazardThrottleAdapter | None = throttle_adapter
+        self._risk_baseline: RiskSnapshot | None = risk_baseline
 
     @property
     def adapter(self) -> BrokerAdapter:
@@ -87,6 +99,28 @@ class ExecutionEngine(RuntimeEngine):
         if self._guard is None:
             self._guard = AuthorityGuard()
         return self._guard
+
+    def set_risk_baseline(self, snapshot: RiskSnapshot) -> None:
+        """Replace the baseline :class:`RiskSnapshot`.
+
+        The baseline is the un-throttled view from the FastRiskCache.
+        On every :meth:`execute` call the throttle adapter projects
+        the active hazard window onto this baseline.
+        """
+
+        self._risk_baseline = snapshot
+
+    def on_hazard(self, event: HazardEvent) -> None:
+        """Feed a :class:`HazardEvent` into the throttle adapter.
+
+        No-op when no adapter was injected -- preserves the
+        pre-P0-2 behaviour for harness flows that never touch the
+        hazard bus.
+        """
+
+        if self._throttle_adapter is None:
+            return
+        self._throttle_adapter.observe(event)
 
     def on_market(self, tick: MarketTick) -> None:
         """Update the internal mark cache.
@@ -148,6 +182,39 @@ class ExecutionEngine(RuntimeEngine):
         """
 
         self.guard.assert_can_execute(intent, caller=caller, ts_ns=intent.ts_ns)
+
+        # P0-2: consult the throttle adapter (if configured) before
+        # any side effect. ``halted=True`` short-circuits to a
+        # REJECTED ExecutionEvent with reason ``hazard_throttled``;
+        # ``qty_multiplier == 0`` is the same outcome via a different
+        # path. The non-blocking ``confidence_floor`` /
+        # ``qty_multiplier`` projections are consumed downstream by
+        # the hot-path FastExecutor and are not enforced here.
+        if (
+            self._throttle_adapter is not None
+            and self._risk_baseline is not None
+        ):
+            throttled = self._throttle_adapter.project(
+                snapshot=self._risk_baseline,
+                now_ns=intent.ts_ns,
+            )
+            if throttled.halted:
+                signal = intent.signal
+                return (
+                    ExecutionEvent(
+                        ts_ns=signal.ts_ns,
+                        symbol=signal.symbol,
+                        side=signal.side,
+                        qty=0.0,
+                        price=0.0,
+                        status=ExecutionStatus.REJECTED,
+                        venue=self._adapter.name,
+                        order_id="",
+                        meta={"reason": "hazard_throttled"},
+                        produced_by_engine="execution_engine",
+                    ),
+                )
+
         if current_mode is not None and not effect_for(
             current_mode
         ).executions_dispatch:
