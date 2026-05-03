@@ -162,6 +162,33 @@ class GovernanceEngine(RuntimeEngine):
         if PipelineStage.NOOP in route.stages:
             return ()
 
+        # Hardening-S1 item 4 — fail-closed unknown-kind route. The
+        # classifier returns a dedicated route (note prefixed with
+        # ``unknown_system_kind:``) when an event kind is neither in
+        # the governance-handled set nor the explicit audit-only set.
+        # We catch it here, write a loud ``UNKNOWN_SYSTEM_KIND`` row,
+        # and return without dispatching to a handler — *no silent
+        # discard*, no default-permissive path.
+        if route.note.startswith("unknown_system_kind:"):
+            self.ledger.append(
+                ts_ns=event.ts_ns,
+                kind="UNKNOWN_SYSTEM_KIND",
+                payload={
+                    "event_kind": event.kind.value,
+                    "sub_kind_repr": route.note.split(":", 1)[1],
+                    "source": getattr(event, "source", ""),
+                    "code": "FAIL_CLOSED_UNKNOWN_KIND",
+                    "detail": (
+                        "Hardening-S1 item 4: classifier received a "
+                        "SystemEventKind outside the governance-handled "
+                        "and audit-only allowlists. Update "
+                        "event_classifier._GOVERNANCE_HANDLED_SYSTEM_KINDS "
+                        "or _AUDIT_ONLY_SYSTEM_KINDS deliberately."
+                    ),
+                },
+            )
+            return ()
+
         if event.kind is EventKind.HAZARD:
             self._handle_hazard(event, route.emergency_lock)  # type: ignore[arg-type]
             return ()
@@ -264,8 +291,38 @@ class GovernanceEngine(RuntimeEngine):
 
         Falls back to the legacy ``UPDATE_PROPOSED_AUDIT`` row when
         no :class:`StrategyRegistry` is wired (callers that haven't
-        yet adopted Wave-04.6 PR-E).
+        yet adopted Wave-04.6 PR-E). Hardening-S1 item 4 hoists the
+        required-field validation above the registry-check fallback
+        so a malformed payload fails closed regardless of whether the
+        registry is wired — the legacy "no registry → audit-only"
+        path no longer launders malformed events into the audit
+        trail unchallenged.
         """
+
+        # Hardening-S1 item 4 — fail-closed required-field validation
+        # for both the registry-driven and the legacy audit-only path.
+        missing = [
+            k
+            for k in (
+                "strategy_id",
+                "parameter",
+                "old_value",
+                "new_value",
+                "reason",
+            )
+            if k not in event.payload
+        ]
+        if missing:
+            self.ledger.append(
+                ts_ns=event.ts_ns,
+                kind="UPDATE_REJECTED",
+                payload={
+                    "source": event.source,
+                    "code": "MALFORMED_PAYLOAD",
+                    "detail": f"missing fields: {','.join(missing)}",
+                },
+            )
+            return
 
         if (
             self.update_validator is None
@@ -282,27 +339,15 @@ class GovernanceEngine(RuntimeEngine):
             )
             return
 
-        try:
-            update = ProposedUpdate(
-                ts_ns=event.ts_ns,
-                strategy_id=event.payload["strategy_id"],
-                parameter=event.payload["parameter"],
-                old_value=event.payload["old_value"],
-                new_value=event.payload["new_value"],
-                reason=event.payload["reason"],
-                meta=dict(event.meta),
-            )
-        except KeyError as exc:
-            self.ledger.append(
-                ts_ns=event.ts_ns,
-                kind="UPDATE_REJECTED",
-                payload={
-                    "source": event.source,
-                    "code": "MALFORMED_PAYLOAD",
-                    "detail": f"missing field: {exc.args[0]}",
-                },
-            )
-            return
+        update = ProposedUpdate(
+            ts_ns=event.ts_ns,
+            strategy_id=event.payload["strategy_id"],
+            parameter=event.payload["parameter"],
+            old_value=event.payload["old_value"],
+            new_value=event.payload["new_value"],
+            reason=event.payload["reason"],
+            meta=dict(event.meta),
+        )
 
         decision = self.update_validator.validate(
             update=update,
@@ -345,6 +390,25 @@ class GovernanceEngine(RuntimeEngine):
             self._handle_update_proposed(event)
             return
         if event.sub_kind is SystemEventKind.PLUGIN_LIFECYCLE:
+            # Hardening-S1 item 4 — fail-closed required-field
+            # validation. PLUGIN_LIFECYCLE rows must carry the
+            # plugin_id and the new lifecycle target so the audit
+            # trail can answer "who flipped what when". Missing
+            # fields → MALFORMED_PAYLOAD audit row, no silent insert.
+            missing = [
+                k for k in ("plugin_id", "lifecycle") if k not in event.payload
+            ]
+            if missing:
+                self.ledger.append(
+                    ts_ns=event.ts_ns,
+                    kind="PLUGIN_LIFECYCLE_REJECTED",
+                    payload={
+                        "source": event.source,
+                        "code": "MALFORMED_PAYLOAD",
+                        "detail": f"missing fields: {','.join(missing)}",
+                    },
+                )
+                return
             self.ledger.append(
                 ts_ns=event.ts_ns,
                 kind="PLUGIN_LIFECYCLE_AUDIT",
@@ -355,9 +419,28 @@ class GovernanceEngine(RuntimeEngine):
             )
             return
 
-        # HEARTBEAT, HEALTH_REPORT, LEDGER_COMMIT — handled elsewhere.
-        # Log nothing; classifier marks these NOOP for governance.
-        del event
+        # Hardening-S1 item 4 — defensive fail-closed. The classifier
+        # is supposed to route every unhandled SystemEventKind through
+        # the unknown-kind path in :meth:`process`; if a kind reaches
+        # this method without an explicit branch above, the
+        # invariant is broken. Write a loud audit row so the breach
+        # is visible in the chain rather than swallowed by ``del``.
+        self.ledger.append(
+            ts_ns=event.ts_ns,
+            kind="UNKNOWN_SYSTEM_KIND",
+            payload={
+                "source": event.source,
+                "sub_kind_repr": repr(event.sub_kind),
+                "code": "FAIL_CLOSED_HANDLER_MISS",
+                "detail": (
+                    "Hardening-S1 item 4: SystemEventKind reached "
+                    "_handle_system without a handler branch. "
+                    "Classifier and engine handlers must be kept in "
+                    "lockstep — see "
+                    "event_classifier._GOVERNANCE_HANDLED_SYSTEM_KINDS."
+                ),
+            },
+        )
 
     # ------------------------------------------------------------------
     # Convenience accessors used by the UI / tests
