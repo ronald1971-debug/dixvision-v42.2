@@ -52,8 +52,11 @@ export default defineConfig({
     proxy: {
       // Dev server: proxy `/api/*` to the FastAPI harness so the
       // React app talks to the real backend without CORS shims.
+      // The harness binds 8080 by default (see scripts/windows/start_dixvision.bat
+      // and README.md); override via VITE_DEV_PROXY_PORT for non-default
+      // local setups.
       "/api": {
-        target: "http://127.0.0.1:8000",
+        target: `http://127.0.0.1:${process.env.VITE_DEV_PROXY_PORT ?? "8080"}`,
         changeOrigin: true,
       },
     },
