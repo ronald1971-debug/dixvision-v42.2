@@ -6,6 +6,7 @@ import { LiveStatusPill } from "@/components/LiveStatusPill";
 import { PadlockFloors } from "@/components/PadlockFloors";
 import { PromoteChain } from "@/components/PromoteChain";
 import { Sidebar } from "@/components/Sidebar";
+import { AIPage } from "@/pages/AIPage";
 import { CognitiveChatPage } from "@/pages/CognitiveChatPage";
 import { CredentialsPage } from "@/pages/CredentialsPage";
 import { DyonLearningPage } from "@/pages/DyonLearningPage";
@@ -49,6 +50,8 @@ function renderRoute(route: Route) {
       return <DyonLearningPage />;
     case "testing":
       return <TestingPage />;
+    case "ai":
+      return <AIPage />;
   }
 }
 
