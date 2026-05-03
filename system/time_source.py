@@ -38,7 +38,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from threading import RLock
 
 __all__ = (
@@ -68,7 +68,7 @@ class TimeStamp:
 
 _lock = RLock()
 _anchor_mono: int = time.monotonic_ns()
-_anchor_utc: datetime = datetime.now(timezone.utc)
+_anchor_utc: datetime = datetime.now(UTC)
 _last_mono: int = _anchor_mono
 _seq: int = 0
 
