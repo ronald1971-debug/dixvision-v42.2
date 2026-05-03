@@ -1047,6 +1047,11 @@ B31_ALLOWED_PREFIXES: tuple[str, ...] = (
     "core.contracts.mode_effects",
     "core.contracts.learning_evolution_freeze",
     "dashboard_backend.control_plane.mode_control_bar",
+    # P0-1b -- the SAFE-01 kill-switch primitive is the single named
+    # chokepoint for ``SystemMode.LOCKED`` engagement. Operator,
+    # hazard, and external kills all route through it; allowlisting
+    # is required so the primitive itself can name the target mode.
+    "system.kill_switch",
 )
 
 
