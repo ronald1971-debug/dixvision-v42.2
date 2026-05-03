@@ -61,7 +61,7 @@ export function StablecoinSupply() {
           const drift = Math.sin(Date.now() / 7_000 + s.ticker.length) * 0.003;
           return {
             ...s,
-            delta_24h_usd: s.delta_24h_usd + drift * s.supply_usd,
+            delta_24h_usd: s.delta_24h_usd + drift * 50_000_000,
             delta_7d_pct: s.delta_7d_pct + drift * 0.001,
           };
         }),
