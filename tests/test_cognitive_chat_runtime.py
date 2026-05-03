@@ -161,7 +161,7 @@ def test_status_disabled_when_flag_off() -> None:
         registry=_registry_with("provider-A"),
         ledger_writer=_RecordingLedger(),
         transport=_RecordingTransport(),
-        feature_flag=_flag(""),
+        feature_flag=_flag("false"),
     )
     resp = runtime.status()
     assert resp.enabled is False
@@ -316,7 +316,7 @@ def test_turn_raises_chat_turn_disabled_when_flag_off() -> None:
         registry=_registry_with("provider-A"),
         ledger_writer=_RecordingLedger(),
         transport=_RecordingTransport(),
-        feature_flag=_flag(""),
+        feature_flag=_flag("false"),
     )
     with pytest.raises(ChatTurnDisabled):
         runtime.turn(_request("hi"))

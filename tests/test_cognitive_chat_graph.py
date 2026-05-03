@@ -131,22 +131,26 @@ def _enable_flag(monkeypatch: pytest.MonkeyPatch) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_feature_flag_default_off(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_feature_flag_default_on(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cognitive chat is on by default — operator does not need to opt in."""
+
     monkeypatch.delenv(FEATURE_FLAG_ENV_VAR, raising=False)
     flag = CognitiveChatFeatureFlag()
-    assert flag.enabled is False
+    assert flag.enabled is True
 
 
-@pytest.mark.parametrize("value", ["1", "true", "TRUE", "yes", "on"])
-def test_feature_flag_truthy_values(
+@pytest.mark.parametrize(
+    "value", ["1", "true", "TRUE", "yes", "on", "", "maybe"]
+)
+def test_feature_flag_truthy_or_unknown_values_enable(
     monkeypatch: pytest.MonkeyPatch, value: str
 ) -> None:
     monkeypatch.setenv(FEATURE_FLAG_ENV_VAR, value)
     assert CognitiveChatFeatureFlag().enabled is True
 
 
-@pytest.mark.parametrize("value", ["0", "false", "no", "off", "", "maybe"])
-def test_feature_flag_falsy_values(
+@pytest.mark.parametrize("value", ["0", "false", "no", "off", "FALSE", "Off"])
+def test_feature_flag_falsy_values_disable(
     monkeypatch: pytest.MonkeyPatch, value: str
 ) -> None:
     monkeypatch.setenv(FEATURE_FLAG_ENV_VAR, value)
@@ -165,10 +169,12 @@ def test_feature_flag_accepts_injected_getter() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_assemble_raises_when_flag_off(
+def test_assemble_raises_when_flag_explicitly_off(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.delenv(FEATURE_FLAG_ENV_VAR, raising=False)
+    """An explicit falsy env value disables cognitive chat."""
+
+    monkeypatch.setenv(FEATURE_FLAG_ENV_VAR, "false")
     transport = _RecordingTransport()
     ledger = _RecordingLedger()
     registry = _registry_with_one_provider()
@@ -182,13 +188,13 @@ def test_assemble_raises_when_flag_off(
         )
 
 
-def test_assemble_raises_unless_explicit_flag_object_is_enabled() -> None:
+def test_assemble_raises_when_explicit_flag_object_is_disabled() -> None:
     """An explicit :class:`CognitiveChatFeatureFlag` short-circuits the env."""
 
     transport = _RecordingTransport()
     ledger = _RecordingLedger()
     registry = _registry_with_one_provider()
-    disabled = CognitiveChatFeatureFlag(getter=lambda _n, _d: "")
+    disabled = CognitiveChatFeatureFlag(getter=lambda _n, _d: "false")
 
     with pytest.raises(CognitiveChatDisabledError):
         assemble_cognitive_chat(

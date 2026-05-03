@@ -137,6 +137,12 @@ const SYSTEM_NAV: Record<SystemRoute, NavItem<SystemRoute>> = {
     href: "#/trading",
     icon: Target,
   },
+  plugins: {
+    key: "plugins",
+    label: "Plugins",
+    href: "#/plugins",
+    icon: Puzzle,
+  },
 };
 
 export interface SidebarProps {
