@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Puzzle,
   Rocket,
+  ShieldCheck,
   Wrench,
 } from "lucide-react";
 import { type ComponentType } from "react";
@@ -75,6 +76,12 @@ const SYSTEM_NAV: Record<SystemRoute, NavItem<SystemRoute>> = {
     label: "Testing & Eval",
     href: "#/testing",
     icon: CheckSquare,
+  },
+  governance: {
+    key: "governance",
+    label: "Governance",
+    href: "#/governance",
+    icon: ShieldCheck,
   },
 };
 

@@ -9,6 +9,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { CognitiveChatPage } from "@/pages/CognitiveChatPage";
 import { CredentialsPage } from "@/pages/CredentialsPage";
 import { DyonLearningPage } from "@/pages/DyonLearningPage";
+import { GovernancePage } from "@/pages/GovernancePage";
 import { IndiraLearningPage } from "@/pages/IndiraLearningPage";
 import { OperatorPage } from "@/pages/OperatorPage";
 import { TestingPage } from "@/pages/TestingPage";
@@ -49,6 +50,8 @@ function renderRoute(route: Route) {
       return <DyonLearningPage />;
     case "testing":
       return <TestingPage />;
+    case "governance":
+      return <GovernancePage />;
   }
 }
 

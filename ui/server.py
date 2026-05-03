@@ -139,6 +139,7 @@ from ui.cognitive_chat_runtime import (
     build_runtime as build_cognitive_chat_runtime,
 )
 from ui.dashboard_routes import build_dashboard_router
+from ui.governance_routes import build_governance_router
 from ui.feeds.runner import FeedRunner
 from ui.feeds.tradingview_ideas import (
     TRADINGVIEW_SOURCE_FEED,
@@ -459,6 +460,11 @@ app = FastAPI(
 
 # DASH-1 — read-only widget projections for the operator dashboard.
 app.include_router(build_dashboard_router(lambda: STATE))
+
+# Tier-1 governance widgets — promotion gates, drift oracle, SCVS source
+# liveness, hazard monitor. Read-only JSON projections consumed by the
+# /dash2 governance page.
+app.include_router(build_governance_router(lambda: STATE))
 
 
 # Wave-Live PR-4 — root URL routes operators to the live SPA. PR #105
