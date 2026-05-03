@@ -1,11 +1,16 @@
 import { AssetGrid, type GridItemSpec } from "@/components/AssetGrid";
-import { PlaceholderWidget } from "@/components/PlaceholderWidget";
 import { ChartPanel } from "@/widgets/ChartPanel";
 import { CoherencePanel } from "@/widgets/CoherencePanel";
 import { DepthLadder } from "@/widgets/DepthLadder";
 import { OrderForm } from "@/widgets/OrderForm";
 import { PositionsPanel } from "@/widgets/PositionsPanel";
 import { SLTPBuilder } from "@/widgets/SLTPBuilder";
+import { CarryLadder } from "@/widgets/forex/CarryLadder";
+import { CentralBankRates } from "@/widgets/forex/CentralBankRates";
+import { CurrencyStrength } from "@/widgets/forex/CurrencyStrength";
+import { EconomicCalendar } from "@/widgets/forex/EconomicCalendar";
+import { PipCalc } from "@/widgets/forex/PipCalc";
+import { SessionClock } from "@/widgets/forex/SessionClock";
 
 import { AssetPageShell } from "./AssetPageShell";
 
@@ -27,24 +32,17 @@ const ITEMS: GridItemSpec[] = [
     x: 8,
     y: 0,
     w: 4,
-    h: 4,
+    h: 5,
     minW: 3,
-    minH: 3,
-    render: () => (
-      <PlaceholderWidget
-        title="Session Clock"
-        subtitle="Sydney · Tokyo · London · New York"
-        badge="DASH-K"
-        status="stub"
-      />
-    ),
+    minH: 4,
+    render: () => <SessionClock />,
   },
   {
     i: "depth",
     x: 8,
-    y: 4,
+    y: 5,
     w: 4,
-    h: 6,
+    h: 5,
     minW: 3,
     minH: 4,
     render: () => <DepthLadder symbol={SYMBOL} />,
@@ -87,23 +85,56 @@ const ITEMS: GridItemSpec[] = [
     h: 7,
     minW: 4,
     minH: 4,
-    render: () => (
-      <PlaceholderWidget
-        title="Economic Calendar"
-        subtitle="ForexFactory · TradingEconomics · auto-pause for FOMC/NFP/CPI"
-        badge="DASH-K"
-        status="stub"
-      />
-    ),
+    render: () => <EconomicCalendar />,
   },
   {
-    i: "coherence",
+    i: "cbrates",
     x: 6,
     y: 17,
     w: 6,
     h: 7,
     minW: 4,
     minH: 5,
+    render: () => <CentralBankRates />,
+  },
+  {
+    i: "carry",
+    x: 0,
+    y: 24,
+    w: 4,
+    h: 8,
+    minW: 3,
+    minH: 5,
+    render: () => <CarryLadder />,
+  },
+  {
+    i: "strength",
+    x: 4,
+    y: 24,
+    w: 4,
+    h: 8,
+    minW: 3,
+    minH: 5,
+    render: () => <CurrencyStrength />,
+  },
+  {
+    i: "pipcalc",
+    x: 8,
+    y: 24,
+    w: 4,
+    h: 8,
+    minW: 3,
+    minH: 6,
+    render: () => <PipCalc />,
+  },
+  {
+    i: "coherence",
+    x: 0,
+    y: 32,
+    w: 12,
+    h: 6,
+    minW: 4,
+    minH: 4,
     render: () => <CoherencePanel />,
   },
 ];
@@ -113,7 +144,7 @@ export function ForexPage() {
     <AssetPageShell
       title="Forex"
       asset="FOREX"
-      description="Multi-broker FX surface (OANDA · IG · IBKR · MT4/MT5 bridge). Session-aware, calendar-gated. Default widgets per PR-#2 spec §3.5."
+      description="Multi-broker FX surface (OANDA · IG · IBKR · MT4/MT5 bridge). Session-aware, calendar-gated. Pro pack: SessionClock · EconCal · CB rates · CarryLadder · PipCalc · CurrencyStrength."
     >
       <AssetGrid storageKey="forex" defaultItems={ITEMS} />
     </AssetPageShell>
