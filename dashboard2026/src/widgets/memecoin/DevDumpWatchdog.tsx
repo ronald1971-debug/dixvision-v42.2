@@ -75,18 +75,22 @@ export function DevDumpWatchdog() {
   useEffect(() => {
     const id = setInterval(() => {
       setRows((prev) =>
-        prev.map((r) => ({
-          ...r,
-          last_outflow_s: Math.max(0, r.last_outflow_s + 5 - (r.trip ? 10 : 0)),
-          // Drift dump score gently so the operator sees motion.
-          dump_score: Math.max(
+        prev.map((r) => {
+          const tripped = r.dump_score >= 0.7;
+          const next_dump = Math.max(
             0,
-            Math.min(
-              1,
-              r.dump_score + (r.trip ? 0.01 : -0.005),
+            Math.min(1, r.dump_score + (tripped ? 0.01 : -0.005)),
+          );
+          return {
+            ...r,
+            last_outflow_s: Math.max(
+              0,
+              r.last_outflow_s + 5 - (tripped ? 10 : 0),
             ),
-          ),
-        })),
+            dump_score: next_dump,
+            trip: next_dump >= 0.7,
+          };
+        }),
       );
     }, 3_000);
     return () => clearInterval(id);
@@ -113,11 +117,13 @@ export function DevDumpWatchdog() {
           </tr>
         </thead>
         <tbody className="divide-y divide-border/40 font-mono">
-          {rows.map((r) => (
+          {rows.map((r) => {
+            const tripped = r.dump_score >= 0.7;
+            return (
             <tr key={r.ticker}>
               <td className="px-3 py-1 text-slate-200">
                 {r.ticker}
-                {r.trip && (
+                {tripped && (
                   <span className="ml-2 rounded bg-rose-500/20 px-1 py-0.5 text-[9px] uppercase text-rose-300">
                     HAZ-DEV-DUMP
                   </span>
@@ -142,7 +148,8 @@ export function DevDumpWatchdog() {
                 <ScorePill score={r.dump_score} />
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
       <footer className="border-t border-border px-3 py-1 text-[10px] text-slate-500">
