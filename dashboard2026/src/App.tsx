@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AutonomyRibbon } from "@/components/AutonomyRibbon";
+import { CommandPalette } from "@/components/CommandPalette";
 import { ModeRibbon } from "@/components/ModeRibbon";
 import { LiveStatusPill } from "@/components/LiveStatusPill";
 import { PadlockFloors } from "@/components/PadlockFloors";
+import { PreferencesBar } from "@/components/PreferencesBar";
 import { PromoteChain } from "@/components/PromoteChain";
 import { Sidebar } from "@/components/Sidebar";
 import { AIPage } from "@/pages/AIPage";
@@ -20,6 +22,7 @@ import { NftPage } from "@/pages/asset/NftPage";
 import { PerpsPage } from "@/pages/asset/PerpsPage";
 import { SpotPage } from "@/pages/asset/SpotPage";
 import { StocksPage } from "@/pages/asset/StocksPage";
+import { useApplyPreferences } from "@/preferences/store";
 import { useHashRoute, type Route } from "@/router";
 
 function renderRoute(route: Route) {
@@ -58,6 +61,19 @@ function renderRoute(route: Route) {
 export function App() {
   const route = useHashRoute();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  useApplyPreferences();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
 
   return (
     <div className="flex h-full flex-col">
@@ -74,6 +90,7 @@ export function App() {
           </div>
           <AutonomyRibbon />
           <LiveStatusPill />
+          <PreferencesBar />
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <PromoteChain />
@@ -91,6 +108,22 @@ export function App() {
           {renderRoute(route)}
         </main>
       </div>
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onNavigate={(r) => {
+          window.location.hash = `#/${r}`;
+        }}
+        extraActions={[
+          {
+            id: "sys:toggle-sidebar",
+            group: "System",
+            label: sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar",
+            hint: "\u2318B",
+            run: () => setSidebarCollapsed((c) => !c),
+          },
+        ]}
+      />
     </div>
   );
 }
