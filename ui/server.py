@@ -146,6 +146,7 @@ from ui.feeds.tradingview_ideas import (
     TRADINGVIEW_SOURCE_FEED,
     parse_tradingview_idea_payload,
 )
+from ui.execution_routes import build_execution_router
 from ui.governance_routes import build_governance_router
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -528,6 +529,10 @@ app.include_router(build_dashboard_router(lambda: STATE))
 # liveness, hazard monitor. Read-only JSON projections consumed by the
 # /dash2 governance page.
 app.include_router(build_governance_router(lambda: STATE))
+
+# D1 / EXEC-ADAPTERS — operator dashboard surface for live execution
+# adapters (Hummingbot, Pump.fun, UniswapX, …). Read-only JSON.
+app.include_router(build_execution_router())
 
 
 # Wave-Live PR-4 — root URL routes operators to the live SPA. PR #105
