@@ -203,7 +203,12 @@ class CoinDeskRSSFeedRunner:
                 thread is None or not thread.is_alive()
             ):
                 self._thread = None
-        return self._provisional_status(running=False)
+        # Mirror ``FeedRunner.stop`` (``ui/feeds/runner.py:171``):
+        # return the live status snapshot so callers see real
+        # ``items_received`` / ``polls`` / ``errors`` and the actual
+        # ``running`` bit (``True`` if join timed out and the thread
+        # is still alive).
+        return self.status()
 
 
 __all__ = ["CoinDeskRSSFeedRunner"]
