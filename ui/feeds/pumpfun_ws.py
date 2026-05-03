@@ -97,12 +97,12 @@ def parse_new_token(
         or ""
     )
     market_cap_usd = _to_float(
-        payload.get("marketCapSol")
-        or payload.get("marketCapUsd")
-        or payload.get("usdMarketCap")
+        _first_present(
+            payload, "marketCapSol", "marketCapUsd", "usdMarketCap"
+        )
     )
     liquidity_usd = _to_float(
-        payload.get("vSolInBondingCurve") or payload.get("liquidityUsd")
+        _first_present(payload, "vSolInBondingCurve", "liquidityUsd")
     )
     return LaunchEvent(
         ts_ns=ts_ns,
@@ -115,6 +115,24 @@ def parse_new_token(
         market_cap_usd=market_cap_usd,
         liquidity_usd=liquidity_usd,
     )
+
+
+def _first_present(
+    payload: Mapping[str, Any], *keys: str
+) -> Any:
+    """Return the value of the first key whose value is not ``None``.
+
+    Unlike a chain of ``or`` operators, this preserves legitimate zero
+    values (``0`` / ``0.0`` / ``""``) on the *preferred* key instead of
+    silently falling through to a fallback. Critical for numeric
+    fields where ``0`` is a meaningful market value (e.g. a fresh-mint
+    Pump.fun token has ``marketCapSol == 0`` for the first block).
+    """
+    for k in keys:
+        v = payload.get(k)
+        if v is not None:
+            return v
+    return None
 
 
 def _to_float(raw: Any) -> float:
