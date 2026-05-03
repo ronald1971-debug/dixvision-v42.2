@@ -106,8 +106,12 @@ export function CommandPalette({
     });
     return groups;
   })();
-
-  let runningIndex = -1;
+  // Single source of truth for cursor: items in the same order they
+  // are rendered (grouped order), so keyboard Enter, visual highlight,
+  // and onMouseEnter all index into the same array. Without this,
+  // non-contiguous group order in `filtered` would let hover set the
+  // cursor to one item while Enter fires a different one.
+  const flatGrouped: CommandAction[] = Object.values(grouped).flat();
 
   function handleKey(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Escape") {
@@ -117,7 +121,7 @@ export function CommandPalette({
     }
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setCursor((c) => Math.min(filtered.length - 1, c + 1));
+      setCursor((c) => Math.min(flatGrouped.length - 1, c + 1));
       return;
     }
     if (e.key === "ArrowUp") {
@@ -127,7 +131,7 @@ export function CommandPalette({
     }
     if (e.key === "Enter") {
       e.preventDefault();
-      const target = filtered[cursor];
+      const target = flatGrouped[cursor];
       if (target) {
         target.run();
         onClose();
@@ -167,25 +171,13 @@ export function CommandPalette({
                 {group}
               </div>
               {items.map((a) => {
-                runningIndex += 1;
-                const isActive = runningIndex === cursor;
+                const idx = flatGrouped.indexOf(a);
+                const isActive = idx === cursor;
                 return (
                   <button
                     key={a.id}
                     type="button"
-                    onMouseEnter={() => {
-                      let acc = -1;
-                      let target = 0;
-                      for (const [, arr] of Object.entries(grouped)) {
-                        for (const x of arr) {
-                          acc += 1;
-                          if (x.id === a.id) {
-                            target = acc;
-                          }
-                        }
-                      }
-                      setCursor(target);
-                    }}
+                    onMouseEnter={() => setCursor(idx)}
                     onClick={() => {
                       a.run();
                       onClose();
