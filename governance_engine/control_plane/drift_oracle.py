@@ -130,6 +130,23 @@ class DriftCompositeOracle:
         self._downgrade_threshold = downgrade_threshold
         self._requestor = requestor
 
+    @property
+    def expected_components(self) -> tuple[str, ...]:
+        """The canonical set of component ids the oracle expects.
+
+        Surfaced for the dashboard so it can render a "missing axis"
+        cell when a runtime caller forgets to plumb one of the four
+        expected drift signals.
+        """
+
+        return self._component_ids
+
+    @property
+    def downgrade_threshold(self) -> float:
+        """Composite-level breach gate (max-component deviation)."""
+
+        return self._downgrade_threshold
+
     # ------------------------------------------------------------------
     # Pure projection
     # ------------------------------------------------------------------
@@ -142,9 +159,19 @@ class DriftCompositeOracle:
     ) -> DriftCompositeReading:
         """Aggregate per-component deviations into a composite reading.
 
-        The composite is the max component deviation. Per-component
-        thresholds are honoured individually so a single noisy axis
-        triggers a downgrade even if the others are calm.
+        The composite is the max component deviation. A reading is
+        ``is_breaching`` when **either**
+
+        * any per-component deviation exceeds its
+          :attr:`DriftComponentReading.threshold` (so a single noisy
+          axis triggers a downgrade even if the others are calm), or
+        * the composite (max-component) deviation is at or above the
+          oracle's :attr:`downgrade_threshold` — the secondary gate
+          documented at the module level.
+
+        ``breached_components`` lists only the per-component breaches;
+        a composite-only breach surfaces in ``is_breaching`` with an
+        empty breach list.
         """
 
         if not readings:
@@ -160,12 +187,13 @@ class DriftCompositeOracle:
         breached = tuple(
             r.component_id for r in readings if r.deviation > r.threshold
         )
+        is_breaching = bool(breached) or composite >= self._downgrade_threshold
         return DriftCompositeReading(
             ts_ns=ts_ns,
             components=readings,
             composite=composite,
             breached_components=breached,
-            is_breaching=bool(breached),
+            is_breaching=is_breaching,
         )
 
     # ------------------------------------------------------------------
@@ -196,15 +224,22 @@ class DriftCompositeOracle:
         if target is None:
             return reading, None
 
+        if reading.breached_components:
+            reason = (
+                "drift_composite_breach: "
+                + ",".join(reading.breached_components)
+            )
+        else:
+            reason = (
+                f"drift_composite_breach: composite={reading.composite:.4f}"
+                f">=threshold={self._downgrade_threshold:.4f}"
+            )
         request = ModeTransitionRequest(
             ts_ns=ts_ns,
             requestor=self._requestor,
             current_mode=current,
             target_mode=target,
-            reason=(
-                "drift_composite_breach: "
-                + ",".join(reading.breached_components)
-            ),
+            reason=reason,
             operator_authorized=False,
         )
         decision = stm.propose(request)
