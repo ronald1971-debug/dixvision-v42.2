@@ -118,14 +118,23 @@ function CompositePill({
     );
   }
   const breached = composite >= threshold;
-  const tone = breached ? "rose" : "emerald";
   return (
     <div
-      className={`rounded border border-${tone}-500/40 bg-${tone}-500/10 px-2 py-2 text-[11px]`}
+      className={`rounded border px-2 py-2 text-[11px] ${
+        breached
+          ? "border-rose-500/40 bg-rose-500/10"
+          : "border-emerald-500/40 bg-emerald-500/10"
+      }`}
     >
       <div className="flex items-baseline justify-between">
-        <span className={`text-${tone}-300`}>composite</span>
-        <span className={`font-mono text-${tone}-300`}>
+        <span className={breached ? "text-rose-300" : "text-emerald-300"}>
+          composite
+        </span>
+        <span
+          className={`font-mono ${
+            breached ? "text-rose-300" : "text-emerald-300"
+          }`}
+        >
           {composite.toFixed(3)}
         </span>
       </div>

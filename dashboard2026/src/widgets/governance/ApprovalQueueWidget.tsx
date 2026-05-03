@@ -173,7 +173,7 @@ function ApprovalRow({
           {a.proposal.rationale}
         </p>
       )}
-      {status === "pending" && (
+      {status === "PENDING" && (
         <div className="mt-2 flex gap-1.5">
           <button
             type="button"
@@ -193,7 +193,7 @@ function ApprovalRow({
           </button>
         </div>
       )}
-      {status !== "pending" && a.decided_by && (
+      {status !== "PENDING" && a.decided_by && (
         <div className="mt-1 text-[10px] text-slate-500">
           decided by {a.decided_by}
         </div>
@@ -204,11 +204,11 @@ function ApprovalRow({
 
 function StatusChip({ status }: { status: string }) {
   const tone =
-    status === "pending"
+    status === "PENDING"
       ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
-      : status === "approved"
+      : status === "APPROVED"
         ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
-        : status === "rejected"
+        : status === "REJECTED"
           ? "border-rose-500/40 bg-rose-500/10 text-rose-300"
           : "border-slate-600/40 bg-slate-800/40 text-slate-400";
   return (
@@ -223,7 +223,7 @@ function StatusChip({ status }: { status: string }) {
 function Footer({ data }: { data: ApprovalsListResponse | undefined }) {
   if (!data) return null;
   const pending = data.requests.filter(
-    (a) => String(a.status) === "pending",
+    (a) => String(a.status) === "PENDING",
   ).length;
   return (
     <div className="flex items-center justify-between border-t border-border px-3 py-1 text-[10px] text-slate-500">
