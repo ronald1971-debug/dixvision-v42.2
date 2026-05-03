@@ -116,20 +116,41 @@ function parse(raw: string): ParsedIntent {
   }
 
   let trigger: string | undefined;
+  let triggerMatch: RegExpMatchArray | null = null;
   const dropMatch = lc.match(/(?:drops? below|under)\s*\$?\s?([\d.]+)/);
   const riseMatch = lc.match(/(?:rises? above|over)\s*\$?\s?([\d.]+)/);
-  if (dropMatch) trigger = `< ${dropMatch[1]}`;
-  else if (riseMatch) trigger = `> ${riseMatch[1]}`;
-  else {
+  if (dropMatch) {
+    trigger = `< ${dropMatch[1]}`;
+    triggerMatch = dropMatch;
+  } else if (riseMatch) {
+    trigger = `> ${riseMatch[1]}`;
+    triggerMatch = riseMatch;
+  } else {
     // Anchor the price extraction to the number that immediately
     // follows "at" — otherwise PRICE_RE greedily matches the first
     // number in the string, which for "Short SOL 25 coins at 178"
     // is the size (25), not the price (178).
     const atMatch = lc.match(/\bat\s+\$?\s?([\d.]+)/);
-    if (atMatch) trigger = `@ ${atMatch[1]}`;
+    if (atMatch) {
+      trigger = `@ ${atMatch[1]}`;
+      triggerMatch = atMatch;
+    }
   }
 
-  const sz = raw.match(SIZE_RE);
+  // Strip the trigger-matched substring before extracting size, so that
+  // the trigger price ("under $170") is not re-captured as a trade size.
+  // SIZE_RE runs against the original (mixed-case) raw string; the
+  // trigger match indices are in `lc`, but `lc` and `raw` are the same
+  // length (toLowerCase preserves indices), so the slice indices align.
+  let sizeSource = raw;
+  if (triggerMatch && triggerMatch.index !== undefined) {
+    const start = triggerMatch.index;
+    const end = start + triggerMatch[0].length;
+    sizeSource = raw.slice(0, start) + raw.slice(end);
+  }
+  // Trade size is meaningful only for BUY/SELL intents. For ALERT and
+  // STRATEGY, any incidental number (e.g. "last 30 days") is not a size.
+  const sz = action === "BUY" || action === "SELL" ? sizeSource.match(SIZE_RE) : null;
   const size = sz ? `${sz[1]}${sz[2] ? " " + sz[2] : ""}` : undefined;
 
   let reason = "parsed locally · awaiting Indira semantic refinement";

@@ -16,6 +16,7 @@ import {
   MessageSquare,
   Puzzle,
   Rocket,
+  ShieldCheck,
   Sparkles,
   Wrench,
 } from "lucide-react";
@@ -83,6 +84,12 @@ const SYSTEM_NAV: Record<SystemRoute, NavItem<SystemRoute>> = {
     label: "AI · ASKB",
     href: "#/ai",
     icon: Sparkles,
+  },
+  governance: {
+    key: "governance",
+    label: "Governance",
+    href: "#/governance",
+    icon: ShieldCheck,
   },
   risk: {
     key: "risk",
