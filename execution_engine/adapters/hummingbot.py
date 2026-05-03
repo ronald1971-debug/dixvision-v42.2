@@ -27,7 +27,6 @@ the wrong wallet (INV-65: per-decision audit truthfulness).
 
 from __future__ import annotations
 
-import time
 from collections.abc import Mapping
 
 from core.contracts.events import (
@@ -44,6 +43,7 @@ from execution_engine.adapters._live_base import (
     AdapterState,
     LiveAdapterBase,
 )
+from system.time_source import now_ns
 
 # Connector identifiers Hummingbot tags as DEX-AMM. Anything not in this
 # tuple goes through the CLOB path (binance / kraken / dydx / etc.).
@@ -144,7 +144,7 @@ class HummingbotAdapter(LiveAdapterBase):
         if ok:
             self._state = AdapterState.READY
             self._detail = f"connected to {self._gateway_url}"
-            self._last_heartbeat_ns = time.time_ns()
+            self._last_heartbeat_ns = now_ns()
         else:
             self._state = AdapterState.DEGRADED
             self._detail = "gateway /healthz did not return status=ok"
