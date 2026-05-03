@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { fetchOperatorSummary, postOperatorKill } from "@/api/operator";
+import { AdapterStatusGrid } from "@/components/AdapterStatusGrid";
 import { EngineBucketBadge } from "@/components/EngineBucketBadge";
 import type {
   OperatorActionResponse,
@@ -90,6 +91,7 @@ export function OperatorPage() {
         <>
           <ModeCard data={data.mode} />
           <EnginesCard rows={data.engines} />
+          <AdapterStatusGrid />
           <StrategiesCard counts={data.strategies} />
           <MemecoinCard data={data.memecoin} />
           <DecisionCountCard count={data.decision_chain_count} />

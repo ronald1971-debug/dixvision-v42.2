@@ -140,6 +140,7 @@ from ui.cognitive_chat_runtime import (
     build_runtime as build_cognitive_chat_runtime,
 )
 from ui.dashboard_routes import build_dashboard_router
+from ui.execution_routes import build_execution_router
 from ui.feeds.news_runner import CoinDeskRSSFeedRunner
 from ui.feeds.runner import FeedRunner
 from ui.feeds.tradingview_ideas import (
@@ -528,6 +529,10 @@ app.include_router(build_dashboard_router(lambda: STATE))
 # liveness, hazard monitor. Read-only JSON projections consumed by the
 # /dash2 governance page.
 app.include_router(build_governance_router(lambda: STATE))
+
+# D1 / EXEC-ADAPTERS — operator dashboard surface for live execution
+# adapters (Hummingbot, Pump.fun, UniswapX, …). Read-only JSON.
+app.include_router(build_execution_router())
 
 
 # Wave-Live PR-4 — root URL routes operators to the live SPA. PR #105
