@@ -387,19 +387,52 @@ def _engine_with_registry() -> GovernanceEngine:
 
 
 def test_governance_engine_legacy_audit_when_no_registry():
-    """Backwards compat: with no registry, the audit-only path runs."""
+    """With no registry wired, a *complete* payload still falls back
+    to the legacy ``UPDATE_PROPOSED_AUDIT`` row. Hardening-S1 item 4
+    additionally requires that all five payload fields be present —
+    a malformed payload now fails closed regardless of whether the
+    registry is wired.
+    """
     eng = GovernanceEngine(initial_mode=SystemMode.LIVE)
     event = SystemEvent(
         ts_ns=100,
         sub_kind=SystemEventKind.UPDATE_PROPOSED,
         source="learning",
-        payload={"strategy_id": "s1", "parameter": "alpha"},
+        payload={
+            "strategy_id": "s1",
+            "parameter": "alpha",
+            "old_value": "0.5",
+            "new_value": "0.6",
+            "reason": "winrate-up",
+        },
         meta={},
     )
     eng.process(event)
     rows = eng.ledger.read()
     audit_rows = [r for r in rows if r.kind == "UPDATE_PROPOSED_AUDIT"]
     assert len(audit_rows) == 1
+
+
+def test_governance_engine_no_registry_malformed_payload_rejected():
+    """Hardening-S1 item 4 — even on the no-registry legacy path, a
+    payload missing required fields fails closed (UPDATE_REJECTED
+    with code MALFORMED_PAYLOAD), not silently audit-logged.
+    """
+    eng = GovernanceEngine(initial_mode=SystemMode.LIVE)
+    event = SystemEvent(
+        ts_ns=101,
+        sub_kind=SystemEventKind.UPDATE_PROPOSED,
+        source="learning",
+        payload={"strategy_id": "s1", "parameter": "alpha"},  # 3 fields missing
+        meta={},
+    )
+    eng.process(event)
+    rows = eng.ledger.read()
+    rejected = [r for r in rows if r.kind == "UPDATE_REJECTED"]
+    audit_rows = [r for r in rows if r.kind == "UPDATE_PROPOSED_AUDIT"]
+    assert len(rejected) == 1
+    assert rejected[0].payload["code"] == "MALFORMED_PAYLOAD"
+    assert audit_rows == []
 
 
 def test_governance_engine_ratifies_and_applies_in_live():
