@@ -1,15 +1,23 @@
+import { AltSignalDashboard } from "@/widgets/ai/AltSignalDashboard";
 import { ASKBOrchestrator } from "@/widgets/ai/ASKBOrchestrator";
+import { CausalRiskAttribution } from "@/widgets/ai/CausalRiskAttribution";
 import { CounterfactualPanel } from "@/widgets/ai/CounterfactualPanel";
 import { EarningsRAG } from "@/widgets/ai/EarningsRAG";
+import { IntentExecutionPanel } from "@/widgets/ai/IntentExecutionPanel";
+import { MultilingualNewsFusion } from "@/widgets/ai/MultilingualNewsFusion";
 import { NLQConsole } from "@/widgets/ai/NLQConsole";
 import { SmartMoneyTracker } from "@/widgets/ai/SmartMoneyTracker";
 
 /**
- * Tier-3 AI surface — counterfactual / NLQ / earnings RAG /
- * smart-money / ASKB orchestrator.
+ * Tier-3 + E-track AI surface.
  *
- * Mounts the five Tier-3 AI widgets in a responsive grid. Each
- * widget is independently scrollable so a long earnings transcript
+ * Tier-3 (PR #129): counterfactual / NLQ / earnings RAG / smart-money /
+ * ASKB orchestrator.
+ *
+ * E-track (this PR): multilingual news fusion / alt-signal dashboard /
+ * causal risk attribution / intent execution router.
+ *
+ * Each widget is independently scrollable so a long earnings transcript
  * or a noisy NLQ history doesn't push other widgets off-screen.
  */
 export function AIPage() {
@@ -26,6 +34,18 @@ export function AIPage() {
       </div>
       <div className="min-h-[320px]">
         <EarningsRAG />
+      </div>
+      <div className="min-h-[320px]">
+        <MultilingualNewsFusion />
+      </div>
+      <div className="min-h-[320px]">
+        <AltSignalDashboard />
+      </div>
+      <div className="min-h-[320px]">
+        <CausalRiskAttribution />
+      </div>
+      <div className="min-h-[320px]">
+        <IntentExecutionPanel />
       </div>
       <div className="min-h-[320px] xl:col-span-3">
         <SmartMoneyTracker />
