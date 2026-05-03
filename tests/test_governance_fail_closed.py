@@ -261,6 +261,126 @@ def test_update_proposed_missing_field_existing_pattern_still_works():
     assert rejected[0].payload["code"] == "MALFORMED_PAYLOAD"
 
 
+# ---------------------------------------------------------------------------
+# Hardening-S1 item 7 — Operator-vs-AI authority separation
+# ---------------------------------------------------------------------------
+
+
+def test_system_event_default_proposed_is_true():
+    """The AI-safe default — every SystemEvent built without an explicit
+    ``proposed`` value must be a *proposal*, not a directive. AI
+    subsystems lean on the default; only operator-domain code paths
+    construct ``proposed=False`` events."""
+
+    s = SystemEvent(
+        ts_ns=1,
+        sub_kind=SystemEventKind.HEARTBEAT,
+        source="dyon",
+    )
+    assert s.proposed is True
+
+
+def test_proposed_false_from_non_operator_source_rejected():
+    """An AI / non-operator source emitting a ``proposed=False``
+    directive is an authority escalation. Governance must write an
+    ``UNAUTHORIZED_DIRECTIVE`` row and refuse to dispatch."""
+
+    eng = GovernanceEngine()
+    before = len(eng.ledger.read())
+    s = SystemEvent(
+        ts_ns=100,
+        sub_kind=SystemEventKind.UPDATE_PROPOSED,
+        source="learning",  # not in OPERATOR_AUTHORIZED_SOURCES
+        proposed=False,
+        payload={
+            "strategy_id": "s1",
+            "parameter": "lookback",
+            "old_value": "10",
+            "new_value": "20",
+            "reason": "drift",
+        },
+    )
+    out = eng.process(s)
+    assert out == ()
+    rows = eng.ledger.read()[before:]
+    unauth = [r for r in rows if r.kind == "UNAUTHORIZED_DIRECTIVE"]
+    assert len(unauth) == 1, [r.kind for r in rows]
+    assert unauth[0].payload["code"] == "FAIL_CLOSED_UNAUTHORIZED_DIRECTIVE"
+    assert unauth[0].payload["source"] == "learning"
+    # Critically, the original handler must NOT have run — no
+    # UPDATE_REJECTED / UPDATE_RATIFIED rows.
+    handler_rows = [
+        r
+        for r in rows
+        if r.kind in ("UPDATE_REJECTED", "UPDATE_RATIFIED", "UPDATE_AUDIT")
+    ]
+    assert handler_rows == []
+
+
+def test_proposed_false_from_operator_source_accepted():
+    """``proposed=False`` from an operator-authorized source must pass
+    the directive gate and reach the handler. We use PLUGIN_LIFECYCLE
+    here because it has a deterministic post-condition (a
+    ``PLUGIN_LIFECYCLE_AUDIT`` ledger row)."""
+
+    eng = GovernanceEngine()
+    before = len(eng.ledger.read())
+    s = SystemEvent(
+        ts_ns=200,
+        sub_kind=SystemEventKind.PLUGIN_LIFECYCLE,
+        source="operator:dashboard",  # in OPERATOR_AUTHORIZED_SOURCES
+        proposed=False,
+        payload={"plugin_id": "microstructure_v1", "lifecycle": "ACTIVE"},
+    )
+    out = eng.process(s)
+    assert out == ()
+    rows = eng.ledger.read()[before:]
+    unauth = [r for r in rows if r.kind == "UNAUTHORIZED_DIRECTIVE"]
+    assert unauth == []
+    audit = [r for r in rows if r.kind == "PLUGIN_LIFECYCLE_AUDIT"]
+    assert len(audit) == 1
+
+
+def test_proposed_true_from_ai_source_still_processes():
+    """The default AI-proposal path is unchanged — UPDATE_PROPOSED
+    from ``learning`` with the default ``proposed=True`` must still
+    reach ``_handle_update_proposed`` (and either ratify or reject
+    depending on registry state)."""
+
+    eng = GovernanceEngine()
+    before = len(eng.ledger.read())
+    s = SystemEvent(
+        ts_ns=300,
+        sub_kind=SystemEventKind.UPDATE_PROPOSED,
+        source="learning",
+        # default proposed=True
+        payload={
+            "strategy_id": "s1",
+            "parameter": "lookback",
+            "old_value": "10",
+            "new_value": "20",
+            "reason": "drift",
+        },
+    )
+    out = eng.process(s)
+    assert out == ()
+    rows = eng.ledger.read()[before:]
+    unauth = [r for r in rows if r.kind == "UNAUTHORIZED_DIRECTIVE"]
+    assert unauth == []
+    # Engine without registry writes a legacy UPDATE_PROPOSED_AUDIT row.
+    handled = [
+        r
+        for r in rows
+        if r.kind
+        in (
+            "UPDATE_PROPOSED_AUDIT",
+            "UPDATE_RATIFIED",
+            "UPDATE_REJECTED",
+        )
+    ]
+    assert len(handled) == 1
+
+
 # Touch ``replace`` so import lint stays quiet if we later need it for
 # constructing edge-case events with mutable copies.
 _ = replace

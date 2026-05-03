@@ -672,3 +672,135 @@ def test_b32_allows_non_systemmode_rhs(fake_repo: Path):
         "        self.mode = 'compact'\n",
     )
     assert "B32" not in _rule_codes(lint_repo(fake_repo))
+
+
+# ---------------------------------------------------------------------------
+# B35 — Operator-vs-AI separation (Hardening-S1 item 7)
+# ---------------------------------------------------------------------------
+
+
+def test_b35_fires_on_intelligence_engine_proposed_false(fake_repo: Path):
+    _write(
+        fake_repo,
+        "intelligence_engine/escalator.py",
+        "from core.contracts.events import SystemEvent, SystemEventKind\n"
+        "def go() -> SystemEvent:\n"
+        "    return SystemEvent(\n"
+        "        ts_ns=1,\n"
+        "        sub_kind=SystemEventKind.UPDATE_PROPOSED,\n"
+        "        source='intelligence',\n"
+        "        proposed=False,\n"
+        "    )\n",
+    )
+    assert "B35" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b35_fires_on_learning_engine_proposed_false(fake_repo: Path):
+    _write(
+        fake_repo,
+        "learning_engine/sneaky.py",
+        "from core.contracts.events import SystemEvent, SystemEventKind\n"
+        "def go() -> SystemEvent:\n"
+        "    return SystemEvent(\n"
+        "        ts_ns=1,\n"
+        "        sub_kind=SystemEventKind.UPDATE_PROPOSED,\n"
+        "        source='learning',\n"
+        "        proposed=False,\n"
+        "    )\n",
+    )
+    assert "B35" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b35_fires_on_evolution_engine_proposed_false(fake_repo: Path):
+    _write(
+        fake_repo,
+        "evolution_engine/escalator.py",
+        "from core.contracts.events import SystemEvent, SystemEventKind\n"
+        "def go() -> SystemEvent:\n"
+        "    return SystemEvent(\n"
+        "        ts_ns=1,\n"
+        "        sub_kind=SystemEventKind.UPDATE_PROPOSED,\n"
+        "        source='evolution',\n"
+        "        proposed=False,\n"
+        "    )\n",
+    )
+    assert "B35" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b35_silent_for_default_proposed_true(fake_repo: Path):
+    _write(
+        fake_repo,
+        "intelligence_engine/well_behaved.py",
+        "from core.contracts.events import SystemEvent, SystemEventKind\n"
+        "def go() -> SystemEvent:\n"
+        "    return SystemEvent(\n"
+        "        ts_ns=1,\n"
+        "        sub_kind=SystemEventKind.UPDATE_PROPOSED,\n"
+        "        source='intelligence',\n"
+        "    )\n",
+    )
+    assert "B35" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b35_silent_for_explicit_proposed_true(fake_repo: Path):
+    _write(
+        fake_repo,
+        "learning_engine/well_behaved.py",
+        "from core.contracts.events import SystemEvent, SystemEventKind\n"
+        "def go() -> SystemEvent:\n"
+        "    return SystemEvent(\n"
+        "        ts_ns=1,\n"
+        "        sub_kind=SystemEventKind.UPDATE_PROPOSED,\n"
+        "        source='learning',\n"
+        "        proposed=True,\n"
+        "    )\n",
+    )
+    assert "B35" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b35_allows_operator_domain_proposed_false(fake_repo: Path):
+    _write(
+        fake_repo,
+        "ui/operator_action.py",
+        "from core.contracts.events import SystemEvent, SystemEventKind\n"
+        "def go() -> SystemEvent:\n"
+        "    return SystemEvent(\n"
+        "        ts_ns=1,\n"
+        "        sub_kind=SystemEventKind.PLUGIN_LIFECYCLE,\n"
+        "        source='operator:dashboard',\n"
+        "        proposed=False,\n"
+        "    )\n",
+    )
+    assert "B35" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b35_allows_governance_proposed_false(fake_repo: Path):
+    _write(
+        fake_repo,
+        "governance_engine/internal.py",
+        "from core.contracts.events import SystemEvent, SystemEventKind\n"
+        "def go() -> SystemEvent:\n"
+        "    return SystemEvent(\n"
+        "        ts_ns=1,\n"
+        "        sub_kind=SystemEventKind.PLUGIN_LIFECYCLE,\n"
+        "        source='governance',\n"
+        "        proposed=False,\n"
+        "    )\n",
+    )
+    assert "B35" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b35_allows_tests_directory(fake_repo: Path):
+    _write(
+        fake_repo,
+        "tests/test_x.py",
+        "from core.contracts.events import SystemEvent, SystemEventKind\n"
+        "def test_x():\n"
+        "    SystemEvent(\n"
+        "        ts_ns=1,\n"
+        "        sub_kind=SystemEventKind.UPDATE_PROPOSED,\n"
+        "        source='whatever',\n"
+        "        proposed=False,\n"
+        "    )\n",
+    )
+    assert "B35" not in _rule_codes(lint_repo(fake_repo))

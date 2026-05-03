@@ -41,10 +41,54 @@ from core.contracts.events import (
 
 __all__ = [
     "EVENT_PRODUCERS",
+    "OPERATOR_AUTHORIZED_SOURCES",
     "EventProvenanceError",
     "assert_event_provenance",
     "is_event_provenance_known",
+    "is_operator_authorized_source",
 ]
+
+
+# ---------------------------------------------------------------------------
+# Hardening-S1 item 7 — Operator-vs-AI authority separation
+# ---------------------------------------------------------------------------
+#
+# The :attr:`SystemEvent.proposed` flag distinguishes AI proposals from
+# operator-authorized directives. AI producers leave it at the default
+# (``True``) and Governance treats those events as proposals that may be
+# ratified or rejected. Only sources in this allowlist may emit a
+# ``SystemEvent`` with ``proposed=False`` — i.e. an operator-issued
+# directive that flows under operator authority.
+#
+# The allowlist mirrors the operator-domain subsystems documented in
+# ``docs/manifest.md``:
+#
+# * ``operator``                 — generic operator-origin label used by
+#                                  desktop/CLI tooling.
+# * ``operator:dashboard``       — the React/Vite dashboard (`/dash2`).
+# * ``operator:cli``             — the legacy ``dix_cli`` and shell tools.
+# * ``system_intent_engine``     — the ``ui.system_intent`` translator
+#                                  that materialises operator dashboard
+#                                  actions as ``SystemEvent`` records.
+#
+# Adding a producer here is an authority-matrix change and is gated by
+# the B35 lint rule + the runtime check in
+# :meth:`governance_engine.engine.GovernanceEngine.process`.
+
+OPERATOR_AUTHORIZED_SOURCES: Final[frozenset[str]] = frozenset(
+    {
+        "operator",
+        "operator:dashboard",
+        "operator:cli",
+        "system_intent_engine",
+    }
+)
+
+
+def is_operator_authorized_source(source: str) -> bool:
+    """Return ``True`` if ``source`` may emit a ``proposed=False`` directive."""
+
+    return source in OPERATOR_AUTHORIZED_SOURCES
 
 
 class EventProvenanceError(RuntimeError):

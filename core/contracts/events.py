@@ -270,6 +270,18 @@ class SystemEvent:
     # field is the canonical Triad-Lock provenance the receiver-side
     # assertion reads against.
     produced_by_engine: str = ""
+    # Hardening-S1 item 7 — Operator-vs-AI authority separation.
+    # ``proposed=True`` (the AI-safe default) marks the event as a
+    # *proposal* that AI subsystems (intelligence / learning / evolution
+    # / coherence) may emit and Governance may approve or reject.
+    # ``proposed=False`` marks an *operator-authorized directive* that
+    # bypasses the proposal gate and applies under the operator's
+    # authority. Only sources in
+    # :data:`core.contracts.event_provenance.OPERATOR_AUTHORIZED_SOURCES`
+    # may set ``proposed=False``; AI-domain producers are pinned to the
+    # default by the B35 lint rule and the runtime check in
+    # :meth:`governance_engine.engine.GovernanceEngine.process`.
+    proposed: bool = True
     kind: EventKind = EventKind.SYSTEM
 
 

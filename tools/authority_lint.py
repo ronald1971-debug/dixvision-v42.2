@@ -802,6 +802,88 @@ RULE_CHECKS = (
 
 
 # ---------------------------------------------------------------------------
+# B35 — AI-domain operator-directive restriction (Hardening-S1 item 7)
+# ---------------------------------------------------------------------------
+#
+# ``SystemEvent.proposed=False`` marks an *operator-authorized
+# directive* that bypasses Governance's proposal gate — the receiving
+# Governance handler dispatches it as if the operator had clicked
+# approve. Only operator-domain code paths may construct such an event.
+#
+# AI subsystems (intelligence_engine / learning_engine /
+# evolution_engine / core.coherence) must always emit
+# ``proposed=True`` (the dataclass default). This lint rule pins the
+# invariant at PR time so an AI module cannot, deliberately or
+# accidentally, escalate one of its emissions into a directive.
+#
+# The runtime defence sits in ``GovernanceEngine.process``, which writes
+# an ``UNAUTHORIZED_DIRECTIVE`` ledger row and refuses to dispatch when
+# ``proposed=False`` arrives from a source outside
+# ``OPERATOR_AUTHORIZED_SOURCES``. B35 catches it earlier — at lint
+# time — for AI-domain producers.
+
+B35_AI_DOMAIN_PREFIXES: tuple[str, ...] = (
+    "intelligence_engine",
+    "learning_engine",
+    "evolution_engine",
+    "core.coherence",
+)
+
+
+def _system_event_proposed_kwarg(node: ast.Call) -> ast.keyword | None:
+    """Return the ``proposed=...`` kwarg if present, else ``None``."""
+
+    for kw in node.keywords:
+        if kw.arg == "proposed":
+            return kw
+    return None
+
+
+def _check_b35(
+    importer: str, file: Path, repo_root: Path, tree: ast.AST
+) -> list[Violation]:
+    """B35 — AI-domain modules cannot emit ``proposed=False`` directives."""
+
+    if _is_triad_constructor_test_exempt(file, repo_root):
+        return []
+    if not _starts_with_any(importer, B35_AI_DOMAIN_PREFIXES):
+        return []
+    out: list[Violation] = []
+    for node in ast.walk(tree):
+        if not (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "SystemEvent"
+        ):
+            continue
+        kw = _system_event_proposed_kwarg(node)
+        if kw is None:
+            continue
+        # Only fire on a *literal* False — captures the deliberate
+        # escalation cases. Dynamic/computed values would be caught by
+        # the runtime check in GovernanceEngine.process.
+        if isinstance(kw.value, ast.Constant) and kw.value.value is False:
+            out.append(
+                Violation(
+                    "B35",
+                    file,
+                    node.lineno,
+                    importer,
+                    "SystemEvent(proposed=False)",
+                    "Operator-vs-AI separation (Hardening-S1 item 7): "
+                    "AI-domain modules (intelligence_engine, "
+                    "learning_engine, evolution_engine, core.coherence) "
+                    "must emit proposals (proposed=True). Only "
+                    "OPERATOR_AUTHORIZED_SOURCES may construct a "
+                    "SystemEvent with proposed=False (operator-issued "
+                    "directive). Re-route through the operator interface "
+                    "or through Governance's own decision path.",
+                )
+            )
+    return out
+
+
+# ---------------------------------------------------------------------------
 # B25 — Execution Gate origin restriction (HARDEN-01 / INV-68)
 # ---------------------------------------------------------------------------
 
@@ -1676,6 +1758,8 @@ def lint_repo(repo_root: Path) -> list[Violation]:
         violations.extend(_check_b_clock(importer, path, repo_root, tree))
         # B32 — Mode FSM single mutator (P0-6, GOV-CP-03).
         violations.extend(_check_b32(importer, path, repo_root, tree))
+        # B35 — Operator-vs-AI separation (Hardening-S1 item 7).
+        violations.extend(_check_b35(importer, path, repo_root, tree))
     # B23 — chat widget static files (HTML / JS).
     violations.extend(_check_b23_static(repo_root))
     return violations

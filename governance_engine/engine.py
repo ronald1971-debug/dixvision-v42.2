@@ -27,6 +27,7 @@ from core.contracts.engine import (
     Plugin,
     RuntimeEngine,
 )
+from core.contracts.event_provenance import is_operator_authorized_source
 from core.contracts.events import (
     Event,
     EventKind,
@@ -194,6 +195,43 @@ class GovernanceEngine(RuntimeEngine):
             return ()
 
         if event.kind is EventKind.SYSTEM:
+            # Hardening-S1 item 7 — Operator-vs-AI authority separation.
+            # ``SystemEvent.proposed=False`` marks an operator-issued
+            # directive that bypasses the proposal gate. Only sources in
+            # ``OPERATOR_AUTHORIZED_SOURCES`` may emit such directives.
+            # Anything else with ``proposed=False`` is an attempted
+            # authority escalation — write a loud
+            # ``UNAUTHORIZED_DIRECTIVE`` row and refuse to dispatch.
+            sys_event = event  # type: ignore[assignment]
+            if (
+                getattr(sys_event, "proposed", True) is False
+                and not is_operator_authorized_source(
+                    getattr(sys_event, "source", "")
+                )
+            ):
+                self.ledger.append(
+                    ts_ns=event.ts_ns,
+                    kind="UNAUTHORIZED_DIRECTIVE",
+                    payload={
+                        "event_kind": event.kind.value,
+                        "sub_kind": getattr(
+                            sys_event.sub_kind, "value", str(sys_event.sub_kind)
+                        ),
+                        "source": getattr(sys_event, "source", ""),
+                        "code": "FAIL_CLOSED_UNAUTHORIZED_DIRECTIVE",
+                        "detail": (
+                            "Hardening-S1 item 7: SystemEvent with "
+                            "proposed=False (operator-authorized "
+                            "directive) was emitted by a source outside "
+                            "OPERATOR_AUTHORIZED_SOURCES. AI subsystems "
+                            "must emit proposals (proposed=True) and let "
+                            "Governance ratify. See "
+                            "core.contracts.event_provenance for the "
+                            "authoritative allowlist."
+                        ),
+                    },
+                )
+                return ()
             self._handle_system(event)  # type: ignore[arg-type]
             return ()
 
