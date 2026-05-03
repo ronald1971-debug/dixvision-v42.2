@@ -79,7 +79,7 @@ export function ExchangeFlows() {
       setRows((prev) =>
         prev.map((r) => {
           const drift =
-            Math.sin(Date.now() / 6_000 + r.name.length) * 0.005 - 0.0025;
+            Math.sin(Date.now() / 6_000 + r.name.length) * 0.005;
           return {
             ...r,
             net_24h_usd: r.net_24h_usd + drift * 25_000_000,
