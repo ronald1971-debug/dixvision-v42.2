@@ -9,6 +9,7 @@ import { PreferencesBar } from "@/components/PreferencesBar";
 import { PromoteChain } from "@/components/PromoteChain";
 import { Sidebar } from "@/components/Sidebar";
 import { AIPage } from "@/pages/AIPage";
+import { ChartingPage } from "@/pages/ChartingPage";
 import { CognitiveChatPage } from "@/pages/CognitiveChatPage";
 import { CredentialsPage } from "@/pages/CredentialsPage";
 import { DyonLearningPage } from "@/pages/DyonLearningPage";
@@ -67,6 +68,8 @@ function renderRoute(route: Route) {
       return <GovernancePage />;
     case "risk":
       return <RiskPage />;
+    case "charting":
+      return <ChartingPage />;
   }
 }
 
