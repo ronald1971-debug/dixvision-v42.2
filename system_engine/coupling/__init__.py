@@ -36,6 +36,7 @@ from system_engine.coupling.hazard_throttle import (
     ThrottleDecision,
     compute_throttle,
 )
+from system_engine.coupling.hazard_throttle_adapter import HazardThrottleAdapter
 from system_engine.coupling.risk_snapshot_throttle import apply_throttle
 
 __all__ = [
@@ -44,6 +45,7 @@ __all__ = [
     "HazardObservation",
     "HazardObserver",
     "HazardSeverityRule",
+    "HazardThrottleAdapter",
     "HazardThrottleConfig",
     "ThrottleDecision",
     "apply_throttle",
