@@ -415,4 +415,6 @@ __all__: Sequence[str] = (
 def _utc_now_dt() -> datetime:  # pragma: no cover - intentionally unused
     """Reserved hook for callers needing a UTC clock; never called from
     pure helpers above so INV-15 stays intact."""
-    return datetime.now(tz=UTC)
+    from system.time_source import utc_now
+
+    return utc_now()

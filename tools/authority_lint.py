@@ -1374,6 +1374,91 @@ def _check_b23_python(
 
 
 # ---------------------------------------------------------------------------
+# B-CLOCK — raw clock chokepoint (P0-1a, INV-15).
+# ---------------------------------------------------------------------------
+#
+# Every runtime callsite must read time through ``system.time_source``.
+# Direct calls to ``datetime.now``, ``datetime.utcnow``, ``time.time``,
+# ``time.time_ns``, ``time.monotonic_ns`` and ``time.perf_counter_ns``
+# violate INV-15 replay determinism because they inject a non-deterministic
+# wall clock into pure logic. The single chokepoint lets the next P0-2..P0-7
+# steps swap in a synthetic clock for replay without re-touching every
+# caller.
+#
+# Path-based allowlist for legitimate raw-clock readers:
+#   * ``system/time_source.py`` — the chokepoint itself.
+#   * ``cockpit/pairing.py`` — TOTP needs a real wall clock.
+#   * ``tools/`` — utility scripts may use the clock; not on hot path.
+#   * ``scripts/`` — same.
+#   * ``tests/`` — test fixtures regularly read the clock.
+#
+# Adapter runners (``ui/feeds/runner.py`` etc.) take an injected
+# ``clock_ns`` callable and therefore do not need an allowlist entry.
+
+B_CLOCK_FORBIDDEN_ATTRS: tuple[tuple[str, str], ...] = (
+    ("datetime", "now"),
+    ("datetime", "utcnow"),
+    ("time", "time"),
+    ("time", "time_ns"),
+    ("time", "monotonic_ns"),
+    ("time", "perf_counter_ns"),
+)
+
+B_CLOCK_ALLOWED_PATH_PARTS: tuple[tuple[str, ...], ...] = (
+    ("system", "time_source.py"),
+    ("cockpit", "pairing.py"),
+    ("tools",),
+    ("scripts",),
+    ("tests",),
+)
+
+
+def _b_clock_path_allowed(path: Path, repo_root: Path) -> bool:
+    try:
+        rel_parts = path.relative_to(repo_root).parts
+    except ValueError:
+        return False
+    for prefix in B_CLOCK_ALLOWED_PATH_PARTS:
+        if rel_parts[: len(prefix)] == prefix:
+            return True
+    return False
+
+
+def _check_b_clock(
+    importer: str, file: Path, repo_root: Path, tree: ast.AST
+) -> list[Violation]:
+    """B-CLOCK — bans raw clock calls outside ``system.time_source``."""
+
+    if _b_clock_path_allowed(file, repo_root):
+        return []
+    out: list[Violation] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if not isinstance(func, ast.Attribute):
+            continue
+        if not isinstance(func.value, ast.Name):
+            continue
+        pair = (func.value.id, func.attr)
+        if pair not in B_CLOCK_FORBIDDEN_ATTRS:
+            continue
+        out.append(
+            Violation(
+                "B-CLOCK",
+                file,
+                getattr(node, "lineno", 0),
+                importer,
+                f"{pair[0]}.{pair[1]}",
+                "raw clock call forbidden outside system.time_source"
+                " (INV-15) — use system.time_source.now / now_ns /"
+                " wall_ns / utc_now instead.",
+            )
+        )
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Driver
 # ---------------------------------------------------------------------------
 
@@ -1431,6 +1516,8 @@ def lint_repo(repo_root: Path) -> list[Violation]:
         violations.extend(_check_b31(importer, path, repo_root, tree))
         # B23 — chat widget Python modules must be registry-driven.
         violations.extend(_check_b23_python(importer, path, tree))
+        # B-CLOCK — raw clock chokepoint (P0-1a, INV-15).
+        violations.extend(_check_b_clock(importer, path, repo_root, tree))
     # B23 — chat widget static files (HTML / JS).
     violations.extend(_check_b23_static(repo_root))
     return violations

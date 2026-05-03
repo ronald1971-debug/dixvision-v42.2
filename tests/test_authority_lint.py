@@ -538,3 +538,60 @@ def test_b31_fires_on_execution_engine_set_membership(fake_repo: Path):
     codes = _rule_codes(lint_repo(fake_repo))
     # Two attribute references → at least two B31 hits.
     assert codes.count("B31") >= 2
+
+
+# ---------------------------------------------------------------------------
+# B-CLOCK — raw clock chokepoint (P0-1a, INV-15)
+# ---------------------------------------------------------------------------
+
+
+def test_b_clock_fires_on_runtime_time_time_ns(fake_repo: Path):
+    _write(
+        fake_repo,
+        "intelligence_engine/foo.py",
+        "import time\n\ndef now() -> int:\n    return time.time_ns()\n",
+    )
+    assert "B-CLOCK" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_clock_fires_on_runtime_datetime_now(fake_repo: Path):
+    _write(
+        fake_repo,
+        "execution_engine/bar.py",
+        "import datetime\n\n"
+        "def stamp():\n    return datetime.now()\n",
+    )
+    assert "B-CLOCK" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_clock_allows_system_time_source(fake_repo: Path):
+    _write(
+        fake_repo,
+        "system/__init__.py",
+        "",
+    )
+    _write(
+        fake_repo,
+        "system/time_source.py",
+        "import time\n\ndef wall_ns() -> int:\n    return time.time_ns()\n",
+    )
+    assert "B-CLOCK" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_clock_allows_tests_directory(fake_repo: Path):
+    _write(
+        fake_repo,
+        "tests/test_x.py",
+        "import time\n\ndef test_x():\n    assert time.time_ns() > 0\n",
+    )
+    assert "B-CLOCK" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_clock_passes_when_callsite_uses_authority(fake_repo: Path):
+    _write(
+        fake_repo,
+        "intelligence_engine/foo.py",
+        "from system.time_source import wall_ns\n\n"
+        "def now() -> int:\n    return wall_ns()\n",
+    )
+    assert "B-CLOCK" not in _rule_codes(lint_repo(fake_repo))
