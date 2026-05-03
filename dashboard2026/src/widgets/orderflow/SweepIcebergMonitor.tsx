@@ -49,6 +49,9 @@ export function SweepIcebergMonitor() {
   const [events, setEvents] = useState<FlowEvent[]>([]);
   const prevTrades = useRef<Trade[]>([]);
   const tradeBuffer = useRef<{ trade: Trade; ts: number }[]>([]);
+  // Per-(kind, side) cooldown so one burst surfaces a single SWEEP /
+  // ICEBERG / BLOCK event instead of one per qualifying trade.
+  const lastEmitted = useRef<Record<string, number>>({});
 
   // rolling average size — derived from the trade window
   const avgSize = useMemo(() => {
@@ -87,8 +90,19 @@ export function SweepIcebergMonitor() {
         ? "BUY"
         : "SELL") as FlowEvent["side"];
 
+      const cooled = (kind: FlowEvent["kind"], cooldownMs: number) => {
+        const key = `${kind}-${side}`;
+        const last = lastEmitted.current[key] ?? 0;
+        if (incoming.ts - last < cooldownMs) return false;
+        lastEmitted.current[key] = incoming.ts;
+        return true;
+      };
+
       // BLOCK
-      if (t.size >= avgSize * BLOCK_MULT) {
+      if (
+        t.size >= avgSize * BLOCK_MULT &&
+        cooled("BLOCK", SWEEP_WINDOW_MS)
+      ) {
         detected.push({
           id: `${incoming.ts}-${detected.length}`,
           kind: "BLOCK",
@@ -110,7 +124,8 @@ export function SweepIcebergMonitor() {
       const totalWindow = window.reduce((s, e) => s + e.trade.size, 0);
       if (
         window.length >= SWEEP_TRADE_COUNT &&
-        totalWindow >= avgSize * SWEEP_MULT
+        totalWindow >= avgSize * SWEEP_MULT &&
+        cooled("SWEEP", SWEEP_WINDOW_MS)
       ) {
         detected.push({
           id: `${incoming.ts}-${detected.length}`,
@@ -131,7 +146,10 @@ export function SweepIcebergMonitor() {
           String(e.trade.side).toUpperCase() === side &&
           e.trade.size <= avgSize * ICEBERG_MAX_MULT,
       );
-      if (samePrice.length >= ICEBERG_TRADE_COUNT) {
+      if (
+        samePrice.length >= ICEBERG_TRADE_COUNT &&
+        cooled("ICEBERG", ICEBERG_WINDOW_MS)
+      ) {
         detected.push({
           id: `${incoming.ts}-${detected.length}`,
           kind: "ICEBERG",
