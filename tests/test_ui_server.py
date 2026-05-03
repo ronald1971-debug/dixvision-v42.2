@@ -20,7 +20,6 @@ ui_server = importlib.import_module("ui.server")
 def client():
     # Reset shared state between tests so order doesn't matter.
     ui_server.STATE = ui_server._State()  # type: ignore[attr-defined]
-    ui_server._TS_COUNTER["v"] = 0  # type: ignore[attr-defined]
     return TestClient(ui_server.app)
 
 
