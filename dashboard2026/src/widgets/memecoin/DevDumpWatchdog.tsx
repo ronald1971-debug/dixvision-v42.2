@@ -106,7 +106,8 @@ export function DevDumpWatchdog() {
           deployer outflow · LP lock · composite rug score
         </p>
       </header>
-      <table className="w-full flex-1 overflow-auto text-[11px]">
+      <div className="flex-1 overflow-auto">
+      <table className="w-full text-[11px]">
         <thead className="sticky top-0 bg-surface text-[10px] uppercase tracking-wider text-slate-500">
           <tr className="text-left">
             <th className="px-3 py-1">ticker</th>
@@ -152,6 +153,7 @@ export function DevDumpWatchdog() {
           })}
         </tbody>
       </table>
+      </div>
       <footer className="border-t border-border px-3 py-1 text-[10px] text-slate-500">
         score ≥ 0.7 trips rug-stop SL via SLTP engine
       </footer>

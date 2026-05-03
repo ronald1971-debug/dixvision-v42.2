@@ -99,7 +99,8 @@ export function BundleDetector() {
           coordinated launch buys · cluster share ≥ 20% trips HAZ-BUNDLE
         </p>
       </header>
-      <table className="w-full flex-1 overflow-auto text-[11px]">
+      <div className="flex-1 overflow-auto">
+      <table className="w-full text-[11px]">
         <thead className="sticky top-0 bg-surface text-[10px] uppercase tracking-wider text-slate-500">
           <tr className="text-left">
             <th className="px-3 py-1">ticker</th>
@@ -145,6 +146,7 @@ export function BundleDetector() {
           })}
         </tbody>
       </table>
+      </div>
     </section>
   );
 }
