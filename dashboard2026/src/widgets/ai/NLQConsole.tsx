@@ -65,6 +65,16 @@ const NON_SYMBOL_TOKENS: ReadonlySet<string> = new Set([
   "DCA",
   "TWAP",
   "POV",
+  // Action verbs that parse() itself recognises — needed because the
+  // operator may type all-caps in a trading terminal (e.g. "BUY AAPL").
+  "BUY",
+  "SELL",
+  "SHORT",
+  "LONG",
+  "ALERT",
+  "CLOSE",
+  "RUN",
+  "NOTIFY",
 ]);
 
 function extractSymbol(raw: string): string | undefined {
