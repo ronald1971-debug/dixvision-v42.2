@@ -81,7 +81,7 @@ const SYSTEM_NAV: Record<SystemRoute, NavItem<SystemRoute>> = {
   },
   orderflow: {
     key: "orderflow",
-    label: "Order flow",
+    label: "Order Flow",
     href: "#/orderflow",
     icon: CandlestickChart,
   },
