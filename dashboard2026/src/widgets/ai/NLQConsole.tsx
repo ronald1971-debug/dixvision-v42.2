@@ -25,14 +25,72 @@ interface ParsedIntent {
   reason: string;
 }
 
-const SYMBOL_RE = /\b([A-Z]{2,5})(?:[-/]?(?:USDT|USD|USDC))?\b/;
+const SYMBOL_RE = /\b([A-Z]{2,5})(?:[-/]?(?:USDT|USD|USDC))?\b/g;
+const PAIRED_SYMBOL_RE = /\b([A-Z]{2,5})[-/](?:USDT|USD|USDC)\b/;
+const CONTEXTUAL_SYMBOL_RE = /\b(?:on|of|for|in)\s+([A-Z]{2,5})\b/;
 const PRICE_RE = /\$?\s?([0-9]{1,7}(?:\.[0-9]+)?)\b/;
 const SIZE_RE = /\b(\d+(?:\.\d+)?)\s?(USDT|USD|coins|shares|sol|btc|eth)?\b/i;
 
+// Common uppercase tokens that look like tickers but are technical
+// indicators, generic acronyms, or units. These are skipped when the
+// regex first-matches them, so the parser falls through to the next
+// candidate or to a contextual / paired match instead.
+const NON_SYMBOL_TOKENS: ReadonlySet<string> = new Set([
+  "RSI",
+  "MACD",
+  "CVD",
+  "ATR",
+  "ADX",
+  "VWAP",
+  "EMA",
+  "SMA",
+  "OBV",
+  "ETF",
+  "ATH",
+  "ATL",
+  "BLS",
+  "CPI",
+  "PPI",
+  "GDP",
+  "FOMC",
+  "FED",
+  "ECB",
+  "BOJ",
+  "OI",
+  "TVL",
+  "PnL",
+  "PNL",
+  "TP",
+  "SL",
+  "DCA",
+  "TWAP",
+  "POV",
+]);
+
+function extractSymbol(raw: string): string | undefined {
+  // Prefer an explicit trading pair (e.g. ETH-USDT, BTC/USD) — the most
+  // unambiguous signal that a token is a real symbol.
+  const paired = raw.match(PAIRED_SYMBOL_RE);
+  if (paired) return paired[1];
+
+  // Next prefer a contextual cue ("... on ETH", "... of SOL").
+  const contextual = raw.match(CONTEXTUAL_SYMBOL_RE);
+  if (contextual && !NON_SYMBOL_TOKENS.has(contextual[1])) {
+    return contextual[1];
+  }
+
+  // Finally fall back to the first uppercase 2-5 letter token that
+  // is not a known non-symbol acronym (RSI, CVD, ETF, ...).
+  for (const m of raw.matchAll(SYMBOL_RE)) {
+    const candidate = m[1];
+    if (!NON_SYMBOL_TOKENS.has(candidate)) return candidate;
+  }
+  return undefined;
+}
+
 function parse(raw: string): ParsedIntent {
   const lc = raw.toLowerCase();
-  const symMatch = raw.match(SYMBOL_RE);
-  const symbol = symMatch ? symMatch[1] : undefined;
+  const symbol = extractSymbol(raw);
 
   let action: Action = "UNPARSED";
   let side: "BUY" | "SELL" | undefined;
