@@ -103,6 +103,8 @@ from intelligence_engine.cognitive.chat.http_chat_transport import (
     build_default_dispatch_transport,
 )
 from intelligence_engine.engine import IntelligenceEngine
+from intelligence_engine.knowledge import NewsKnowledgeIndex
+from intelligence_engine.mcp import OpenNewsServer
 from intelligence_engine.plugins import MicrostructureV1
 from intelligence_engine.strategy_runtime.state_machine import (
     StrategyStateMachine,
@@ -259,9 +261,16 @@ class _State:
         # used by the Binance pump and POST /api/signal. Idle by
         # default; opt-in via POST /api/feeds/coindesk/start so the
         # harness boots without an external network dependency.
+        # D4 — deterministic in-memory news similarity index. Every
+        # NewsItem flowing through ``NewsFanout`` is appended here so
+        # downstream learners (slow-loop) and the OpenNews MCP server
+        # share one source of truth. Bounded; no clocks; no PRNG.
+        self.news_index = NewsKnowledgeIndex()
+        self.opennews_server = OpenNewsServer(self.news_index)
         self.coindesk_feed = CoinDeskRSSFeedRunner(
             signal_sink=self._ingest_news_signal_locked,
             hazard_sink=self._ingest_news_hazard_locked,
+            index_sink=self.news_index.add,
             clock_ns=lambda: _next_ts(),
         )
 
