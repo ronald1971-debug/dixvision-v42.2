@@ -70,7 +70,7 @@ export function AlgoOrderBuilder() {
         const sliceNotional = Math.min(visible, remaining);
         return {
           ts_offset_min: 0,
-          size_pct: (sliceNotional / form.notional) * 100,
+          size_pct: form.notional > 0 ? (sliceNotional / form.notional) * 100 : 0,
           notional: sliceNotional,
           wave: i + 1,
         };

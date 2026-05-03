@@ -46,13 +46,17 @@ export function ConditionalBracketBuilder() {
     setForm((s) => ({ ...s, [k]: v }));
 
   const tpPct =
-    form.side === "BUY"
-      ? ((form.tp_px - form.entry_px) / form.entry_px) * 100
-      : ((form.entry_px - form.tp_px) / form.entry_px) * 100;
+    form.entry_px !== 0
+      ? form.side === "BUY"
+        ? ((form.tp_px - form.entry_px) / form.entry_px) * 100
+        : ((form.entry_px - form.tp_px) / form.entry_px) * 100
+      : 0;
   const slPct =
-    form.side === "BUY"
-      ? ((form.entry_px - form.sl_px) / form.entry_px) * 100
-      : ((form.sl_px - form.entry_px) / form.entry_px) * 100;
+    form.entry_px !== 0
+      ? form.side === "BUY"
+        ? ((form.entry_px - form.sl_px) / form.entry_px) * 100
+        : ((form.sl_px - form.entry_px) / form.entry_px) * 100
+      : 0;
   const rr = slPct > 0 ? tpPct / slPct : 0;
 
   return (
