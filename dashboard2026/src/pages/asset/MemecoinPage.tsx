@@ -5,12 +5,17 @@ import { CoherencePanel } from "@/widgets/CoherencePanel";
 import { OrderForm } from "@/widgets/OrderForm";
 import { SLTPBuilder } from "@/widgets/SLTPBuilder";
 import { TimeAndSalesTape } from "@/widgets/TimeAndSalesTape";
+import { BundleDetector } from "@/widgets/memecoin/BundleDetector";
 import { CopyLeaderboard } from "@/widgets/memecoin/CopyLeaderboard";
+import { DevDumpWatchdog } from "@/widgets/memecoin/DevDumpWatchdog";
 import { HolderConcentration } from "@/widgets/memecoin/HolderConcentration";
+import { HoneypotChecker } from "@/widgets/memecoin/HoneypotChecker";
+import { LaunchFirehose } from "@/widgets/memecoin/LaunchFirehose";
 import { PairCard } from "@/widgets/memecoin/PairCard";
 import { RugScore } from "@/widgets/memecoin/RugScore";
 import { SignalTracker } from "@/widgets/memecoin/SignalTracker";
 import { SniperQueue } from "@/widgets/memecoin/SniperQueue";
+import { WalletCluster } from "@/widgets/memecoin/WalletCluster";
 
 import { AssetPageShell } from "./AssetPageShell";
 
@@ -152,6 +157,56 @@ const ITEMS: GridItemSpec[] = [
     minW: 4,
     minH: 5,
     render: () => <AlertsHub />,
+  },
+  {
+    i: "launch-firehose",
+    x: 0,
+    y: 38,
+    w: 4,
+    h: 9,
+    minW: 3,
+    minH: 6,
+    render: () => <LaunchFirehose />,
+  },
+  {
+    i: "dev-dump",
+    x: 4,
+    y: 38,
+    w: 4,
+    h: 9,
+    minW: 3,
+    minH: 6,
+    render: () => <DevDumpWatchdog />,
+  },
+  {
+    i: "bundle",
+    x: 8,
+    y: 38,
+    w: 4,
+    h: 9,
+    minW: 3,
+    minH: 6,
+    render: () => <BundleDetector />,
+  },
+  {
+    i: "honeypot",
+    x: 0,
+    y: 47,
+    w: 6,
+    h: 9,
+    minW: 4,
+    minH: 6,
+    render: () => <HoneypotChecker />,
+  },
+  {
+    i: "wallet-cluster",
+    x: 6,
+    y: 47,
+    w: 6,
+    h: 9,
+    minW: 4,
+    minH: 6,
+    render: () => <WalletCluster />,
   },
 ];
 
