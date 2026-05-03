@@ -46,7 +46,6 @@ from governance_engine.control_plane.promotion_gates import (
 )
 from system_engine.scvs.source_registry import SourceRegistry
 
-
 # ---------------------------------------------------------------------------
 # Provider protocol
 # ---------------------------------------------------------------------------
