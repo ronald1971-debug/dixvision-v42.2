@@ -1474,6 +1474,98 @@ def _check_b_clock(
 
 
 # ---------------------------------------------------------------------------
+# B32 — Mode FSM single mutator (P0-6, INV-mode-fsm).
+# ---------------------------------------------------------------------------
+#
+# ``StateTransitionManager`` (GOV-CP-03) is the only writer of system mode.
+# Any assignment to a ``_mode`` / ``mode`` / ``system_mode`` attribute with
+# a ``SystemMode.<X>`` right-hand side from outside the manager would let a
+# non-Governance actor sneak a transition past the FSM legality check, the
+# policy gate, and the authority ledger — silently breaking determinism and
+# every reviewer #4/#5 promotion-gate guarantee. Dashboard, operator
+# bridges, and tests must propose transitions via
+# ``StateTransitionManager.propose`` and never flip the bit themselves.
+
+B32_FORBIDDEN_TARGET_ATTRS: frozenset[str] = frozenset(
+    {"_mode", "mode", "system_mode"}
+)
+
+B32_ALLOWED_PATH_PARTS: tuple[tuple[str, ...], ...] = (
+    (
+        "governance_engine",
+        "control_plane",
+        "state_transition_manager.py",
+    ),
+    ("tools",),
+    ("scripts",),
+    ("tests",),
+)
+
+
+def _b32_path_allowed(path: Path, repo_root: Path) -> bool:
+    try:
+        rel_parts = path.relative_to(repo_root).parts
+    except ValueError:
+        return False
+    for prefix in B32_ALLOWED_PATH_PARTS:
+        if rel_parts[: len(prefix)] == prefix:
+            return True
+    return False
+
+
+def _b32_rhs_is_system_mode(value: ast.expr) -> bool:
+    """RHS resolves to a ``SystemMode.<MEMBER>`` access."""
+
+    if not isinstance(value, ast.Attribute):
+        return False
+    base = value.value
+    return isinstance(base, ast.Name) and base.id == "SystemMode"
+
+
+def _check_b32(
+    importer: str, file: Path, repo_root: Path, tree: ast.AST
+) -> list[Violation]:
+    if _b32_path_allowed(file, repo_root):
+        return []
+    out: list[Violation] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            targets = node.targets
+            value = node.value
+        elif isinstance(node, ast.AugAssign):
+            targets = [node.target]
+            value = node.value
+        elif isinstance(node, ast.AnnAssign):
+            if node.value is None:
+                continue
+            targets = [node.target]
+            value = node.value
+        else:
+            continue
+        for target in targets:
+            if not isinstance(target, ast.Attribute):
+                continue
+            if target.attr not in B32_FORBIDDEN_TARGET_ATTRS:
+                continue
+            if not _b32_rhs_is_system_mode(value):
+                continue
+            out.append(
+                Violation(
+                    "B32",
+                    file,
+                    getattr(node, "lineno", 0),
+                    importer,
+                    f".{target.attr} = SystemMode.*",
+                    "direct mode mutation forbidden outside"
+                    " governance_engine.control_plane.state_transition_manager"
+                    " — propose transitions via"
+                    " StateTransitionManager.propose (GOV-CP-03).",
+                )
+            )
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Driver
 # ---------------------------------------------------------------------------
 
@@ -1533,6 +1625,8 @@ def lint_repo(repo_root: Path) -> list[Violation]:
         violations.extend(_check_b23_python(importer, path, tree))
         # B-CLOCK — raw clock chokepoint (P0-1a, INV-15).
         violations.extend(_check_b_clock(importer, path, repo_root, tree))
+        # B32 — Mode FSM single mutator (P0-6, GOV-CP-03).
+        violations.extend(_check_b32(importer, path, repo_root, tree))
     # B23 — chat widget static files (HTML / JS).
     violations.extend(_check_b23_static(repo_root))
     return violations
