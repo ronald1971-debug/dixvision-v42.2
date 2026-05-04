@@ -73,6 +73,7 @@ from core.contracts.signal_trust import (
     clamp_confidence,
     default_cap_for,
 )
+from core.contracts.source_trust_promotions import SourceTrustPromotionStore
 
 
 class _IntentSigner(Protocol):
@@ -160,40 +161,61 @@ def apply_signal_trust_cap(
     signal: SignalEvent,
     *,
     registry: ExternalSignalTrustRegistry | None = None,
+    promotion_store: SourceTrustPromotionStore | None = None,
 ) -> SignalEvent:
-    """Return a copy of *signal* with ``confidence`` clamped per Paper-S5.
+    """Return a copy of *signal* with ``confidence`` clamped per Paper-S5/S6.
 
     The governance gate is the canonical place to enforce the
     per-source confidence cap (see
-    :mod:`core.contracts.signal_trust` for the policy). The shim
-    looks up a cap in this order and applies the **most restrictive**:
+    :mod:`core.contracts.signal_trust` for the policy).
+
+    Paper-S6 -- when a *promotion_store* is supplied, the helper first
+    resolves the **effective** trust class for the producer:
+
+    * ``INTERNAL`` always passes through unchanged (no cap).
+    * If the operator promoted the source from ``EXTERNAL_LOW`` to
+      ``EXTERNAL_MED`` (recorded in the store and replayed from the
+      authority ledger at boot), the effective trust becomes the
+      promoted target so the trust-class default rises from
+      :data:`~core.contracts.signal_trust.DEFAULT_LOW_CAP` to
+      :data:`~core.contracts.signal_trust.DEFAULT_MED_CAP`.
+    * The overlay never *demotes* a producer-declared class
+      (fail-closed): a producer that already declared
+      ``EXTERNAL_MED`` is unaffected by an absent overlay.
+
+    The cap itself is then looked up against the effective trust:
 
     1. If *registry* is provided, ``registry.cap_for(source_id, trust)``
        — which already takes the more-restrictive of the per-source
        row and the trust-class default (fail-closed when the row's
-       declared trust disagrees with ``signal.signal_trust``).
-    2. Otherwise, ``default_cap_for(signal.signal_trust)`` — so an
+       declared trust disagrees with the effective trust).
+    2. Otherwise, ``default_cap_for(effective_trust)`` — so an
        external signal is always clamped even when the registry is
        unavailable (fail-closed default).
 
-    ``SignalTrust.INTERNAL`` returns the signal unchanged: the cap is
-    :data:`None` for internal producers, and :func:`clamp_confidence`
-    is a no-op in that case. The clamp is monotone (the returned
-    ``confidence`` is never larger than the input), so this helper
-    can be applied multiple times without amplification.
+    The clamp is monotone (the returned ``confidence`` is never
+    larger than the input), so this helper can be applied multiple
+    times without amplification.
 
     The returned signal is a dataclass copy with the same identity
     fields as the input; ``signal_trust`` and ``signal_source`` are
     preserved verbatim so the audit ledger can still trace the
-    producer.
+    producer (the promotion overlay only widens the cap; the
+    declared trust on the SignalEvent stays intact).
     """
 
     if signal.signal_trust is SignalTrust.INTERNAL:
         return signal
-    if registry is not None:
-        cap = registry.cap_for(signal.signal_source, signal.signal_trust)
+    if promotion_store is not None:
+        effective_trust = promotion_store.effective_trust(
+            signal.signal_source, signal.signal_trust
+        )
     else:
-        cap = default_cap_for(signal.signal_trust)
+        effective_trust = signal.signal_trust
+    if registry is not None:
+        cap = registry.cap_for(signal.signal_source, effective_trust)
+    else:
+        cap = default_cap_for(effective_trust)
     clamped = clamp_confidence(signal.confidence, cap)
     if clamped == signal.confidence:
         return signal
@@ -209,6 +231,7 @@ def approve_signal_for_execution(
     enabled: bool | None = None,
     signer: _IntentSigner | None = None,
     registry: ExternalSignalTrustRegistry | None = None,
+    promotion_store: SourceTrustPromotionStore | None = None,
 ) -> ExecutionIntent:
     """Build + approve an :class:`ExecutionIntent` in one deterministic call.
 
@@ -279,8 +302,14 @@ def approve_signal_for_execution(
         )
     # Paper-S5 governance gate -- clamp external-producer confidence
     # to the per-source cap before sealing the intent. Internal
-    # producers pass through as a no-op.
-    signal = apply_signal_trust_cap(signal, registry=registry)
+    # producers pass through as a no-op. Paper-S6 -- the optional
+    # *promotion_store* overlay can promote EXTERNAL_LOW sources to
+    # EXTERNAL_MED so a higher class default applies.
+    signal = apply_signal_trust_cap(
+        signal,
+        registry=registry,
+        promotion_store=promotion_store,
+    )
     intent = create_execution_intent(
         ts_ns=ts_ns,
         origin=origin,
