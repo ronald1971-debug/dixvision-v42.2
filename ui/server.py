@@ -84,6 +84,10 @@ from core.contracts.events import (
     Side,
     SignalEvent,
 )
+from core.contracts.external_signal_trust import (
+    ExternalSignalTrustRegistry,
+    load_external_signal_trust,
+)
 from core.contracts.governance import (
     OperatorAction,
     OperatorRequest,
@@ -289,6 +293,26 @@ class _State:
         # downstream callers a single discoverable entry point
         # (``self.decision_signer``, ``self.authority_guard``).
         self.decision_signer: DecisionSigner = make_decision_signer()
+        # Paper-S5 -- per-source confidence cap registry. Loaded once
+        # at boot from ``registry/external_signal_trust.yaml`` so the
+        # harness approver can clamp every external SignalEvent's
+        # ``confidence`` before it becomes an ExecutionIntent. The
+        # loader is pure I/O on the registry file (no clock, no PRNG);
+        # if the file is unreadable boot fails loudly and the harness
+        # falls back to the conservative built-in defaults from
+        # ``core.contracts.signal_trust``.
+        try:
+            self.signal_trust_registry: ExternalSignalTrustRegistry | None = (
+                load_external_signal_trust(
+                    REGISTRY_DIR / "external_signal_trust.yaml"
+                )
+            )
+        except FileNotFoundError:
+            # Tests / minimal deployments may run without the registry
+            # file present; the approver will fall back to
+            # ``default_cap_for`` for every external signal in that
+            # case (still fail-closed).
+            self.signal_trust_registry = None
         self.authority_guard = AuthorityGuard(
             signature_verifier=lambda content_hash, decision_id, signature: (
                 self.decision_signer.verify(
@@ -798,7 +822,10 @@ class _State:
             for sig in self.intelligence.on_market(tick):
                 self.record("intelligence", sig)
                 intent = approve_signal_for_execution(
-                    sig, ts_ns=wall_ns(), signer=self.decision_signer
+                    sig,
+                    ts_ns=wall_ns(),
+                    signer=self.decision_signer,
+                    registry=self.signal_trust_registry,
                 )
                 for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
@@ -823,7 +850,10 @@ class _State:
             for ev in self.intelligence.process(sig):
                 self.record("intelligence", ev)
                 intent = approve_signal_for_execution(
-                    ev, ts_ns=wall_ns(), signer=self.decision_signer
+                    ev,
+                    ts_ns=wall_ns(),
+                    signer=self.decision_signer,
+                    registry=self.signal_trust_registry,
                 )
                 for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
@@ -845,7 +875,10 @@ class _State:
             for ev in self.intelligence.process(sig):
                 self.record("intelligence", ev)
                 intent = approve_signal_for_execution(
-                    ev, ts_ns=wall_ns(), signer=self.decision_signer
+                    ev,
+                    ts_ns=wall_ns(),
+                    signer=self.decision_signer,
+                    registry=self.signal_trust_registry,
                 )
                 for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
@@ -2105,7 +2138,10 @@ def post_tick(body: TickIn) -> dict[str, Any]:
             STATE.record("intelligence", sig)
             signals_out.append(_event_to_dict(sig))
             intent = approve_signal_for_execution(
-                sig, ts_ns=wall_ns(), signer=STATE.decision_signer
+                sig,
+                ts_ns=wall_ns(),
+                signer=STATE.decision_signer,
+                registry=STATE.signal_trust_registry,
             )
             for downstream in STATE.execution.execute(intent):
                 STATE.record("execution", downstream)
@@ -2138,7 +2174,10 @@ def post_signal(body: SignalIn) -> dict[str, Any]:
         for ev in STATE.intelligence.process(sig):
             STATE.record("intelligence", ev)
             intent = approve_signal_for_execution(
-                ev, ts_ns=wall_ns(), signer=STATE.decision_signer
+                ev,
+                ts_ns=wall_ns(),
+                signer=STATE.decision_signer,
+                registry=STATE.signal_trust_registry,
             )
             for downstream in STATE.execution.execute(intent):
                 STATE.record("execution", downstream)
@@ -2687,7 +2726,10 @@ def post_tradingview_alert(body: TradingViewAlertIn) -> dict[str, Any]:
         for ev in STATE.intelligence.process(sig):
             STATE.record("intelligence", ev)
             intent = approve_signal_for_execution(
-                ev, ts_ns=wall_ns(), signer=STATE.decision_signer
+                ev,
+                ts_ns=wall_ns(),
+                signer=STATE.decision_signer,
+                registry=STATE.signal_trust_registry,
             )
             for downstream in STATE.execution.execute(intent):
                 STATE.record("execution", downstream)

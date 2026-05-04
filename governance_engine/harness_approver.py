@@ -55,6 +55,7 @@ Lint scope:
 
 from __future__ import annotations
 
+import dataclasses
 import os
 from typing import Final, Protocol
 
@@ -65,6 +66,12 @@ from core.contracts.execution_intent import (
     compute_content_hash,
     create_execution_intent,
     mark_approved,
+)
+from core.contracts.external_signal_trust import ExternalSignalTrustRegistry
+from core.contracts.signal_trust import (
+    SignalTrust,
+    clamp_confidence,
+    default_cap_for,
 )
 
 
@@ -86,6 +93,7 @@ __all__ = [
     "HARNESS_APPROVER_ENV_VAR",
     "HARNESS_DECISION_ID_PREFIX",
     "HarnessApproverDisabledError",
+    "apply_signal_trust_cap",
     "approve_signal_for_execution",
     "is_harness_approver_enabled",
 ]
@@ -148,6 +156,50 @@ def is_harness_approver_enabled() -> bool:
     return raw in _TRUTHY
 
 
+def apply_signal_trust_cap(
+    signal: SignalEvent,
+    *,
+    registry: ExternalSignalTrustRegistry | None = None,
+) -> SignalEvent:
+    """Return a copy of *signal* with ``confidence`` clamped per Paper-S5.
+
+    The governance gate is the canonical place to enforce the
+    per-source confidence cap (see
+    :mod:`core.contracts.signal_trust` for the policy). The shim
+    looks up a cap in this order and applies the **most restrictive**:
+
+    1. If *registry* is provided, ``registry.cap_for(source_id, trust)``
+       — which already takes the more-restrictive of the per-source
+       row and the trust-class default (fail-closed when the row's
+       declared trust disagrees with ``signal.signal_trust``).
+    2. Otherwise, ``default_cap_for(signal.signal_trust)`` — so an
+       external signal is always clamped even when the registry is
+       unavailable (fail-closed default).
+
+    ``SignalTrust.INTERNAL`` returns the signal unchanged: the cap is
+    :data:`None` for internal producers, and :func:`clamp_confidence`
+    is a no-op in that case. The clamp is monotone (the returned
+    ``confidence`` is never larger than the input), so this helper
+    can be applied multiple times without amplification.
+
+    The returned signal is a dataclass copy with the same identity
+    fields as the input; ``signal_trust`` and ``signal_source`` are
+    preserved verbatim so the audit ledger can still trace the
+    producer.
+    """
+
+    if signal.signal_trust is SignalTrust.INTERNAL:
+        return signal
+    if registry is not None:
+        cap = registry.cap_for(signal.signal_source, signal.signal_trust)
+    else:
+        cap = default_cap_for(signal.signal_trust)
+    clamped = clamp_confidence(signal.confidence, cap)
+    if clamped == signal.confidence:
+        return signal
+    return dataclasses.replace(signal, confidence=clamped)
+
+
 def approve_signal_for_execution(
     signal: SignalEvent,
     *,
@@ -156,6 +208,7 @@ def approve_signal_for_execution(
     decision_id: str | None = None,
     enabled: bool | None = None,
     signer: _IntentSigner | None = None,
+    registry: ExternalSignalTrustRegistry | None = None,
 ) -> ExecutionIntent:
     """Build + approve an :class:`ExecutionIntent` in one deterministic call.
 
@@ -195,6 +248,13 @@ def approve_signal_for_execution(
             in explicitly.
         UnauthorizedOriginError: when ``origin`` is not a member of
             :data:`AUTHORISED_INTENT_ORIGINS`.
+
+    Paper-S5 — when ``signal.signal_trust`` is not ``INTERNAL`` the
+    helper applies the per-source confidence cap via
+    :func:`apply_signal_trust_cap` *before* building the intent, so
+    the resulting :class:`ExecutionIntent` (and any downstream
+    :class:`DecisionTrace`) sees the clamped confidence. Internal
+    signals pass through unchanged.
     """
 
     if enabled is False or (enabled is None and not is_harness_approver_enabled()):
@@ -217,6 +277,10 @@ def approve_signal_for_execution(
         raise UnauthorizedOriginError(
             f"unauthorised harness origin: {origin!r}"
         )
+    # Paper-S5 governance gate -- clamp external-producer confidence
+    # to the per-source cap before sealing the intent. Internal
+    # producers pass through as a no-op.
+    signal = apply_signal_trust_cap(signal, registry=registry)
     intent = create_execution_intent(
         ts_ns=ts_ns,
         origin=origin,
