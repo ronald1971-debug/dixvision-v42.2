@@ -107,6 +107,7 @@ from governance_engine.harness_approver import (
     HARNESS_APPROVER_ENV_VAR,
     approve_signal_for_execution,
 )
+from governance_engine.strategy_registry import StrategyRegistry
 
 # Hardening-S1 item 1 — explicit opt-in for the harness approval shim.
 # ``ui.server`` is the harness, by definition. Setting the env var at
@@ -302,7 +303,22 @@ class _State:
             else LedgerAuthorityWriter()
         )
         self.ledger_writer = ledger
-        self.governance = GovernanceEngine(ledger=ledger)
+        # AUDIT-WIRE.2 / P0-3 — close the closed learning loop.
+        # ``GovernanceEngine`` falls through to a ``UPDATE_PROPOSED_AUDIT``
+        # ledger row whenever ``strategy_registry`` is ``None``, which is
+        # how the harness silently dropped every learning-loop update
+        # request: the learning engine's ``UPDATE_PROPOSED`` events were
+        # acknowledged but never applied to the registry FSM, so no
+        # strategy ever advanced from PROPOSED -> CANARY -> LIVE.
+        # Constructing the registry against the same ledger the engine
+        # uses (the ``ValueError`` guard in ``GovernanceEngine.__init__``
+        # enforces this identity) lets ``UpdateValidator`` and
+        # ``UpdateApplier`` come online and the loop closes end-to-end.
+        self.strategy_registry = StrategyRegistry(ledger=ledger)
+        self.governance = GovernanceEngine(
+            ledger=ledger,
+            strategy_registry=self.strategy_registry,
+        )
         # Hardening-S1 item 4-ext -- bind the SHA-256 of every
         # canonical policy YAML to the authority ledger at boot. The
         # anchor turns the policy set into "the document of record":
