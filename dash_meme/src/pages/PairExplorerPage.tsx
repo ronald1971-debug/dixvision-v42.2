@@ -101,7 +101,7 @@ export function PairExplorerPage() {
       }
     }
     buf.current = dedup.slice(-600);
-    setPoints(buf.current);
+    setPoints([...buf.current]);
   }, [pump.data, ray.data, pair.symbol]);
 
   const lastPrice = points.length ? points[points.length - 1].price : null;
