@@ -22,18 +22,63 @@
 # has its own rows for each *provider* (Reuters, X, Reddit). This file
 # is the curator-side seed list that the Playwright crawler consumes.
 #
-# All seeds start disabled (no rows). The system is designed to run
-# with an empty seed list — the autolearn pipeline degrades to a
-# no-op rather than emitting noisy signals. Operators add seeds via
-# the dashboard once the data adapters are credentialed.
+# All seeds below are commented out by default. The autolearn pipeline
+# degrades to a no-op when the seed list is empty, so a fresh clone
+# never emits noisy CuratedItem rows. Operators uncomment a seed row
+# (or add new ones) to begin ingestion. See
+# `docs/sensory/web_autolearn_activation.md` for the full activation
+# walkthrough.
 
-# Example (commented out — uncomment + replace placeholders to enable):
-#
-# crypto_majors:
-#   url: https://example.com/feed
+# ---------------------------------------------------------------------------
+# Starter seeds (uncomment to enable)
+# ---------------------------------------------------------------------------
+
+# coindesk_headlines:
+#   url: https://www.coindesk.com/arc/outboundfeeds/rss/
 #   topic: crypto
-#   keywords: [bitcoin, btc, ethereum, eth]
+#   keywords: [bitcoin, btc, ethereum, eth, sec, etf, regulation, hack, exploit]
+#   min_score: 0.3
+#   allow: []
+#   deny: [sponsored, advertorial]
+#   tags: [spot, majors, news]
+
+# decrypt_headlines:
+#   url: https://decrypt.co/feed
+#   topic: crypto
+#   keywords: [bitcoin, ethereum, defi, nft, stablecoin, regulation]
+#   min_score: 0.3
+#   allow: []
+#   deny: [sponsored, partner content]
+#   tags: [news, defi]
+
+# cointelegraph_headlines:
+#   url: https://cointelegraph.com/rss
+#   topic: crypto
+#   keywords: [bitcoin, btc, ethereum, eth, regulation, hack, listing, delisting]
+#   min_score: 0.3
+#   allow: []
+#   deny: [press release, sponsored]
+#   tags: [news, majors]
+
+# theblock_headlines:
+#   url: https://www.theblock.co/rss.xml
+#   topic: crypto
+#   keywords: [exchange, regulation, sec, cftc, custody, treasury]
 #   min_score: 0.4
 #   allow: []
 #   deny: [sponsored]
-#   tags: [spot, majors]
+#   tags: [news, institutional]
+
+# x_crypto_aggregator:
+#   # Replace with your own X (Twitter) webhook aggregator endpoint —
+#   # X's first-party API requires a paid tier and is keyed via
+#   # X_BEARER_TOKEN (see scripts/check_credentials). Most operators
+#   # forward filtered tweets through a Zapier/Make webhook into this
+#   # endpoint instead of polling X directly.
+#   url: https://example.invalid/x-aggregator/webhook
+#   topic: social
+#   keywords: [airdrop, exploit, hack, listing, partnership]
+#   min_score: 0.5
+#   allow: []
+#   deny: [giveaway, follow back, dm me]
+#   tags: [social, x]
