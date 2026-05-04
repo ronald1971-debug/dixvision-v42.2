@@ -1,7 +1,8 @@
 """Strategy Lifecycle Panel — Phase 6 IMMUTABLE WIDGET 4 (DASH-SLP-01).
 
-Renders the strategy lifecycle FSM (PROPOSED → SHADOW → CANARY → LIVE
-→ RETIRED, plus FAILED) by reading the canonical
+Renders the strategy lifecycle FSM (PROPOSED → CANARY → LIVE →
+RETIRED, plus FAILED from anywhere; strategy-level SHADOW was
+demolished by SHADOW-DEMOLITION-02) by reading the canonical
 :class:`StrategyStateMachine` (IND-SLM-01).
 
 This widget is *purely* a read projection. Lifecycle transitions are
@@ -24,7 +25,6 @@ from intelligence_engine.strategy_runtime.state_machine import (
 # by the UI to lay out columns deterministically.
 LIFECYCLE_COLUMNS: tuple[StrategyState, ...] = (
     StrategyState.PROPOSED,
-    StrategyState.SHADOW,
     StrategyState.CANARY,
     StrategyState.LIVE,
     StrategyState.RETIRED,

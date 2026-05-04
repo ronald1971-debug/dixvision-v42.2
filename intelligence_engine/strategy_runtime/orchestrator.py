@@ -26,7 +26,7 @@ class StrategyRecord:
 
     strategy_id: str
     allowed_regimes: frozenset[MarketRegime]
-    min_state: StrategyState = StrategyState.SHADOW
+    min_state: StrategyState = StrategyState.CANARY
 
     def is_eligible(
         self, *, state: StrategyState, regime: MarketRegime
@@ -41,9 +41,11 @@ class StrategyRecord:
 
 
 # Total ordering used for ``min_state`` comparisons.
+# Strategy-level SHADOW was demolished by SHADOW-DEMOLITION-02; rank
+# values stay stable so callers persisting ``min_state`` ordinals from
+# previous releases still round-trip.
 _STATE_RANK: dict[StrategyState, int] = {
     StrategyState.PROPOSED: 0,
-    StrategyState.SHADOW: 1,
     StrategyState.CANARY: 2,
     StrategyState.LIVE: 3,
     StrategyState.RETIRED: -1,
@@ -76,7 +78,7 @@ class StrategyOrchestrator:
         *,
         strategy_id: str,
         allowed_regimes: Iterable[MarketRegime] = (),
-        min_state: StrategyState = StrategyState.SHADOW,
+        min_state: StrategyState = StrategyState.CANARY,
     ) -> StrategyRecord:
         if not strategy_id:
             raise ValueError("strategy_id required")

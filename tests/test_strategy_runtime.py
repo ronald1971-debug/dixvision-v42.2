@@ -33,30 +33,23 @@ def test_strategy_fsm_legal_promotion_path():
     fsm.propose(strategy_id="alpha", ts_ns=1)
     fsm.transition(
         strategy_id="alpha",
-        new_state=StrategyState.SHADOW,
+        new_state=StrategyState.CANARY,
         ts_ns=2,
         reason="promote",
     )
     fsm.transition(
         strategy_id="alpha",
-        new_state=StrategyState.CANARY,
-        ts_ns=3,
-        reason="promote",
-    )
-    fsm.transition(
-        strategy_id="alpha",
         new_state=StrategyState.LIVE,
-        ts_ns=4,
+        ts_ns=3,
         reason="promote",
     )
     rec = fsm.get("alpha")
     assert rec is not None
     assert rec.state is StrategyState.LIVE
-    # propose + 3 transitions
-    assert len(rec.history) == 4
+    # propose + 2 transitions (SHADOW tier removed by SHADOW-DEMOLITION-02)
+    assert len(rec.history) == 3
     assert [r.new for r in rec.history] == [
         StrategyState.PROPOSED,
-        StrategyState.SHADOW,
         StrategyState.CANARY,
         StrategyState.LIVE,
     ]
@@ -66,7 +59,7 @@ def test_strategy_fsm_illegal_skip_raises():
     fsm = StrategyStateMachine()
     fsm.propose(strategy_id="alpha", ts_ns=1)
     with pytest.raises(StrategyLifecycleError):
-        # Cannot skip SHADOW.
+        # Cannot skip CANARY.
         fsm.transition(
             strategy_id="alpha",
             new_state=StrategyState.LIVE,
@@ -87,34 +80,28 @@ def test_strategy_fsm_terminal_states_reject_further_transitions():
     with pytest.raises(StrategyLifecycleError):
         fsm.transition(
             strategy_id="a",
-            new_state=StrategyState.SHADOW,
+            new_state=StrategyState.CANARY,
             ts_ns=3,
             reason="undo",
         )
 
 
-def test_strategy_fsm_canary_can_rollback_to_shadow():
+def test_strategy_fsm_canary_can_rollback_to_proposed():
     fsm = StrategyStateMachine()
     fsm.propose(strategy_id="a", ts_ns=1)
     fsm.transition(
         strategy_id="a",
-        new_state=StrategyState.SHADOW,
+        new_state=StrategyState.CANARY,
         ts_ns=2,
         reason="promote",
     )
     fsm.transition(
         strategy_id="a",
-        new_state=StrategyState.CANARY,
+        new_state=StrategyState.PROPOSED,
         ts_ns=3,
-        reason="promote",
-    )
-    fsm.transition(
-        strategy_id="a",
-        new_state=StrategyState.SHADOW,
-        ts_ns=4,
         reason="rollback",
     )
-    assert fsm.get("a").state is StrategyState.SHADOW
+    assert fsm.get("a").state is StrategyState.PROPOSED
 
 
 def test_strategy_fsm_unknown_id_raises():
@@ -122,7 +109,7 @@ def test_strategy_fsm_unknown_id_raises():
     with pytest.raises(KeyError):
         fsm.transition(
             strategy_id="ghost",
-            new_state=StrategyState.SHADOW,
+            new_state=StrategyState.CANARY,
             ts_ns=1,
             reason="x",
         )
@@ -134,20 +121,14 @@ def test_strategy_fsm_replay_determinism():
         fsm.propose(strategy_id="a", ts_ns=1)
         fsm.transition(
             strategy_id="a",
-            new_state=StrategyState.SHADOW,
+            new_state=StrategyState.CANARY,
             ts_ns=2,
             reason="promote",
         )
         fsm.transition(
             strategy_id="a",
-            new_state=StrategyState.CANARY,
-            ts_ns=3,
-            reason="promote",
-        )
-        fsm.transition(
-            strategy_id="a",
             new_state=StrategyState.LIVE,
-            ts_ns=4,
+            ts_ns=3,
             reason="promote",
         )
         rec = fsm.get("a")
@@ -163,14 +144,14 @@ def test_strategy_fsm_all_in():
         fsm.propose(strategy_id=sid, ts_ns=1)
     fsm.transition(
         strategy_id="a",
-        new_state=StrategyState.SHADOW,
+        new_state=StrategyState.CANARY,
         ts_ns=2,
         reason="promote",
     )
     proposed = {r.strategy_id for r in fsm.all_in(StrategyState.PROPOSED)}
-    shadow = {r.strategy_id for r in fsm.all_in(StrategyState.SHADOW)}
+    canary = {r.strategy_id for r in fsm.all_in(StrategyState.CANARY)}
     assert proposed == {"b", "c"}
-    assert shadow == {"a"}
+    assert canary == {"a"}
 
 
 # ---------------------------------------------------------------------------
@@ -331,7 +312,6 @@ def test_scheduler_deregister_removes_from_step():
 def _promote_to(fsm: StrategyStateMachine, sid: str, target: StrategyState):
     fsm.propose(strategy_id=sid, ts_ns=1)
     path = [
-        StrategyState.SHADOW,
         StrategyState.CANARY,
         StrategyState.LIVE,
     ]
@@ -348,7 +328,7 @@ def _promote_to(fsm: StrategyStateMachine, sid: str, target: StrategyState):
 def test_orchestrator_eligibility_respects_min_state():
     fsm = StrategyStateMachine()
     orc = StrategyOrchestrator(fsm)
-    _promote_to(fsm, "a", StrategyState.SHADOW)
+    _promote_to(fsm, "a", StrategyState.CANARY)
     _promote_to(fsm, "b", StrategyState.LIVE)
     orc.register(strategy_id="a", min_state=StrategyState.LIVE)
     orc.register(strategy_id="b", min_state=StrategyState.LIVE)
@@ -364,9 +344,9 @@ def test_orchestrator_eligibility_respects_allowed_regimes():
     orc.register(
         strategy_id="trend_only",
         allowed_regimes=(MarketRegime.TRENDING_UP, MarketRegime.TRENDING_DOWN),
-        min_state=StrategyState.SHADOW,
+        min_state=StrategyState.CANARY,
     )
-    orc.register(strategy_id="anywhere", min_state=StrategyState.SHADOW)
+    orc.register(strategy_id="anywhere", min_state=StrategyState.CANARY)
     assert set(orc.eligible(MarketRegime.TRENDING_UP)) == {
         "trend_only",
         "anywhere",
@@ -384,7 +364,7 @@ def test_orchestrator_terminal_strategy_never_eligible():
         ts_ns=2,
         reason="kill",
     )
-    orc.register(strategy_id="a", min_state=StrategyState.SHADOW)
+    orc.register(strategy_id="a", min_state=StrategyState.CANARY)
     assert orc.eligible(MarketRegime.TRENDING_UP) == ()
 
 

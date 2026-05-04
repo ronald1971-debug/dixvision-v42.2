@@ -62,12 +62,6 @@ def _build_pipeline(*plugins: _ScriptedPlugin) -> SignalPipeline:
         fsm.propose(strategy_id=p.name, ts_ns=0)
         fsm.transition(
             strategy_id=p.name,
-            new_state=StrategyState.SHADOW,
-            ts_ns=0,
-            reason="promote",
-        )
-        fsm.transition(
-            strategy_id=p.name,
             new_state=StrategyState.CANARY,
             ts_ns=0,
             reason="promote",
@@ -111,9 +105,9 @@ def test_pipeline_skips_due_but_ineligible_plugin():
     orc = StrategyOrchestrator(fsm)
     plugin = _ScriptedPlugin("a", Side.BUY, 0.5)
     fsm.propose(strategy_id="a", ts_ns=0)
-    # Stays PROPOSED — orchestrator default min_state is SHADOW.
+    # Stays PROPOSED — orchestrator default min_state is CANARY.
     sch.register(strategy_id="a", cadence=1)
-    orc.register(strategy_id="a", min_state=StrategyState.SHADOW)
+    orc.register(strategy_id="a", min_state=StrategyState.CANARY)
     pipe = SignalPipeline(
         plugins={"a": plugin},
         regime_detector=RegimeDetector(window=4),
@@ -134,12 +128,12 @@ def test_pipeline_skips_eligible_but_not_due_plugin():
     fsm.propose(strategy_id="a", ts_ns=0)
     fsm.transition(
         strategy_id="a",
-        new_state=StrategyState.SHADOW,
+        new_state=StrategyState.CANARY,
         ts_ns=0,
         reason="promote",
     )
     sch.register(strategy_id="a", cadence=3)  # only fires every 3rd
-    orc.register(strategy_id="a", min_state=StrategyState.SHADOW)
+    orc.register(strategy_id="a", min_state=StrategyState.CANARY)
     pipe = SignalPipeline(
         plugins={"a": plugin},
         regime_detector=RegimeDetector(window=4),
@@ -188,7 +182,7 @@ def test_pipeline_regime_used_for_eligibility():
     fsm.propose(strategy_id="trend_only", ts_ns=0)
     fsm.transition(
         strategy_id="trend_only",
-        new_state=StrategyState.SHADOW,
+        new_state=StrategyState.CANARY,
         ts_ns=0,
         reason="promote",
     )
@@ -196,7 +190,7 @@ def test_pipeline_regime_used_for_eligibility():
     orc.register(
         strategy_id="trend_only",
         allowed_regimes=(MarketRegime.TRENDING_UP,),
-        min_state=StrategyState.SHADOW,
+        min_state=StrategyState.CANARY,
     )
     pipe = SignalPipeline(
         plugins={"trend_only": plugin},
