@@ -107,6 +107,7 @@ def main() -> int:
                 for alias in node.names:
                     edges.append((path, alias.name))
             elif isinstance(node, ast.ImportFrom):
+                resolved_module: str | None = None
                 if node.level:
                     # relative import — resolve against the *containing*
                     # package, so always drop the final segment whether it
@@ -116,19 +117,21 @@ def main() -> int:
                     base = pkg_parts[: len(pkg_parts) - node.level + 1]
                     if not base:
                         continue
-                    target = ".".join(base)
+                    resolved_module = ".".join(base)
                     if node.module:
-                        target = f"{target}.{node.module}"
-                    edges.append((path, target))
+                        resolved_module = f"{resolved_module}.{node.module}"
+                    edges.append((path, resolved_module))
                 elif node.module:
-                    edges.append((path, node.module))
+                    resolved_module = node.module
+                    edges.append((path, resolved_module))
                 # Capture 'from pkg import sub' where 'sub' is a
                 # submodule of 'pkg' (the alias case the dotted-prefix
-                # walker misses).
-                if isinstance(node, ast.ImportFrom) and node.module:
+                # walker misses). Use the *resolved* module so relative
+                # imports point at the right package.
+                if resolved_module:
                     for alias in node.names:
                         edges.append(
-                            (path, f"{node.module}.{alias.name}")
+                            (path, f"{resolved_module}.{alias.name}")
                         )
 
     # In-degree for each module path.
