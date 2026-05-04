@@ -334,6 +334,19 @@ class DecisionTrace:
     signal_trust: SignalTrust | None = None
     signal_source: str | None = None
     validation_score: float | None = None
+    # Paper-S7 — confidence-cap audit triplet. ``original_confidence``
+    # is the producer-emitted confidence BEFORE the Paper-S5/S6 cap was
+    # applied at the harness gate; ``confidence_cap_applied`` is
+    # ``True`` iff the cap actually clamped the value down (i.e. the
+    # original strictly exceeded the cap); ``confidence_cap_value`` is
+    # the cap that was used (``None`` for INTERNAL signals where no
+    # cap is applied). All three default to ``None`` / ``False`` so a
+    # pre-Paper-S7 trace can still round-trip through the audit ledger
+    # and the audit reader can detect the absence of the lens by
+    # checking ``original_confidence is None``.
+    original_confidence: float | None = None
+    confidence_cap_applied: bool = False
+    confidence_cap_value: float | None = None
 
     def __post_init__(self) -> None:
         if self.version < 1:
@@ -353,6 +366,36 @@ class DecisionTrace:
             raise ValueError(
                 "DecisionTrace.signal_source must be either None or a non-empty string"
             )
+        if self.original_confidence is not None:
+            _check_unit("DecisionTrace.original_confidence", self.original_confidence)
+            # The cap is monotone — the post-cap value cannot exceed
+            # the pre-cap value. Catching this at construction prevents
+            # a bad upstream projection from forging a trace that
+            # claims the cap *amplified* the signal.
+            if self.final_confidence - self.original_confidence > 1e-9:
+                raise ValueError(
+                    "DecisionTrace.final_confidence must not exceed "
+                    f"original_confidence; got final={self.final_confidence}, "
+                    f"original={self.original_confidence}"
+                )
+        if self.confidence_cap_value is not None:
+            _check_unit(
+                "DecisionTrace.confidence_cap_value", self.confidence_cap_value
+            )
+        if self.confidence_cap_applied:
+            # ``applied=True`` is only meaningful when both the
+            # pre-cap value and the cap itself are recorded; otherwise
+            # the audit cannot answer "by how much was it clamped?".
+            if self.original_confidence is None:
+                raise ValueError(
+                    "DecisionTrace.confidence_cap_applied is True but "
+                    "original_confidence is None"
+                )
+            if self.confidence_cap_value is None:
+                raise ValueError(
+                    "DecisionTrace.confidence_cap_applied is True but "
+                    "confidence_cap_value is None"
+                )
 
 
 def _check_unit(name: str, value: float) -> None:

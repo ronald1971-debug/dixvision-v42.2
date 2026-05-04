@@ -97,6 +97,9 @@ def build_decision_trace(
     execution_outcome: ExecutionOutcome | None = None,
     why: WhyLayer | None = None,
     validation_score: float | None = None,
+    original_confidence: float | None = None,
+    confidence_cap_applied: bool = False,
+    confidence_cap_value: float | None = None,
 ) -> DecisionTrace:
     """Assemble a :class:`DecisionTrace` from the supplied inputs.
 
@@ -147,6 +150,9 @@ def build_decision_trace(
         signal_trust=signal.signal_trust,
         signal_source=signal.signal_source or None,
         validation_score=validation_score,
+        original_confidence=original_confidence,
+        confidence_cap_applied=confidence_cap_applied,
+        confidence_cap_value=confidence_cap_value,
     )
 
 
@@ -188,6 +194,9 @@ def as_system_event(
         ),
         "signal_source": trace.signal_source,
         "validation_score": trace.validation_score,
+        "original_confidence": trace.original_confidence,
+        "confidence_cap_applied": trace.confidence_cap_applied,
+        "confidence_cap_value": trace.confidence_cap_value,
     }
     payload = {
         "trace": json.dumps(body, sort_keys=True, separators=(",", ":")),
@@ -245,6 +254,9 @@ def trace_from_system_event(event: SystemEvent) -> DecisionTrace:
         ),
         signal_source=body.get("signal_source"),
         validation_score=body.get("validation_score"),
+        original_confidence=body.get("original_confidence"),
+        confidence_cap_applied=bool(body.get("confidence_cap_applied", False)),
+        confidence_cap_value=body.get("confidence_cap_value"),
     )
 
 
