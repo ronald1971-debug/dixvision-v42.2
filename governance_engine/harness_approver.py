@@ -57,6 +57,7 @@ from __future__ import annotations
 
 import dataclasses
 import os
+from dataclasses import dataclass
 from typing import Final, Protocol
 
 from core.contracts.events import SignalEvent
@@ -93,11 +94,39 @@ __all__ = [
     "DEFAULT_HARNESS_ORIGIN",
     "HARNESS_APPROVER_ENV_VAR",
     "HARNESS_DECISION_ID_PREFIX",
+    "ConfidenceCapAudit",
     "HarnessApproverDisabledError",
     "apply_signal_trust_cap",
+    "apply_signal_trust_cap_with_audit",
     "approve_signal_for_execution",
     "is_harness_approver_enabled",
 ]
+
+
+@dataclass(frozen=True, slots=True)
+class ConfidenceCapAudit:
+    """Pre-cap / post-cap projection for a single SignalEvent (Paper-S7).
+
+    Returned alongside the (potentially clamped) :class:`SignalEvent`
+    by :func:`apply_signal_trust_cap_with_audit` so callers building a
+    :class:`~core.contracts.decision_trace.DecisionTrace` can populate
+    the new ``original_confidence`` / ``confidence_cap_applied`` /
+    ``confidence_cap_value`` audit fields without recomputing the cap.
+
+    Attributes:
+        original_confidence: Producer-emitted confidence BEFORE the
+            cap was applied. Always populated.
+        cap_value: The cap value that was used. ``None`` for INTERNAL
+            signals (no cap applies).
+        applied: ``True`` iff the cap strictly clamped the value down
+            (i.e. ``original_confidence > cap_value``). For INTERNAL
+            signals or when the producer's confidence was already at
+            or below the cap, ``applied`` is ``False``.
+    """
+
+    original_confidence: float
+    cap_value: float | None
+    applied: bool
 
 
 DEFAULT_HARNESS_ORIGIN: Final[str] = (
@@ -204,8 +233,39 @@ def apply_signal_trust_cap(
     declared trust on the SignalEvent stays intact).
     """
 
+    clamped, _audit = apply_signal_trust_cap_with_audit(
+        signal, registry=registry, promotion_store=promotion_store
+    )
+    return clamped
+
+
+def apply_signal_trust_cap_with_audit(
+    signal: SignalEvent,
+    *,
+    registry: ExternalSignalTrustRegistry | None = None,
+    promotion_store: SourceTrustPromotionStore | None = None,
+) -> tuple[SignalEvent, ConfidenceCapAudit]:
+    """Same clamp as :func:`apply_signal_trust_cap`, plus a Paper-S7 audit.
+
+    Returns ``(clamped_signal, ConfidenceCapAudit)``. The clamped
+    signal is identical to what :func:`apply_signal_trust_cap` would
+    return; the audit captures the pre-cap value and the cap that
+    was used so the caller can populate the new
+    :class:`~core.contracts.decision_trace.DecisionTrace`
+    ``original_confidence`` / ``confidence_cap_applied`` /
+    ``confidence_cap_value`` audit fields.
+
+    INTERNAL signals pass through unchanged: ``cap_value`` is
+    ``None`` and ``applied`` is ``False``.
+    """
+
+    original_confidence = signal.confidence
     if signal.signal_trust is SignalTrust.INTERNAL:
-        return signal
+        return signal, ConfidenceCapAudit(
+            original_confidence=original_confidence,
+            cap_value=None,
+            applied=False,
+        )
     if promotion_store is not None:
         effective_trust = promotion_store.effective_trust(
             signal.signal_source, signal.signal_trust
@@ -216,10 +276,22 @@ def apply_signal_trust_cap(
         cap = registry.cap_for(signal.signal_source, effective_trust)
     else:
         cap = default_cap_for(effective_trust)
-    clamped = clamp_confidence(signal.confidence, cap)
-    if clamped == signal.confidence:
-        return signal
-    return dataclasses.replace(signal, confidence=clamped)
+    clamped_confidence = clamp_confidence(signal.confidence, cap)
+    applied = clamped_confidence < original_confidence
+    if not applied:
+        return signal, ConfidenceCapAudit(
+            original_confidence=original_confidence,
+            cap_value=cap,
+            applied=False,
+        )
+    return (
+        dataclasses.replace(signal, confidence=clamped_confidence),
+        ConfidenceCapAudit(
+            original_confidence=original_confidence,
+            cap_value=cap,
+            applied=True,
+        ),
+    )
 
 
 def approve_signal_for_execution(
