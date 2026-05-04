@@ -94,6 +94,9 @@ from execution_engine.engine import ExecutionEngine
 from governance_engine.control_plane.ledger_authority_writer import (
     LedgerAuthorityWriter,
 )
+from governance_engine.control_plane.policy_hash_anchor import (
+    PolicyHashAnchor,
+)
 from governance_engine.engine import GovernanceEngine
 from governance_engine.harness_approver import (
     HARNESS_APPROVER_ENV_VAR,
@@ -225,6 +228,18 @@ class _State:
         )
         self.ledger_writer = ledger
         self.governance = GovernanceEngine(ledger=ledger)
+        # Hardening-S1 item 4-ext -- bind the SHA-256 of every
+        # canonical policy YAML to the authority ledger at boot. The
+        # anchor turns the policy set into "the document of record":
+        # any mid-session edit is detected by ``verify_no_drift`` and
+        # surfaced as a CRITICAL ``HAZ-POLICY-DRIFT`` hazard, which
+        # ``GovernanceEngine.process`` routes through the single FSM
+        # mutator so the system downgrades to SAFE through the same
+        # audited chain every other hazard takes (B32 / GOV-CP-03).
+        self.policy_hash_anchor = PolicyHashAnchor(ledger=ledger)
+        self.policy_hash_anchor.bind_session(
+            ts_ns=wall_ns(), requestor="ui_harness_boot"
+        )
         self.learning = LearningEngine()
         self.evolution = EvolutionEngine()
         self.events: deque[dict[str, Any]] = deque(maxlen=500)
