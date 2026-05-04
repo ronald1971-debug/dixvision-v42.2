@@ -40,6 +40,7 @@
    * arbitrary fills, so we keep the rgba() forms here as
    * legacy custom-properties for direct CSS consumers. */
   --accent-soft: rgba(58, 160, 255, 0.12);
+  --accent-placeholder: rgba(58, 160, 255, 0.18);
   --ok-soft: rgba(61, 220, 132, 0.12);
   --warn-soft: rgba(255, 170, 59, 0.14);
   --danger-soft: rgba(255, 90, 90, 0.14);
