@@ -25,6 +25,8 @@ up wave-02 PRs so each port is reviewable on its own.
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -97,6 +99,65 @@ class OperatorKillRequest(BaseModel):
     requestor: str = Field("operator", min_length=1, max_length=64)
 
 
+class OperatorAuditRequest(BaseModel):
+    """Settings-changed audit body for ``POST /api/operator/audit``.
+
+    AUDIT-P1.5 -- the dashboard fires a fire-and-forget POST on every
+    autonomy-mode flip and SL/TP commit so the change is captured in
+    the authority ledger as ``OPERATOR_SETTINGS_CHANGED``. Without
+    this route the dashboard's existing call silently 404s and the
+    ledger never sees the transition.
+
+    ``previous`` / ``next`` accept arbitrary JSON because the
+    dashboard ships richer shapes than a plain string (the SL/TP
+    builder commits a whole form object, the autonomy panel commits
+    a mode label). The route handler serialises both to JSON strings
+    when constructing the ledger payload so the row stays
+    ``Mapping[str, str]``-shaped.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: str = Field(..., min_length=1, max_length=128)
+    setting: str = Field(..., min_length=1, max_length=128)
+    previous: Any = None
+    next: Any = None
+    autonomy_mode: str = Field("", max_length=64)
+    timestamp_iso: str = Field("", max_length=64)
+
+
+class OperatorAuditResponse(BaseModel):
+    """Acknowledgement envelope for ``POST /api/operator/audit``."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    accepted: bool
+    seq: int
+    kind: str
+    persisted: bool
+
+
+class WalletInfoResponse(BaseModel):
+    """Disconnected stub for ``GET /api/wallet/info`` (AUDIT-P1.5).
+
+    The dash_meme ``WalletInfoPage`` historically read from
+    ``/api/dashboard/summary``; the audit referenced
+    ``/api/wallet/info`` as a typed surface that returns wallet
+    connection status without dragging the whole dashboard payload.
+    Until real wallet credentials are wired (UniswapX EIP-712 signer
+    + Solana keypair), this route reports DISCONNECTED with an
+    explicit reason so the UI can render an actionable message
+    instead of a generic null.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    connected: bool
+    chain: str
+    address: str
+    reason: str
+
+
 class OperatorActionResponse(BaseModel):
     """Result envelope for every ``POST /api/operator/action/*`` route.
 
@@ -116,10 +177,13 @@ class OperatorActionResponse(BaseModel):
 
 __all__ = [
     "OperatorActionResponse",
+    "OperatorAuditRequest",
+    "OperatorAuditResponse",
     "OperatorEngineRow",
     "OperatorKillRequest",
     "OperatorMemecoinSnapshot",
     "OperatorModeSnapshot",
     "OperatorStrategyCounts",
     "OperatorSummaryResponse",
+    "WalletInfoResponse",
 ]

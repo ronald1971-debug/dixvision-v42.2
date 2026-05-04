@@ -34,12 +34,16 @@ import importlib
 import pytest
 from fastapi.testclient import TestClient
 
-from ui.server import STATE, app
+ui_server = importlib.import_module("ui.server")
 
 
 @pytest.fixture
 def client() -> TestClient:
-    return TestClient(app)
+    # AUDIT-P1.5 / P1.7 — sibling test modules replace ``ui_server.STATE``
+    # in their fixtures. Re-bind a fresh ``_State()`` here so we read and
+    # write the same instance the route handler dispatches against.
+    ui_server.STATE = ui_server._State()  # type: ignore[attr-defined]
+    return TestClient(ui_server.app)
 
 
 @pytest.fixture(autouse=True)
@@ -50,8 +54,8 @@ def reset_override() -> None:
     fixture a test that flips the override would leak into the next.
     """
 
-    with STATE.lock:
-        STATE.learning_override_enabled = False
+    with ui_server.STATE.lock:
+        ui_server.STATE.learning_override_enabled = False
 
 
 def _ledger_rows() -> list[dict[str, object]]:
@@ -59,7 +63,7 @@ def _ledger_rows() -> list[dict[str, object]]:
 
     return [
         dict(entry.payload, kind=entry.kind)
-        for entry in STATE.governance.ledger.read()
+        for entry in ui_server.STATE.governance.ledger.read()
     ]
 
 
@@ -93,8 +97,8 @@ def test_post_flips_flag_and_audits_ledger(client: TestClient) -> None:
     assert body["is_freeze_active"] is True
 
     # Live state mutated.
-    with STATE.lock:
-        assert STATE.learning_override_enabled is True
+    with ui_server.STATE.lock:
+        assert ui_server.STATE.learning_override_enabled is True
 
     # Ledger gained exactly one OPERATOR_LEARNING_OVERRIDE_CHANGED row
     # with the typed payload.
