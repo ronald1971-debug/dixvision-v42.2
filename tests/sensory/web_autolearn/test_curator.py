@@ -136,6 +136,29 @@ def test_curator_rules_rejects_non_numeric_min_score() -> None:
         )
 
 
+def test_curator_rules_rejects_bare_string_allow_deny_tags() -> None:
+    """YAML ``deny: sponsored`` (bare string, no brackets) iterates per-char.
+
+    Without an explicit string check the curator would silently expand
+    ``"sponsored"`` to ``('s','p','o',...)`` and any document containing
+    one of those letters would match the deny filter — i.e. almost every
+    document. Fail loudly instead.
+    """
+
+    with pytest.raises(ValueError, match="allow must be a list"):
+        CuratorRules.from_mapping(
+            {"s": {"topic": "x", "allow": "bitcoin"}}  # type: ignore[arg-type]
+        )
+    with pytest.raises(ValueError, match="deny must be a list"):
+        CuratorRules.from_mapping(
+            {"s": {"topic": "x", "deny": "sponsored"}}  # type: ignore[arg-type]
+        )
+    with pytest.raises(ValueError, match="tags must be a list"):
+        CuratorRules.from_mapping(
+            {"s": {"topic": "x", "tags": "majors"}}  # type: ignore[arg-type]
+        )
+
+
 def test_curator_rules_rejects_bool_min_score() -> None:
     """YAML ``yes``/``true``/``on`` parses as Python ``True`` and ``bool``
     is an ``int`` subclass — reject explicitly so a misspelled YAML line

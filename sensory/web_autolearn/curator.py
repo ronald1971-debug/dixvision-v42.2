@@ -115,6 +115,25 @@ class CuratorRules:
             allow_raw = body.get("allow", ()) or ()
             deny_raw = body.get("deny", ()) or ()
             tags_raw = body.get("tags", ()) or ()
+            # Reject bare-string YAML values (e.g. ``deny: sponsored``).
+            # Strings are iterable, so without this check ``tuple(str(s)
+            # for s in deny_raw)`` would silently produce single-character
+            # substrings ('s','p','o',...) and the curator's
+            # ``any(d.lower() in haystack ...)`` deny check would match
+            # virtually every document. The user almost certainly meant a
+            # list (``deny: [sponsored]``); fail loudly.
+            if isinstance(allow_raw, str):
+                raise ValueError(
+                    f"seed {seed_id!r} allow must be a list, not a string"
+                )
+            if isinstance(deny_raw, str):
+                raise ValueError(
+                    f"seed {seed_id!r} deny must be a list, not a string"
+                )
+            if isinstance(tags_raw, str):
+                raise ValueError(
+                    f"seed {seed_id!r} tags must be a list, not a string"
+                )
             allow_tuple = tuple(str(s) for s in allow_raw)
             deny_tuple = tuple(str(s) for s in deny_raw)
             tags_tuple = tuple(str(s) for s in tags_raw)
