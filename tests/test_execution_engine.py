@@ -275,23 +275,26 @@ def test_execution_engine_latency_slo():
 
 
 # ---------------------------------------------------------------------------
-# Wave-04.6 PR-B — SHADOW = signals-on-execution-off
+# Wave-04.6 PR-B — mode-effect dispatch suppression
 #
 # The mode-effect table in core/contracts/mode_effects.py is the single
-# source of truth. Three modes report executions_dispatch=False today
-# (SAFE, SHADOW, LOCKED). The Execution Gate must honour the table by
+# source of truth. Two modes report executions_dispatch=False today
+# (SAFE, LOCKED). The Execution Gate must honour the table by
 # passing the AuthorityGuard but suppressing the broker side effect and
 # returning a synthetic REJECTED ExecutionEvent with a machine-readable
 # reason. PAPER, CANARY, LIVE, AUTO must continue to dispatch.
+#
+# SHADOW-DEMOLITION-02 collapsed system-mode SHADOW into PAPER, so the
+# SHADOW row is no longer present in the mode-effect table.
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
     "mode",
-    [SystemMode.SAFE, SystemMode.SHADOW, SystemMode.LOCKED],
+    [SystemMode.SAFE, SystemMode.LOCKED],
 )
 def test_execute_suppresses_dispatch_when_mode_effect_blocks(mode):
-    """SAFE/SHADOW/LOCKED skip broker dispatch via mode-effect table."""
+    """SAFE/LOCKED skip broker dispatch via mode-effect table."""
     engine = ExecutionEngine()
     engine.on_market(
         MarketTick(ts_ns=400, symbol="X", bid=99.5, ask=100.5, last=100.0)
@@ -362,7 +365,7 @@ def test_execute_without_mode_argument_preserves_legacy_behaviour():
 
 
 def test_execute_runs_authority_guard_before_mode_check():
-    """Guard failures must not be masked by SHADOW dispatch suppression.
+    """Guard failures must not be masked by mode dispatch suppression.
 
     A signal whose intent fails the AuthorityGuard must still raise
     even if the mode would have suppressed the broker side effect.
@@ -376,7 +379,7 @@ def test_execute_runs_authority_guard_before_mode_check():
     intent = _intent_for(sig)
 
     with pytest.raises(UnauthorizedActorError):
-        engine.execute(intent, caller="not_execution_engine", current_mode=SystemMode.SHADOW)
+        engine.execute(intent, caller="not_execution_engine", current_mode=SystemMode.SAFE)
 
 
 # ---------------------------------------------------------------------------
@@ -459,7 +462,6 @@ def test_equity_notional_cap_qty_uncapped_modes_return_none(mode):
     "mode",
     [
         SystemMode.PAPER,
-        SystemMode.SHADOW,
         SystemMode.SAFE,
         SystemMode.LOCKED,
     ],
@@ -467,7 +469,7 @@ def test_equity_notional_cap_qty_uncapped_modes_return_none(mode):
 def test_equity_notional_cap_qty_non_applicable_modes_return_none(mode):
     """Modes with ``size_cap_pct=0.0`` are non-applicable → ``None``.
 
-    PAPER is not an equity-bearing venue; SHADOW/SAFE/LOCKED suppress
+    PAPER is not an equity-bearing venue; SAFE/LOCKED suppress
     dispatch entirely so the cap is moot. The helper signals this with
     ``None`` so callers do not erroneously clamp to zero.
     """

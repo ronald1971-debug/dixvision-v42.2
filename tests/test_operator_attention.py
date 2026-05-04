@@ -7,7 +7,6 @@ Pins the truth table that drives the AUTO mode oversight relaxation:
     | LOCKED  | none             | -      | True (fail-closed) |
     | SAFE    | per_trade        | -      | True               |
     | PAPER   | per_trade        | -      | True               |
-    | SHADOW  | per_trade        | -      | True               |
     | CANARY  | per_trade        | -      | True               |
     | LIVE    | per_trade        | -      | True               |
     | AUTO    | exception_only   | False  | False              |
@@ -35,7 +34,6 @@ from governance_engine.control_plane.operator_attention import (
     [
         SystemMode.SAFE,
         SystemMode.PAPER,
-        SystemMode.SHADOW,
         SystemMode.CANARY,
         SystemMode.LIVE,
     ],
@@ -111,7 +109,7 @@ def test_seams_are_called_each_invocation() -> None:
 
     The runtime keeps a single :class:`OperatorAttention` for the
     lifetime of the process; the seams must be re-evaluated on every
-    proposal so a SHADOW→AUTO transition takes effect immediately
+    proposal so a PAPER→AUTO transition takes effect immediately
     without restarting the runtime."""
 
     mode_calls: list[None] = []
@@ -141,7 +139,7 @@ def test_hazard_provider_short_circuited_for_per_trade() -> None:
 
     If the hazard provider raises (e.g. transient SCVS read failure),
     a non-AUTO system must still be able to gate proposals. Skipping
-    the hazard read is the only way to keep SHADOW / CANARY / LIVE
+    the hazard read is the only way to keep PAPER / CANARY / LIVE
     fail-soft against a noisy hazard subsystem."""
 
     def _exploding_haz() -> bool:

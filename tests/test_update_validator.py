@@ -82,7 +82,6 @@ def _learning_update(**overrides) -> ProposedUpdate:
     [
         SystemMode.SAFE,
         SystemMode.PAPER,
-        SystemMode.SHADOW,
         SystemMode.LOCKED,
     ],
 )
@@ -538,11 +537,10 @@ def test_golden_trace_paper_then_canary_then_live():
     eng.process(propose(100, "0.6"))
     assert eng.strategy_registry.get("s1").parameters["alpha"] == "0.5"
 
-    # 2) Transition to CANARY (forward-chain via SAFE→PAPER→SHADOW→CANARY)
+    # 2) Transition to CANARY (forward-chain via SAFE→PAPER→CANARY)
     from core.contracts.governance import ModeTransitionRequest
 
     for next_mode in (
-        SystemMode.SHADOW,
         SystemMode.CANARY,
     ):
         eng.state_transitions.propose(

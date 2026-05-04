@@ -6,7 +6,7 @@ import { apiUrl } from "@/api/base";
  * Autonomy Mode (PR-#2 spec §0.2 + §6).
  *
  * This is the *operator-attention* axis, orthogonal to the System
- * Mode FSM (LOCKED/SAFE/PAPER/SHADOW/CANARY/LIVE/AUTO):
+ * Mode FSM (LOCKED/SAFE/PAPER/CANARY/LIVE/AUTO):
  *
  *   - USER_CONTROLLED: every intent waits for an operator click.
  *   - SEMI_AUTO: auto-trades inside operator-set envelope; settings

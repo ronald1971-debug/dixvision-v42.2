@@ -98,7 +98,7 @@ def test_value_clamps_at_low_bound() -> None:
 
 def test_freeze_policy_blocks_updates_but_drains_buffer() -> None:
     policy = LearningEvolutionFreezePolicy(
-        mode=SystemMode.SHADOW, operator_override=False
+        mode=SystemMode.PAPER, operator_override=False
     )
     learner = SlowLoopLearner(
         {"alpha": _bounds(step=0.1, init=0.0)},

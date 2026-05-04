@@ -1,14 +1,18 @@
 """GOV-CP-08 -- Promotion-Gate hash anchor (Reviewer #4 finding 4).
 
 The :class:`PromotionGates` adapter binds the SHA-256 hash of
-``docs/promotion_gates.yaml`` to the authority ledger at SHADOW
+``docs/promotion_gates.yaml`` to the authority ledger at PAPER
 entry and refuses every forward transition into ``CANARY`` /
 ``LIVE`` / ``AUTO`` whose live file hash does not match the bound
-hash. The mechanism converts the SHADOW window from "a time during
+hash. The mechanism converts the PAPER window from "a time during
 which we observe results" into "a time during which we cannot
 revise the rules", which is the only configuration in which
 observed results can be trusted (see ``docs/promotion_gates.yaml``
 header for the full discipline rationale).
+
+SHADOW-DEMOLITION-02 collapsed the system-mode SHADOW tier into
+PAPER, so the binding moment moved one ratchet earlier. The gated
+targets (``CANARY`` / ``LIVE`` / ``AUTO``) are unchanged.
 
 Determinism: the hash is computed over the **raw bytes** of the
 file, not over the parsed YAML, so whitespace and comment edits
@@ -66,7 +70,7 @@ class PromotionGates:
     Lifecycle:
 
     1. ``bind(ts_ns, requestor)`` -- called by
-       :class:`StateTransitionManager` when SHADOW is entered. Reads
+       :class:`StateTransitionManager` when PAPER is entered. Reads
        the live ``promotion_gates.yaml``, computes the SHA-256 hash,
        appends a ``PROMOTION_GATES_BOUND`` ledger row, caches the
        hash in memory.
@@ -78,7 +82,7 @@ class PromotionGates:
        not match.
 
     The cached hash is reset every time ``bind`` is called -- so a
-    new SHADOW entry restarts the anchor.
+    new PAPER entry restarts the anchor.
     """
 
     name: str = "promotion_gates"
@@ -108,7 +112,7 @@ class PromotionGates:
 
         Returns the bound hash. Raises :class:`FileNotFoundError` if
         the file is missing -- this surfaces as a governance failure
-        at SHADOW entry rather than silently letting the system run
+        at PAPER entry rather than silently letting the system run
         without a document of record.
         """
 

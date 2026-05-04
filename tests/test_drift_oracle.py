@@ -4,7 +4,10 @@ The oracle is a pure projection (``observe``) plus a side-effecting
 ``evaluate_and_downgrade`` that routes through
 :class:`StateTransitionManager`. These tests cover both halves and
 the boundary cases for the drift-driven downgrade chain
-``AUTO -> LIVE -> CANARY -> SHADOW``.
+``AUTO -> LIVE -> CANARY -> PAPER``.
+
+SHADOW-DEMOLITION-02 collapsed system-mode SHADOW into PAPER, so the
+lowest drift-driven downgrade target is now PAPER.
 """
 
 from __future__ import annotations
@@ -47,7 +50,6 @@ def _ratchet_to(
     chain = (
         SystemMode.SAFE,
         SystemMode.PAPER,
-        SystemMode.SHADOW,
         SystemMode.CANARY,
         SystemMode.LIVE,
         SystemMode.AUTO,
@@ -188,7 +190,7 @@ def test_live_breach_downgrades_to_canary() -> None:
     assert stm.current_mode() is SystemMode.CANARY
 
 
-def test_canary_breach_downgrades_to_shadow() -> None:
+def test_canary_breach_downgrades_to_paper() -> None:
     stm = _stm()
     _ratchet_to(stm, SystemMode.CANARY)
 
@@ -201,15 +203,20 @@ def test_canary_breach_downgrades_to_shadow() -> None:
     assert decision is not None
     assert decision.approved is True
     assert decision.prev_mode is SystemMode.CANARY
-    assert decision.new_mode is SystemMode.SHADOW
-    assert stm.current_mode() is SystemMode.SHADOW
+    assert decision.new_mode is SystemMode.PAPER
+    assert stm.current_mode() is SystemMode.PAPER
 
 
-def test_shadow_breach_is_no_op() -> None:
-    """SHADOW is signals-on-execution-off; nothing to downgrade."""
+def test_paper_breach_is_no_op() -> None:
+    """PAPER is the safe floor; nothing to downgrade.
+
+    SHADOW-DEMOLITION-02 collapsed SHADOW into PAPER; PAPER is now
+    both ``signals-on, execution-off``-style governed and the lowest
+    drift-driven target.
+    """
 
     stm = _stm()
-    _ratchet_to(stm, SystemMode.SHADOW, operator=False)
+    _ratchet_to(stm, SystemMode.PAPER, operator=False)
 
     oracle = DriftCompositeOracle()
     reading, decision = oracle.evaluate_and_downgrade(
@@ -219,7 +226,7 @@ def test_shadow_breach_is_no_op() -> None:
     )
     assert reading.is_breaching is True
     assert decision is None
-    assert stm.current_mode() is SystemMode.SHADOW
+    assert stm.current_mode() is SystemMode.PAPER
 
 
 def test_quiet_window_does_not_propose_transition() -> None:

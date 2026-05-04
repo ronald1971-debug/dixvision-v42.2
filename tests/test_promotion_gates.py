@@ -13,9 +13,11 @@ Covers:
 * ``check`` returns ``(False, "PROMOTION_GATES_HASH_MISMATCH")`` if the
   file is edited after binding.
 * ``replay_from_ledger`` recovers the bound hash from the ledger.
-* :class:`StateTransitionManager` honours the gate: SHADOW entry binds,
+* :class:`StateTransitionManager` honours the gate: PAPER entry binds,
   CANARY entry refuses on mismatch, de-escalation works, re-entry to
-  SHADOW resets the bound hash.
+  PAPER resets the bound hash.
+  (SHADOW-DEMOLITION-02 collapsed system-mode SHADOW into PAPER, so the
+  binding moment moved one ratchet earlier.)
 * The integration is opt-in: a manager constructed without a
   :class:`PromotionGates` behaves identically to today (no gate check).
 """
@@ -98,7 +100,7 @@ def test_check_passes_for_non_gated_targets(gates_path: Path) -> None:
     gates = PromotionGates(ledger=ledger, path=gates_path)
 
     # Bind not called yet, but non-gated targets pass unconditionally.
-    for target in ("SAFE", "PAPER", "SHADOW", "LOCKED"):
+    for target in ("SAFE", "PAPER", "LOCKED"):
         ok, code = gates.check(target)
         assert ok is True
         assert code == ""
@@ -186,35 +188,36 @@ def test_replay_picks_up_most_recent_bound_hash(gates_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _ratchet_to_shadow(state: StateTransitionManager, ts_ns: int = 1) -> None:
-    """Drive the FSM SAFE -> PAPER -> SHADOW. Asserts each step approves."""
+def _ratchet_to_paper(state: StateTransitionManager, ts_ns: int = 1) -> None:
+    """Drive the FSM SAFE -> PAPER. Asserts the step approves.
 
-    for prev_mode, target_mode in (
-        (SystemMode.SAFE, SystemMode.PAPER),
-        (SystemMode.PAPER, SystemMode.SHADOW),
-    ):
-        consent = None
-        if edge_requires_consent(prev_mode, target_mode):
-            consent = OperatorConsent(
-                ts_ns=ts_ns,
-                operator_id="op",
-                mode_from=prev_mode,
-                mode_to=target_mode,
-                policy_hash=state._policy.table_hash,
-                nonce=f"ratchet-{prev_mode.name}-{target_mode.name}-{ts_ns}",
-            )
-        decision = state.propose(
-            ModeTransitionRequest(
-                ts_ns=ts_ns,
-                requestor="op",
-                current_mode=prev_mode,
-                target_mode=target_mode,
-                reason="ratchet",
-                consent=consent,
-            )
+    SHADOW-DEMOLITION-02 collapsed system-mode SHADOW into PAPER, so the
+    promotion-gate binding moment moved from SHADOW entry to PAPER entry.
+    """
+
+    prev_mode = SystemMode.SAFE
+    target_mode = SystemMode.PAPER
+    consent = None
+    if edge_requires_consent(prev_mode, target_mode):
+        consent = OperatorConsent(
+            ts_ns=ts_ns,
+            operator_id="op",
+            mode_from=prev_mode,
+            mode_to=target_mode,
+            policy_hash=state._policy.table_hash,
+            nonce=f"ratchet-{prev_mode.name}-{target_mode.name}-{ts_ns}",
         )
-        assert decision.approved is True
-        ts_ns += 1
+    decision = state.propose(
+        ModeTransitionRequest(
+            ts_ns=ts_ns,
+            requestor="op",
+            current_mode=prev_mode,
+            target_mode=target_mode,
+            reason="ratchet",
+            consent=consent,
+        )
+    )
+    assert decision.approved is True
 
 
 def test_state_manager_without_gates_behaves_unchanged(gates_path: Path) -> None:
@@ -224,12 +227,12 @@ def test_state_manager_without_gates_behaves_unchanged(gates_path: Path) -> None
     policy = PolicyEngine()
     state = StateTransitionManager(policy=policy, ledger=ledger)
 
-    _ratchet_to_shadow(state)
+    _ratchet_to_paper(state)
     decision = state.propose(
         ModeTransitionRequest(
             ts_ns=10,
             requestor="op",
-            current_mode=SystemMode.SHADOW,
+            current_mode=SystemMode.PAPER,
             target_mode=SystemMode.CANARY,
             reason="promote",
         )
@@ -238,7 +241,7 @@ def test_state_manager_without_gates_behaves_unchanged(gates_path: Path) -> None
     assert state.current_mode() is SystemMode.CANARY
 
 
-def test_state_manager_binds_hash_on_shadow_entry(gates_path: Path) -> None:
+def test_state_manager_binds_hash_on_paper_entry(gates_path: Path) -> None:
     ledger = LedgerAuthorityWriter()
     policy = PolicyEngine()
     gates = PromotionGates(ledger=ledger, path=gates_path)
@@ -247,7 +250,7 @@ def test_state_manager_binds_hash_on_shadow_entry(gates_path: Path) -> None:
     )
 
     assert gates.bound_hash() is None
-    _ratchet_to_shadow(state)
+    _ratchet_to_paper(state)
     assert gates.bound_hash() == compute_file_hash(gates_path)
 
     bound_rows = [
@@ -266,7 +269,7 @@ def test_state_manager_refuses_canary_on_hash_mismatch(
         policy=policy, ledger=ledger, promotion_gates=gates
     )
 
-    _ratchet_to_shadow(state)
+    _ratchet_to_paper(state)
     gates_path.write_bytes(
         gates_path.read_bytes() + b"# operator nudged thresholds\n"
     )
@@ -275,14 +278,14 @@ def test_state_manager_refuses_canary_on_hash_mismatch(
         ModeTransitionRequest(
             ts_ns=99,
             requestor="op",
-            current_mode=SystemMode.SHADOW,
+            current_mode=SystemMode.PAPER,
             target_mode=SystemMode.CANARY,
             reason="promote",
         )
     )
     assert decision.approved is False
     assert decision.rejection_code == "PROMOTION_GATES_HASH_MISMATCH"
-    assert state.current_mode() is SystemMode.SHADOW
+    assert state.current_mode() is SystemMode.PAPER
 
     rejected_rows = [
         r for r in ledger.read() if r.kind == "MODE_TRANSITION_REJECTED"
@@ -303,13 +306,13 @@ def test_state_manager_allows_canary_when_hash_matches(
         policy=policy, ledger=ledger, promotion_gates=gates
     )
 
-    _ratchet_to_shadow(state)
+    _ratchet_to_paper(state)
 
     decision = state.propose(
         ModeTransitionRequest(
             ts_ns=99,
             requestor="op",
-            current_mode=SystemMode.SHADOW,
+            current_mode=SystemMode.PAPER,
             target_mode=SystemMode.CANARY,
             reason="promote",
         )
@@ -318,7 +321,7 @@ def test_state_manager_allows_canary_when_hash_matches(
     assert state.current_mode() is SystemMode.CANARY
 
 
-def test_state_manager_reentry_to_shadow_rebinds_hash(
+def test_state_manager_reentry_to_paper_rebinds_hash(
     gates_path: Path,
 ) -> None:
     ledger = LedgerAuthorityWriter()
@@ -328,17 +331,17 @@ def test_state_manager_reentry_to_shadow_rebinds_hash(
         policy=policy, ledger=ledger, promotion_gates=gates
     )
 
-    _ratchet_to_shadow(state)
+    _ratchet_to_paper(state)
     h1 = gates.bound_hash()
     assert h1 is not None
 
-    # De-escalate to PAPER (legal backward step).
+    # De-escalate to SAFE (legal backward step, no consent envelope needed).
     decision = state.propose(
         ModeTransitionRequest(
             ts_ns=50,
             requestor="op",
-            current_mode=SystemMode.SHADOW,
-            target_mode=SystemMode.PAPER,
+            current_mode=SystemMode.PAPER,
+            target_mode=SystemMode.SAFE,
             reason="de-escalate to edit gates",
         )
     )
@@ -349,14 +352,23 @@ def test_state_manager_reentry_to_shadow_rebinds_hash(
         gates_path.read_bytes() + b"# new sharpe floor\n"
     )
 
-    # ...and re-enters SHADOW. The bind must rerun on the new bytes.
+    # ...and re-enters PAPER. The bind must rerun on the new bytes.
+    consent = OperatorConsent(
+        ts_ns=60,
+        operator_id="op",
+        mode_from=SystemMode.SAFE,
+        mode_to=SystemMode.PAPER,
+        policy_hash=state._policy.table_hash,
+        nonce="reentry-paper-60",
+    )
     decision = state.propose(
         ModeTransitionRequest(
             ts_ns=60,
             requestor="op",
-            current_mode=SystemMode.PAPER,
-            target_mode=SystemMode.SHADOW,
-            reason="restart shadow clock",
+            current_mode=SystemMode.SAFE,
+            target_mode=SystemMode.PAPER,
+            reason="restart paper clock",
+            consent=consent,
         )
     )
     assert decision.approved is True
@@ -370,7 +382,7 @@ def test_state_manager_reentry_to_shadow_rebinds_hash(
         ModeTransitionRequest(
             ts_ns=70,
             requestor="op",
-            current_mode=SystemMode.SHADOW,
+            current_mode=SystemMode.PAPER,
             target_mode=SystemMode.CANARY,
             reason="promote",
         )
@@ -381,7 +393,7 @@ def test_state_manager_reentry_to_shadow_rebinds_hash(
 def test_state_manager_de_escalation_does_not_require_gate(
     gates_path: Path,
 ) -> None:
-    """Backward edges (e.g. CANARY -> SHADOW) must remain free."""
+    """Backward edges (e.g. CANARY -> PAPER) must remain free."""
 
     ledger = LedgerAuthorityWriter()
     policy = PolicyEngine()
@@ -390,12 +402,12 @@ def test_state_manager_de_escalation_does_not_require_gate(
         policy=policy, ledger=ledger, promotion_gates=gates
     )
 
-    _ratchet_to_shadow(state)
+    _ratchet_to_paper(state)
     state.propose(
         ModeTransitionRequest(
             ts_ns=20,
             requestor="op",
-            current_mode=SystemMode.SHADOW,
+            current_mode=SystemMode.PAPER,
             target_mode=SystemMode.CANARY,
             reason="promote",
         )
@@ -409,12 +421,12 @@ def test_state_manager_de_escalation_does_not_require_gate(
             ts_ns=30,
             requestor="op",
             current_mode=SystemMode.CANARY,
-            target_mode=SystemMode.SHADOW,
+            target_mode=SystemMode.PAPER,
             reason="de-escalate",
         )
     )
     assert decision.approved is True
-    assert state.current_mode() is SystemMode.SHADOW
+    assert state.current_mode() is SystemMode.PAPER
 
 
 def test_real_repo_promotion_gates_yaml_is_loadable() -> None:

@@ -71,7 +71,6 @@ def _stats_breaching(*, strategy_id: str = "strat-1"):
     [
         SystemMode.SAFE,
         SystemMode.PAPER,
-        SystemMode.SHADOW,
         SystemMode.CANARY,
         SystemMode.AUTO,
         SystemMode.LOCKED,
@@ -88,7 +87,6 @@ def test_policy_is_frozen_in_every_non_live_mode_with_override(mode: SystemMode)
     [
         SystemMode.SAFE,
         SystemMode.PAPER,
-        SystemMode.SHADOW,
         SystemMode.CANARY,
         SystemMode.LIVE,
         SystemMode.AUTO,
@@ -144,7 +142,6 @@ def test_assert_unfrozen_passes_with_none_policy_for_backwards_compat() -> None:
     [
         SystemMode.SAFE,
         SystemMode.PAPER,
-        SystemMode.SHADOW,
         SystemMode.CANARY,
         SystemMode.LIVE,  # without override
         SystemMode.AUTO,
@@ -205,7 +202,6 @@ def test_update_emitter_with_unfrozen_policy_emits() -> None:
     [
         SystemMode.SAFE,
         SystemMode.PAPER,
-        SystemMode.SHADOW,
         SystemMode.CANARY,
         SystemMode.AUTO,
         SystemMode.LOCKED,
@@ -257,7 +253,6 @@ def test_mutation_proposer_with_unfrozen_policy_proposes() -> None:
     [
         SystemMode.SAFE,
         SystemMode.PAPER,
-        SystemMode.SHADOW,
         SystemMode.CANARY,
         SystemMode.AUTO,
         SystemMode.LOCKED,
