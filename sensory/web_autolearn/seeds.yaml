@@ -1,0 +1,39 @@
+# WEBLEARN-10 — sensory.web_autolearn seed registry.
+#
+# Each top-level key is a stable seed_id used by:
+#   * the Crawler to resolve a URL,
+#   * the AIFilter to look up keywords,
+#   * the Curator to apply admissibility rules.
+#
+# Schema per seed:
+#
+#   <seed_id>:
+#     url:        canonical URL the crawler fetches (required, non-empty)
+#     topic:      topic label carried into CuratedItem.seed_topic (required)
+#     keywords:   list[str] of relevance keywords for the AIFilter
+#                 (case-insensitive, used by KeywordAIFilter)
+#     min_score:  curator threshold in [0.0, 1.0] (default 0.0)
+#     allow:      list[str]; if non-empty, at least one must appear
+#                 (case-insensitive) in title+body
+#     deny:       list[str]; any match here drops the item
+#     tags:       list[str]; carry-through tags on admitted items
+#
+# This file is **not** a SCVS source — the SCVS data_source_registry
+# has its own rows for each *provider* (Reuters, X, Reddit). This file
+# is the curator-side seed list that the Playwright crawler consumes.
+#
+# All seeds start disabled (no rows). The system is designed to run
+# with an empty seed list — the autolearn pipeline degrades to a
+# no-op rather than emitting noisy signals. Operators add seeds via
+# the dashboard once the data adapters are credentialed.
+
+# Example (commented out — uncomment + replace placeholders to enable):
+#
+# crypto_majors:
+#   url: https://example.com/feed
+#   topic: crypto
+#   keywords: [bitcoin, btc, ethereum, eth]
+#   min_score: 0.4
+#   allow: []
+#   deny: [sponsored]
+#   tags: [spot, majors]
