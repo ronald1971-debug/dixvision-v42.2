@@ -101,10 +101,10 @@ export async function postOperatorMode(
       reason: body.reason ?? "operator mode request",
       requestor: body.requestor ?? "operator",
       operator_authorized: body.operator_authorized ?? true,
-      consent_operator_id: body.consent_operator_id ?? null,
-      consent_policy_hash: body.consent_policy_hash ?? null,
-      consent_nonce: body.consent_nonce ?? null,
-      consent_ts_ns: body.consent_ts_ns ?? null,
+      consent_operator_id: body.consent_operator_id ?? "",
+      consent_policy_hash: body.consent_policy_hash ?? "",
+      consent_nonce: body.consent_nonce ?? "",
+      consent_ts_ns: body.consent_ts_ns ?? 0,
     }),
   });
   if (!res.ok) {
