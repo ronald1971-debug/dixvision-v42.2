@@ -58,3 +58,7 @@ def test_audit_wire_4_check_self_reports_sensor_array_online(state):
     status = state.system.check_self()
     assert "sensor_array online" in status.detail
     assert "12 sensors" in status.detail
+    # AUDIT-P1.3 extends the detail string with the pollable-sensor
+    # count so operators can tell at a glance whether the engine
+    # will surface hazards on every ``process`` call.
+    assert "pollable" in status.detail
