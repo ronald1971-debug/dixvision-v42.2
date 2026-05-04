@@ -26,6 +26,10 @@ rust/target/
 # but never committed.
 launcher.log
 
+# TOTAL VALIDATION report artefacts. Regenerated on every CI run and
+# uploaded via actions/upload-artifact; never committed.
+analysis/
+
 # Wave-02 React/Vite operator dashboard build artefacts
 dashboard2026/node_modules/
 dashboard2026/dist/

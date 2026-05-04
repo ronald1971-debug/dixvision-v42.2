@@ -1,0 +1,47 @@
+name: TOTAL VALIDATION
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run TOTAL VALIDATION (advisory)
+        run: python tools/total_validation.py --advisory
+
+      - name: Enforce thresholds (advisory)
+        # Advisory mode for now. Flip to ``--strict`` once the
+        # remediation backlog surfaced by the report is cleared.
+        run: python tools/enforce.py
+
+      - name: Upload analysis artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: total-validation-report
+          path: analysis/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Render summary on PR
+        if: github.event_name == 'pull_request'
+        run: |
+          {
+            echo "## TOTAL VALIDATION report"
+            echo ""
+            echo '```json'
+            cat analysis/coverage_summary.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
