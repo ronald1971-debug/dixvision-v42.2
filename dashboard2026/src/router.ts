@@ -54,6 +54,7 @@ const ASSET_ROUTES: readonly AssetRoute[] = [
 
 const SYSTEM_ROUTES: readonly SystemRoute[] = [
   "operator",
+  "plugins",
   "credentials",
   "chat",
   "indira",
@@ -68,7 +69,6 @@ const SYSTEM_ROUTES: readonly SystemRoute[] = [
   "market",
   "positions",
   "trading",
-  "plugins",
 ];
 
 const ALL_ROUTES: readonly Route[] = [...ASSET_ROUTES, ...SYSTEM_ROUTES];
