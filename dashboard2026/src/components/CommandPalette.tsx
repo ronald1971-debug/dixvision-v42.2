@@ -39,7 +39,6 @@ const ROUTE_LABELS: Record<Route, string> = {
   spot: "Spot",
   perps: "Perps",
   dex: "DEX",
-  memecoin: "Memecoin",
   forex: "Forex",
   stocks: "Stocks",
   nft: "NFT",

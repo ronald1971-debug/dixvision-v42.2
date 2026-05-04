@@ -232,6 +232,20 @@ function MemecoinCard({
         />
         <Tile label="summary" value={data.summary || "—"} />
       </div>
+      <div className="mt-3 flex items-center justify-between rounded border border-border bg-surface-2 px-3 py-2 text-sm">
+        <span className="text-slate-400">
+          Full memecoin cockpit lives on the dedicated DEXtools-styled
+          dashboard.
+        </span>
+        <a
+          href="/meme/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded border border-accent px-3 py-1 font-mono text-xs text-accent hover:bg-accent hover:text-surface"
+        >
+          open /meme/ →
+        </a>
+      </div>
     </div>
   );
 }

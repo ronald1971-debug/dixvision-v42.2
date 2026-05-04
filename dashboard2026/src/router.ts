@@ -5,9 +5,12 @@ import { useEffect, useState } from "react";
  *
  * The 2026 dashboard rebuild (DASH-A) extends the route space from the
  * original three system pages (credentials/operator/chat) to also
- * cover the seven asset-class surfaces called out in PR #2 §3:
- * spot, perps, dex, memecoin (own dashboard per operator directive),
- * forex, stocks, nft.
+ * cover the asset-class surfaces called out in PR #2 §3:
+ * spot, perps, dex, forex, stocks, nft.
+ *
+ * Memecoin lives on its own DEXtools-styled dashboard at ``/meme/``
+ * (see ``dash_meme/``). Operators jump there from the OperatorPage
+ * launcher tile rather than via a duplicate tab on /dash2.
  *
  * The FastAPI mount serves the SPA index for the `/dash2/` root only;
  * deep links use the `#/<route>` form so the server keeps serving
@@ -17,7 +20,6 @@ export type AssetRoute =
   | "spot"
   | "perps"
   | "dex"
-  | "memecoin"
   | "forex"
   | "stocks"
   | "nft";
@@ -46,7 +48,6 @@ const ASSET_ROUTES: readonly AssetRoute[] = [
   "spot",
   "perps",
   "dex",
-  "memecoin",
   "forex",
   "stocks",
   "nft",
@@ -74,11 +75,12 @@ const SYSTEM_ROUTES: readonly SystemRoute[] = [
 const ALL_ROUTES: readonly Route[] = [...ASSET_ROUTES, ...SYSTEM_ROUTES];
 
 /**
- * Default landing route. Memecoin is the surface the operator
- * explicitly wanted as its own dashboard, so it is the first thing
- * shown when `/dash2/` is opened without a hash.
+ * Default landing route. The OperatorPage is the canonical home for
+ * the cockpit — it surfaces engine status, autonomy controls, and
+ * the launcher tile for the dedicated memecoin dashboard at
+ * ``/meme/``.
  */
-export const DEFAULT_ROUTE: Route = "memecoin";
+export const DEFAULT_ROUTE: Route = "operator";
 
 export function isAssetRoute(route: Route): route is AssetRoute {
   return (ASSET_ROUTES as readonly string[]).includes(route);
