@@ -159,6 +159,21 @@ from system_engine.credentials import (
     write_credential,
 )
 from system_engine.engine import SystemEngine
+from system_engine.hazard_sensors import (
+    ClockDriftSensor,
+    ExchangeUnreachableSensor,
+    HeartbeatMissedSensor,
+    LatencySpikeSensor,
+    MarketAnomalySensor,
+    MemoryOverflowSensor,
+    OrderFloodSensor,
+    RiskSnapshotStaleSensor,
+    RuntimeBreakerOpenSensor,
+    SensorArray,
+    StaleDataSensor,
+    SystemAnomalySensor,
+    WSTimeoutSensor,
+)
 from system_engine.scvs.source_registry import (
     SourceRegistry,
     load_source_registry,
@@ -238,7 +253,30 @@ class _State:
             throttle_adapter=self.hazard_throttle,
             risk_baseline=RiskSnapshot(version=0, ts_ns=wall_ns()),
         )
-        self.system = SystemEngine()
+        # AUDIT-WIRE.4 / P1-3 — bind the 12 frozen HAZ-XX sensors
+        # into a single SensorArray and hand it to ``SystemEngine``.
+        # Without this wiring the sensor primitives existed but the
+        # engine carried no registry of them; the harness + dashboard
+        # had no way to invoke a sensor through the engine surface.
+        # Sensor-specific dispatch routing (each ``observe(...)``
+        # signature is heterogeneous) is a follow-up wave; this PR
+        # closes the "primitive built but never bound" gap so the
+        # array is observable on ``state.sensor_array`` and on
+        # ``state.system.sensor_array``.
+        self.sensor_array = SensorArray()
+        self.sensor_array.register(ClockDriftSensor())
+        self.sensor_array.register(WSTimeoutSensor())
+        self.sensor_array.register(ExchangeUnreachableSensor())
+        self.sensor_array.register(StaleDataSensor())
+        self.sensor_array.register(MemoryOverflowSensor())
+        self.sensor_array.register(LatencySpikeSensor())
+        self.sensor_array.register(HeartbeatMissedSensor())
+        self.sensor_array.register(RiskSnapshotStaleSensor())
+        self.sensor_array.register(OrderFloodSensor())
+        self.sensor_array.register(RuntimeBreakerOpenSensor())
+        self.sensor_array.register(MarketAnomalySensor())
+        self.sensor_array.register(SystemAnomalySensor())
+        self.system = SystemEngine(sensor_array=self.sensor_array)
         # Sprint-1 / Class-B "Trust the Ledger" — if the operator sets
         # ``DIXVISION_LEDGER_PATH`` the harness opens a SQLite-backed
         # authority ledger; every governance decision (mode
