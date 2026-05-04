@@ -1,26 +1,39 @@
 /** @type {import('tailwindcss').Config} */
+
+/*
+ * dash-pro.B.0 — colors resolve through CSS variables defined in
+ * src/theme/tokens.css. Each token is a space-separated RGB triplet
+ * so Tailwind opacity utilities such as `bg-surface/40` keep working.
+ *
+ * Theme switching is a one-attribute mutation on <html data-theme="…">
+ * (see src/theme/tokens.css). No bespoke `bg-bg` / `bg-surface`
+ * override CSS is required anymore — the variables drive everything.
+ */
+const withVar = (name) => `rgb(var(${name}) / <alpha-value>)`;
+
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        // Match the operator-dashboard palette so wave-02 visually
-        // continues from the vanilla pages (high-contrast dark UI).
-        bg: "#0b0d12",
-        surface: "#11141b",
-        border: "#1f2330",
-        accent: "#3aa0ff",
-        ok: "#3ddc84",
-        warn: "#ffaa3b",
-        danger: "#ff5a5a",
+        bg: withVar("--bg"),
+        surface: withVar("--surface"),
+        "surface-raised": withVar("--surface-raised"),
+        "surface-overlay": withVar("--surface-overlay"),
+        border: withVar("--border"),
+        hairline: withVar("--hairline"),
+        accent: withVar("--accent"),
+        ok: withVar("--ok"),
+        warn: withVar("--warn"),
+        danger: withVar("--danger"),
+        info: withVar("--info"),
+        "text-primary": withVar("--text-primary"),
+        "text-secondary": withVar("--text-secondary"),
+        "text-disabled": withVar("--text-disabled"),
       },
       fontFamily: {
-        mono: [
-          "ui-monospace",
-          "SFMono-Regular",
-          "Menlo",
-          "monospace",
-        ],
+        display: ["var(--font-display)"],
+        mono: ["var(--font-mono)"],
       },
     },
   },

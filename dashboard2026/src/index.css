@@ -1,6 +1,28 @@
 @import "react-grid-layout/css/styles.css";
 @import "react-resizable/css/styles.css";
 
+/*
+ * dash-pro.B.0 — Webfonts.
+ *
+ * IBM Plex Sans drives display text (operator labels, headers).
+ * JetBrains Mono drives numeric / mono surfaces (price tickers,
+ * tables, monospaced ledgers). Loaded via Google Fonts CDN for
+ * the first cut; a follow-up will vendor them so the launcher
+ * works fully offline.
+ */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+/*
+ * dash-pro.B.0 — Theme tokens are the single source of truth
+ * for the operator-dashboard palette. Tailwind utilities such
+ * as `bg-bg`, `bg-surface`, `border-border`, `text-ok`, etc.
+ * resolve through the CSS variables defined in tokens.css via
+ * the `rgb(var(--name) / <alpha-value>)` bridge in
+ * tailwind.config.js — so theme switching is a one-attribute
+ * mutation on <html data-theme="…">.
+ */
+@import "./theme/tokens.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -12,61 +34,22 @@ body,
 }
 
 body {
-  background: #0b0d12;
-  color: #e2e8f0;
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    "Helvetica Neue",
-    Arial,
-    sans-serif;
+  background: rgb(var(--bg));
+  color: rgb(var(--text-primary));
+  font-family: var(--font-display);
 }
 
-/* J-track theme paint — keyed off `data-theme` set by the
-   preferences store on <html>. Tailwind utility classes use
-   the `bg`/`surface`/`border` palette, so re-pointing those
-   CSS variables (declared via Tailwind theme.extend.colors as
-   plain hex) is done at the body level instead. The selector
-   sets background and surface tints; component borders and
-   text remain Tailwind-driven for consistency. */
-html[data-theme="midnight"] body {
-  background: #060812;
-}
-html[data-theme="midnight"] .bg-bg {
-  background-color: #060812;
-}
-html[data-theme="midnight"] .bg-surface {
-  background-color: #0a0d18;
-}
-html[data-theme="midnight"] .border-border {
-  border-color: #161a26;
-}
-html[data-theme="ash"] body {
-  background: #161821;
-  color: #f1f5f9;
-}
-html[data-theme="ash"] .bg-bg {
-  background-color: #161821;
-}
-html[data-theme="ash"] .bg-surface {
-  background-color: #1d202b;
-}
-html[data-theme="ash"] .border-border {
-  border-color: #2a2f3d;
+/* Tabular numerics by default on table cells, mono blocks, and
+ * any surface that opts in. Operators reading orderbooks and
+ * fills should never see a "1" jitter when the value changes. */
+table,
+.tabular-nums,
+.font-mono {
+  font-variant-numeric: tabular-nums;
 }
 
-/* J-track density — adjust default text size and padding on
-   widget cards. Compact shrinks the operator surface so more
-   widgets fit on a 1080p screen; comfortable expands for
-   24" / 27" desks. */
-html[data-density="compact"] {
-  font-size: 13px;
-}
-html[data-density="comfortable"] {
-  font-size: 15px;
+.font-mono {
+  font-family: var(--font-mono);
 }
 
 /* J-track layout profile — accent color hint on the top
@@ -90,15 +73,15 @@ header[data-layout-glow] {
 }
 
 .react-grid-item.react-grid-placeholder {
-  background: rgba(58, 160, 255, 0.18) !important;
-  border: 1px dashed rgba(58, 160, 255, 0.6);
+  background: var(--accent-soft) !important;
+  border: 1px dashed rgb(var(--accent) / 0.6);
   border-radius: 4px;
   opacity: 1;
 }
 
 .react-grid-item > .react-resizable-handle::after {
-  border-right-color: #1f2330;
-  border-bottom-color: #1f2330;
+  border-right-color: rgb(var(--hairline));
+  border-bottom-color: rgb(var(--hairline));
 }
 
 .widget-drag-handle {
