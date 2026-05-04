@@ -115,3 +115,58 @@ def test_backtest_endpoint_rejects_negative_slippage_with_422(
     payload["slippage_bps"] = -1.0
     res = client.post("/api/testing/backtest", json=payload)
     assert res.status_code == 422, res.text
+
+
+def test_seed_repr_matches_javascript_string_for_whole_floats() -> None:
+    """``_seed_repr`` must collapse whole-number floats to their integer
+    form so the FNV-1a seed agrees with the legacy browser fallback in
+    ``dashboard2026/src/widgets/testing/Backtester.tsx``.
+
+    JS: ``String(8.0) === "8"`` — Python: ``str(8.0) == "8.0"``. Without
+    normalisation an integer ``slippage_bps`` produced two different
+    seeds on the same payload (server vs. browser fallback), breaking
+    the bit-for-bit replay claim.
+    """
+
+    from system_engine.backtest_ingest.internal.deterministic import (
+        _seed_repr,
+    )
+
+    assert _seed_repr(8.0) == "8"
+    assert _seed_repr(0.0) == "0"
+    assert _seed_repr(-3.0) == "-3"
+    assert _seed_repr(8) == "8"
+    assert _seed_repr(8.5) == "8.5"
+    assert _seed_repr("ema_cross_20_50") == "ema_cross_20_50"
+    assert _seed_repr(True) == "true"
+    assert _seed_repr(False) == "false"
+
+
+def test_backtest_seed_stable_when_int_passed_as_float() -> None:
+    """The whole-number float ``slippage_bps=8.0`` must hash to the same
+    seed as the int ``slippage_bps=8`` (after Pydantic coercion both
+    arrive as ``float``). This pins the JS-parity normalisation in
+    ``_seed_repr`` against accidental regression.
+    """
+
+    from system_engine.backtest_ingest.internal.deterministic import (
+        _fnv1a,
+    )
+
+    parts_int: tuple[str | int | float, ...] = (
+        "ema_cross_20_50",
+        "BTC/USDT",
+        "2025-01-01T00:00:00Z",
+        "2025-04-01T00:00:00Z",
+        "next_tick",
+        8,
+    )
+    parts_float: tuple[str | int | float, ...] = (
+        "ema_cross_20_50",
+        "BTC/USDT",
+        "2025-01-01T00:00:00Z",
+        "2025-04-01T00:00:00Z",
+        "next_tick",
+        8.0,
+    )
+    assert _fnv1a(parts_int) == _fnv1a(parts_float)
