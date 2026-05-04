@@ -110,10 +110,32 @@ _LCG_INC = 1013904223
 _U32 = 0xFFFFFFFF
 
 
+def _seed_repr(part: str | int | float) -> str:
+    """Render ``part`` for FNV-1a hashing with JS ``String(...)`` parity.
+
+    JavaScript's ``String(Number)`` collapses whole-number floats to their
+    integer form (``String(8.0) === "8"``) while Python's ``str(8.0)``
+    preserves the ``.0`` suffix. Both sides feed the same FNV-1a, so any
+    integer slippage value (e.g. ``slippage_bps=8``) would produce a
+    different seed on the server and the (legacy) browser fallback. We
+    normalise whole-number floats here so the hashes stay byte-identical.
+    """
+
+    if isinstance(part, bool):  # ``bool`` is an ``int`` subclass.
+        return "true" if part else "false"
+    if isinstance(part, float):
+        if part.is_integer():
+            # ``int(float('inf'))`` raises; ``is_integer`` returns False
+            # for inf/NaN so this branch is safe.
+            return str(int(part))
+        return repr(part)
+    return str(part)
+
+
 def _fnv1a(parts: tuple[str | int | float, ...]) -> int:
     h = _FNV_OFFSET
     for part in parts:
-        for ch in str(part):
+        for ch in _seed_repr(part):
             h ^= ord(ch)
             h = (h * _FNV_PRIME) & _U32
     return h
