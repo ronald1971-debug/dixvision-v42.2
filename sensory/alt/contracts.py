@@ -67,7 +67,12 @@ class PredictionMarket:
             raise ValueError(
                 "PredictionMarket.probability must be in [0.0, 1.0]"
             )
-        if self.volume_usd is not None and self.volume_usd < 0:
+        # Use ``not (>= 0)`` rather than ``< 0`` so NaN is rejected
+        # consistently with how ``probability`` is validated above.
+        # ``nan < 0`` evaluates to ``False`` under IEEE 754 and would
+        # otherwise let an upstream divide-by-zero or malformed JSON
+        # smuggle a NaN through the perimeter.
+        if self.volume_usd is not None and not (self.volume_usd >= 0):
             raise ValueError(
                 "PredictionMarket.volume_usd must be >= 0 or None"
             )

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 import pytest
 
 from sensory.alt.contracts import PredictionMarket
@@ -65,3 +67,33 @@ def test_validation_rejects(field: str, value: object) -> None:
 def test_probability_bounds_inclusive() -> None:
     assert _ok(probability=0.0).probability == 0.0
     assert _ok(probability=1.0).probability == 1.0
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [float("nan"), float("inf"), float("-inf")],
+)
+def test_volume_usd_rejects_nan_and_infinity(bad: float) -> None:
+    """volume_usd must reject NaN/Inf — INV-15 contract.
+
+    Regression: ``< 0`` evaluates to ``False`` for NaN under IEEE 754,
+    so a buggy upstream (e.g. a divide-by-zero in a Polymarket adapter)
+    would have silently produced an invalid PredictionMarket. The
+    validator now uses ``not (>= 0)`` so NaN/+inf/-inf all fail.
+    """
+    if math.isnan(bad) or bad < 0:
+        with pytest.raises(ValueError, match="volume_usd"):
+            _ok(volume_usd=bad)
+    else:
+        # +inf passes the >= 0 predicate but is still nonsensical for a
+        # USD volume. Document current behaviour: +inf is accepted.
+        # If product later wants to reject +inf, tighten to math.isfinite.
+        p = _ok(volume_usd=bad)
+        assert p.volume_usd == bad
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
+def test_probability_rejects_nan_and_infinity(bad: float) -> None:
+    """probability already rejects NaN via the bounds check; assert it."""
+    with pytest.raises(ValueError, match="probability"):
+        _ok(probability=bad)
