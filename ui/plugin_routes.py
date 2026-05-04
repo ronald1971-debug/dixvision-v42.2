@@ -296,7 +296,17 @@ class PluginRegistry:
                 name = getattr(status, "name", "")
                 if not name:
                     continue
-                connected = bool(getattr(status, "connected", False))
+                # AdapterStatus duck-types `state` as an
+                # `AdapterState` enum (StrEnum). READY/CONNECTING/
+                # DEGRADED all count as "active" — only DISCONNECTED
+                # and HALTED render as DISABLED on the plugin grid.
+                state_value = getattr(status, "state", None)
+                state_str = (
+                    state_value.value
+                    if hasattr(state_value, "value")
+                    else str(state_value)
+                )
+                connected = state_str in ("READY", "CONNECTING", "DEGRADED")
                 lifecycle = (
                     PluginLifecycle.ACTIVE.value
                     if connected
