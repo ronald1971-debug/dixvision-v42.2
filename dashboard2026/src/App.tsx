@@ -28,7 +28,6 @@ import { TestingPage } from "@/pages/TestingPage";
 import { TradingPage } from "@/pages/TradingPage";
 import { DexPage } from "@/pages/asset/DexPage";
 import { ForexPage } from "@/pages/asset/ForexPage";
-import { MemecoinPage } from "@/pages/asset/MemecoinPage";
 import { NftPage } from "@/pages/asset/NftPage";
 import { PerpsPage } from "@/pages/asset/PerpsPage";
 import { SpotPage } from "@/pages/asset/SpotPage";
@@ -46,8 +45,6 @@ function renderRoute(route: Route) {
       return <PerpsPage />;
     case "dex":
       return <DexPage />;
-    case "memecoin":
-      return <MemecoinPage />;
     case "forex":
       return <ForexPage />;
     case "stocks":
