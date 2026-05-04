@@ -56,15 +56,30 @@ Lint scope:
 from __future__ import annotations
 
 import os
-from typing import Final
+from typing import Final, Protocol
 
 from core.contracts.events import SignalEvent
 from core.contracts.execution_intent import (
     AUTHORISED_INTENT_ORIGINS,
     ExecutionIntent,
+    compute_content_hash,
     create_execution_intent,
     mark_approved,
 )
+
+
+class _IntentSigner(Protocol):
+    """Duck-typed signer for harness-approved intents (AUDIT-P1.1).
+
+    ``governance_engine.control_plane.decision_signer.DecisionSigner``
+    satisfies this protocol structurally. Keeping the dependency
+    duck-typed avoids an import cycle (``governance_engine`` already
+    imports this module via ``governance_engine.engine``).
+    """
+
+    def sign(
+        self, *, content_hash: str, governance_decision_id: str
+    ) -> str: ...
 
 __all__ = [
     "DEFAULT_HARNESS_ORIGIN",
@@ -140,6 +155,7 @@ def approve_signal_for_execution(
     origin: str = DEFAULT_HARNESS_ORIGIN,
     decision_id: str | None = None,
     enabled: bool | None = None,
+    signer: _IntentSigner | None = None,
 ) -> ExecutionIntent:
     """Build + approve an :class:`ExecutionIntent` in one deterministic call.
 
@@ -206,11 +222,32 @@ def approve_signal_for_execution(
         origin=origin,
         signal=signal,
     )
+    governance_decision_id = (
+        decision_id
+        if decision_id is not None
+        else f"{HARNESS_DECISION_ID_PREFIX}:{ts_ns}"
+    )
+    decision_signature = ""
+    if signer is not None:
+        # AUDIT-P1.1 -- ``mark_approved`` re-hashes the intent with
+        # ``approved_by_governance=True``, which is a different hash
+        # than the un-approved ``intent.content_hash`` we just built.
+        # The HMAC must therefore cover the *approved* content hash
+        # so the AuthorityGuard verifier (which sees the post-approval
+        # intent) can reproduce the signed input bit-for-bit.
+        approved_content_hash = compute_content_hash(
+            ts_ns=ts_ns,
+            origin=origin,
+            signal=signal,
+            approved_by_governance=True,
+            governance_decision_id=governance_decision_id,
+        )
+        decision_signature = signer.sign(
+            content_hash=approved_content_hash,
+            governance_decision_id=governance_decision_id,
+        )
     return mark_approved(
         intent,
-        governance_decision_id=(
-            decision_id
-            if decision_id is not None
-            else f"{HARNESS_DECISION_ID_PREFIX}:{ts_ns}"
-        ),
+        governance_decision_id=governance_decision_id,
+        decision_signature=decision_signature,
     )

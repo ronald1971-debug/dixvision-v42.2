@@ -96,7 +96,12 @@ from dashboard_backend.control_plane.strategy_lifecycle_panel import (
 )
 from evolution_engine.engine import EvolutionEngine
 from execution_engine.engine import ExecutionEngine
+from execution_engine.execution_gate import AuthorityGuard
 from execution_engine.protections.feedback import FeedbackCollector
+from governance_engine.control_plane.decision_signer import (
+    DecisionSigner,
+    make_decision_signer,
+)
 from governance_engine.control_plane.ledger_authority_writer import (
     LedgerAuthorityWriter,
 )
@@ -251,6 +256,28 @@ class _State:
         # :meth:`ExecutionEngine.execute` projects the active throttle
         # decision onto the configured baseline.
         self.hazard_throttle = HazardThrottleAdapter()
+        # AUDIT-P1.1 / Hardening-S1 item 2 -- bind the per-process
+        # :class:`DecisionSigner` to the Execution Gate so every
+        # harness-approved intent is HMAC-signed at approval time and
+        # verified at the gate. Pre-wiring the harness constructed a
+        # bare ``ExecutionEngine()`` whose lazy
+        # :attr:`ExecutionEngine.guard` materialised an
+        # ``AuthorityGuard()`` with ``signature_verifier=None``, so
+        # the "no signature -> no execution" guarantee documented in
+        # ``decision_signer.py`` was inoperative in production. Holding
+        # the signer + guard on ``_State`` closes the gap and gives
+        # downstream callers a single discoverable entry point
+        # (``self.decision_signer``, ``self.authority_guard``).
+        self.decision_signer: DecisionSigner = make_decision_signer()
+        self.authority_guard = AuthorityGuard(
+            signature_verifier=lambda content_hash, decision_id, signature: (
+                self.decision_signer.verify(
+                    content_hash=content_hash,
+                    governance_decision_id=decision_id,
+                    signature=signature,
+                )
+            ),
+        )
         # The baseline RiskSnapshot is the un-throttled FastRiskCache
         # view; the harness has no live cache yet (Phase 7 wave) so
         # the seed below is a deterministic, permissive baseline that
@@ -268,6 +295,7 @@ class _State:
         self.feedback_collector = FeedbackCollector()
         self.learning_interface = LearningInterface()
         self.execution = ExecutionEngine(
+            guard=self.authority_guard,
             throttle_adapter=self.hazard_throttle,
             risk_baseline=self.risk_baseline,
             feedback_collector=self.feedback_collector,
@@ -645,7 +673,9 @@ class _State:
             )
             for sig in self.intelligence.on_market(tick):
                 self.record("intelligence", sig)
-                intent = approve_signal_for_execution(sig, ts_ns=wall_ns())
+                intent = approve_signal_for_execution(
+                    sig, ts_ns=wall_ns(), signer=self.decision_signer
+                )
                 for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
 
@@ -668,7 +698,9 @@ class _State:
             self.record("cognitive_chat", sig)
             for ev in self.intelligence.process(sig):
                 self.record("intelligence", ev)
-                intent = approve_signal_for_execution(ev, ts_ns=wall_ns())
+                intent = approve_signal_for_execution(
+                    ev, ts_ns=wall_ns(), signer=self.decision_signer
+                )
                 for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
 
@@ -688,7 +720,9 @@ class _State:
             self.record("news.coindesk", sig)
             for ev in self.intelligence.process(sig):
                 self.record("intelligence", ev)
-                intent = approve_signal_for_execution(ev, ts_ns=wall_ns())
+                intent = approve_signal_for_execution(
+                    ev, ts_ns=wall_ns(), signer=self.decision_signer
+                )
                 for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
 
@@ -1724,7 +1758,9 @@ def post_tick(body: TickIn) -> dict[str, Any]:
         for sig in STATE.intelligence.on_market(tick):
             STATE.record("intelligence", sig)
             signals_out.append(_event_to_dict(sig))
-            intent = approve_signal_for_execution(sig, ts_ns=wall_ns())
+            intent = approve_signal_for_execution(
+                sig, ts_ns=wall_ns(), signer=STATE.decision_signer
+            )
             for downstream in STATE.execution.execute(intent):
                 STATE.record("execution", downstream)
                 executions_out.append(_event_to_dict(downstream))
@@ -1755,7 +1791,9 @@ def post_signal(body: SignalIn) -> dict[str, Any]:
         STATE.record("ui_harness", sig)
         for ev in STATE.intelligence.process(sig):
             STATE.record("intelligence", ev)
-            intent = approve_signal_for_execution(ev, ts_ns=wall_ns())
+            intent = approve_signal_for_execution(
+                ev, ts_ns=wall_ns(), signer=STATE.decision_signer
+            )
             for downstream in STATE.execution.execute(intent):
                 STATE.record("execution", downstream)
                 out_events.append(_event_to_dict(downstream))
