@@ -36,14 +36,30 @@ set "DASH_URL=http://127.0.0.1:8080/meme/"
 set "DASH_PORT=8080"
 set "LAUNCHER_LOG=%REPO_ROOT%\launcher_meme.log"
 
+REM --- AUDIT-P0.3 / Sprint-1 "Trust the Ledger" ---------------------------------
+REM Same governance ledger as start_dixvision.bat — both launchers
+REM share the SQLite store under ``%APPDATA%\DIX VISION\governance.db``
+REM so DIX VISION and DIX MEME read/write the same chain. The harness
+REM refuses to boot without ``DIXVISION_LEDGER_PATH``; we default it
+REM here unless the operator has exported it themselves before launch.
+if not defined DIXVISION_LEDGER_PATH (
+    set "DIXVISION_LEDGER_DIR=%APPDATA%\DIX VISION"
+    if not exist "%APPDATA%\DIX VISION" mkdir "%APPDATA%\DIX VISION" >nul 2>&1
+    set "DIXVISION_LEDGER_PATH=%APPDATA%\DIX VISION\governance.db"
+)
+
 break > "%LAUNCHER_LOG%" 2>nul
 
 echo.
 echo === DIX MEME — Windows launcher ===
-echo Repo:  %REPO_ROOT%
-echo Venv:  %VENV_DIR%
-echo URL:   %DASH_URL%
-echo Log:   %LAUNCHER_LOG%
+echo Repo:   %REPO_ROOT%
+echo Venv:   %VENV_DIR%
+echo URL:    %DASH_URL%
+echo Log:    %LAUNCHER_LOG%
+echo Ledger: %DIXVISION_LEDGER_PATH%
+echo.
+echo Governance ledger is SQLite-backed and shared with DIX VISION.
+echo Set DIXVISION_LEDGER_PATH before launch to override the default.
 echo.
 echo NOTE: The harness keeps running (sensing, learning, governance,
 echo       audit ledger) regardless of which dashboard is open or

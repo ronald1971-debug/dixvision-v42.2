@@ -320,6 +320,24 @@ class _State:
             else LedgerAuthorityWriter()
         )
         self.ledger_writer = ledger
+        # AUDIT-P0.3 launcher polish -- print a one-line boot banner so
+        # the operator (and the launcher.log paste-back) confirms which
+        # ledger file the harness opened. Prefixed ``[ledger]`` so log
+        # scrapers can grep it; goes to stdout so uvicorn's stdout pipe
+        # captures it alongside ``Application startup complete``.
+        if ledger_path:
+            print(
+                f"[ledger] authority ledger mounted: {ledger_path} "
+                f"(SQLite, crash-recoverable)",
+                flush=True,
+            )
+        else:
+            print(
+                "[ledger] authority ledger mounted: <in-memory> "
+                "(DIXVISION_PERMIT_EPHEMERAL_LEDGER=1 -- audit chain "
+                "will be lost on restart)",
+                flush=True,
+            )
         # AUDIT-WIRE.2 / P0-3 — close the closed learning loop.
         # ``GovernanceEngine`` falls through to a ``UPDATE_PROPOSED_AUDIT``
         # ledger row whenever ``strategy_registry`` is ``None``, which is
