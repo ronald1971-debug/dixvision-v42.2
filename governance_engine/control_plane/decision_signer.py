@@ -86,6 +86,7 @@ __all__ = [
     "DecisionSigner",
     "SignatureMismatchError",
     "canonical_signing_input",
+    "make_decision_signer",
 ]
 
 
