@@ -4,6 +4,7 @@ import { AutonomyRibbon } from "@/components/AutonomyRibbon";
 import { CommandPalette } from "@/components/CommandPalette";
 import { ModeRibbon } from "@/components/ModeRibbon";
 import { LiveStatusPill } from "@/components/LiveStatusPill";
+import { MockDataBanner } from "@/components/MockDataBanner";
 import { PadlockFloors } from "@/components/PadlockFloors";
 import { PreferencesBar } from "@/components/PreferencesBar";
 import { PromoteChain } from "@/components/PromoteChain";
@@ -122,8 +123,11 @@ export function App() {
     // J-track pop-out window: chromeless render — no sidebar, no
     // top ribbons, no command palette so the operator can dock the
     // route into a second monitor with maximum vertical real estate.
+    // The mock-data banner still renders so the operator can never
+    // mistake mock orderflow data for live data on a docked monitor.
     return (
       <div className="flex h-full flex-col">
+        <MockDataBanner />
         <main className="flex-1 overflow-auto px-3 py-2">
           {renderRoute(route)}
         </main>
@@ -134,6 +138,7 @@ export function App() {
 
   return (
     <div className="flex h-full flex-col">
+      <MockDataBanner />
       <header
         data-layout-glow
         className="flex flex-col gap-2 border-b border-border bg-surface px-4 py-2"
