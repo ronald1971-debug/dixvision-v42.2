@@ -103,7 +103,12 @@ class CuratorRules:
                     f"seed {seed_id!r} topic must be a string"
                 )
             min_score_raw = body.get("min_score", 0.0)
-            if not isinstance(min_score_raw, (int, float)):
+            # ``bool`` is a subclass of ``int`` in Python, and YAML parses
+            # ``yes``/``true``/``on`` as ``True`` — reject explicitly so a
+            # ``min_score: yes`` line cannot silently become ``1.0``.
+            if isinstance(min_score_raw, bool) or not isinstance(
+                min_score_raw, (int, float)
+            ):
                 raise ValueError(
                     f"seed {seed_id!r} min_score must be a number"
                 )

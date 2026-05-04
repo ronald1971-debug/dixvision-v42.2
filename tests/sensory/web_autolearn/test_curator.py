@@ -136,6 +136,22 @@ def test_curator_rules_rejects_non_numeric_min_score() -> None:
         )
 
 
+def test_curator_rules_rejects_bool_min_score() -> None:
+    """YAML ``yes``/``true``/``on`` parses as Python ``True`` and ``bool``
+    is an ``int`` subclass — reject explicitly so a misspelled YAML line
+    cannot silently become ``min_score=1.0``.
+    """
+
+    with pytest.raises(ValueError, match="min_score"):
+        CuratorRules.from_mapping(
+            {"s": {"topic": "x", "min_score": True}}  # type: ignore[arg-type]
+        )
+    with pytest.raises(ValueError, match="min_score"):
+        CuratorRules.from_mapping(
+            {"s": {"topic": "x", "min_score": False}}  # type: ignore[arg-type]
+        )
+
+
 def test_curator_rules_rejects_empty_topic() -> None:
     with pytest.raises(ValueError, match="topic"):
         CuratorRules.from_mapping({"s": {"topic": ""}})
