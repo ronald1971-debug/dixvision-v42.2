@@ -175,7 +175,8 @@ class PolicyHashAnchor:
         (severity ``CRITICAL``, code ``HAZ-POLICY-DRIFT``) the moment
         any file is missing, unreadable, or mutated. The hazard's
         ``meta`` carries the per-file diagnosis (``<name>_status`` is
-        one of ``"ok"`` / ``"missing"`` / ``"mismatch"``) so the
+        one of ``"ok"`` / ``"missing"`` / ``"mismatch"`` / ``"unreadable"``)
+        so the
         operator dashboard can pinpoint which file drifted without
         reading the disk again.
 
@@ -204,6 +205,19 @@ class PolicyHashAnchor:
                 live = compute_file_hash(entry.path)
             except FileNotFoundError:
                 per_file_status[f"{name}_status"] = "missing"
+                any_drift = True
+                if not first_offender:
+                    first_offender = name
+                continue
+            except OSError as exc:
+                # Honour the "never raises" contract: any I/O failure
+                # (PermissionError, IsADirectoryError, transient disk
+                # error, etc.) is itself drift -- the file isn't a
+                # readable document of record any more. Surface the
+                # exception class on the per-file meta so the audit
+                # row records *why* the read failed.
+                per_file_status[f"{name}_status"] = "unreadable"
+                per_file_status[f"{name}_error"] = type(exc).__name__
                 any_drift = True
                 if not first_offender:
                     first_offender = name

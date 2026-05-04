@@ -88,6 +88,39 @@ def test_verify_no_drift_reports_missing_file(tmp_path: Path) -> None:
     assert hazard.meta["b_status"] == "missing"
 
 
+def test_verify_no_drift_reports_unreadable_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Any non-FileNotFoundError I/O failure must surface as drift, not raise.
+
+    The "never raises" contract on ``verify_no_drift`` matters because the
+    method is called on a hot path (periodic drift checks); an unhandled
+    ``PermissionError`` from a chmod 000 / racing replace would otherwise
+    crash the monitoring loop instead of producing the CRITICAL hazard.
+    """
+
+    files = _make_files(tmp_path)
+    ledger = LedgerAuthorityWriter()
+    anchor = PolicyHashAnchor(ledger=ledger, files=files)
+    anchor.bind_session(ts_ns=100, requestor="test")
+
+    real_read_bytes = Path.read_bytes
+
+    def _explode(self: Path) -> bytes:
+        if self == files[0][1]:
+            raise PermissionError("simulated chmod 000")
+        return real_read_bytes(self)
+
+    monkeypatch.setattr(Path, "read_bytes", _explode)
+
+    hazard = anchor.verify_no_drift(ts_ns=200)
+    assert hazard is not None
+    assert hazard.severity is HazardSeverity.CRITICAL
+    assert hazard.meta["a_status"] == "unreadable"
+    assert hazard.meta["a_error"] == "PermissionError"
+    assert hazard.meta["b_status"] == "ok"
+
+
 def test_verify_no_drift_returns_hazard_when_never_bound(tmp_path: Path) -> None:
     files = _make_files(tmp_path)
     ledger = LedgerAuthorityWriter()
