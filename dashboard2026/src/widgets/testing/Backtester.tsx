@@ -2,6 +2,12 @@ import { useMemo, useState } from "react";
 
 import { Activity, Play, Settings2 } from "lucide-react";
 
+import {
+  BacktestEndpointUnavailableError,
+  runBacktest,
+  type BacktestRunResponse,
+} from "../../api/testing";
+
 /**
  * Backtester widget (PR-#2 spec §5.1 — "Backtest Lab").
  *
@@ -225,12 +231,14 @@ export function Backtester() {
   const [fillModel, setFillModel] = useState<FillModel>("next_tick");
   const [walkForward, setWalkForward] = useState<boolean>(false);
   const [report, setReport] = useState<Report | null>(null);
+  const [source, setSource] = useState<"server" | "local" | null>(null);
+  const [running, setRunning] = useState<boolean>(false);
 
   const startIso = useMemo(() => `${start}T00:00:00Z`, [start]);
   const endIso = useMemo(() => `${end}T00:00:00Z`, [end]);
 
-  function run() {
-    const r = runDeterministicBacktest(
+  function localFallback(): Report {
+    return runDeterministicBacktest(
       strategy,
       symbol,
       startIso,
@@ -238,7 +246,54 @@ export function Backtester() {
       fillModel,
       slippageBps,
     );
-    setReport(r);
+  }
+
+  function adoptServerReport(res: BacktestRunResponse): Report {
+    return {
+      equity: res.equity,
+      drawdown: res.drawdown,
+      trades: res.trades,
+      metrics: {
+        final_equity_pct: res.metrics.final_equity_pct,
+        cagr: res.metrics.cagr,
+        sharpe: res.metrics.sharpe,
+        sortino: res.metrics.sortino,
+        max_dd_pct: res.metrics.max_dd_pct,
+        win_rate: res.metrics.win_rate,
+        profit_factor:
+          res.metrics.profit_factor === null
+            ? Infinity
+            : res.metrics.profit_factor,
+        avg_trade_pct: res.metrics.avg_trade_pct,
+        longest_loss_streak: res.metrics.longest_loss_streak,
+        n_trades: res.metrics.n_trades,
+      },
+    };
+  }
+
+  async function run() {
+    setRunning(true);
+    try {
+      const res = await runBacktest({
+        strategy,
+        symbol,
+        start_iso: startIso,
+        end_iso: endIso,
+        fill_model: fillModel,
+        slippage_bps: slippageBps,
+      });
+      setReport(adoptServerReport(res));
+      setSource("server");
+    } catch (err) {
+      if (!(err instanceof BacktestEndpointUnavailableError)) {
+        // Surface non-network errors so the operator notices.
+        console.error(err);
+      }
+      setReport(localFallback());
+      setSource("local");
+    } finally {
+      setRunning(false);
+    }
   }
 
   return (
@@ -252,14 +307,31 @@ export function Backtester() {
           <span className="text-[10px] text-slate-500">
             PR-#2 §5.1 · backtest lab
           </span>
+          {source !== null && (
+            <span
+              className={
+                source === "server"
+                  ? "rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-[1px] text-[10px] uppercase tracking-wide text-emerald-300"
+                  : "rounded border border-amber-500/30 bg-amber-500/10 px-2 py-[1px] text-[10px] uppercase tracking-wide text-amber-300"
+              }
+              title={
+                source === "server"
+                  ? "Result came from /api/testing/backtest"
+                  : "Backend unreachable — fell back to client-side seed"
+              }
+            >
+              {source === "server" ? "server" : "local seed"}
+            </span>
+          )}
         </div>
         <button
           type="button"
           onClick={run}
-          className="flex items-center gap-1 rounded border border-accent/40 bg-accent/10 px-3 py-1 text-[11px] text-accent hover:border-accent"
+          disabled={running}
+          className="flex items-center gap-1 rounded border border-accent/40 bg-accent/10 px-3 py-1 text-[11px] text-accent hover:border-accent disabled:cursor-wait disabled:opacity-50"
         >
           <Play className="h-3 w-3" />
-          Run
+          {running ? "Running…" : "Run"}
         </button>
       </header>
 

@@ -166,6 +166,10 @@ from intelligence_engine.trader_modeling import (
 from learning_engine.engine import LearningEngine
 from state.ledger.reader import LedgerReader
 from system.time_source import utc_now, wall_ns
+from system_engine.backtest_ingest.internal import (
+    BacktestRequest,
+    run_deterministic_backtest,
+)
 from system_engine.coupling import HazardThrottleAdapter
 from system_engine.credentials import (
     DEFAULT_TIMEOUT_S as CREDENTIAL_VERIFY_TIMEOUT_S,
@@ -1002,6 +1006,26 @@ class SignalIn(BaseModel):
     confidence: float = Field(..., ge=0.0, le=1.0)
     ts_ns: int | None = None
     qty: float | None = None
+
+
+class BacktestRunIn(BaseModel):
+    """Request envelope for ``POST /api/testing/backtest`` (AUDIT-P2.1).
+
+    Mirrors the form fields surfaced by the dashboard ``Backtester``
+    widget. The deterministic walk is read-only — it never produces an
+    :class:`ExecutionIntent`, never writes to the authority ledger,
+    never feeds the learning loop. The real
+    :class:`~core.contracts.backtest_result.BacktestResult` ingestion
+    seam (Paper-S3) remains the only path that grafts external
+    backtests into Indira's learning surface.
+    """
+
+    strategy: str = Field(..., min_length=1, max_length=64)
+    symbol: str = Field(..., min_length=1, max_length=32)
+    start_iso: str = Field(..., min_length=10, max_length=40)
+    end_iso: str = Field(..., min_length=10, max_length=40)
+    fill_model: str = Field(default="next_tick", min_length=1, max_length=32)
+    slippage_bps: float = Field(default=8.0, ge=0.0, le=10000.0)
 
 
 class TradingViewObservationIn(BaseModel):
@@ -2023,6 +2047,80 @@ def get_events(limit: int = 50) -> dict[str, Any]:
     with STATE.lock:
         items = list(STATE.events)[:limit]
     return {"events": items}
+
+
+@app.post("/api/testing/backtest")
+def post_testing_backtest(body: BacktestRunIn) -> dict[str, Any]:
+    """AUDIT-P2.1 — canonical server-side deterministic backtest.
+
+    Runs the same hash-seeded walk the dashboard ``Backtester`` widget
+    historically did entirely in-browser. Pulling the algorithm into
+    the harness gives the audit trail a single source of truth: every
+    backtest the operator runs is keyed by a stable seed of
+    ``(strategy, symbol, range, fill_model, slippage_bps)`` and can be
+    re-run identically by replaying the same payload.
+
+    The endpoint is read-only — running a backtest never produces an
+    :class:`ExecutionIntent`, never writes to the authority ledger, and
+    never feeds the learning loop. The
+    :class:`~core.contracts.backtest_result.BacktestResult` ingestion
+    seam (Paper-S3) remains the only path that grafts external
+    backtests into Indira's learning surface.
+    """
+
+    try:
+        req = BacktestRequest(
+            strategy=body.strategy,  # type: ignore[arg-type]
+            symbol=body.symbol,
+            start_iso=body.start_iso,
+            end_iso=body.end_iso,
+            fill_model=body.fill_model,  # type: ignore[arg-type]
+            slippage_bps=body.slippage_bps,
+        )
+        report = run_deterministic_backtest(req)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    metrics = report.metrics
+    return {
+        "seed": report.seed,
+        "request": {
+            "strategy": report.request.strategy,
+            "symbol": report.request.symbol,
+            "start_iso": report.request.start_iso,
+            "end_iso": report.request.end_iso,
+            "fill_model": report.request.fill_model,
+            "slippage_bps": report.request.slippage_bps,
+        },
+        "equity": list(report.equity),
+        "drawdown": list(report.drawdown),
+        "trades": [
+            {
+                "ts_iso": trade.ts_iso,
+                "side": trade.side,
+                "pnl_pct": trade.pnl_pct,
+                "bars_held": trade.bars_held,
+            }
+            for trade in report.trades
+        ],
+        "metrics": {
+            "final_equity_pct": metrics.final_equity_pct,
+            "cagr": metrics.cagr,
+            "sharpe": metrics.sharpe,
+            "sortino": metrics.sortino,
+            "max_dd_pct": metrics.max_dd_pct,
+            "win_rate": metrics.win_rate,
+            "profit_factor": (
+                None
+                if metrics.profit_factor == float("inf")
+                else metrics.profit_factor
+            ),
+            "avg_trade_pct": metrics.avg_trade_pct,
+            "longest_loss_streak": metrics.longest_loss_streak,
+            "n_trades": metrics.n_trades,
+        },
+        "notes": list(report.notes),
+    }
 
 
 # ---------------------------------------------------------------------------
