@@ -157,6 +157,7 @@ from system_engine.scvs.source_registry import (
     SourceRegistry,
     load_source_registry,
 )
+from ui._ledger_boot import resolve_ledger_path
 from ui.cognitive_chat_runtime import (
     ChatTurnDisabled,
     ChatTurnNoProvider,
@@ -220,7 +221,16 @@ class _State:
         # writer replays existing rows on construction and runs a
         # boot-time hash-chain verification gate so a tampered file
         # aborts startup loudly.
-        ledger_path = os.environ.get("DIXVISION_LEDGER_PATH")
+        #
+        # AUDIT-P0.3 — the silent fallback to an in-memory writer when
+        # the env var was unset meant default operator deployments
+        # could run for hours believing every decision was persisted
+        # while losing the entire chain on restart. ``resolve_ledger_path``
+        # now refuses to boot without persistence unless the operator
+        # has explicitly set ``DIXVISION_PERMIT_EPHEMERAL_LEDGER=1``
+        # (the test suite sets this at session start in
+        # ``tests/conftest.py``).
+        ledger_path = resolve_ledger_path()
         ledger = (
             LedgerAuthorityWriter(db_path=ledger_path)
             if ledger_path
