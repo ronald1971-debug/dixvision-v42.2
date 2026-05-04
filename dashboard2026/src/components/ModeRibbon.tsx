@@ -1,6 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
 import { fetchMode } from "@/api/dashboard";
+import { postOperatorUnlock } from "@/api/operator";
 
 /**
  * 7-state Mode FSM ribbon — the single most important indicator on
@@ -16,6 +18,12 @@ import { fetchMode } from "@/api/dashboard";
  * Source of truth: `/api/dashboard/mode`, polled every 2 s. The chip
  * highlighting reflects the *Governance ledger* state, never any UI
  * setting.
+ *
+ * When the FSM reports `is_locked === true` the ribbon also exposes
+ * an inline **Unlock** button that POSTs `/api/operator/action/unlock`
+ * (mediated by the OperatorInterfaceBridge → REQUEST_UNLOCK). On
+ * approval the bridge transitions the mode to SAFE and the next 2 s
+ * poll redraws the ribbon.
  */
 
 type Tone = "neutral" | "info" | "warn" | "danger" | "ok" | "alert";
@@ -90,10 +98,54 @@ const TONE_ACTIVE: Record<Tone, string> = {
 };
 
 export function ModeRibbon() {
+  const queryClient = useQueryClient();
+  const [feedback, setFeedback] = useState<{
+    tone: "ok" | "danger";
+    text: string;
+  } | null>(null);
+
   const { data, isError } = useQuery({
     queryKey: ["dashboard", "mode"],
     queryFn: ({ signal }) => fetchMode(signal),
     refetchInterval: 2_000,
+  });
+
+  const unlockMutation = useMutation({
+    mutationFn: () =>
+      postOperatorUnlock({
+        reason: "operator unlock from dashboard ribbon",
+        requestor: "operator",
+      }),
+    onSuccess: (response) => {
+      const decisionReason =
+        response.decision &&
+        typeof response.decision === "object" &&
+        typeof (response.decision as { reason?: unknown }).reason === "string"
+          ? ((response.decision as { reason: string }).reason)
+          : null;
+      if (response.approved) {
+        setFeedback({
+          tone: "ok",
+          text: response.summary || "unlock approved",
+        });
+      } else {
+        setFeedback({
+          tone: "danger",
+          text:
+            decisionReason ??
+            response.summary ??
+            "unlock refused by governance",
+        });
+      }
+      // Force the polling query to refetch immediately so the chip
+      // flips off LOCKED without waiting the full 2 s window.
+      void queryClient.invalidateQueries({ queryKey: ["dashboard", "mode"] });
+    },
+    onError: (err: unknown) => {
+      const text =
+        err instanceof Error ? err.message : "unlock request failed";
+      setFeedback({ tone: "danger", text });
+    },
   });
 
   const currentMode = data?.current_mode ?? null;
@@ -102,39 +154,69 @@ export function ModeRibbon() {
 
   return (
     <div
-      className="flex items-center gap-1 font-mono text-[11px] uppercase tracking-wider"
+      className="flex flex-col gap-1 font-mono text-[11px] uppercase tracking-wider"
       role="status"
       aria-label="mode ribbon"
       data-testid="mode-ribbon"
     >
-      {CHIPS.map((chip) => {
-        const isActive = currentMode === chip.name;
-        const isLegalTarget = legalTargets.has(chip.name);
-        const baseClass =
-          "rounded border px-2 py-1 leading-none transition-colors duration-150";
-        let cls: string;
-        if (isError) {
-          cls = `${baseClass} ${TONE_BG.neutral} opacity-50`;
-        } else if (isActive) {
-          cls = `${baseClass} ${TONE_ACTIVE[chip.tone]} shadow-sm`;
-        } else if (isLegalTarget) {
-          cls = `${baseClass} ${TONE_BG[chip.tone]}`;
-        } else {
-          cls = `${baseClass} ${TONE_BG.neutral} opacity-60`;
-        }
-        return (
-          <span
-            key={chip.name}
-            className={cls}
-            title={chip.tooltip}
-            data-active={isActive ? "true" : "false"}
-            data-legal-target={isLegalTarget ? "true" : "false"}
+      <div className="flex items-center gap-1">
+        {CHIPS.map((chip) => {
+          const isActive = currentMode === chip.name;
+          const isLegalTarget = legalTargets.has(chip.name);
+          const baseClass =
+            "rounded border px-2 py-1 leading-none transition-colors duration-150";
+          let cls: string;
+          if (isError) {
+            cls = `${baseClass} ${TONE_BG.neutral} opacity-50`;
+          } else if (isActive) {
+            cls = `${baseClass} ${TONE_ACTIVE[chip.tone]} shadow-sm`;
+          } else if (isLegalTarget) {
+            cls = `${baseClass} ${TONE_BG[chip.tone]}`;
+          } else {
+            cls = `${baseClass} ${TONE_BG.neutral} opacity-60`;
+          }
+          return (
+            <span
+              key={chip.name}
+              className={cls}
+              title={chip.tooltip}
+              data-active={isActive ? "true" : "false"}
+              data-legal-target={isLegalTarget ? "true" : "false"}
+            >
+              {chip.name}
+              {isActive && isLocked ? " · 🔒" : ""}
+            </span>
+          );
+        })}
+        {isLocked && (
+          <button
+            type="button"
+            onClick={() => {
+              setFeedback(null);
+              unlockMutation.mutate();
+            }}
+            disabled={unlockMutation.isPending}
+            data-testid="mode-ribbon-unlock"
+            className="ml-2 rounded border border-emerald-500/60 bg-emerald-500/10 px-2 py-1 leading-none text-emerald-400 transition-colors duration-150 hover:bg-emerald-500 hover:text-bg disabled:cursor-not-allowed disabled:opacity-50"
+            title="Request LOCKED → SAFE transition through the OperatorInterfaceBridge."
           >
-            {chip.name}
-            {isActive && isLocked ? " · 🔒" : ""}
-          </span>
-        );
-      })}
+            {unlockMutation.isPending ? "UNLOCKING…" : "UNLOCK"}
+          </button>
+        )}
+      </div>
+      {feedback && (
+        <div
+          className={
+            feedback.tone === "ok"
+              ? "text-[10px] normal-case tracking-normal text-emerald-400"
+              : "text-[10px] normal-case tracking-normal text-red-400"
+          }
+          role="alert"
+          data-testid="mode-ribbon-unlock-feedback"
+        >
+          {feedback.text}
+        </div>
+      )}
     </div>
   );
 }
