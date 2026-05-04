@@ -161,33 +161,55 @@ def test_post_accepts_minimal_body(client: TestClient) -> None:
     assert rows[-1]["reason"] == ""
 
 
-def test_post_holds_lock_across_mutation_and_audit() -> None:
-    """Devin Review BUG_0001 — the mutation and the audit-row write
-    must happen atomically under ``STATE.lock``.
+def test_post_holds_lock_across_mutation_audit_and_response() -> None:
+    """Devin Review BUG_0001 + BUG_0002 — the mutation, the audit-row
+    write, *and* the response snapshot must happen atomically under
+    ``STATE.lock``.
 
     A concurrent POST that grabs the lock between the mutation and
-    the ledger append would corrupt the audit chain (rows whose
-    sequence does not match mutation order). This test pins the
-    invariant by inspecting the route handler's bytecode for a
-    single ``with STATE.lock:`` block that wraps both the assignment
-    to ``learning_override_enabled`` and the call to
-    ``STATE.governance.ledger.append``.
+    either the ledger append or the response snapshot would corrupt
+    the audit chain or leak the second caller's value back to the
+    first caller. This test pins the invariant by inspecting the
+    route handler's source: the body must contain exactly one
+    ``with STATE.lock:`` block, and the assignment, the ledger
+    append, and the response source-of-truth (``_project_…``) must
+    all sit inside it. The pure projection helper that runs after
+    the lock is released takes its inputs by argument so it cannot
+    re-read shared state.
     """
 
     import inspect
 
-    from ui.server import operator_learning_override_post
+    from ui.server import (
+        _project_learning_override,
+        operator_learning_override_post,
+    )
 
     source = inspect.getsource(operator_learning_override_post)
-    # The handler must contain exactly one ``with STATE.lock:`` block,
-    # and the ledger.append call must be inside it (i.e. before the
-    # ``return _learning_override_response()`` line that closes the
-    # function body).
     assert source.count("with STATE.lock:") == 1, source
     lock_idx = source.index("with STATE.lock:")
-    return_idx = source.index("return _learning_override_response()")
+    assign_idx = source.index("STATE.learning_override_enabled =")
     append_idx = source.index("STATE.governance.ledger.append")
-    assert lock_idx < append_idx < return_idx, source
+    # The response must be composed from the snapshotted tuple, not
+    # by re-reading STATE after the lock is released.
+    assert "_project_learning_override(" in source, source
+    project_idx = source.index("_project_learning_override(")
+    assert lock_idx < assign_idx < append_idx, source
+    # The pure projection helper must not touch STATE itself. Strip
+    # docstrings/comments before checking so a ``STATE.lock`` mention
+    # in prose does not falsely fail the assertion.
+    import ast
+
+    tree = ast.parse(inspect.getsource(_project_learning_override))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
+            assert node.value.id != "STATE", ast.unparse(node)
+    # The handler should NOT call the snapshotting projection (which
+    # re-acquires the lock) on its return path.
+    assert "_learning_override_response()" not in source, source
+    # And the projection call must follow the mutation/audit so it
+    # uses the local snapshot.
+    assert append_idx < project_idx, source
 
 
 def test_boot_seed_honours_env_var(monkeypatch: pytest.MonkeyPatch) -> None:

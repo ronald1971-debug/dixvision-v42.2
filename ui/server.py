@@ -79,6 +79,7 @@ from core.contracts.events import (
 from core.contracts.governance import (
     OperatorAction,
     OperatorRequest,
+    SystemMode,
 )
 from core.contracts.learning_evolution_freeze import (
     LearningEvolutionFreezePolicy,
@@ -1309,20 +1310,19 @@ def operator_action_kill(body: OperatorKillRequest) -> OperatorActionResponse:
     )
 
 
-def _learning_override_response() -> LearningOverrideResponse:
-    """Project the live learning-override flag + freeze state.
+def _project_learning_override(
+    *, enabled: bool, mode: SystemMode
+) -> LearningOverrideResponse:
+    """Build a typed response from a snapshotted (enabled, mode) tuple.
 
-    Composes the harness-level ``learning_override_enabled`` bool
-    with the live :class:`SystemMode` (read through the mode FSM,
-    not cached) and the
-    :class:`LearningEvolutionFreezePolicy` derived from both. Used
-    by both the GET projection and the POST result so the client
-    sees a coherent snapshot in the same response.
+    Pure projection — no shared-state reads. Callers are responsible
+    for snapshotting the inputs under ``STATE.lock`` before invoking
+    this helper so the response cannot disagree with whatever the
+    caller observed (or wrote) inside that critical section. The
+    :class:`LearningEvolutionFreezePolicy` derivation is the single
+    source of truth for the ``is_freeze_active`` flag.
     """
 
-    with STATE.lock:
-        enabled = STATE.learning_override_enabled
-        mode = STATE.governance.state_transitions.current_mode()
     policy = LearningEvolutionFreezePolicy(
         mode=mode, operator_override=enabled
     )
@@ -1331,6 +1331,22 @@ def _learning_override_response() -> LearningOverrideResponse:
         mode=mode.name,
         is_freeze_active=policy.is_frozen(),
     )
+
+
+def _learning_override_response() -> LearningOverrideResponse:
+    """Snapshot the live learning-override flag + freeze state.
+
+    Read path used by the GET route: takes ``STATE.lock``, copies
+    out ``learning_override_enabled`` + the current
+    :class:`SystemMode`, then composes a typed response from the
+    snapshot. The lock is held only for the read so concurrent
+    POSTs are not blocked on the projection work.
+    """
+
+    with STATE.lock:
+        enabled = STATE.learning_override_enabled
+        mode = STATE.governance.state_transitions.current_mode()
+    return _project_learning_override(enabled=enabled, mode=mode)
 
 
 @app.get(
@@ -1374,16 +1390,20 @@ def operator_learning_override_post(
     that visible to the operator.
     """
 
+    new_enabled = bool(body.enabled)
     with STATE.lock:
         previous = STATE.learning_override_enabled
-        STATE.learning_override_enabled = bool(body.enabled)
+        STATE.learning_override_enabled = new_enabled
         mode = STATE.governance.state_transitions.current_mode()
-        # Devin Review BUG_0001 — keep the mutation + audit-row write
-        # atomic under ``STATE.lock`` so concurrent POSTs cannot
-        # interleave: ledger sequence must agree with mutation order,
-        # and the response projection downstream must observe a value
-        # that matches the ``next`` field of the row this request
-        # just wrote.
+        # Devin Review BUG_0001 + BUG_0002 — keep the mutation,
+        # audit-row write, *and* the response snapshot atomic under
+        # ``STATE.lock`` so concurrent POSTs cannot interleave:
+        # ledger sequence must agree with mutation order, and the
+        # response's ``enabled`` must match the ``next`` field of
+        # the row this request just wrote (a follow-up POST that
+        # acquires the lock between this block and a post-lock
+        # projection would otherwise leak the wrong value back to
+        # the first caller).
         STATE.governance.ledger.append(
             ts_ns=wall_ns(),
             kind="OPERATOR_LEARNING_OVERRIDE_CHANGED",
@@ -1391,11 +1411,11 @@ def operator_learning_override_post(
                 "requestor": body.requestor,
                 "reason": body.reason,
                 "previous": "true" if previous else "false",
-                "next": "true" if body.enabled else "false",
+                "next": "true" if new_enabled else "false",
                 "mode": mode.name,
             },
         )
-    return _learning_override_response()
+    return _project_learning_override(enabled=new_enabled, mode=mode)
 
 
 def _decision_to_dict(decision: Any) -> dict[str, Any]:
