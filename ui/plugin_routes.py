@@ -43,7 +43,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Protocol
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -52,6 +52,33 @@ from core.contracts.engine import MicrostructurePlugin, PluginLifecycle
 from governance_engine.control_plane.ledger_authority_writer import (
     LedgerAuthorityWriter,
 )
+
+
+class _StartStopFeed(Protocol):
+    """Minimal feed-runner shape consumed by the plugin manager.
+
+    Every ``ui.feeds.*`` runner satisfies this protocol; the registry
+    holds them by id so ``set_lifecycle`` can map ``ACTIVE`` to
+    ``start()`` and ``DISABLED`` to ``stop()`` without import-time
+    coupling to the concrete runner classes.
+    """
+
+    def start(self, *args: Any, **kwargs: Any) -> Any: ...
+    def stop(self, *args: Any, **kwargs: Any) -> Any: ...
+    def status(self) -> Any: ...
+
+
+class _AdapterRegistryShape(Protocol):
+    """Minimal :class:`AdapterRegistry` shape (introspection only)."""
+
+    def snapshot(self) -> Any: ...
+
+
+class _SensorArrayShape(Protocol):
+    """Minimal :class:`SensorArray` shape (introspection only)."""
+
+    @property
+    def sensors(self) -> tuple[Any, ...]: ...
 
 __all__ = [
     "PluginRecord",
@@ -125,6 +152,44 @@ class PluginToggleState:
         self._listeners.append(listener)
 
 
+_FEED_DESCRIPTIONS: Mapping[str, str] = {
+    "binance_public_ws": (
+        "Binance public WebSocket pump (BTC/ETH/SOL aggTrades). "
+        "ACTIVE connects the WS pump and emits MarketTick events "
+        "into the intelligence pipeline; DISABLED stops the loop."
+    ),
+    "coindesk_rss": (
+        "CoinDesk RSS news pump → NewsFanout (signal projection + "
+        "HAZ-NEWS-SHOCK sensor). ACTIVE polls the RSS feed; "
+        "DISABLED stops the runner."
+    ),
+    "pumpfun_ws": (
+        "Pump.fun WebSocket launch firehose. ACTIVE connects to the "
+        "live launch stream; DISABLED stops the loop."
+    ),
+    "raydium_pools": (
+        "Raydium pool snapshot poller. ACTIVE polls the live pool "
+        "REST endpoint; DISABLED stops the runner."
+    ),
+}
+
+
+_ADAPTER_DESCRIPTIONS: Mapping[str, str] = {
+    "hummingbot": (
+        "Hummingbot Gateway adapter (centralised + DEX connectors). "
+        "Read-only here — connect via the Operator → Adapters page."
+    ),
+    "pumpfun": (
+        "Pump.fun execution adapter (Solana memecoin launches). "
+        "Read-only here — DISCONNECTED until credentials are wired."
+    ),
+    "uniswapx": (
+        "UniswapX EIP-712 signer + REST quote/order client. "
+        "Read-only here — requires eth-account + signer key."
+    ),
+}
+
+
 @dataclass(slots=True)
 class PluginRegistry:
     """Façade over the runtime's hot-toggleable plugins.
@@ -134,12 +199,34 @@ class PluginRegistry:
     runtime objects (not copies), so a lifecycle mutation through
     this registry is observed immediately by the engines that
     consume those plugins on the next tick.
+
+    The plugin grid surfaces three additional categories beyond the
+    historical microstructure + cognitive_chat pair so the operator
+    has a single place to see every hot-toggleable runtime
+    component:
+
+    * ``feed`` — ``ui.feeds.*`` runners (Binance / CoinDesk /
+      Pump.fun / Raydium). ``ACTIVE`` calls ``start()``;
+      ``DISABLED`` calls ``stop()``.
+    * ``adapter`` — ``execution_engine.adapters.AdapterRegistry``
+      entries. Read-only; the lifecycle column reflects the live
+      ``AdapterStatus.connected`` flag.
+    * ``sensor`` — every ``HazardSensor`` registered on the system
+      ``SensorArray``. Read-only; lifecycle reflects whether the
+      sensor is registered (``ACTIVE``) or absent.
+
+    The new fields are optional with empty defaults so existing
+    callers that constructed ``PluginRegistry`` with only the
+    microstructure + cognitive arguments continue to work.
     """
 
     microstructure_plugins: tuple[MicrostructurePlugin, ...]
     toggle_state: PluginToggleState
     cognitive_chat_env_enabled: Callable[[], bool]
     cognitive_chat_version: str = "0.1.0"
+    feed_runners: Mapping[str, _StartStopFeed] = field(default_factory=dict)
+    adapter_registry: _AdapterRegistryShape | None = None
+    sensor_array: _SensorArrayShape | None = None
 
     # ------------------------------------------------------------------
     # Lookup
@@ -183,7 +270,89 @@ class PluginRegistry:
                 ),
             )
         )
+
+        for feed_id, runner in self.feed_runners.items():
+            out.append(
+                PluginRecord(
+                    id=f"feed:{feed_id}",
+                    category="feed",
+                    version="1.0.0",
+                    lifecycle=self._feed_lifecycle(runner),
+                    lifecycle_options=list(_LIFECYCLE_VALUES),
+                    description=_FEED_DESCRIPTIONS.get(
+                        feed_id,
+                        f"{feed_id} feed runner. ACTIVE starts the "
+                        f"runner; DISABLED stops it.",
+                    ),
+                )
+            )
+
+        if self.adapter_registry is not None:
+            try:
+                statuses = self.adapter_registry.snapshot()
+            except Exception:  # pragma: no cover - defensive
+                statuses = ()
+            for status in statuses:
+                name = getattr(status, "name", "")
+                if not name:
+                    continue
+                connected = bool(getattr(status, "connected", False))
+                lifecycle = (
+                    PluginLifecycle.ACTIVE.value
+                    if connected
+                    else PluginLifecycle.DISABLED.value
+                )
+                out.append(
+                    PluginRecord(
+                        id=f"adapter:{name}",
+                        category="adapter",
+                        version=str(getattr(status, "version", "1.0.0")),
+                        lifecycle=lifecycle,
+                        lifecycle_options=[lifecycle],
+                        description=_ADAPTER_DESCRIPTIONS.get(
+                            name,
+                            f"{name} execution adapter. Read-only "
+                            f"here — manage from the Operator → "
+                            f"Adapters page.",
+                        ),
+                    )
+                )
+
+        if self.sensor_array is not None:
+            for sensor in self.sensor_array.sensors:
+                sensor_name = getattr(sensor, "name", "")
+                if not sensor_name:
+                    continue
+                code = getattr(sensor, "code", "") or sensor_name
+                out.append(
+                    PluginRecord(
+                        id=f"sensor:{sensor_name}",
+                        category="sensor",
+                        version="1.0.0",
+                        lifecycle=PluginLifecycle.ACTIVE.value,
+                        lifecycle_options=[PluginLifecycle.ACTIVE.value],
+                        description=(
+                            f"Hazard sensor {code} ({sensor_name}). "
+                            f"Registered on SystemEngine.sensor_array "
+                            f"and polled every tick. Read-only here."
+                        ),
+                    )
+                )
+
         return out
+
+    @staticmethod
+    def _feed_lifecycle(runner: _StartStopFeed) -> str:
+        try:
+            status = runner.status()
+        except Exception:  # pragma: no cover - defensive
+            return PluginLifecycle.DISABLED.value
+        running = bool(getattr(status, "running", False))
+        return (
+            PluginLifecycle.ACTIVE.value
+            if running
+            else PluginLifecycle.DISABLED.value
+        )
 
     def _cognitive_chat_lifecycle(self) -> str:
         if self.toggle_state.cognitive_chat is True:
@@ -219,6 +388,33 @@ class PluginRegistry:
                 normalized == PluginLifecycle.ACTIVE.value
             )
             return self._record_for("cognitive_chat")
+
+        if plugin_id.startswith("feed:"):
+            feed_id = plugin_id[len("feed:") :]
+            runner = self.feed_runners.get(feed_id)
+            if runner is None:
+                raise KeyError(plugin_id)
+            try:
+                if normalized == PluginLifecycle.ACTIVE.value:
+                    runner.start()
+                else:
+                    runner.stop()
+            except Exception as exc:  # pragma: no cover - propagated as 500
+                raise RuntimeError(
+                    f"feed lifecycle change failed for {feed_id}: {exc}"
+                ) from exc
+            return self._record_for(plugin_id)
+
+        if plugin_id.startswith("adapter:") or plugin_id.startswith("sensor:"):
+            # Adapters and sensors are read-only on this surface; the
+            # operator manages adapter connectivity from the dedicated
+            # Adapters page (which calls adapter.connect() / disconnect()
+            # against credentials), and sensors are wired at boot. The
+            # registry refuses lifecycle writes here so the dashboard
+            # cannot half-disable a sensor and silently mute a hazard.
+            raise PermissionError(
+                f"{plugin_id} is read-only on the plugin manager"
+            )
 
         for plugin in self.microstructure_plugins:
             if plugin.name == plugin_id:
@@ -298,6 +494,10 @@ def build_plugin_router(
             ) from exc
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except PermissionError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
 
         try:
             _audit(plugin_id, record.lifecycle, body)

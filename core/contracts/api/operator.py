@@ -99,6 +99,43 @@ class OperatorKillRequest(BaseModel):
     requestor: str = Field("operator", min_length=1, max_length=64)
 
 
+class OperatorUnlockRequest(BaseModel):
+    """Operator UNLOCK request body for ``POST /api/operator/action/unlock``.
+
+    Drives the LOCKED -> SAFE edge through ``ControlPlaneRouter`` ->
+    ``OperatorInterfaceBridge`` (REQUEST_UNLOCK). The state transition
+    manager re-resolves the current mode under its lock; submitting
+    while not locked returns the mode-FSM rejection verbatim.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    reason: str = Field("operator unlock", max_length=512)
+    requestor: str = Field("operator", min_length=1, max_length=64)
+
+
+class OperatorModeRequest(BaseModel):
+    """Operator REQUEST_MODE body for ``POST /api/operator/action/mode``.
+
+    The operator-side mode-transition surface for the typed React
+    port. Mirrors the legacy ``/api/dashboard/action/mode`` shape so
+    the same governance bridge handles both. Consent envelope fields
+    are optional and only consulted by ``OperatorInterfaceBridge`` on
+    edges that ``edge_requires_consent`` reports as gated.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    target_mode: str = Field(..., min_length=1, max_length=16)
+    reason: str = Field("operator mode change", max_length=512)
+    requestor: str = Field("operator", min_length=1, max_length=64)
+    operator_authorized: bool = False
+    consent_operator_id: str = Field("", max_length=64)
+    consent_policy_hash: str = Field("", max_length=128)
+    consent_nonce: str = Field("", max_length=64)
+    consent_ts_ns: int = 0
+
+
 class OperatorAuditRequest(BaseModel):
     """Settings-changed audit body for ``POST /api/operator/audit``.
 
@@ -182,8 +219,10 @@ __all__ = [
     "OperatorEngineRow",
     "OperatorKillRequest",
     "OperatorMemecoinSnapshot",
+    "OperatorModeRequest",
     "OperatorModeSnapshot",
     "OperatorStrategyCounts",
     "OperatorSummaryResponse",
+    "OperatorUnlockRequest",
     "WalletInfoResponse",
 ]
