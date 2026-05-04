@@ -148,6 +148,19 @@ if not exist "%VENV_MARKER%" (
     )
 )
 
+REM --- AUDIT-P2.5 credential pre-flight ---------------------------------------
+REM Surface missing API keys on the operator console BEFORE uvicorn starts
+REM so the operator does not have to dig through launcher.log to discover
+REM that an external feed is unauthenticated. This is advisory only:
+REM ``check_credentials --missing-only`` always exits 0 unless ``--strict``
+REM is also set, so an incomplete credential set does not block boot
+REM (matching the harness's existing permissive default).
+echo.
+echo --- Credential pre-flight ^(missing keys only, advisory^) -------------------
+"%VENV_PY%" -m scripts.check_credentials --missing-only
+echo ----------------------------------------------------------------------------
+echo.
+
 REM --- build the React SPA (dashboard2026) if Node is installed ----------------
 REM ``dashboard2026/dist/`` is gitignored, so a fresh clone has only the
 REM Phase E1 stub at ``/`` until the React SPA is built. We build it on

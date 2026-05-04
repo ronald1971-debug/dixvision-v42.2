@@ -140,6 +140,17 @@ if not exist "%VENV_MARKER%" (
     )
 )
 
+REM --- AUDIT-P2.5 credential pre-flight ---------------------------------------
+REM Surface missing API keys on the operator console BEFORE uvicorn starts
+REM so the operator does not have to dig through launcher.log to discover
+REM that an external feed is unauthenticated. Advisory only -- exits 0
+REM even when keys are missing, mirroring the harness permissive default.
+echo.
+echo --- Credential pre-flight ^(missing keys only, advisory^) -------------------
+"%VENV_PY%" -m scripts.check_credentials --missing-only
+echo ----------------------------------------------------------------------------
+echo.
+
 REM --- build the React dashboards ----------------------------------------------
 where npm >nul 2>&1
 if %errorlevel% neq 0 (

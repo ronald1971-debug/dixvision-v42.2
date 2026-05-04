@@ -15,6 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 WIN_DIR = REPO_ROOT / "scripts" / "windows"
 
 START_BAT = WIN_DIR / "start_dixvision.bat"
+START_MEME_BAT = WIN_DIR / "start_dixvision_meme.bat"
 STOP_BAT = WIN_DIR / "stop_dixvision.bat"
 INSTALL_PS1 = WIN_DIR / "install_desktop_shortcut.ps1"
 
@@ -81,3 +82,33 @@ def test_stop_bat_targets_dashboard_port() -> None:
     body = STOP_BAT.read_text(encoding="utf-8")
     assert "DASH_PORT=8080" in body
     assert "taskkill" in body
+
+
+def test_start_bats_run_credential_preflight() -> None:
+    """AUDIT-P2.5: both .bat launchers must invoke check_credentials --missing-only.
+
+    The pre-flight runs *after* the venv is hydrated (so the import resolves)
+    and *before* uvicorn starts (so the operator sees the missing-key list on
+    the console, not buried in launcher.log).
+    """
+    for bat in (START_BAT, START_MEME_BAT):
+        body = bat.read_text(encoding="utf-8")
+        assert "scripts.check_credentials" in body, (
+            f"{bat.name} must invoke `python -m scripts.check_credentials` as a "
+            "pre-flight before uvicorn"
+        )
+        assert "--missing-only" in body, (
+            f"{bat.name} must pass --missing-only so the pre-flight stays advisory"
+        )
+
+        preflight_idx = body.index("scripts.check_credentials")
+        uvicorn_idx = body.rindex("uvicorn ui.server:app")
+        assert preflight_idx < uvicorn_idx, (
+            f"{bat.name}: credential pre-flight must run before uvicorn starts"
+        )
+
+        venv_marker = "pip install -q --disable-pip-version-check -e ."
+        venv_idx = body.index(venv_marker)
+        assert venv_idx < preflight_idx, (
+            f"{bat.name}: credential pre-flight must run after the venv is hydrated"
+        )
