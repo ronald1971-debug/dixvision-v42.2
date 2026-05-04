@@ -713,6 +713,34 @@ class _State:
                 # event ring or propagate up to the FastAPI handler;
                 # the missing audit row is the only observable effect.
                 pass
+        # AUDIT-P2.2 — forward every non-HAZARD bus event into
+        # ``SystemEngine.process`` so the pollable hazard sensors
+        # bound in WIRE.4 actually fire on the harness hot path. Any
+        # ``HazardEvent`` they return is fanned through the same
+        # canonical ingestion seam ``_ingest_news_hazard_locked``
+        # uses: ``execution.on_hazard`` so the throttle observer
+        # ring sees the hazard, then ``governance.process`` so the
+        # authority ledger gains a HAZARD audit row and any mode
+        # downgrade actually fires. We intentionally skip
+        # ``EventKind.HAZARD`` to keep the loop bounded — sensors
+        # do not chain off other hazards, and re-polling on a
+        # hazard event would arm the same condition twice.
+        if event.kind != EventKind.HAZARD:
+            try:
+                emitted = self.system.process(event)
+            except Exception:  # pragma: no cover - defensive guard
+                emitted = ()
+            for hazard in emitted:
+                self.record("system", hazard)
+                try:
+                    self.execution.on_hazard(hazard)
+                except Exception:  # pragma: no cover - defensive guard
+                    pass
+                try:
+                    for downstream in self.governance.process(hazard):
+                        self.record("governance", downstream)
+                except Exception:  # pragma: no cover - defensive guard
+                    pass
 
     def _ingest_market_tick_locked(self, tick: MarketTick) -> None:
         """Sink callable used by ``ui/feeds/runner.FeedRunner``.
