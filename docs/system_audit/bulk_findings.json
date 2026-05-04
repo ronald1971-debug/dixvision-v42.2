@@ -1,0 +1,2059 @@
+{
+  "mapped_findings": [
+    {
+      "file_id": "F00008",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/cognitive_router/router.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00012",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/coherence/decision_trace.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00013",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/coherence/performance_pressure.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00016",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/constraint_engine/compiler.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00017",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/constraint_engine/expr.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00020",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/contracts/api/cognitive_chat.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00021",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/contracts/api/cognitive_chat_approvals.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00024",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/contracts/decision_trace.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00025",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/contracts/engine.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00026",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/contracts/event_provenance.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00028",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/contracts/execution_intent.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00033",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/contracts/learning_sink.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00034",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/contracts/macro.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00036",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/contracts/mode_effects.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00037",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/contracts/news.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00038",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/contracts/operator_consent.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00039",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/contracts/patch.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00041",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "core/contracts/strategy_registry.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00271",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "dashboard_backend/control_plane/decision_trace.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00273",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "dashboard_backend/control_plane/memecoin_control_panel.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00274",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "dashboard_backend/control_plane/mode_control_bar.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00275",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "dashboard_backend/control_plane/router.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00304",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "evolution_engine/engine.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00306",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "evolution_engine/intelligence_loops/mutation_proposer.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00308",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "evolution_engine/patch_pipeline/backtest.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00309",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "evolution_engine/patch_pipeline/canary.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00310",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "evolution_engine/patch_pipeline/events.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00311",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "evolution_engine/patch_pipeline/orchestrator.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00312",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "evolution_engine/patch_pipeline/pipeline.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00314",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "evolution_engine/patch_pipeline/sandbox.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00315",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "evolution_engine/patch_pipeline/shadow.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00316",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "evolution_engine/patch_pipeline/static_analysis.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00319",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "execution_engine/adapters/_hummingbot_gateway.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00321",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "execution_engine/adapters/_uniswapx_quote.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00322",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "execution_engine/adapters/_uniswapx_signer.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00324",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "execution_engine/adapters/hummingbot.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00326",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "execution_engine/adapters/pumpfun.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00327",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "execution_engine/adapters/registry.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00328",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "execution_engine/adapters/router.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00329",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "execution_engine/adapters/uniswapx.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00330",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "execution_engine/engine.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00331",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "execution_engine/execution_gate.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00335",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "execution_engine/lifecycle/fill_handler.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00337",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "execution_engine/lifecycle/partial_fill_resolver.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00338",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "execution_engine/lifecycle/retry_logic.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00342",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "execution_engine/protections/runtime_monitor.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00344",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "execution_engine/strategic/almgren_chriss.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00347",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "governance_engine/control_plane/compliance_validator.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00348",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "governance_engine/control_plane/decision_signer.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00349",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "governance_engine/control_plane/drift_oracle.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00350",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "governance_engine/control_plane/event_classifier.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00351",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "governance_engine/control_plane/ledger_authority_writer.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00353",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "governance_engine/control_plane/operator_interface_bridge.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00354",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "governance_engine/control_plane/policy_engine.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00355",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "governance_engine/control_plane/policy_hash_anchor.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00356",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "governance_engine/control_plane/promotion_gates.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00357",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "governance_engine/control_plane/risk_evaluator.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00358",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "governance_engine/control_plane/state_transition_manager.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00359",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "governance_engine/control_plane/update_applier.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00360",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "governance_engine/control_plane/update_validator.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00361",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "governance_engine/engine.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00362",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "governance_engine/harness_approver.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00364",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "governance_engine/services/patch_pipeline_bridge.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00365",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "governance_engine/strategy_registry.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00370",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/cognitive/approval_edge.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00371",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/cognitive/approval_projection.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00372",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/cognitive/approval_queue.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00374",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/cognitive/chat/cognitive_chat_graph.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00376",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/cognitive/chat/http_chat_transport.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00377",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/cognitive/chat/registry_driven_chat_model.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00381",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/engine.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00385",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/learning/slow_loop.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00386",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/learning_interface.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00388",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/mcp/opennews.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00391",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/meta_controller/allocation/position_sizer.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00394",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/meta_controller/evaluation/confidence_engine.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00396",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/meta_controller/orchestrator.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00398",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/meta_controller/perception/regime_router.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00400",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/meta_controller/policy/execution_policy.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00409",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/runtime_context_builder.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00414",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/strategy_library/registry.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00417",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/strategy_runtime/orchestrator.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00418",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/strategy_runtime/regime_detector.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00419",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/strategy_runtime/scheduler.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00420",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/strategy_runtime/state_machine.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00422",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/trader_modeling/aggregator.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00424",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "intelligence_engine/trader_modeling/observation.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00427",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "learning_engine/calibration/coherence_calibrator.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00428",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "learning_engine/engine.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00430",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "learning_engine/lanes/patch_outcome_feedback.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00431",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "learning_engine/lanes/reward_shaping.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00432",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "learning_engine/lanes/weight_adjuster.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00433",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "learning_engine/update_emitter.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00447",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "scripts/check_credentials.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00455",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "sensory/alt/contracts.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00457",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "sensory/cognitive/contracts.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00459",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "sensory/dev/contracts.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00461",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "sensory/neuromorphic/contracts.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00462",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "sensory/neuromorphic/dyon_anomaly.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00463",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "sensory/neuromorphic/governance_risk.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00464",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "sensory/neuromorphic/indira_signal.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00466",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "sensory/onchain/contracts.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00468",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "sensory/regulatory/contracts.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00470",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "sensory/web_autolearn/ai_filter.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00471",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "sensory/web_autolearn/contracts.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00472",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "sensory/web_autolearn/crawler.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00473",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "sensory/web_autolearn/curator.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00474",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "sensory/web_autolearn/pending_buffer.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00478",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "state/ledger/reader.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00481",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system/time_source.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00484",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/authority/matrix.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00486",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/coupling/hazard_throttle.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00487",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/coupling/hazard_throttle_adapter.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00488",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/coupling/risk_snapshot_throttle.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00490",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/credentials/dotenv_io.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00491",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/credentials/manifest.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00492",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/credentials/status.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00494",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/credentials/verifiers.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00495",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/engine.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00497",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/hazard_sensors/clock_drift.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00503",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/hazard_sensors/news_shock.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00507",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/hazard_sensors/sensor_array.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00513",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/health_monitors/liveness.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00517",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/scvs/consumption_tracker.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00520",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/scvs/schema_guard.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00521",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/scvs/source_manager.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00522",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/scvs/source_registry.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00526",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "system_engine/state/system_state.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00531",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/dashboard_backend/control_plane/conftest.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00533",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/dashboard_backend/control_plane/test_engine_status_grid.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00534",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/dashboard_backend/control_plane/test_memecoin_control_panel.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00546",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/sensory/neuromorphic/test_contracts.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00556",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/sensory/web_autolearn/test_contracts.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00558",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/sensory/web_autolearn/test_curator.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00559",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/sensory/web_autolearn/test_pending_buffer.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00560",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/sensory/web_autolearn/test_seeds_yaml.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00562",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_adapter_registry_lazy_uniswapx.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00563",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_adapter_router.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00564",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_approval_edge.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00565",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_approval_projection.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00567",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_audit_ledger_checkpoint_saver.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00568",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_authority_lint.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00569",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_authority_lint_b23.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00570",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_authority_matrix.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00571",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_authority_symmetry.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00572",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_b30_belief_state_unify.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00573",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_binance_public_ws.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00574",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_bls_http_parser.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00576",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_codegen_pydantic_to_ts.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00577",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_cognitive_approvals_routes.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00578",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_cognitive_chat_graph.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00579",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_cognitive_chat_runtime.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00580",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_cognitive_router.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00582",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_coherence_calibrator.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00583",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_coherence_performance_pressure.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00584",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_coindesk_rss_parser.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00586",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_constraint_engine.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00587",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_credentials_dotenv_io.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00588",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_credentials_manifest.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00589",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_credentials_route.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00590",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_credentials_set_route.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00591",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_credentials_storage.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00592",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_credentials_verifiers.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00593",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_credentials_verify_route.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00594",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_dash_meme_mount.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00597",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_decision_trace.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00599",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_drift_oracle.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00601",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_engine_contracts.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00603",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_execution_engine.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00604",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_execution_engine_learning_loop.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00605",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_execution_engine_throttle.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00606",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_execution_gate.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00608",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_execution_intent.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00609",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_execution_lifecycle.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00610",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_execution_runtime_monitor.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00611",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_fred_http_parser.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00612",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_fred_http_pump.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00613",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_governance_control_plane.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00614",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_governance_fail_closed.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00615",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_harness_approver_gate.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00617",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_hazard_throttle.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00620",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_http_chat_transport.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00621",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_hummingbot_adapter.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00623",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_intelligence_engine.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00624",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_intelligence_engine_wave1.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00625",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_kill_switch.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00626",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_learning_evolution_freeze.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00627",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_learning_interface.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00628",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_ledger_persistence.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00630",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_meta_controller_hot_path.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00631",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_meta_controller_orchestrator.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00632",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_meta_controller_policy.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00633",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_meta_controller_position_sizer.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00636",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_mode_effects.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00637",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_news_fanout.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00639",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_news_knowledge_index.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00640",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_news_projection.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00641",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_news_shock_sensor.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00642",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_opennews_mcp.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00646",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_patch_pipeline_orchestrator.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00647",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_phase5_closed_loop.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00648",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_plugin_routes.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00649",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_policy_decision_table.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00651",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_promotion_gates.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00652",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_proposal_parser.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00653",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_pumpfun_ws.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00654",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_raydium_pools.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00655",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_registry_driven_chat_model.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00656",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_reward_shaping.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00658",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_rust_revival_reminder.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00659",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_scvs_phase1.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00661",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_scvs_phase3.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00662",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_signal_pipeline.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00663",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_slow_loop_learner.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00665",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_strategy_library.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00666",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_strategy_registry.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00667",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_strategy_runtime.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00668",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_stress_fred_parser_fuzz.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00669",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_stress_mode_effects.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00670",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_stress_strategy_registry.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00671",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_system_intent.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00674",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_trader_intelligence_contracts.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00677",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_tradingview_ideas_parser.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00680",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_ui_server.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00682",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_uniswapx_quote.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00683",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_uniswapx_signer.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00684",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_update_validator.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00685",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_weight_adjuster.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00686",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tests/test_windows_launcher.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00688",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tools/authority_lint.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00691",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tools/codegen/pydantic_to_ts.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00693",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tools/rust_revival_reminder.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00694",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "tools/scvs_lint.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00696",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "ui/cognitive_chat_runtime.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00697",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "ui/dashboard_routes.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00700",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "ui/feeds/binance_public_ws.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00701",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "ui/feeds/bls_http.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00702",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "ui/feeds/coindesk_rss.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00704",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "ui/feeds/fred_http.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00705",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "ui/feeds/news_fanout.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00706",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "ui/feeds/news_runner.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00707",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "ui/feeds/pumpfun_runner.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00708",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "ui/feeds/pumpfun_ws.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00709",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "ui/feeds/raydium_pools.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00710",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "ui/feeds/raydium_runner.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00711",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "ui/feeds/runner.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00712",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "ui/feeds/tradingview_ideas.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00713",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "ui/governance_routes.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00714",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "ui/plugin_routes.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00715",
+      "line": 0,
+      "msg": "would be reformatted",
+      "path": "ui/server.py",
+      "rule": "FORMAT",
+      "tool": "ruff-format"
+    },
+    {
+      "file_id": "F00377",
+      "line": 191,
+      "msg": "unused variable 'run_manager' (100% confidence)",
+      "path": "intelligence_engine/cognitive/chat/registry_driven_chat_model.py",
+      "rule": "DEAD",
+      "tool": "vulture"
+    }
+  ],
+  "summary": {
+    "authority_lint": {
+      "n_findings": 0,
+      "rc": 0,
+      "stderr_tail": [],
+      "stdout_tail": [
+        "authority_lint: 0 violations in /home/ubuntu/repos/dixvision-v42.2"
+      ]
+    },
+    "authority_matrix_lint": {
+      "n_findings": 0,
+      "rc": 0,
+      "stderr_tail": [],
+      "stdout_tail": [
+        "authority_matrix_lint: 0 violations (8 actors, 11 conflicts, 3 overrides)"
+      ]
+    },
+    "constraint_lint": {
+      "n_findings": 0,
+      "rc": 0,
+      "stderr_tail": [],
+      "stdout_tail": [
+        "constraint_lint: 0 violations (26 rules, 4 with 'when' predicates)"
+      ]
+    },
+    "ruff": {
+      "n_findings": 0,
+      "rc": 0
+    },
+    "ruff-format": {
+      "n_findings": 250,
+      "rc": 1
+    },
+    "scvs_lint": {
+      "n_findings": 0,
+      "rc": 0,
+      "stderr_tail": [],
+      "stdout_tail": [
+        "scvs_lint: 0 violations (23 sources, 3 consumes.yaml files, 0 warning(s))"
+      ]
+    },
+    "vulture": {
+      "n_findings": 1,
+      "rc": 3
+    }
+  },
+  "unmapped_findings": []
+}
