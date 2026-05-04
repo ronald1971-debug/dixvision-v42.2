@@ -53,13 +53,13 @@ malformed Pine alerts to trigger a retry storm.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Any, Mapping
+from typing import Any
 
 from core.contracts.events import Side, SignalEvent
 from core.contracts.signal_trust import SignalTrust
-
 
 TRADINGVIEW_ALERT_SOURCE_FEED = "SRC-SIGNAL-TRADINGVIEW-ALERT-001"
 """Stable source id for ``registry/external_signal_trust.yaml``."""
