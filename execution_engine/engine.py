@@ -71,6 +71,7 @@ class ExecutionEngine(RuntimeEngine):
         plugin_slots: Mapping[str, Sequence[Plugin]] | None = None,
         *,
         guard: AuthorityGuard | None = None,
+        signature_verifier: object | None = None,
         feedback_collector: FeedbackCollector | None = None,
         intelligence_feedback: IntelligenceFeedbackSink | None = None,
         throttle_adapter: HazardThrottleAdapter | None = None,
@@ -84,8 +85,13 @@ class ExecutionEngine(RuntimeEngine):
         # The AuthorityGuard is constructed lazily so unit tests that
         # only exercise broker plumbing don't need a matrix YAML on
         # disk. ``execute`` materialises the guard on first use
-        # unless the caller injected one explicitly.
+        # unless the caller injected one explicitly. Hardening-S1
+        # item 2: when ``signature_verifier`` is supplied (and no
+        # explicit ``guard`` is injected) the lazy guard is built with
+        # the verifier already wired -- production wiring threads the
+        # process-wide DecisionSigner.verify here.
         self._guard: AuthorityGuard | None = guard
+        self._signature_verifier: object | None = signature_verifier
         # P0-3 — closed learning loop. Both sinks are optional so
         # offline harness flows that never construct them retain their
         # pre-P0-3 dispatch shape. Production wiring (cockpit /
@@ -116,7 +122,9 @@ class ExecutionEngine(RuntimeEngine):
     @property
     def guard(self) -> AuthorityGuard:
         if self._guard is None:
-            self._guard = AuthorityGuard()
+            self._guard = AuthorityGuard(
+                signature_verifier=self._signature_verifier,  # type: ignore[arg-type]
+            )
         return self._guard
 
     def set_risk_baseline(self, snapshot: RiskSnapshot) -> None:

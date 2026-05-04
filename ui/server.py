@@ -206,7 +206,13 @@ class _State:
         self.intelligence = IntelligenceEngine(
             microstructure_plugins=(MicrostructureV1(),),
         )
-        self.execution = ExecutionEngine()
+        # Hardening-S1 item 2 -- ExecutionEngine wired AFTER
+        # GovernanceEngine below so the AuthorityGuard's
+        # ``signature_verifier`` callback can reference
+        # ``self.governance.decision_signer.verify``. The signer is
+        # owned by Governance (B36 lint pins construction to
+        # ``governance_engine.*``); the harness merely passes the
+        # reference through.
         self.system = SystemEngine()
         # Sprint-1 / Class-B "Trust the Ledger" — if the operator sets
         # ``DIXVISION_LEDGER_PATH`` the harness opens a SQLite-backed
@@ -225,6 +231,18 @@ class _State:
         )
         self.ledger_writer = ledger
         self.governance = GovernanceEngine(ledger=ledger)
+        # Hardening-S1 item 2 wiring -- inject the governance signer's
+        # ``verify`` into AuthorityGuard so every approved intent
+        # carries a HMAC produced by *this* GovernanceEngine instance
+        # or is rejected at the execution chokepoint.
+        signer = self.governance.decision_signer
+        self.execution = ExecutionEngine(
+            signature_verifier=lambda content_hash, gid, sig: signer.verify(
+                content_hash=content_hash,
+                governance_decision_id=gid,
+                signature=sig,
+            ),
+        )
         self.learning = LearningEngine()
         self.evolution = EvolutionEngine()
         self.events: deque[dict[str, Any]] = deque(maxlen=500)
@@ -460,7 +478,9 @@ class _State:
             )
             for sig in self.intelligence.on_market(tick):
                 self.record("intelligence", sig)
-                intent = approve_signal_for_execution(sig, ts_ns=wall_ns())
+                intent = approve_signal_for_execution(
+                    sig, ts_ns=wall_ns(), signer=self.governance.decision_signer
+                )
                 for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
 
@@ -483,7 +503,9 @@ class _State:
             self.record("cognitive_chat", sig)
             for ev in self.intelligence.process(sig):
                 self.record("intelligence", ev)
-                intent = approve_signal_for_execution(ev, ts_ns=wall_ns())
+                intent = approve_signal_for_execution(
+                    ev, ts_ns=wall_ns(), signer=self.governance.decision_signer
+                )
                 for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
 
@@ -503,7 +525,9 @@ class _State:
             self.record("news.coindesk", sig)
             for ev in self.intelligence.process(sig):
                 self.record("intelligence", ev)
-                intent = approve_signal_for_execution(ev, ts_ns=wall_ns())
+                intent = approve_signal_for_execution(
+                    ev, ts_ns=wall_ns(), signer=self.governance.decision_signer
+                )
                 for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
 
@@ -1354,7 +1378,9 @@ def post_tick(body: TickIn) -> dict[str, Any]:
         for sig in STATE.intelligence.on_market(tick):
             STATE.record("intelligence", sig)
             signals_out.append(_event_to_dict(sig))
-            intent = approve_signal_for_execution(sig, ts_ns=wall_ns())
+            intent = approve_signal_for_execution(
+                sig, ts_ns=wall_ns(), signer=STATE.governance.decision_signer
+            )
             for downstream in STATE.execution.execute(intent):
                 STATE.record("execution", downstream)
                 executions_out.append(_event_to_dict(downstream))
@@ -1385,7 +1411,9 @@ def post_signal(body: SignalIn) -> dict[str, Any]:
         STATE.record("ui_harness", sig)
         for ev in STATE.intelligence.process(sig):
             STATE.record("intelligence", ev)
-            intent = approve_signal_for_execution(ev, ts_ns=wall_ns())
+            intent = approve_signal_for_execution(
+                ev, ts_ns=wall_ns(), signer=STATE.governance.decision_signer
+            )
             for downstream in STATE.execution.execute(intent):
                 STATE.record("execution", downstream)
                 out_events.append(_event_to_dict(downstream))

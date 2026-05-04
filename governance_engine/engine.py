@@ -50,6 +50,7 @@ from governance_engine.control_plane import (
     RiskEvaluator,
     StateTransitionManager,
 )
+from governance_engine.control_plane.decision_signer import DecisionSigner
 from governance_engine.control_plane.drift_oracle import DriftCompositeOracle
 from governance_engine.control_plane.event_classifier import PipelineStage
 from governance_engine.control_plane.policy_engine import install_policy_table
@@ -126,6 +127,13 @@ class GovernanceEngine(RuntimeEngine):
             state_transitions=self.state_transitions,
             ledger=self.ledger,
         )
+        # Hardening-S1 item 2 -- per-process HMAC-SHA256 signer.
+        # Governance owns the signer; AuthorityGuard's
+        # ``signature_verifier`` is wired to ``self.decision_signer.verify``
+        # so any approved intent that wasn't signed here is rejected
+        # at the execution chokepoint. B36 lint pins construction to
+        # ``governance_engine.*`` -- no other module may mint a signer.
+        self.decision_signer: DecisionSigner = DecisionSigner()
         # GOV-CP-08 / P0-7 -- drift composite oracle. Computes the
         # max-component composite drift on demand and proposes a
         # one-step backward transition through the FSM (AUTO -> LIVE
