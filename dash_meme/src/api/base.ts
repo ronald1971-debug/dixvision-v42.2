@@ -20,15 +20,21 @@ export class ApiError extends Error {
 
 async function unwrap<T>(res: Response): Promise<T> {
   if (!res.ok) {
+    // Read the body as text first, then attempt JSON.parse — the Fetch API
+    // marks the body stream as "used" after any body method is invoked, so
+    // calling `res.text()` after a failed `res.json()` would always throw
+    // "body stream already read" and silently lose the server's error
+    // payload (Devin Review BUG_0001 on PR #181).
     let body: unknown = null;
     try {
-      body = await res.json();
-    } catch {
+      const raw = await res.text();
       try {
-        body = await res.text();
+        body = JSON.parse(raw);
       } catch {
-        body = null;
+        body = raw;
       }
+    } catch {
+      body = null;
     }
     throw new ApiError(
       res.status,
