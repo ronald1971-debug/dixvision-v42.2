@@ -230,6 +230,103 @@ def test_mode_fsm_auto_requires_operator_authorisation():
     assert state.current_mode() is SystemMode.AUTO
 
 
+def test_consent_nonce_not_burned_when_promotion_gates_rejects():
+    """Regression for the orphaned-consent-row bug.
+
+    When LIVE → AUTO is consent-gated AND promotion-gated, a consent
+    envelope that passes the consent validator must NOT have its nonce
+    registered (and the OPERATOR_CONSENT_ACCEPTED audit row must NOT
+    be written) until promotion gates and policy have also accepted
+    the transition. Otherwise a downstream rejection would burn a
+    semantically-valid nonce and leave an orphan audit row in the
+    ledger, breaking the consent → MODE_TRANSITION pairing contract.
+    """
+
+    class _RejectingPromotionGates:
+        """Stub gates that always reject AUTO."""
+
+        def check(self, target_mode_name: str) -> tuple[bool, str]:
+            if target_mode_name == "AUTO":
+                return False, "PROMOTION_GATES_HASH_MISMATCH"
+            return True, ""
+
+        def bind(self, *, ts_ns: int, requestor: str) -> str:
+            return "0" * 64
+
+    ledger = LedgerAuthorityWriter()
+    policy = PolicyEngine()
+    state = StateTransitionManager(
+        policy=policy,
+        ledger=ledger,
+        initial_mode=SystemMode.LIVE,
+        promotion_gates=_RejectingPromotionGates(),
+    )
+
+    consent = _consent(
+        ts_ns=100,
+        mode_from=SystemMode.LIVE,
+        mode_to=SystemMode.AUTO,
+        policy=policy,
+        nonce="reusable-nonce-1",
+    )
+    rejected = state.propose(
+        ModeTransitionRequest(
+            ts_ns=100,
+            requestor="op",
+            current_mode=SystemMode.LIVE,
+            target_mode=SystemMode.AUTO,
+            reason="autonomous",
+            consent=consent,
+        )
+    )
+    assert rejected.approved is False
+    assert rejected.rejection_code == "PROMOTION_GATES_HASH_MISMATCH"
+
+    # No OPERATOR_CONSENT_ACCEPTED row was written for the rejected
+    # transition (the row only ships paired with MODE_TRANSITION).
+    kinds = [row.kind for row in ledger.read()]
+    assert "OPERATOR_CONSENT_ACCEPTED" not in kinds
+    assert "MODE_TRANSITION_REJECTED" in kinds
+
+    # The same nonce can be reused -- it was not burned by the
+    # rejected attempt. Swap in a passthrough gates so the retry
+    # actually reaches the approval branch and the nonce gets
+    # committed exactly once.
+    class _PassThroughPromotionGates:
+        def check(self, target_mode_name: str) -> tuple[bool, str]:
+            return True, ""
+
+        def bind(self, *, ts_ns: int, requestor: str) -> str:
+            return "0" * 64
+
+    state._promotion_gates = _PassThroughPromotionGates()
+    retry = state.propose(
+        ModeTransitionRequest(
+            ts_ns=101,
+            requestor="op",
+            current_mode=SystemMode.LIVE,
+            target_mode=SystemMode.AUTO,
+            reason="autonomous (retry)",
+            consent=_consent(
+                ts_ns=101,
+                mode_from=SystemMode.LIVE,
+                mode_to=SystemMode.AUTO,
+                policy=policy,
+                nonce="reusable-nonce-1",
+            ),
+        )
+    )
+    assert retry.approved is True
+    assert state.current_mode() is SystemMode.AUTO
+
+    # Now exactly one OPERATOR_CONSENT_ACCEPTED, paired with the
+    # successful MODE_TRANSITION row.
+    kinds = [row.kind for row in ledger.read()]
+    assert kinds.count("OPERATOR_CONSENT_ACCEPTED") == 1
+    accepted_idx = kinds.index("OPERATOR_CONSENT_ACCEPTED")
+    assert kinds[accepted_idx + 1] == "MODE_TRANSITION"
+
+
 def test_mode_fsm_emergency_lock_from_any_state():
     for start in (
         SystemMode.PAPER,

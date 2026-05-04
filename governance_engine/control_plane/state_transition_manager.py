@@ -204,6 +204,15 @@ class StateTransitionManager:
             # an illegal edge) and *before* the promotion-gates check
             # (so the consent rejection surfaces ahead of any
             # downstream policy code).
+            #
+            # Validation here is read-only: nothing is written to the
+            # ledger and no nonce is registered yet. The
+            # ``OPERATOR_CONSENT_ACCEPTED`` audit row + the nonce
+            # commit happen *after* the promotion-gates and policy
+            # checks have also passed, otherwise a downstream
+            # rejection would burn a semantically-valid nonce and
+            # leave an orphan audit row in the ledger.
+            consent_envelope_to_commit: OperatorConsent | None = None
             if edge_requires_consent(prev, normalised.target_mode):
                 consent_obj = normalised.consent
                 if consent_obj is not None and not isinstance(
@@ -261,22 +270,10 @@ class StateTransitionManager:
                         rejection_code=consent_result.code,
                         ledger_seq=entry.seq,
                     )
-                # Consent accepted — write a paired audit row before
-                # the MODE_TRANSITION row so replay tools can see the
-                # consent → transition pairing without parsing the
-                # transition row's payload.
-                self._ledger.append(
-                    ts_ns=normalised.ts_ns,
-                    kind="OPERATOR_CONSENT_ACCEPTED",
-                    payload={
-                        "operator_id": consent_envelope.operator_id,  # type: ignore[union-attr]
-                        "mode_from": prev.name,
-                        "mode_to": normalised.target_mode.name,
-                        "policy_hash": consent_envelope.policy_hash,  # type: ignore[union-attr]
-                        "nonce": consent_envelope.nonce,  # type: ignore[union-attr]
-                        "consent_ts_ns": str(consent_envelope.ts_ns),  # type: ignore[union-attr]
-                    },
-                )
+                # Consent envelope is valid -- but defer the audit
+                # row + nonce commit until promotion-gates and
+                # policy have also accepted the transition.
+                consent_envelope_to_commit = consent_envelope
                 # A valid OperatorConsent envelope is strictly
                 # stronger than the legacy ``operator_authorized``
                 # bool — refresh the normalised request so the
@@ -349,6 +346,28 @@ class StateTransitionManager:
                     reason=normalised.reason,
                     rejection_code=policy_code,
                     ledger_seq=entry.seq,
+                )
+
+            # All checks (FSM legality, consent envelope if required,
+            # promotion gates, policy decision table) have passed.
+            # Commit the consent side effects now -- the nonce is
+            # registered in the replay ring and the
+            # ``OPERATOR_CONSENT_ACCEPTED`` row is written
+            # immediately before the ``MODE_TRANSITION`` row so
+            # replay tools see them as a paired commit.
+            if consent_envelope_to_commit is not None:
+                self._consent_validator.commit(consent_envelope_to_commit)
+                self._ledger.append(
+                    ts_ns=normalised.ts_ns,
+                    kind="OPERATOR_CONSENT_ACCEPTED",
+                    payload={
+                        "operator_id": consent_envelope_to_commit.operator_id,
+                        "mode_from": prev.name,
+                        "mode_to": normalised.target_mode.name,
+                        "policy_hash": consent_envelope_to_commit.policy_hash,
+                        "nonce": consent_envelope_to_commit.nonce,
+                        "consent_ts_ns": str(consent_envelope_to_commit.ts_ns),
+                    },
                 )
 
             approval_payload = {

@@ -305,10 +305,29 @@ class OperatorConsentValidator:
                 ),
             )
 
-        # Accept — register the nonce so a replay inside the window
-        # fails immediately on the next validate() call.
-        self._seen_nonces.append(key)
+        # Accept — but do NOT register the nonce here. Nonce
+        # registration is a side effect that is only safe to commit
+        # AFTER all downstream checks (promotion gates, policy)
+        # have also passed. The caller (StateTransitionManager) must
+        # invoke ``commit(consent)`` once it is ready to write the
+        # ``OPERATOR_CONSENT_ACCEPTED`` ledger row, otherwise a
+        # downstream rejection would burn a semantically-valid
+        # nonce and leave an orphan audit row in the ledger.
         return ConsentValidationResult(ok=True, code=CODE_OK)
+
+    def commit(self, consent: OperatorConsent) -> None:
+        """Register the consent's nonce in the replay ring.
+
+        Must only be called after :meth:`validate` returned ``ok=True``
+        AND every downstream check (promotion gates, policy decision
+        table, etc.) the caller intends to run has also passed.
+        Calling this twice for the same nonce is a no-op as far as
+        replay protection is concerned, but the caller should not
+        rely on idempotency — :class:`StateTransitionManager`
+        invokes :meth:`commit` exactly once per accepted transition.
+        """
+
+        self._seen_nonces.append((consent.operator_id, consent.nonce))
 
 
 __all__ = [
