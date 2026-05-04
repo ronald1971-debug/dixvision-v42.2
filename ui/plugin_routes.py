@@ -6,10 +6,11 @@ restarting the process. Two distinct shapes are exposed under one
 uniform contract:
 
 * **Microstructure plugins** (and any other concrete
-  :class:`MicrostructurePlugin` slot) carry a tri-state lifecycle —
-  ``DISABLED`` / ``SHADOW`` / ``ACTIVE``. The route mutates the
-  dataclass attribute in place and writes a ``PLUGIN_LIFECYCLE`` row
-  to the authority ledger.
+  :class:`MicrostructurePlugin` slot) carry a binary lifecycle —
+  ``DISABLED`` / ``ACTIVE``. The route mutates the dataclass
+  attribute in place and writes a ``PLUGIN_LIFECYCLE`` row to the
+  authority ledger. (Plugin-level SHADOW was demolished by
+  SHADOW-DEMOLITION-01.)
 
 * **Cognitive chat** is gated by the ``DIX_COGNITIVE_CHAT_ENABLED``
   env flag — but the dashboard needs an in-process override so the
@@ -27,8 +28,8 @@ render them in one grid:
       "id": "microstructure_v1",
       "category": "intelligence",
       "version": "0.1.0",
-      "lifecycle": "SHADOW",
-      "lifecycle_options": ["DISABLED", "SHADOW", "ACTIVE"],
+      "lifecycle": "ACTIVE",
+      "lifecycle_options": ["DISABLED", "ACTIVE"],
       "description": "...",
       "ledger_kind": "PLUGIN_LIFECYCLE"
     }
@@ -62,7 +63,6 @@ __all__ = [
 
 _LIFECYCLE_VALUES: tuple[str, ...] = (
     PluginLifecycle.DISABLED.value,
-    PluginLifecycle.SHADOW.value,
     PluginLifecycle.ACTIVE.value,
 )
 
@@ -87,9 +87,8 @@ class PluginLifecycleRequest(BaseModel):
     lifecycle: str = Field(
         ...,
         description=(
-            "Target lifecycle. Microstructure plugins accept "
-            "DISABLED/SHADOW/ACTIVE. Cognitive chat accepts "
-            "DISABLED (off) and ACTIVE (on)."
+            "Target lifecycle. All plugins accept DISABLED (off) "
+            "and ACTIVE (on); plugin-level SHADOW was demolished."
         ),
     )
     requestor: str = "dashboard"
@@ -158,10 +157,8 @@ class PluginRegistry:
                     lifecycle_options=list(_LIFECYCLE_VALUES),
                     description=(
                         "Tick-driven microstructure signal generator. "
-                        "SHADOW emits signals tagged "
-                        '`meta["shadow"]="true"` so the Execution Engine '
-                        "refuses to fill them; ACTIVE clears the tag; "
-                        "DISABLED skips the plugin entirely."
+                        "ACTIVE emits signals into the conflict "
+                        "resolver; DISABLED skips the plugin entirely."
                     ),
                 )
             )
@@ -218,11 +215,6 @@ class PluginRegistry:
             )
 
         if plugin_id == "cognitive_chat":
-            if normalized == PluginLifecycle.SHADOW.value:
-                raise ValueError(
-                    "cognitive_chat does not support SHADOW lifecycle; "
-                    "use DISABLED or ACTIVE"
-                )
             self.toggle_state.set_cognitive_chat(
                 normalized == PluginLifecycle.ACTIVE.value
             )

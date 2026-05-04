@@ -104,18 +104,6 @@ class SignalPipeline:
                 continue
             fired_order.append(sid)
             for s in plugin.on_tick(tick):
-                if plugin.lifecycle is PluginLifecycle.SHADOW:
-                    meta = dict(s.meta)
-                    meta["shadow"] = "true"
-                    s = SignalEvent(
-                        ts_ns=s.ts_ns,
-                        symbol=s.symbol,
-                        side=s.side,
-                        confidence=s.confidence,
-                        plugin_chain=s.plugin_chain,
-                        meta=meta,
-                        produced_by_engine="intelligence_engine",
-                    )
                 raw.append(s)
 
         resolved = self._resolver.resolve(raw)

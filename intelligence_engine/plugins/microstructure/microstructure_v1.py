@@ -16,7 +16,7 @@ Refs:
 
 * ``docs/total_recall_index.md`` §4 IND-L02 (market microstructure)
 * ``build_plan.md`` §Phase E2
-* ``manifest.md`` §0.7 (Plugin Activation Surface; SHADOW lifecycle)
+* ``manifest.md`` §0.7 (Plugin Activation Surface)
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ class MicrostructureV1:
 
     name: str = "microstructure_v1"
     version: str = "0.1.0"
-    lifecycle: PluginLifecycle = PluginLifecycle.SHADOW
+    lifecycle: PluginLifecycle = PluginLifecycle.ACTIVE
     tolerance_bps: float = 2.0
     confidence_scale_bps: float = 50.0
     min_confidence: float = 0.0
