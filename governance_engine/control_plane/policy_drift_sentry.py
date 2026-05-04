@@ -15,12 +15,18 @@ through :meth:`StateTransitions.propose`).
 
   * a :class:`PolicyHashAnchor` (pure detector);
   * a callable that mirrors :meth:`GovernanceEngine.process`
-    (i.e. ``Callable[[HazardEvent], Sequence[Event]]``).
+    (i.e. ``Callable[[HazardEvent], Sequence[Event]]``);
+  * an optional ``on_hazard`` callback that fires *before* the hazard
+    is handed to Governance, so the harness can persist the hazard on
+    the audit ring even though :meth:`GovernanceEngine.process` itself
+    returns ``()`` for ``HAZARD`` events (the FSM transition happens
+    inside ``_handle_hazard`` and no event is emitted downstream).
 
 Its single public method :meth:`check` calls
 :meth:`~PolicyHashAnchor.verify_no_drift`, returns ``()`` on no drift,
-and on drift hands the hazard to the governance callable and returns
-whatever Governance emits downstream.
+and on drift fires ``on_hazard`` (if set), hands the hazard to the
+governance callable, and returns whatever Governance emits downstream
+(which is the empty tuple in production but kept polymorphic for tests).
 
 Pure / deterministic / no I/O beyond the file-read inside
 :meth:`PolicyHashAnchor.verify_no_drift`. The sentry never reads a
@@ -56,12 +62,22 @@ class PolicyDriftSentry:
         governance_process: Callable that consumes a :class:`HazardEvent`
             and returns the events Governance emits in response. Either
             :meth:`GovernanceEngine.process` directly or a test double.
+        on_hazard: Optional callback invoked with the detected hazard
+            *before* it is forwarded to ``governance_process``. The
+            harness uses this to persist the hazard on the audit ring;
+            without it, operators would have no record of the drift
+            because :meth:`GovernanceEngine.process` returns ``()`` for
+            ``HAZARD`` events (the FSM is mutated inside
+            ``_handle_hazard`` rather than via downstream emission).
+            Exceptions raised by the callback propagate to the caller
+            -- it must be cheap and not raise on the happy path.
 
     Example::
 
         sentry = PolicyDriftSentry(
             anchor=policy_hash_anchor,
             governance_process=governance_engine.process,
+            on_hazard=lambda h: state.record("governance.policy_drift", h),
         )
         # On the hot path, before doing decision-relevant work:
         sentry.check(now_ns=wall_ns())
@@ -76,16 +92,22 @@ class PolicyDriftSentry:
 
     anchor: PolicyHashAnchor
     governance_process: Callable[[HazardEvent], Sequence[Event]]
+    on_hazard: Callable[[HazardEvent], None] | None = None
 
     def check(self, *, now_ns: int) -> Sequence[Event]:
         """Run the drift detector; route any hazard through Governance.
 
-        Returns the (possibly empty) sequence of events emitted by
-        :meth:`GovernanceEngine.process`. Returns ``()`` immediately
-        when there is no drift -- no governance call, no ledger row.
+        On no drift returns ``()`` immediately -- no governance call,
+        no callback, no ledger row.
+
+        On drift, fires ``on_hazard`` (if set) with the detected hazard
+        *before* forwarding to ``governance_process``, then returns the
+        (possibly empty) sequence of events Governance emits.
         """
 
         hazard = self.anchor.verify_no_drift(ts_ns=now_ns)
         if hazard is None:
             return ()
+        if self.on_hazard is not None:
+            self.on_hazard(hazard)
         return tuple(self.governance_process(hazard))

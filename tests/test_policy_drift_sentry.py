@@ -181,3 +181,68 @@ def test_check_repeats_emit_one_governance_call_per_invocation(
 
     assert len(routed) == 3
     assert all(h.code == HAZARD_CODE_POLICY_DRIFT for h in routed)
+
+
+def test_on_hazard_callback_fires_before_governance_process(
+    tmp_path: Path,
+) -> None:
+    """The ``on_hazard`` callback runs *before* ``governance_process``.
+
+    The harness uses this hook to persist the hazard on the audit ring
+    *before* it is forwarded to :meth:`GovernanceEngine.process`, which
+    returns ``()`` for HAZARD events (the FSM mutation happens inside
+    ``_handle_hazard``). Without the callback, the drift would be
+    invisible to ``/api/events``.
+    """
+
+    files = _make_files(tmp_path)
+    ledger = LedgerAuthorityWriter()
+    anchor = PolicyHashAnchor(ledger=ledger, files=files)
+    anchor.bind_session(ts_ns=100, requestor="test")
+
+    files[0][1].write_bytes(b"version: 2\n")  # mid-session edit
+
+    call_order: list[str] = []
+    captured: list[HazardEvent] = []
+
+    def on_hazard(hazard: HazardEvent) -> None:
+        call_order.append("on_hazard")
+        captured.append(hazard)
+
+    def fake_process(event: Event) -> Sequence[Event]:
+        call_order.append("governance_process")
+        return ()
+
+    sentry = PolicyDriftSentry(
+        anchor=anchor,
+        governance_process=fake_process,
+        on_hazard=on_hazard,
+    )
+
+    sentry.check(now_ns=200)
+
+    assert call_order == ["on_hazard", "governance_process"]
+    assert len(captured) == 1
+    assert captured[0].code == HAZARD_CODE_POLICY_DRIFT
+    assert captured[0].severity.name == "CRITICAL"
+
+
+def test_on_hazard_callback_not_fired_when_no_drift(tmp_path: Path) -> None:
+    """No drift -> ``on_hazard`` is *not* invoked (no spurious audit row)."""
+
+    files = _make_files(tmp_path)
+    ledger = LedgerAuthorityWriter()
+    anchor = PolicyHashAnchor(ledger=ledger, files=files)
+    anchor.bind_session(ts_ns=100, requestor="test")
+
+    fired: list[HazardEvent] = []
+
+    sentry = PolicyDriftSentry(
+        anchor=anchor,
+        governance_process=lambda _e: (),
+        on_hazard=lambda h: fired.append(h),
+    )
+
+    sentry.check(now_ns=200)
+
+    assert fired == []

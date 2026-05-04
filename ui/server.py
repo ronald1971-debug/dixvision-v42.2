@@ -248,9 +248,18 @@ class _State:
         # hands the hazard to ``governance.process`` so the single FSM
         # mutator downgrades the mode through the audited chain.
         # Detection-only is not protection; this is the protection.
+        # The ``on_hazard`` callback persists the hazard on the audit
+        # ring before it is forwarded to ``governance.process``.
+        # Without it, the drift would be invisible to ``/api/events``
+        # because ``GovernanceEngine.process`` returns ``()`` for
+        # HAZARD events (the FSM mutation happens inside
+        # ``_handle_hazard``, not via a downstream emission).
         self.policy_drift_sentry = PolicyDriftSentry(
             anchor=self.policy_hash_anchor,
             governance_process=self.governance.process,
+            on_hazard=lambda hazard: self.record(
+                "governance.policy_drift", hazard
+            ),
         )
         self.learning = LearningEngine()
         self.evolution = EvolutionEngine()
