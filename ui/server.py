@@ -303,7 +303,9 @@ class _State:
         # ``core.contracts.signal_trust``.
         try:
             self.signal_trust_registry: ExternalSignalTrustRegistry | None = (
-                load_external_signal_trust()
+                load_external_signal_trust(
+                    REGISTRY_DIR / "external_signal_trust.yaml"
+                )
             )
         except FileNotFoundError:
             # Tests / minimal deployments may run without the registry
