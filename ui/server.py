@@ -80,6 +80,9 @@ from core.contracts.governance import (
     OperatorAction,
     OperatorRequest,
 )
+from core.contracts.learning_evolution_freeze import (
+    LearningEvolutionFreezePolicy,
+)
 from core.contracts.market import MarketTick
 from core.contracts.risk import RiskSnapshot
 from dashboard_backend.control_plane.decision_trace import DecisionTracePanel
@@ -275,6 +278,23 @@ class _State:
         )
         self.learning = LearningEngine()
         self.evolution = EvolutionEngine()
+        # AUDIT-P1.7 — operator override for the
+        # :class:`LearningEvolutionFreezePolicy` (HARDEN-04 / INV-70).
+        # Adaptive mutations only fire when ``mode is LIVE`` *and*
+        # this flag is True. The flag is server-side mutable state
+        # (a single atomic bool) toggled by the typed
+        # ``POST /api/operator/learning-override`` route, audited as
+        # an ``OPERATOR_LEARNING_OVERRIDE_CHANGED`` ledger row on
+        # every flip. The seed honours
+        # ``DIXVISION_LEARNING_OVERRIDE`` (truthy = pre-armed at boot)
+        # so deterministic restarts that already had the override
+        # set do not silently re-freeze the loop.
+        self.learning_override_enabled: bool = (
+            os.environ.get("DIXVISION_LEARNING_OVERRIDE", "")
+            .strip()
+            .lower()
+            in {"1", "true", "yes", "on"}
+        )
         self.events: deque[dict[str, Any]] = deque(maxlen=500)
         self.event_seq: int = 0
 
@@ -670,6 +690,52 @@ def _read_yaml(path: Path) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Pydantic request models
 # ---------------------------------------------------------------------------
+
+
+class LearningOverrideRequest(BaseModel):
+    """Body for ``POST /api/operator/learning-override`` (AUDIT-P1.7).
+
+    The operator-toggled override that, in conjunction with
+    ``mode is SystemMode.LIVE``, unfreezes the
+    :class:`LearningEvolutionFreezePolicy` so the slow learning loop
+    + evolution patch pipeline can emit mutations. Defaults to
+    ``False`` so flipping the override is always an explicit
+    operator act (B36 / HARDEN-04 invariant).
+    """
+
+    enabled: bool = Field(
+        ...,
+        description=(
+            "Target value of the operator override. Adaptive "
+            "mutations require both this flag to be True *and* "
+            "the system mode to be LIVE."
+        ),
+    )
+    requestor: str = Field(
+        default="dashboard",
+        min_length=1,
+        max_length=64,
+        description=(
+            "Caller identity recorded on the audit row; defaults "
+            "to the dashboard origin."
+        ),
+    )
+    reason: str = Field(
+        default="",
+        max_length=256,
+        description=(
+            "Free-form rationale; included verbatim in the audit "
+            "ledger payload."
+        ),
+    )
+
+
+class LearningOverrideResponse(BaseModel):
+    """Response shape for both GET and POST learning-override routes."""
+
+    enabled: bool
+    mode: str
+    is_freeze_active: bool
 
 
 class TickIn(BaseModel):
@@ -1241,6 +1307,89 @@ def operator_action_kill(body: OperatorKillRequest) -> OperatorActionResponse:
         summary=outcome.summary,
         decision=decision_dict,
     )
+
+
+def _learning_override_response() -> LearningOverrideResponse:
+    """Project the live learning-override flag + freeze state.
+
+    Composes the harness-level ``learning_override_enabled`` bool
+    with the live :class:`SystemMode` (read through the mode FSM,
+    not cached) and the
+    :class:`LearningEvolutionFreezePolicy` derived from both. Used
+    by both the GET projection and the POST result so the client
+    sees a coherent snapshot in the same response.
+    """
+
+    with STATE.lock:
+        enabled = STATE.learning_override_enabled
+        mode = STATE.governance.state_transitions.current_mode()
+    policy = LearningEvolutionFreezePolicy(
+        mode=mode, operator_override=enabled
+    )
+    return LearningOverrideResponse(
+        enabled=enabled,
+        mode=mode.name,
+        is_freeze_active=policy.is_frozen(),
+    )
+
+
+@app.get(
+    "/api/operator/learning-override",
+    response_model=LearningOverrideResponse,
+)
+def operator_learning_override_get() -> LearningOverrideResponse:
+    """AUDIT-P1.7 — typed read of the operator learning-override flag.
+
+    Read-only; never writes the ledger. Used by the operator
+    dashboard so the toggle reflects the live server-side state
+    on every page load (the flag is server-authoritative — there
+    is no client-side override cache).
+    """
+
+    return _learning_override_response()
+
+
+@app.post(
+    "/api/operator/learning-override",
+    response_model=LearningOverrideResponse,
+)
+def operator_learning_override_post(
+    body: LearningOverrideRequest,
+) -> LearningOverrideResponse:
+    """AUDIT-P1.7 — flip the learning-override flag with audit.
+
+    Writes an ``OPERATOR_LEARNING_OVERRIDE_CHANGED`` row to the
+    authority ledger on every transition (including no-ops, so the
+    full operator-intent trail is preserved). The audit row carries
+    ``previous`` and ``next`` boolean values, the requestor, the
+    free-form reason, and the live :class:`SystemMode` at flip
+    time so the offline replay can reconstruct exactly when each
+    override was set or cleared.
+
+    The override is necessary but not sufficient: the
+    :class:`LearningEvolutionFreezePolicy` is still frozen unless
+    the system mode is ``LIVE``. The handler does not enforce that
+    pairing here — the policy itself is the single source of
+    truth, and projecting the freeze state on the response makes
+    that visible to the operator.
+    """
+
+    with STATE.lock:
+        previous = STATE.learning_override_enabled
+        STATE.learning_override_enabled = bool(body.enabled)
+        mode = STATE.governance.state_transitions.current_mode()
+    STATE.governance.ledger.append(
+        ts_ns=wall_ns(),
+        kind="OPERATOR_LEARNING_OVERRIDE_CHANGED",
+        payload={
+            "requestor": body.requestor,
+            "reason": body.reason,
+            "previous": "true" if previous else "false",
+            "next": "true" if body.enabled else "false",
+            "mode": mode.name,
+        },
+    )
+    return _learning_override_response()
 
 
 def _decision_to_dict(decision: Any) -> dict[str, Any]:
