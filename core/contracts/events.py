@@ -25,6 +25,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
 
+from core.contracts.signal_trust import SignalTrust
+
 
 class EventKind(StrEnum):
     """Discriminator for the four canonical event kinds (EVT-01..04)."""
@@ -210,6 +212,16 @@ class SignalEvent:
     # ``""`` for backwards compatibility; new producer call sites must
     # set it. Strict receivers (e.g. the Execution Gate) reject empty.
     produced_by_engine: str = ""
+    # Paper-S1 — trust class for the producer of this signal. Internal
+    # plugins keep the default ``INTERNAL``; external ingest adapters
+    # (sensory/external/...) stamp ``EXTERNAL_LOW`` / ``EXTERNAL_MED``
+    # so the governance gate can apply per-source confidence caps from
+    # ``registry/external_signal_trust.yaml``.
+    signal_trust: SignalTrust = SignalTrust.INTERNAL
+    # Paper-S1 — stable source identifier used to look up the per-source
+    # cap row in ``registry/external_signal_trust.yaml``. Internal
+    # producers keep the default ``""`` (no row lookup).
+    signal_source: str = ""
     kind: EventKind = EventKind.SIGNAL
 
 
