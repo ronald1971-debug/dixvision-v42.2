@@ -19,9 +19,8 @@ Two pieces:
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-
 import logging
+from collections.abc import Iterable
 
 from execution_engine.adapters._live_base import (
     AdapterStatus,
