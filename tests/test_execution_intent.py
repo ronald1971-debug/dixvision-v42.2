@@ -11,6 +11,7 @@ import pytest
 from core.contracts.events import Side, SignalEvent
 from core.contracts.execution_intent import (
     AUTHORISED_INTENT_ORIGINS,
+    TEST_INTENT_ORIGINS,
     UnauthorizedOriginError,
     compute_content_hash,
     compute_intent_id,
@@ -182,12 +183,66 @@ def test_unauthorised_origin_rejected():
 
 
 def test_authorised_origins_are_intelligence_subsystems():
-    """Every entry is either tests.fixtures or under intelligence_engine.*."""
+    """Every production entry is a strict child of ``intelligence_engine.*``.
+
+    AUDIT-P1.6 — the production allowlist no longer carries any
+    fixture / harness strings. Test origins live in the dedicated
+    :data:`TEST_INTENT_ORIGINS` set so the production attack
+    surface is clean.
+    """
 
     for origin in AUTHORISED_INTENT_ORIGINS:
-        assert origin == "tests.fixtures" or origin.startswith(
+        assert origin.startswith(
             "intelligence_engine."
-        ), f"unexpected origin in allowlist: {origin}"
+        ), f"unexpected origin in production allowlist: {origin}"
+
+
+def test_test_origins_disjoint_from_production():
+    """AUDIT-P1.6 — production and test allowlists must not overlap.
+
+    Pins the invariant the contract module asserts at import time so
+    a future refactor cannot silently leak a test string into the
+    production set (which would re-open the attack surface this PR
+    closed).
+    """
+
+    assert AUTHORISED_INTENT_ORIGINS.isdisjoint(TEST_INTENT_ORIGINS)
+    assert "tests.fixtures" in TEST_INTENT_ORIGINS
+    assert "tests.fixtures" not in AUTHORISED_INTENT_ORIGINS
+
+
+def test_constructor_accepts_test_origins():
+    """AUDIT-P1.6 — ``create_execution_intent`` accepts test origins.
+
+    The constructor takes the union of production + test sets so
+    tests can build intents without a separate factory; the
+    Execution Gate is the security boundary that gates the test set
+    behind a matching ``caller_allowlist``.
+    """
+
+    intent = create_execution_intent(
+        ts_ns=10,
+        origin="tests.fixtures",
+        signal=_signal(),
+    )
+    assert intent.origin == "tests.fixtures"
+
+
+def test_constructor_rejects_unknown_origin():
+    """AUDIT-P1.6 — origins outside both sets are rejected."""
+
+    with pytest.raises(UnauthorizedOriginError) as exc:
+        create_execution_intent(
+            ts_ns=10,
+            origin="tests.evil",
+            signal=_signal(),
+        )
+    # Error message lists the union (production ∪ test) so the
+    # caller knows the full set of legal origins; this is the same
+    # set the constructor validated against.
+    msg = str(exc.value)
+    for o in AUTHORISED_INTENT_ORIGINS | TEST_INTENT_ORIGINS:
+        assert o in msg, msg
 
 
 # ---------------------------------------------------------------------------
