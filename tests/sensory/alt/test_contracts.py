@@ -74,12 +74,14 @@ def test_probability_bounds_inclusive() -> None:
     [float("nan"), float("inf"), float("-inf")],
 )
 def test_volume_usd_rejects_nan_and_infinity(bad: float) -> None:
-    """volume_usd must reject NaN/Inf — INV-15 contract.
+    """volume_usd must reject NaN and -Inf — INV-15 contract.
 
     Regression: ``< 0`` evaluates to ``False`` for NaN under IEEE 754,
     so a buggy upstream (e.g. a divide-by-zero in a Polymarket adapter)
     would have silently produced an invalid PredictionMarket. The
-    validator now uses ``not (>= 0)`` so NaN/+inf/-inf all fail.
+    validator now uses ``not (>= 0)`` so NaN and -inf fail; +inf still
+    passes the ``>= 0`` predicate (tighten to ``math.isfinite`` if a
+    future product requirement needs to reject +inf as well).
     """
     if math.isnan(bad) or bad < 0:
         with pytest.raises(ValueError, match="volume_usd"):
