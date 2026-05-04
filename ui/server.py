@@ -138,6 +138,12 @@ from intelligence_engine.knowledge import NewsKnowledgeIndex
 from intelligence_engine.learning_interface import LearningInterface
 from intelligence_engine.mcp import OpenNewsServer
 from intelligence_engine.plugins import MicrostructureV1
+from intelligence_engine.runtime_context import RuntimeContext
+from intelligence_engine.runtime_context_builder import (
+    DEFAULT_LATENCY_BUDGET_NS,
+    RuntimeMonitorView,
+    build_runtime_context,
+)
 from intelligence_engine.strategy_runtime.state_machine import (
     StrategyStateMachine,
 )
@@ -252,22 +258,18 @@ class _State:
         # True the moment a CRITICAL hazard is observed inside the
         # active window, which short-circuits dispatch to a single
         # REJECTED ExecutionEvent with reason ``hazard_throttled``.
-        # AUDIT-WIRE.3 / P0-3 — close the closed learning loop.
-        # ``ExecutionEngine`` records every terminal
-        # :class:`ExecutionEvent` into two sinks: the ``FeedbackCollector``
-        # (a ring of :class:`TradeOutcome` rows consumed by
-        # ``learning_engine.lanes.patch_outcome_feedback``) and the
-        # ``IntelligenceFeedbackSink`` (the duck-typed learning surface
-        # that ``intelligence_engine.LearningInterface`` implements).
-        # Without this wiring both sinks were ``None`` so the engine
-        # short-circuited to a no-op early return; learning therefore
-        # observed *zero* trade outcomes and the per-strategy weight
-        # adjuster never updated its rolling stats.
+        self.risk_baseline = RiskSnapshot(version=0, ts_ns=wall_ns())
+        # AUDIT-WIRE.3 / P0-3 — close the closed learning loop. The
+        # ``FeedbackCollector`` and ``LearningInterface`` are the two
+        # terminal-event sinks ``ExecutionEngine`` records every
+        # ``ExecutionEvent`` into; without them the engine short-
+        # circuits to a no-op so the per-strategy weight adjuster
+        # observes zero trade outcomes.
         self.feedback_collector = FeedbackCollector()
         self.learning_interface = LearningInterface()
         self.execution = ExecutionEngine(
             throttle_adapter=self.hazard_throttle,
-            risk_baseline=RiskSnapshot(version=0, ts_ns=wall_ns()),
+            risk_baseline=self.risk_baseline,
             feedback_collector=self.feedback_collector,
             intelligence_feedback=self.learning_interface,
         )
@@ -276,11 +278,6 @@ class _State:
         # Without this wiring the sensor primitives existed but the
         # engine carried no registry of them; the harness + dashboard
         # had no way to invoke a sensor through the engine surface.
-        # Sensor-specific dispatch routing (each ``observe(...)``
-        # signature is heterogeneous) is a follow-up wave; this PR
-        # closes the "primitive built but never bound" gap so the
-        # array is observable on ``state.sensor_array`` and on
-        # ``state.system.sensor_array``.
         self.sensor_array = SensorArray()
         self.sensor_array.register(ClockDriftSensor())
         self.sensor_array.register(WSTimeoutSensor())
@@ -295,6 +292,18 @@ class _State:
         self.sensor_array.register(MarketAnomalySensor())
         self.sensor_array.register(SystemAnomalySensor())
         self.system = SystemEngine(sensor_array=self.sensor_array)
+        # AUDIT-WIRE.5 / P0-4 — bind the per-tick :class:`RuntimeContext`
+        # builder. ``IntelligenceEngine.run_meta_tick`` requires a
+        # caller-supplied :class:`RuntimeContext` per tick, but no
+        # production caller produced one, so the meta-controller
+        # never observed non-trivial perf / risk / drift / latency
+        # pressure scalars and INV-48 fallback could not fire on
+        # real elapsed wall-time. Holding the builder on ``_State``
+        # closes the "primitive built but never bound" gap and gives
+        # downstream callers a single discoverable entry point
+        # (``self.build_runtime_context_now``).
+        self.runtime_context_builder = build_runtime_context
+        self.runtime_latency_budget_ns: int = DEFAULT_LATENCY_BUDGET_NS
         # Sprint-1 / Class-B "Trust the Ledger" — if the operator sets
         # ``DIXVISION_LEDGER_PATH`` the harness opens a SQLite-backed
         # authority ledger; every governance decision (mode
@@ -512,6 +521,42 @@ class _State:
         self.raydium_feed = RaydiumPoolFeedRunner(
             sink=self._ingest_raydium_snapshot_locked,
             clock_ns=wall_ns,
+        )
+
+    def build_runtime_context_now(
+        self,
+        *,
+        elapsed_ns: int = 0,
+        drift_deviation: float = 0.0,
+        perf_pressure: float | None = None,
+        vol_spike_z: float = 0.0,
+        runtime_monitor: RuntimeMonitorView | None = None,
+    ) -> RuntimeContext:
+        """Build a :class:`RuntimeContext` from the current authority surfaces.
+
+        AUDIT-WIRE.5 helper. Wraps the bound
+        :func:`build_runtime_context` callable with the harness-side
+        defaults (current ``execution.risk_baseline`` snapshot, a
+        zeroed :class:`RuntimeMonitorView` until a runtime monitor is
+        wired into the harness, and the configured
+        ``runtime_latency_budget_ns``). Callers may override any
+        keyword to supply real per-tick scalars; the per-sensor
+        pipeline that produces those scalars is a follow-up wave.
+        """
+
+        view = runtime_monitor or RuntimeMonitorView(
+            fail_rate=0.0,
+            reject_rate=0.0,
+            p99_latency_ns=0,
+        )
+        return self.runtime_context_builder(
+            risk_snapshot=self.risk_baseline,
+            runtime_monitor=view,
+            drift_deviation=drift_deviation,
+            perf_pressure=perf_pressure,
+            vol_spike_z=vol_spike_z,
+            elapsed_ns=elapsed_ns,
+            latency_budget_ns=self.runtime_latency_budget_ns,
         )
 
     def all_engines(self) -> dict[str, Any]:
