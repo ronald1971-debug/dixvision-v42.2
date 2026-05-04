@@ -70,9 +70,11 @@ from core.contracts.api.operator import (
     OperatorEngineRow,
     OperatorKillRequest,
     OperatorMemecoinSnapshot,
+    OperatorModeRequest,
     OperatorModeSnapshot,
     OperatorStrategyCounts,
     OperatorSummaryResponse,
+    OperatorUnlockRequest,
     WalletInfoResponse,
 )
 from core.contracts.events import (
@@ -131,6 +133,9 @@ from governance_engine.strategy_registry import StrategyRegistry
 # authority lint B33 rule fires at CI time and at runtime the call
 # raises :class:`HarnessApproverDisabledError`.
 os.environ.setdefault(HARNESS_APPROVER_ENV_VAR, "1")
+from execution_engine.adapters.registry import (
+    default_registry as default_adapter_registry,
+)
 from intelligence_engine.cognitive.approval_edge import (
     ApprovalAlreadyDecidedError,
     ApprovalEdge,
@@ -532,6 +537,12 @@ class _State:
             cognitive_chat_env_enabled=lambda: (
                 CognitiveChatFeatureFlag().enabled
             ),
+            sensor_array=self.sensor_array,
+            adapter_registry=default_adapter_registry(),
+            # ``feed_runners`` is bound after the runners are
+            # constructed below — left empty here and patched in
+            # at the end of __init__ so the registry surfaces all
+            # four feed entries on the Plugins page.
         )
 
         # Wave-03 PR-5 — operator-approval edge. Binds the chat
@@ -605,6 +616,18 @@ class _State:
             sink=self._ingest_raydium_snapshot_locked,
             clock_ns=wall_ns,
         )
+
+        # Bind the live feed runners onto the plugin registry so the
+        # dashboard Plugins page surfaces all four feeds and the
+        # operator can ACTIVE/DISABLED them from one place. Mutates
+        # the dataclass field directly because the registry was
+        # constructed before the runners existed.
+        self.plugin_registry.feed_runners = {
+            "binance_public_ws": self.binance_feed,
+            "coindesk_rss": self.coindesk_feed,
+            "pumpfun_ws": self.pumpfun_feed,
+            "raydium_pools": self.raydium_feed,
+        }
 
     def build_runtime_context_now(
         self,
@@ -1598,6 +1621,88 @@ def operator_action_kill(body: OperatorKillRequest) -> OperatorActionResponse:
         requestor=body.requestor,
         action=OperatorAction.REQUEST_KILL,
         payload={"reason": body.reason},
+    )
+    with STATE.lock:
+        outcome = STATE.dashboard_router.submit(request)
+    decision_dict = _decision_to_dict(outcome.decision)
+    return OperatorActionResponse(
+        approved=outcome.approved,
+        summary=outcome.summary,
+        decision=decision_dict,
+    )
+
+
+@app.post(
+    "/api/operator/action/unlock",
+    response_model=OperatorActionResponse,
+)
+def operator_action_unlock(
+    body: OperatorUnlockRequest,
+) -> OperatorActionResponse:
+    """Submit an operator UNLOCK (LOCKED → SAFE) through the bridge.
+
+    The route handler builds a typed ``OperatorRequest`` with
+    ``REQUEST_UNLOCK`` and routes it through the same governance bridge
+    as KILL. ``OperatorInterfaceBridge._handle_unlock`` re-resolves
+    the current mode under the state-transition lock and proposes
+    ``LOCKED → SAFE``; submitting while not locked returns the FSM
+    rejection verbatim. The dashboard never writes the ledger and
+    never bypasses Governance (B7 lint, INV-37).
+    """
+
+    request = OperatorRequest(
+        ts_ns=wall_ns(),
+        requestor=body.requestor,
+        action=OperatorAction.REQUEST_UNLOCK,
+        payload={"reason": body.reason},
+    )
+    with STATE.lock:
+        outcome = STATE.dashboard_router.submit(request)
+    decision_dict = _decision_to_dict(outcome.decision)
+    return OperatorActionResponse(
+        approved=outcome.approved,
+        summary=outcome.summary,
+        decision=decision_dict,
+    )
+
+
+@app.post(
+    "/api/operator/action/mode",
+    response_model=OperatorActionResponse,
+)
+def operator_action_mode(
+    body: OperatorModeRequest,
+) -> OperatorActionResponse:
+    """Submit an operator REQUEST_MODE through the governance bridge.
+
+    Mirrors the legacy ``/api/dashboard/action/mode`` route on the
+    typed React surface. ``OperatorInterfaceBridge._handle_mode``
+    consults ``edge_requires_consent`` for the requested edge and
+    extracts the consent envelope from the payload (Hardening-S1
+    item 8). Edges that do not require consent ignore the consent
+    fields entirely. The state transition manager re-resolves the
+    current mode under its lock so payload races are safe.
+    """
+
+    payload: dict[str, str] = {
+        "target_mode": body.target_mode,
+        "reason": body.reason,
+        "operator_authorized": "true" if body.operator_authorized else "false",
+    }
+    if body.consent_operator_id:
+        payload["consent_operator_id"] = body.consent_operator_id
+    if body.consent_policy_hash:
+        payload["consent_policy_hash"] = body.consent_policy_hash
+    if body.consent_nonce:
+        payload["consent_nonce"] = body.consent_nonce
+    if body.consent_ts_ns:
+        payload["consent_ts_ns"] = str(body.consent_ts_ns)
+
+    request = OperatorRequest(
+        ts_ns=wall_ns(),
+        requestor=body.requestor,
+        action=OperatorAction.REQUEST_MODE,
+        payload=payload,
     )
     with STATE.lock:
         outcome = STATE.dashboard_router.submit(request)

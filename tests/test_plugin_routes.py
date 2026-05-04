@@ -117,6 +117,61 @@ def test_unknown_lifecycle_returns_400() -> None:
     assert res.status_code == 400
 
 
+def test_adapter_lifecycle_reflects_adapter_state() -> None:
+    """`AdapterStatus.state` (not a phantom `connected` attr) drives lifecycle.
+
+    Devin Review on PR #218 caught that `getattr(status, "connected", False)`
+    always fell back to ``False`` because ``AdapterStatus`` exposes ``state``
+    (an ``AdapterState`` enum), not ``connected``. This pins the post-fix
+    contract so READY/CONNECTING/DEGRADED render as ACTIVE while
+    DISCONNECTED/HALTED render as DISABLED.
+    """
+
+    from execution_engine.adapters._live_base import AdapterState, AdapterStatus
+
+    plugin = MicrostructureV1(lifecycle=PluginLifecycle.DISABLED)
+    toggle = PluginToggleState()
+
+    statuses = [
+        AdapterStatus(name="paper", venue="paper", state=AdapterState.READY, detail=""),
+        AdapterStatus(
+            name="hummingbot",
+            venue="hummingbot",
+            state=AdapterState.DISCONNECTED,
+            detail="",
+        ),
+        AdapterStatus(
+            name="degraded_one",
+            venue="x",
+            state=AdapterState.DEGRADED,
+            detail="",
+        ),
+        AdapterStatus(
+            name="halted_one",
+            venue="x",
+            state=AdapterState.HALTED,
+            detail="",
+        ),
+    ]
+
+    class _StubRegistry:
+        def snapshot(self):
+            return tuple(statuses)
+
+    registry = PluginRegistry(
+        microstructure_plugins=(plugin,),
+        toggle_state=toggle,
+        cognitive_chat_env_enabled=lambda: True,
+        adapter_registry=_StubRegistry(),
+    )
+
+    by_id = {rec.id: rec for rec in registry.list()}
+    assert by_id["adapter:paper"].lifecycle == "ACTIVE"
+    assert by_id["adapter:hummingbot"].lifecycle == "DISABLED"
+    assert by_id["adapter:degraded_one"].lifecycle == "ACTIVE"
+    assert by_id["adapter:halted_one"].lifecycle == "DISABLED"
+
+
 def test_cognitive_chat_default_lifecycle_follows_env_when_no_override() -> None:
     client_on, _, _, _, _ = _build_app(env_enabled=True)
     res = client_on.get("/api/plugins")
