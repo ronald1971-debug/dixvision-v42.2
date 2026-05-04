@@ -111,6 +111,12 @@ def _coerce_confidence(raw: Any) -> float:
         v = float(raw)
     except (TypeError, ValueError):
         return 0.5
+    # IEEE-754 NaN compares unequal to everything; the < / > clamps would
+    # silently let it through and downstream code (clamp_confidence,
+    # SignalEvent.confidence invariant) would either raise or corrupt
+    # arithmetic. Treat NaN/inf as "missing" so the webhook stays HTTP 200.
+    if v != v or v in (float("inf"), float("-inf")):
+        return 0.5
     if v < 0.0:
         return 0.0
     if v > 1.0:

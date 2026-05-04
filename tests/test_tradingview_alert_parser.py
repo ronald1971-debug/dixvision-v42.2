@@ -173,3 +173,28 @@ def test_unknown_side_returns_none() -> None:
 
 def test_non_string_ticker_returns_none() -> None:
     assert parse_tradingview_alert_payload(_payload(ticker=42), ts_ns=1) is None
+
+
+def test_nan_confidence_falls_back_to_default_not_nan() -> None:
+    """IEEE-754 NaN bypasses ``< 0`` / ``> 1`` clamps because every
+    NaN comparison is False. The parser must treat NaN as "missing"
+    so the downstream ``SignalEvent.confidence`` invariant (and the
+    HTTP 200 webhook contract) hold."""
+
+    import math
+
+    result = parse_tradingview_alert_payload(_payload(confidence=float("nan")), ts_ns=1)
+    assert result is not None
+    assert not math.isnan(result.signal.confidence)
+    assert 0.0 <= result.signal.confidence <= 1.0
+    # Pine sometimes serialises NaN as the string "NaN" — same expectation.
+    result_str = parse_tradingview_alert_payload(_payload(confidence="NaN"), ts_ns=1)
+    assert result_str is not None
+    assert not math.isnan(result_str.signal.confidence)
+
+
+def test_infinite_confidence_falls_back_to_default() -> None:
+    for raw in (float("inf"), float("-inf"), "Infinity", "-Infinity"):
+        result = parse_tradingview_alert_payload(_payload(confidence=raw), ts_ns=1)
+        assert result is not None, f"raw={raw!r}"
+        assert 0.0 <= result.signal.confidence <= 1.0
