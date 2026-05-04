@@ -57,6 +57,7 @@ from core.contracts.events import SignalEvent
 __all__ = [
     "AUTHORISED_INTENT_ORIGINS",
     "ExecutionIntent",
+    "TEST_INTENT_ORIGINS",
     "UnauthorizedOriginError",
     "compute_content_hash",
     "compute_intent_id",
@@ -70,6 +71,13 @@ class UnauthorizedOriginError(ValueError):
     """Raised when ``origin`` is not in :data:`AUTHORISED_INTENT_ORIGINS`."""
 
 
+# AUDIT-P1.6 — split test-only origins out of the production
+# allowlist so a permissive ``caller_allowlist`` can never silently
+# accept a fixture-origin intent in a deployed harness. Tests import
+# :data:`TEST_INTENT_ORIGINS` and pass it explicitly to
+# :class:`~execution_engine.execution_gate.AuthorityGuard` so the
+# bypass is always opt-in and visible in the test source.
+#
 # Authorised producers of an :class:`ExecutionIntent`. Curated against
 # ``registry/authority_matrix.yaml``: every entry must resolve to a
 # subsystem under the ``intelligence`` actor row. Adding an entry is a
@@ -85,12 +93,27 @@ AUTHORISED_INTENT_ORIGINS: Final[frozenset[str]] = frozenset(
         "intelligence_engine.meta_controller.runtime_adapter",
         "intelligence_engine.meta_controller.hot_path",
         "intelligence_engine.signal_pipeline.orchestrator",
-        # Replay / harness origin. Tests construct intents through
-        # the ``tests.fixtures`` origin so that B25 lint remains
-        # tight on production code paths.
+    }
+)
+
+# Test-only intent origins. Held in a dedicated frozenset so the
+# production allowlist is free of fixture strings and an attacker
+# who somehow widens ``caller_allowlist`` cannot trivially smuggle a
+# test origin through the gate. The Execution Gate accepts these
+# only when the caller_allowlist explicitly carries the matching
+# test caller (see
+# :class:`~execution_engine.execution_gate.AuthorityGuard`).
+TEST_INTENT_ORIGINS: Final[frozenset[str]] = frozenset(
+    {
         "tests.fixtures",
     }
 )
+
+# Disjointness invariant pinned by
+# :func:`tests.test_execution_intent.test_test_origins_disjoint_from_production`.
+assert AUTHORISED_INTENT_ORIGINS.isdisjoint(
+    TEST_INTENT_ORIGINS
+), "production origins must not overlap with test-only origins"
 
 
 def _canonical_fields(
@@ -246,10 +269,18 @@ def create_execution_intent(
         :attr:`intent_id` and :attr:`content_hash`.
     """
 
-    if origin not in AUTHORISED_INTENT_ORIGINS:
+    # Constructor accepts both production and test origins; the
+    # Execution Gate is the security boundary that gates the
+    # test-only set behind a matching ``caller_allowlist``. Keeping
+    # the constructor permissive lets tests build intents without
+    # threading a separate factory while still keeping the
+    # production attack surface (``AUTHORISED_INTENT_ORIGINS``)
+    # clean of fixture strings.
+    _allowed = AUTHORISED_INTENT_ORIGINS | TEST_INTENT_ORIGINS
+    if origin not in _allowed:
         raise UnauthorizedOriginError(
             f"unauthorised intent origin: {origin!r} — must be one of "
-            f"{sorted(AUTHORISED_INTENT_ORIGINS)}"
+            f"{sorted(_allowed)}"
         )
     if approved_by_governance and not governance_decision_id:
         raise ValueError(

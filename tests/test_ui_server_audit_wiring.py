@@ -10,6 +10,7 @@ point.
 
 PRs in this thread:
 - AUDIT-WIRE.1 — :class:`HazardThrottleAdapter` -> :class:`ExecutionEngine`
+- AUDIT-WIRE.2 — :class:`StrategyRegistry` -> :class:`GovernanceEngine`
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from __future__ import annotations
 import pytest
 
 from core.contracts.events import HazardEvent, HazardSeverity
+from governance_engine.strategy_registry import StrategyRegistry
 from system_engine.coupling import HazardThrottleAdapter
 
 
@@ -102,3 +104,39 @@ def test_audit_wire_1_critical_hazard_halts_subsequent_dispatch(state):
         now_ns=1_500,
     )
     assert projected.halted is True
+
+
+# ---------------------------------------------------------------------------
+# AUDIT-WIRE.2 — StrategyRegistry wired into GovernanceEngine
+# ---------------------------------------------------------------------------
+
+
+def test_audit_wire_2_state_owns_strategy_registry(state):
+    """The harness must construct a StrategyRegistry at boot and hand
+    the same instance to GovernanceEngine; otherwise the registry
+    used for read-side queries diverges from the one the engine
+    mutates."""
+
+    assert isinstance(state.strategy_registry, StrategyRegistry)
+    assert state.governance.strategy_registry is state.strategy_registry
+
+
+def test_audit_wire_2_strategy_registry_shares_ledger_with_engine(state):
+    """The ``ValueError`` guard in ``GovernanceEngine.__init__`` only
+    protects future call sites; this test pins the harness wiring so
+    a refactor that constructs a StrategyRegistry against a different
+    ledger instance trips immediately."""
+
+    assert state.strategy_registry._ledger is state.governance.ledger
+    assert state.strategy_registry._ledger is state.ledger_writer
+
+
+def test_audit_wire_2_update_validator_and_applier_are_online(state):
+    """``GovernanceEngine`` builds ``UpdateValidator`` and
+    ``UpdateApplier`` only when a registry is wired. With no registry
+    every ``UPDATE_PROPOSED`` event hit the legacy
+    ``UPDATE_PROPOSED_AUDIT`` fallback and the learning loop never
+    closed. After this PR both members are non-None."""
+
+    assert state.governance.update_validator is not None
+    assert state.governance.update_applier is not None

@@ -49,6 +49,7 @@ from typing import Final
 from core.contracts.events import HazardEvent, HazardSeverity
 from core.contracts.execution_intent import (
     AUTHORISED_INTENT_ORIGINS,
+    TEST_INTENT_ORIGINS,
     ExecutionIntent,
 )
 from system_engine.authority.matrix import (
@@ -261,8 +262,15 @@ class AuthorityGuard:
                     ts_ns=ts_ns,
                 )
 
-        # 4) Origin is registered as an intelligence subsystem.
-        if intent.origin not in AUTHORISED_INTENT_ORIGINS:
+        # 4) Origin is registered as an intelligence subsystem or a
+        # test-only fixture origin. AUDIT-P1.6 — the test set is held
+        # in a dedicated :data:`TEST_INTENT_ORIGINS` so the
+        # production allowlist is free of fixture strings; the
+        # caller-allowlist gate below is what actually authorises
+        # the test bypass.
+        if intent.origin not in (
+            AUTHORISED_INTENT_ORIGINS | TEST_INTENT_ORIGINS
+        ):
             self._reject(
                 intent=intent,
                 caller=caller,
@@ -271,16 +279,20 @@ class AuthorityGuard:
             )
 
         # 5) Origin string is a strict child of the matrix's
-        # intelligence actor module (or the dedicated tests.fixtures
-        # harness origin). We accept the harness origin only when the
-        # caller_allowlist explicitly carries the test caller, so a
-        # production deploy can never accept a fixture-origin intent.
-        if intent.origin == "tests.fixtures":
-            if "tests.fixtures" not in self._caller_allowlist:
+        # intelligence actor module (or one of the dedicated
+        # :data:`TEST_INTENT_ORIGINS` harness origins). We accept the
+        # harness origin only when the caller_allowlist explicitly
+        # carries the matching test caller, so a production deploy
+        # can never accept a fixture-origin intent.
+        if intent.origin in TEST_INTENT_ORIGINS:
+            if intent.origin not in self._caller_allowlist:
                 self._reject(
                     intent=intent,
                     caller=caller,
-                    reason="tests.fixtures origin requires explicit test caller",
+                    reason=(
+                        f"{intent.origin} origin requires explicit "
+                        "test caller in caller_allowlist"
+                    ),
                     ts_ns=ts_ns,
                 )
         else:

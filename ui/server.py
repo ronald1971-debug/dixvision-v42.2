@@ -79,6 +79,10 @@ from core.contracts.events import (
 from core.contracts.governance import (
     OperatorAction,
     OperatorRequest,
+    SystemMode,
+)
+from core.contracts.learning_evolution_freeze import (
+    LearningEvolutionFreezePolicy,
 )
 from core.contracts.market import MarketTick
 from core.contracts.risk import RiskSnapshot
@@ -103,6 +107,7 @@ from governance_engine.harness_approver import (
     HARNESS_APPROVER_ENV_VAR,
     approve_signal_for_execution,
 )
+from governance_engine.strategy_registry import StrategyRegistry
 
 # Hardening-S1 item 1 — explicit opt-in for the harness approval shim.
 # ``ui.server`` is the harness, by definition. Setting the env var at
@@ -161,6 +166,21 @@ from system_engine.credentials import (
     write_credential,
 )
 from system_engine.engine import SystemEngine
+from system_engine.hazard_sensors import (
+    ClockDriftSensor,
+    ExchangeUnreachableSensor,
+    HeartbeatMissedSensor,
+    LatencySpikeSensor,
+    MarketAnomalySensor,
+    MemoryOverflowSensor,
+    OrderFloodSensor,
+    RiskSnapshotStaleSensor,
+    RuntimeBreakerOpenSensor,
+    SensorArray,
+    StaleDataSensor,
+    SystemAnomalySensor,
+    WSTimeoutSensor,
+)
 from system_engine.scvs.source_registry import (
     SourceRegistry,
     load_source_registry,
@@ -241,7 +261,25 @@ class _State:
             throttle_adapter=self.hazard_throttle,
             risk_baseline=self.risk_baseline,
         )
-        self.system = SystemEngine()
+        # AUDIT-WIRE.4 / P1-3 — bind the 12 frozen HAZ-XX sensors
+        # into a single SensorArray and hand it to ``SystemEngine``.
+        # Without this wiring the sensor primitives existed but the
+        # engine carried no registry of them; the harness + dashboard
+        # had no way to invoke a sensor through the engine surface.
+        self.sensor_array = SensorArray()
+        self.sensor_array.register(ClockDriftSensor())
+        self.sensor_array.register(WSTimeoutSensor())
+        self.sensor_array.register(ExchangeUnreachableSensor())
+        self.sensor_array.register(StaleDataSensor())
+        self.sensor_array.register(MemoryOverflowSensor())
+        self.sensor_array.register(LatencySpikeSensor())
+        self.sensor_array.register(HeartbeatMissedSensor())
+        self.sensor_array.register(RiskSnapshotStaleSensor())
+        self.sensor_array.register(OrderFloodSensor())
+        self.sensor_array.register(RuntimeBreakerOpenSensor())
+        self.sensor_array.register(MarketAnomalySensor())
+        self.sensor_array.register(SystemAnomalySensor())
+        self.system = SystemEngine(sensor_array=self.sensor_array)
         # AUDIT-WIRE.5 / P0-4 — bind the per-tick :class:`RuntimeContext`
         # builder. ``IntelligenceEngine.run_meta_tick`` requires a
         # caller-supplied :class:`RuntimeContext` per tick, but no
@@ -279,7 +317,22 @@ class _State:
             else LedgerAuthorityWriter()
         )
         self.ledger_writer = ledger
-        self.governance = GovernanceEngine(ledger=ledger)
+        # AUDIT-WIRE.2 / P0-3 — close the closed learning loop.
+        # ``GovernanceEngine`` falls through to a ``UPDATE_PROPOSED_AUDIT``
+        # ledger row whenever ``strategy_registry`` is ``None``, which is
+        # how the harness silently dropped every learning-loop update
+        # request: the learning engine's ``UPDATE_PROPOSED`` events were
+        # acknowledged but never applied to the registry FSM, so no
+        # strategy ever advanced from PROPOSED -> CANARY -> LIVE.
+        # Constructing the registry against the same ledger the engine
+        # uses (the ``ValueError`` guard in ``GovernanceEngine.__init__``
+        # enforces this identity) lets ``UpdateValidator`` and
+        # ``UpdateApplier`` come online and the loop closes end-to-end.
+        self.strategy_registry = StrategyRegistry(ledger=ledger)
+        self.governance = GovernanceEngine(
+            ledger=ledger,
+            strategy_registry=self.strategy_registry,
+        )
         # Hardening-S1 item 4-ext -- bind the SHA-256 of every
         # canonical policy YAML to the authority ledger at boot. The
         # anchor turns the policy set into "the document of record":
@@ -294,6 +347,23 @@ class _State:
         )
         self.learning = LearningEngine()
         self.evolution = EvolutionEngine()
+        # AUDIT-P1.7 — operator override for the
+        # :class:`LearningEvolutionFreezePolicy` (HARDEN-04 / INV-70).
+        # Adaptive mutations only fire when ``mode is LIVE`` *and*
+        # this flag is True. The flag is server-side mutable state
+        # (a single atomic bool) toggled by the typed
+        # ``POST /api/operator/learning-override`` route, audited as
+        # an ``OPERATOR_LEARNING_OVERRIDE_CHANGED`` ledger row on
+        # every flip. The seed honours
+        # ``DIXVISION_LEARNING_OVERRIDE`` (truthy = pre-armed at boot)
+        # so deterministic restarts that already had the override
+        # set do not silently re-freeze the loop.
+        self.learning_override_enabled: bool = (
+            os.environ.get("DIXVISION_LEARNING_OVERRIDE", "")
+            .strip()
+            .lower()
+            in {"1", "true", "yes", "on"}
+        )
         self.events: deque[dict[str, Any]] = deque(maxlen=500)
         self.event_seq: int = 0
 
@@ -725,6 +795,52 @@ def _read_yaml(path: Path) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Pydantic request models
 # ---------------------------------------------------------------------------
+
+
+class LearningOverrideRequest(BaseModel):
+    """Body for ``POST /api/operator/learning-override`` (AUDIT-P1.7).
+
+    The operator-toggled override that, in conjunction with
+    ``mode is SystemMode.LIVE``, unfreezes the
+    :class:`LearningEvolutionFreezePolicy` so the slow learning loop
+    + evolution patch pipeline can emit mutations. Defaults to
+    ``False`` so flipping the override is always an explicit
+    operator act (B36 / HARDEN-04 invariant).
+    """
+
+    enabled: bool = Field(
+        ...,
+        description=(
+            "Target value of the operator override. Adaptive "
+            "mutations require both this flag to be True *and* "
+            "the system mode to be LIVE."
+        ),
+    )
+    requestor: str = Field(
+        default="dashboard",
+        min_length=1,
+        max_length=64,
+        description=(
+            "Caller identity recorded on the audit row; defaults "
+            "to the dashboard origin."
+        ),
+    )
+    reason: str = Field(
+        default="",
+        max_length=256,
+        description=(
+            "Free-form rationale; included verbatim in the audit "
+            "ledger payload."
+        ),
+    )
+
+
+class LearningOverrideResponse(BaseModel):
+    """Response shape for both GET and POST learning-override routes."""
+
+    enabled: bool
+    mode: str
+    is_freeze_active: bool
 
 
 class TickIn(BaseModel):
@@ -1296,6 +1412,114 @@ def operator_action_kill(body: OperatorKillRequest) -> OperatorActionResponse:
         summary=outcome.summary,
         decision=decision_dict,
     )
+
+
+def _project_learning_override(
+    *, enabled: bool, mode: SystemMode
+) -> LearningOverrideResponse:
+    """Build a typed response from a snapshotted (enabled, mode) tuple.
+
+    Pure projection — no shared-state reads. Callers are responsible
+    for snapshotting the inputs under ``STATE.lock`` before invoking
+    this helper so the response cannot disagree with whatever the
+    caller observed (or wrote) inside that critical section. The
+    :class:`LearningEvolutionFreezePolicy` derivation is the single
+    source of truth for the ``is_freeze_active`` flag.
+    """
+
+    policy = LearningEvolutionFreezePolicy(
+        mode=mode, operator_override=enabled
+    )
+    return LearningOverrideResponse(
+        enabled=enabled,
+        mode=mode.name,
+        is_freeze_active=policy.is_frozen(),
+    )
+
+
+def _learning_override_response() -> LearningOverrideResponse:
+    """Snapshot the live learning-override flag + freeze state.
+
+    Read path used by the GET route: takes ``STATE.lock``, copies
+    out ``learning_override_enabled`` + the current
+    :class:`SystemMode`, then composes a typed response from the
+    snapshot. The lock is held only for the read so concurrent
+    POSTs are not blocked on the projection work.
+    """
+
+    with STATE.lock:
+        enabled = STATE.learning_override_enabled
+        mode = STATE.governance.state_transitions.current_mode()
+    return _project_learning_override(enabled=enabled, mode=mode)
+
+
+@app.get(
+    "/api/operator/learning-override",
+    response_model=LearningOverrideResponse,
+)
+def operator_learning_override_get() -> LearningOverrideResponse:
+    """AUDIT-P1.7 — typed read of the operator learning-override flag.
+
+    Read-only; never writes the ledger. Used by the operator
+    dashboard so the toggle reflects the live server-side state
+    on every page load (the flag is server-authoritative — there
+    is no client-side override cache).
+    """
+
+    return _learning_override_response()
+
+
+@app.post(
+    "/api/operator/learning-override",
+    response_model=LearningOverrideResponse,
+)
+def operator_learning_override_post(
+    body: LearningOverrideRequest,
+) -> LearningOverrideResponse:
+    """AUDIT-P1.7 — flip the learning-override flag with audit.
+
+    Writes an ``OPERATOR_LEARNING_OVERRIDE_CHANGED`` row to the
+    authority ledger on every transition (including no-ops, so the
+    full operator-intent trail is preserved). The audit row carries
+    ``previous`` and ``next`` boolean values, the requestor, the
+    free-form reason, and the live :class:`SystemMode` at flip
+    time so the offline replay can reconstruct exactly when each
+    override was set or cleared.
+
+    The override is necessary but not sufficient: the
+    :class:`LearningEvolutionFreezePolicy` is still frozen unless
+    the system mode is ``LIVE``. The handler does not enforce that
+    pairing here — the policy itself is the single source of
+    truth, and projecting the freeze state on the response makes
+    that visible to the operator.
+    """
+
+    new_enabled = bool(body.enabled)
+    with STATE.lock:
+        previous = STATE.learning_override_enabled
+        STATE.learning_override_enabled = new_enabled
+        mode = STATE.governance.state_transitions.current_mode()
+        # Devin Review BUG_0001 + BUG_0002 — keep the mutation,
+        # audit-row write, *and* the response snapshot atomic under
+        # ``STATE.lock`` so concurrent POSTs cannot interleave:
+        # ledger sequence must agree with mutation order, and the
+        # response's ``enabled`` must match the ``next`` field of
+        # the row this request just wrote (a follow-up POST that
+        # acquires the lock between this block and a post-lock
+        # projection would otherwise leak the wrong value back to
+        # the first caller).
+        STATE.governance.ledger.append(
+            ts_ns=wall_ns(),
+            kind="OPERATOR_LEARNING_OVERRIDE_CHANGED",
+            payload={
+                "requestor": body.requestor,
+                "reason": body.reason,
+                "previous": "true" if previous else "false",
+                "next": "true" if new_enabled else "false",
+                "mode": mode.name,
+            },
+        )
+    return _project_learning_override(enabled=new_enabled, mode=mode)
 
 
 def _decision_to_dict(decision: Any) -> dict[str, Any]:
