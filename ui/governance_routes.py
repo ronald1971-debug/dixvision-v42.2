@@ -40,6 +40,12 @@ from typing import Any
 
 from fastapi import APIRouter
 
+from core.contracts.api.governance import (
+    DriftResponse,
+    HazardsResponse,
+    PromotionGatesResponse,
+    SourcesResponse,
+)
 from governance_engine.control_plane.promotion_gates import (
     DEFAULT_PROMOTION_GATES_PATH,
     compute_file_hash,
@@ -325,19 +331,19 @@ def build_governance_router(provider: _StateProvider) -> APIRouter:
 
     router = APIRouter(prefix="/api/governance", tags=["governance"])
 
-    @router.get("/promotion_gates")
+    @router.get("/promotion_gates", response_model=PromotionGatesResponse)
     def get_promotion_gates() -> dict[str, Any]:
         return _promotion_gates_payload(provider())
 
-    @router.get("/drift")
+    @router.get("/drift", response_model=DriftResponse)
     def get_drift() -> dict[str, Any]:
         return _drift_payload(provider())
 
-    @router.get("/sources")
+    @router.get("/sources", response_model=SourcesResponse)
     def get_sources() -> dict[str, Any]:
         return _sources_payload(provider())
 
-    @router.get("/hazards")
+    @router.get("/hazards", response_model=HazardsResponse)
     def get_hazards() -> dict[str, Any]:
         return _hazards_payload(provider())
 

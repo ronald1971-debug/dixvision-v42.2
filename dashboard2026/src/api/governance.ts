@@ -6,81 +6,36 @@
  *   /api/governance/sources
  *   /api/governance/hazards
  *
- * Schemas mirror `ui/governance_routes.py`. They are typed locally
- * here rather than going through the Pydantic→TS codegen because the
- * governance router returns plain JSON dictionaries (no Pydantic
- * response models), and the shapes are stable across the four
- * endpoints.
+ * Schemas are derived from the Pydantic response models in
+ * `core/contracts/api/governance.py` and rendered into
+ * `src/types/generated/api.ts` by `tools/codegen/pydantic_to_ts.py`.
+ * The drift guard at `tests/test_codegen_pydantic_to_ts.py` fails CI
+ * if the generated file goes out of sync with the Pydantic source —
+ * editing either side without regenerating will break the build.
  */
 import { apiUrl } from "@/api/base";
+import type {
+  DriftComponent as GeneratedDriftComponent,
+  DriftResponse as GeneratedDriftResponse,
+  HazardEventRow,
+  HazardTaxonomyRow,
+  HazardsResponse,
+  PromotionGatesResponse,
+  SourceRow as GeneratedSourceRow,
+  SourcesResponse,
+} from "@/types/generated/api";
 
-export interface PromotionGatesPayload {
-  path: string;
-  file_present: boolean;
-  file_hash: string | null;
-  bound_hash: string | null;
-  matches: boolean | null;
-  backend_wired: boolean;
-  gated_targets: string[];
-  doc_url: string;
-}
-
-export interface DriftComponent {
-  id: string;
-  label: string;
-  threshold: number;
-  description: string;
-  value?: number;
-}
-
-export interface DriftPayload {
-  backend_wired: boolean;
-  composite: number | null;
-  expected_components: DriftComponent[];
-  components: DriftComponent[];
-  downgrade_threshold: number;
-}
-
-export interface SourceRow {
-  source_id: string;
-  name: string;
-  category: string;
-  provider: string;
-  auth: string;
-  enabled: boolean;
-  critical: boolean;
-  liveness_threshold_ms: number;
-  status: string;
-  last_heartbeat_ns: number;
-  last_data_ns: number;
-  gap_ns: number;
-}
-
-export interface SourcesPayload {
-  backend_wired: boolean;
-  registry_loaded: boolean;
-  rows: SourceRow[];
-}
-
-export interface HazardTaxonomyRow {
-  code: string;
-  label: string;
-  description: string;
-}
-
-export interface HazardEvent {
-  code: string;
-  severity: string;
-  ts_ns: number;
-  source: string;
-  summary: string;
-}
-
-export interface HazardsPayload {
-  backend_wired: boolean;
-  taxonomy: HazardTaxonomyRow[];
-  recent: HazardEvent[];
-}
+// Backwards-compatible aliases. Earlier consumers imported these
+// names directly from `@/api/governance`; keep them stable so the
+// PR diff stays scoped to the codegen wiring.
+export type PromotionGatesPayload = PromotionGatesResponse;
+export type DriftComponent = GeneratedDriftComponent;
+export type DriftPayload = GeneratedDriftResponse;
+export type SourceRow = GeneratedSourceRow;
+export type SourcesPayload = SourcesResponse;
+export type { HazardEventRow, HazardTaxonomyRow };
+export type HazardEvent = HazardEventRow;
+export type HazardsPayload = HazardsResponse;
 
 async function getJSON<T>(path: string, signal?: AbortSignal): Promise<T> {
   const res = await fetch(apiUrl(path), {
