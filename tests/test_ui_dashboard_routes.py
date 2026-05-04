@@ -73,7 +73,6 @@ def test_strategies_endpoint_returns_lifecycle_columns(client):
     # Canonical FSM column order (DASH-SLP-01).
     assert list(columns.keys()) == [
         "PROPOSED",
-        "SHADOW",
         "CANARY",
         "LIVE",
         "RETIRED",

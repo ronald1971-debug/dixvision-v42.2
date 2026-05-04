@@ -4,7 +4,8 @@ The strategy runtime turns *many independent plugin outputs* into *one
 coordinated portfolio decision* by sequencing four pure components:
 
 * :mod:`state_machine`     — strategy lifecycle FSM
-  (``PROPOSED → SHADOW → CANARY → LIVE → RETIRED`` + ``FAILED``)
+  (``PROPOSED → CANARY → LIVE → RETIRED`` + ``FAILED`` from anywhere;
+  strategy-level SHADOW was demolished by SHADOW-DEMOLITION-02)
 * :mod:`regime_detector`   — deterministic market-regime classification
 * :mod:`scheduler`         — bar-aligned cadence (when each strategy runs)
 * :mod:`orchestrator`      — activates strategies based on regime + lifecycle

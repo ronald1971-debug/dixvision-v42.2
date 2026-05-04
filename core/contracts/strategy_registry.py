@@ -5,7 +5,8 @@ trading strategy ever proposed by Indira's composition engine. It is
 orthogonal to the intelligence-side
 :class:`intelligence_engine.strategy_runtime.StrategyStateMachine`
 which tracks deployment-tier promotions
-(``PROPOSED → SHADOW → CANARY → LIVE``). The registry asks a different
+(``PROPOSED → CANARY → LIVE``; strategy-level SHADOW was demolished by
+SHADOW-DEMOLITION-02). The registry asks a different
 question: *"is this strategy approved for use at all?"*
 
 Lifecycle::

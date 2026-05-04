@@ -1,18 +1,21 @@
 """Strategy lifecycle FSM — Phase 3 (NEW REQUIRED ADDITION).
 
 A separate, narrower lifecycle than ``PluginLifecycle`` (DISABLED /
-SHADOW / ACTIVE): strategies move through promotion gates that mirror
-the system-wide mode FSM (``SAFE → PAPER → SHADOW → CANARY → LIVE``)
-because every promotion must be auditable and rollback-capable.
+ACTIVE): strategies move through promotion gates that mirror the
+system-wide mode FSM (``SAFE → PAPER → CANARY → LIVE``) because every
+promotion must be auditable and rollback-capable.
 
 States::
 
-    PROPOSED → SHADOW → CANARY → LIVE → RETIRED
-        ↘──────────────────── FAILED
-                ↘──────────── FAILED
-                          ↘── FAILED
-                                  ↘── FAILED
-        ↘──────────────────── RETIRED  (early withdrawal pre-LIVE)
+    PROPOSED → CANARY → LIVE → RETIRED
+        ↘──────────────── FAILED
+                  ↘────── FAILED
+                              ↘── FAILED
+        ↘──────────────── RETIRED  (early withdrawal pre-LIVE)
+
+Strategy-level ``SHADOW`` was demolished by SHADOW-DEMOLITION-02. The
+signals-on-execution-off observation tier is now supplied at the
+global layer via system mode ``PAPER``.
 
 Terminal: ``RETIRED``, ``FAILED``.
 
@@ -32,10 +35,19 @@ from enum import StrEnum
 
 
 class StrategyState(StrEnum):
-    """All states a strategy can occupy."""
+    """All states a strategy can occupy.
+
+    Strategy-level ``SHADOW`` was demolished by SHADOW-DEMOLITION-02:
+    the lifecycle is now ``PROPOSED → CANARY → LIVE → RETIRED`` (plus
+    ``FAILED`` from anywhere). The signals-on-execution-off observation
+    tier no longer exists at the strategy layer — a strategy that has
+    cleared ``PROPOSED`` is either firing into the conflict resolver
+    (``CANARY``/``LIVE``) or it is not (``RETIRED``/``FAILED``). System
+    mode (``PAPER``) supplies the equivalent observe-only behaviour at
+    the global layer.
+    """
 
     PROPOSED = "PROPOSED"
-    SHADOW = "SHADOW"
     CANARY = "CANARY"
     LIVE = "LIVE"
     RETIRED = "RETIRED"
@@ -47,19 +59,12 @@ class StrategyState(StrEnum):
 # terminal — no further transitions.
 LEGAL_STRATEGY_TRANSITIONS: dict[StrategyState, frozenset[StrategyState]] = {
     StrategyState.PROPOSED: frozenset(
-        {StrategyState.SHADOW, StrategyState.RETIRED, StrategyState.FAILED}
-    ),
-    StrategyState.SHADOW: frozenset(
-        {
-            StrategyState.CANARY,
-            StrategyState.RETIRED,
-            StrategyState.FAILED,
-        }
+        {StrategyState.CANARY, StrategyState.RETIRED, StrategyState.FAILED}
     ),
     StrategyState.CANARY: frozenset(
         {
             StrategyState.LIVE,
-            StrategyState.SHADOW,  # rollback to shadow on canary fail
+            StrategyState.PROPOSED,  # rollback for re-evaluation
             StrategyState.RETIRED,
             StrategyState.FAILED,
         }

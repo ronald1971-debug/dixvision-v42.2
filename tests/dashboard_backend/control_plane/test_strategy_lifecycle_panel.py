@@ -19,12 +19,6 @@ def _build_fsm() -> StrategyStateMachine:
     fsm.propose(strategy_id="gamma", ts_ns=3)
     fsm.transition(
         strategy_id="alpha",
-        new_state=StrategyState.SHADOW,
-        ts_ns=4,
-        reason="enter shadow",
-    )
-    fsm.transition(
-        strategy_id="alpha",
         new_state=StrategyState.CANARY,
         ts_ns=5,
         reason="canary promote",
@@ -53,8 +47,7 @@ def test_panel_emits_history_entries_in_order():
     alpha = rows["alpha"]
     assert tuple((h.prev, h.new) for h in alpha.history) == (
         ("PROPOSED", "PROPOSED"),
-        ("PROPOSED", "SHADOW"),
-        ("SHADOW", "CANARY"),
+        ("PROPOSED", "CANARY"),
     )
 
 
