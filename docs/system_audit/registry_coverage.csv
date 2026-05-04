@@ -1,0 +1,11 @@
+file_id,path,n_refs,status,referenced_by_first5
+F00435,registry/authority_matrix.yaml,14,ok,core/constraint_engine/__init__.py;core/constraint_engine/compiler.py;core/contracts/execution_intent.py;enforcement/__init__.py;execution_engine/execution_gate.py
+F00436,registry/confidence.yaml,3,ok,intelligence_engine/meta_controller/config.py;tests/test_meta_controller_confidence_engine.py;tests/test_meta_controller_runtime_adapter.py
+F00437,registry/constraint_rules.yaml,6,ok,core/constraint_engine/__init__.py;core/constraint_engine/compiler.py;enforcement/__init__.py;governance_engine/control_plane/policy_hash_anchor.py;tests/test_constraint_engine.py
+F00438,registry/data_source_registry.yaml,26,ok,core/cognitive_router/__init__.py;core/cognitive_router/task_class.py;core/contracts/trader_intelligence.py;governance_engine/control_plane/policy_hash_anchor.py;intelligence_engine/cognitive/chat/http_chat_transport.py
+F00439,registry/engines.yaml,2,ok,tests/test_engine_contracts.py;ui/server.py
+F00440,registry/plugins.yaml,4,ok,execution_engine/adapters/base.py;governance_engine/control_plane/policy_hash_anchor.py;intelligence_engine/engine.py;ui/server.py
+F00441,registry/position_sizer.yaml,3,ok,intelligence_engine/meta_controller/config.py;tests/test_meta_controller_position_sizer.py;tests/test_meta_controller_runtime_adapter.py
+F00442,registry/pressure.yaml,4,ok,core/coherence/performance_pressure.py;tests/test_coherence_performance_pressure.py;tests/test_intelligence_engine_wave1.py;tests/test_meta_controller_hot_path.py
+F00443,registry/regime.yaml,4,ok,intelligence_engine/meta_controller/config.py;intelligence_engine/meta_controller/perception/regime_router.py;tests/test_meta_controller_regime_router.py;tests/test_meta_controller_runtime_adapter.py
+F00444,registry/reward_shaping.yaml,1,ok,tests/test_reward_shaping.py

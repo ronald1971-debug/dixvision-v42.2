@@ -1,0 +1,137 @@
+{
+  "tree_total_files": 366,
+  "on_disk": 103,
+  "coverage_pct": 28.1,
+  "by_package": {
+    ".github": {
+      "total": 4,
+      "exists": 1,
+      "coverage_pct": 25.0
+    },
+    "_root": {
+      "total": 3,
+      "exists": 2,
+      "coverage_pct": 66.7
+    },
+    "cockpit": {
+      "total": 15,
+      "exists": 0,
+      "coverage_pct": 0.0
+    },
+    "contracts": {
+      "total": 7,
+      "exists": 1,
+      "coverage_pct": 14.3
+    },
+    "core": {
+      "total": 21,
+      "exists": 11,
+      "coverage_pct": 52.4
+    },
+    "dashboard": {
+      "total": 37,
+      "exists": 0,
+      "coverage_pct": 0.0
+    },
+    "docs": {
+      "total": 5,
+      "exists": 2,
+      "coverage_pct": 40.0
+    },
+    "enforcement": {
+      "total": 2,
+      "exists": 0,
+      "coverage_pct": 0.0
+    },
+    "evolution_engine": {
+      "total": 8,
+      "exists": 3,
+      "coverage_pct": 37.5
+    },
+    "execution": {
+      "total": 7,
+      "exists": 0,
+      "coverage_pct": 0.0
+    },
+    "execution_engine": {
+      "total": 29,
+      "exists": 14,
+      "coverage_pct": 48.3
+    },
+    "governance_engine": {
+      "total": 25,
+      "exists": 9,
+      "coverage_pct": 36.0
+    },
+    "immutable_core": {
+      "total": 6,
+      "exists": 0,
+      "coverage_pct": 0.0
+    },
+    "integrity": {
+      "total": 1,
+      "exists": 0,
+      "coverage_pct": 0.0
+    },
+    "intelligence_engine": {
+      "total": 54,
+      "exists": 22,
+      "coverage_pct": 40.7
+    },
+    "learning_engine": {
+      "total": 25,
+      "exists": 6,
+      "coverage_pct": 24.0
+    },
+    "registry": {
+      "total": 16,
+      "exists": 3,
+      "coverage_pct": 18.8
+    },
+    "scripts": {
+      "total": 5,
+      "exists": 0,
+      "coverage_pct": 0.0
+    },
+    "sensory": {
+      "total": 14,
+      "exists": 8,
+      "coverage_pct": 57.1
+    },
+    "simulation": {
+      "total": 23,
+      "exists": 0,
+      "coverage_pct": 0.0
+    },
+    "state": {
+      "total": 20,
+      "exists": 3,
+      "coverage_pct": 15.0
+    },
+    "system_engine": {
+      "total": 14,
+      "exists": 8,
+      "coverage_pct": 57.1
+    },
+    "tests": {
+      "total": 14,
+      "exists": 6,
+      "coverage_pct": 42.9
+    },
+    "tools": {
+      "total": 6,
+      "exists": 2,
+      "coverage_pct": 33.3
+    },
+    "translation": {
+      "total": 3,
+      "exists": 0,
+      "coverage_pct": 0.0
+    },
+    "ui": {
+      "total": 2,
+      "exists": 2,
+      "coverage_pct": 100.0
+    }
+  }
+}

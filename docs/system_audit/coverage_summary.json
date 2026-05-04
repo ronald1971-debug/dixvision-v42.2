@@ -1,0 +1,104 @@
+{
+  "analyzed": 719,
+  "by_bucket": {
+    ".github": {
+      "total": 3,
+      "with_findings": 0
+    },
+    "_root": {
+      "total": 5,
+      "with_findings": 0
+    },
+    "contracts": {
+      "total": 1,
+      "with_findings": 0
+    },
+    "core": {
+      "total": 37,
+      "with_findings": 18
+    },
+    "dash_meme": {
+      "total": 43,
+      "with_findings": 0
+    },
+    "dashboard2026": {
+      "total": 183,
+      "with_findings": 0
+    },
+    "dashboard_backend": {
+      "total": 8,
+      "with_findings": 4
+    },
+    "docs": {
+      "total": 25,
+      "with_findings": 0
+    },
+    "enforcement": {
+      "total": 1,
+      "with_findings": 0
+    },
+    "evolution_engine": {
+      "total": 14,
+      "with_findings": 10
+    },
+    "execution_engine": {
+      "total": 28,
+      "with_findings": 15
+    },
+    "governance_engine": {
+      "total": 21,
+      "with_findings": 17
+    },
+    "immutable_core": {
+      "total": 2,
+      "with_findings": 0
+    },
+    "intelligence_engine": {
+      "total": 57,
+      "with_findings": 23
+    },
+    "learning_engine": {
+      "total": 9,
+      "with_findings": 6
+    },
+    "registry": {
+      "total": 10,
+      "with_findings": 0
+    },
+    "scripts": {
+      "total": 6,
+      "with_findings": 1
+    },
+    "sensory": {
+      "total": 23,
+      "with_findings": 14
+    },
+    "state": {
+      "total": 3,
+      "with_findings": 1
+    },
+    "system": {
+      "total": 3,
+      "with_findings": 1
+    },
+    "system_engine": {
+      "total": 45,
+      "with_findings": 18
+    },
+    "tests": {
+      "total": 160,
+      "with_findings": 101
+    },
+    "tools": {
+      "total": 8,
+      "with_findings": 4
+    },
+    "ui": {
+      "total": 24,
+      "with_findings": 17
+    }
+  },
+  "files_with_findings": 250,
+  "orphan_modules": 0,
+  "total_files": 719
+}
