@@ -18,7 +18,16 @@ from execution_engine.adapters.registry import (
     AdapterRegistry,
     default_registry,
 )
-from execution_engine.adapters.uniswapx import UniswapXAdapter
+
+# UniswapX needs ``eth-account`` for EIP-712 signing. That dep lives in
+# the optional ``[evm]`` / ``[dev]`` extras so the base launcher can
+# boot without it. Re-export ``UniswapXAdapter`` only when its
+# dependency chain imports cleanly; otherwise ``UniswapXAdapter`` is
+# ``None`` and ``default_registry()`` skips registering it.
+try:
+    from execution_engine.adapters.uniswapx import UniswapXAdapter
+except ImportError:
+    UniswapXAdapter = None  # type: ignore[assignment,misc]
 
 __all__ = [
     "AdapterRegistry",

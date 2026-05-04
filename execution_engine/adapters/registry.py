@@ -21,13 +21,16 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+import logging
+
 from execution_engine.adapters._live_base import (
     AdapterStatus,
     LiveAdapterBase,
 )
 from execution_engine.adapters.hummingbot import HummingbotAdapter
 from execution_engine.adapters.pumpfun import PumpFunAdapter
-from execution_engine.adapters.uniswapx import UniswapXAdapter
+
+_log = logging.getLogger(__name__)
 
 
 class AdapterRegistry:
@@ -72,7 +75,22 @@ def default_registry() -> AdapterRegistry:
         reg = AdapterRegistry()
         reg.add(HummingbotAdapter(connector="paper"))
         reg.add(PumpFunAdapter())
-        reg.add(UniswapXAdapter())
+        # UniswapX needs eth-account for EIP-712 signing. That dep lives in
+        # the optional ``[evm]`` / ``[dev]`` extras so the base launcher can
+        # boot without it. Skip the adapter cleanly if eth-account is not
+        # installed; the operator can install it on demand to surface the
+        # adapter in the dashboard registry.
+        try:
+            from execution_engine.adapters.uniswapx import UniswapXAdapter
+        except ImportError as exc:  # pragma: no cover - exercised by hotfix test
+            _log.warning(
+                "UniswapX adapter skipped from default registry "
+                "(missing dependency: %s). Install with `pip install -e '.[evm]'` "
+                "to enable.",
+                exc.name or exc,
+            )
+        else:
+            reg.add(UniswapXAdapter())
         _DEFAULT = reg
     return _DEFAULT
 
