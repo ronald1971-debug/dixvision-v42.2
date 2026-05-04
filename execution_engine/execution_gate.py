@@ -114,6 +114,13 @@ def _execution_actor_module(matrix: AuthorityMatrix) -> str:
 
 
 HazardSink = Callable[[HazardEvent], None]
+# Hardening-S1 item 2 -- duck-typed verifier callback.
+# Concrete implementation lives at
+# ``governance_engine.control_plane.decision_signer.DecisionSigner.verify``
+# but the guard accepts any callable with the right shape so the
+# contract module stays free of an engine-side import cycle.
+# Signature: ``verifier(content_hash, governance_decision_id, signature) -> bool``.
+SignatureVerifier = Callable[[str, str, str], bool]
 
 
 class AuthorityGuard:
@@ -141,6 +148,7 @@ class AuthorityGuard:
         matrix_path: Path | None = None,
         caller_allowlist: frozenset[str] | None = None,
         hazard_sink: HazardSink | None = None,
+        signature_verifier: SignatureVerifier | None = None,
     ) -> None:
         if matrix is None:
             path = matrix_path or self._default_matrix_path()
@@ -152,6 +160,12 @@ class AuthorityGuard:
         self._intelligence_prefix = _intelligence_origin_prefix(matrix)
         self._execution_actor = _execution_actor_module(matrix)
         self._hazard_sink = hazard_sink
+        # Hardening-S1 item 2 -- when injected, the guard requires a
+        # non-empty ``decision_signature`` on every approved intent
+        # and verifies it via the callback. ``None`` keeps the legacy
+        # signature-not-required behaviour for tests / pre-wiring
+        # call sites.
+        self._signature_verifier = signature_verifier
 
     @property
     def matrix(self) -> AuthorityMatrix:
@@ -213,6 +227,39 @@ class AuthorityGuard:
                 reason="governance_decision_id missing on approved intent",
                 ts_ns=ts_ns,
             )
+
+        # 3b) Hardening-S1 item 2 -- HMAC governance-decision
+        # signature. When a verifier was injected the guard requires
+        # a non-empty signature on the intent and rejects on any
+        # mismatch. Without an injected verifier the field is
+        # advisory (legacy mode for tests / pre-wiring code paths);
+        # production wiring always passes the verifier.
+        if self._signature_verifier is not None:
+            if not intent.decision_signature:
+                self._reject(
+                    intent=intent,
+                    caller=caller,
+                    reason="decision_signature missing on approved intent",
+                    ts_ns=ts_ns,
+                )
+            try:
+                ok = self._signature_verifier(
+                    intent.content_hash,
+                    intent.governance_decision_id,
+                    intent.decision_signature,
+                )
+            except Exception:  # noqa: BLE001 -- treat any verifier
+                # failure as a hard reject so a buggy or compromised
+                # verifier can't silently let a forged signature
+                # through.
+                ok = False
+            if not ok:
+                self._reject(
+                    intent=intent,
+                    caller=caller,
+                    reason="decision_signature failed HMAC verification",
+                    ts_ns=ts_ns,
+                )
 
         # 4) Origin is registered as an intelligence subsystem.
         if intent.origin not in AUTHORISED_INTENT_ORIGINS:

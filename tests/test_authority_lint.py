@@ -804,3 +804,86 @@ def test_b35_allows_tests_directory(fake_repo: Path):
         "    )\n",
     )
     assert "B35" not in _rule_codes(lint_repo(fake_repo))
+
+
+# ---------------------------------------------------------------------------
+# B36 — DecisionSigner construction restriction (Hardening-S1 item 2)
+# ---------------------------------------------------------------------------
+
+
+def test_b36_fires_on_ui_constructing_decision_signer(fake_repo: Path):
+    _write(
+        fake_repo,
+        "ui/forge.py",
+        "from governance_engine.control_plane.decision_signer import "
+        "DecisionSigner\n"
+        "def go() -> DecisionSigner:\n"
+        "    return DecisionSigner()\n",
+    )
+    assert "B36" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b36_fires_on_intelligence_engine_constructing_decision_signer(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "intelligence_engine/forge.py",
+        "from governance_engine.control_plane.decision_signer import "
+        "DecisionSigner\n"
+        "def go() -> DecisionSigner:\n"
+        "    return DecisionSigner()\n",
+    )
+    assert "B36" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b36_fires_on_execution_engine_constructing_decision_signer(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "execution_engine/forge.py",
+        "from governance_engine.control_plane.decision_signer import "
+        "DecisionSigner\n"
+        "def go() -> DecisionSigner:\n"
+        "    return DecisionSigner()\n",
+    )
+    assert "B36" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b36_allows_governance_engine(fake_repo: Path):
+    _write(
+        fake_repo,
+        "governance_engine/boot.py",
+        "from governance_engine.control_plane.decision_signer import "
+        "DecisionSigner\n"
+        "def go() -> DecisionSigner:\n"
+        "    return DecisionSigner()\n",
+    )
+    assert "B36" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b36_allows_tests(fake_repo: Path):
+    _write(
+        fake_repo,
+        "tests/test_signer.py",
+        "from governance_engine.control_plane.decision_signer import "
+        "DecisionSigner\n"
+        "def test_x():\n"
+        "    DecisionSigner()\n",
+    )
+    assert "B36" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b36_silent_when_decision_signer_only_referenced_not_called(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "ui/uses_signer.py",
+        "from governance_engine.control_plane.decision_signer import "
+        "DecisionSigner\n"
+        "def go(s: DecisionSigner) -> str:\n"
+        "    return s.sign(content_hash='x', governance_decision_id='g')\n",
+    )
+    assert "B36" not in _rule_codes(lint_repo(fake_repo))

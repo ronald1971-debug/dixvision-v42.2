@@ -199,6 +199,16 @@ class ExecutionIntent:
     governance_decision_id: str
     content_hash: str
     meta: tuple[tuple[str, str], ...] = field(default_factory=tuple)
+    # Hardening-S1 item 2 -- HMAC-SHA256 over
+    # ``canonical_signing_input(content_hash, governance_decision_id)``
+    # produced by
+    # :class:`governance_engine.control_plane.decision_signer.DecisionSigner`.
+    # Empty string means the intent was constructed without a signer
+    # (legacy / pre-wiring code paths). The :class:`AuthorityGuard`
+    # treats an empty signature as a *guard failure* whenever a
+    # ``signature_verifier`` was injected, so production wiring
+    # always populates this field through Governance.
+    decision_signature: str = ""
 
     def verify_content_hash(self) -> bool:
         """Re-derive the canonical hash and compare."""
@@ -221,6 +231,7 @@ def create_execution_intent(
     approved_by_governance: bool = False,
     governance_decision_id: str = "",
     meta: tuple[tuple[str, str], ...] = (),
+    decision_signature: str = "",
 ) -> ExecutionIntent:
     """Authorised constructor.
 
@@ -267,27 +278,51 @@ def create_execution_intent(
         governance_decision_id=governance_decision_id,
         content_hash=content_hash,
         meta=meta,
+        decision_signature=decision_signature,
     )
 
 
 def mark_approved(
-    intent: ExecutionIntent, *, governance_decision_id: str
+    intent: ExecutionIntent,
+    *,
+    governance_decision_id: str,
+    decision_signature: str = "",
 ) -> ExecutionIntent:
     """Return a new intent with ``approved_by_governance=True``.
 
     The original instance is not modified. Governance is expected to
     call this helper and the resulting intent is what ``execute(...)``
     accepts.
+
+    ``decision_signature`` is the HMAC-SHA256 produced by
+    :class:`~governance_engine.control_plane.decision_signer.DecisionSigner`
+    over ``content_hash`` + ``governance_decision_id`` (Hardening-S1
+    item 2). Empty by default for backwards compatibility with call
+    sites that have not yet been wired to a signer; production code
+    always populates it. The :class:`AuthorityGuard` enforces a
+    non-empty signature whenever a verifier was injected.
     """
 
     if not governance_decision_id:
         raise ValueError("governance_decision_id required to mark approved")
     if intent.approved_by_governance:
-        # Idempotent: re-approving with the same decision id is a no-op.
-        if intent.governance_decision_id == governance_decision_id:
+        # Idempotent: re-approving with the same decision id (and the
+        # same signature, if any) is a no-op.
+        if (
+            intent.governance_decision_id == governance_decision_id
+            and intent.decision_signature == decision_signature
+        ):
             return intent
+        if intent.governance_decision_id != governance_decision_id:
+            raise ValueError(
+                "intent already approved with a different governance_decision_id"
+            )
+        # Same decision id, different signature -- this would let a
+        # second caller overwrite the original Governance signature
+        # with a forged one, which is exactly what Hardening-S1 item 2
+        # is meant to prevent.
         raise ValueError(
-            "intent already approved with a different governance_decision_id"
+            "intent already approved with a different decision_signature"
         )
     return create_execution_intent(
         ts_ns=intent.ts_ns,
@@ -296,6 +331,7 @@ def mark_approved(
         approved_by_governance=True,
         governance_decision_id=governance_decision_id,
         meta=intent.meta,
+        decision_signature=decision_signature,
     )
 
 

@@ -267,3 +267,178 @@ def test_real_authority_matrix_loads_with_default_guard():
     guard = AuthorityGuard()
     assert "intelligence" in guard.matrix.actor_ids
     assert "execution" in guard.matrix.actor_ids
+
+
+# ---------------------------------------------------------------------------
+# Hardening-S1 item 2 — DecisionSigner / signature_verifier guard tests
+# ---------------------------------------------------------------------------
+
+
+def test_guard_without_verifier_accepts_unsigned_intent():
+    """Backwards-compat: when no verifier is wired the guard ignores
+    the ``decision_signature`` field entirely. This preserves the
+    pre-Hardening-S1 contract for tests and call sites that have not
+    yet been updated to thread a signer through."""
+
+    guard = _guard()
+    intent = _approved_intent()
+    assert intent.decision_signature == ""
+    guard.assert_can_execute(intent, caller="tests.fixtures")
+
+
+def test_guard_with_verifier_rejects_missing_signature():
+    from core.contracts.events import HazardSeverity
+
+    hazards: list[HazardEvent] = []
+    sink = lambda h: hazards.append(h)  # noqa: E731
+    guard = AuthorityGuard(
+        caller_allowlist=frozenset({"tests.fixtures"}),
+        hazard_sink=sink,
+        signature_verifier=lambda *_args: True,
+    )
+    intent = _approved_intent()
+    assert intent.decision_signature == ""
+    with pytest.raises(UnauthorizedActorError) as exc:
+        guard.assert_can_execute(intent, caller="tests.fixtures")
+    assert "decision_signature missing" in str(exc.value)
+    assert hazards[0].code == HAZ_AUTHORITY_CODE
+    assert hazards[0].severity is HazardSeverity.CRITICAL
+
+
+def test_guard_with_verifier_accepts_valid_signature():
+    from governance_engine.control_plane.decision_signer import DecisionSigner
+
+    signer = DecisionSigner()
+    proposal = create_execution_intent(
+        ts_ns=1_000_000_000,
+        origin="tests.fixtures",
+        signal=_signal(),
+    )
+    decision_id = "GOV-DECISION-SIGNED"
+    # Compute the signature on the post-approval content hash so the
+    # signer + AuthorityGuard pair sees a coherent intent (mirrors
+    # what GovernanceEngine does in production wiring).
+    approved_unsigned = mark_approved(proposal, governance_decision_id=decision_id)
+    signature = signer.sign(
+        content_hash=approved_unsigned.content_hash,
+        governance_decision_id=decision_id,
+    )
+    intent = mark_approved(
+        proposal,
+        governance_decision_id=decision_id,
+        decision_signature=signature,
+    )
+    guard = AuthorityGuard(
+        caller_allowlist=frozenset({"tests.fixtures"}),
+        signature_verifier=lambda h, gid, sig: signer.verify(
+            content_hash=h,
+            governance_decision_id=gid,
+            signature=sig,
+        ),
+    )
+    guard.assert_can_execute(intent, caller="tests.fixtures")
+
+
+def test_guard_with_verifier_rejects_forged_signature():
+    """A signature minted by a different signer must not verify --
+    proves the AuthorityGuard catches the forged-secret attack the
+    HMAC binding is designed to prevent."""
+
+    from governance_engine.control_plane.decision_signer import DecisionSigner
+
+    legitimate = DecisionSigner()
+    attacker = DecisionSigner()
+
+    proposal = create_execution_intent(
+        ts_ns=1_000_000_000,
+        origin="tests.fixtures",
+        signal=_signal(),
+    )
+    decision_id = "GOV-DECISION-FORGED"
+    approved_unsigned = mark_approved(proposal, governance_decision_id=decision_id)
+    forged_sig = attacker.sign(
+        content_hash=approved_unsigned.content_hash,
+        governance_decision_id=decision_id,
+    )
+    intent = mark_approved(
+        proposal,
+        governance_decision_id=decision_id,
+        decision_signature=forged_sig,
+    )
+    hazards: list[HazardEvent] = []
+    guard = AuthorityGuard(
+        caller_allowlist=frozenset({"tests.fixtures"}),
+        hazard_sink=lambda h: hazards.append(h),
+        signature_verifier=lambda h, gid, sig: legitimate.verify(
+            content_hash=h,
+            governance_decision_id=gid,
+            signature=sig,
+        ),
+    )
+    with pytest.raises(UnauthorizedActorError) as exc:
+        guard.assert_can_execute(intent, caller="tests.fixtures")
+    assert "decision_signature failed HMAC verification" in str(exc.value)
+    assert hazards[0].code == HAZ_AUTHORITY_CODE
+
+
+def test_guard_treats_verifier_exception_as_reject():
+    """A buggy or compromised verifier that raises must not let the
+    intent through. The guard catches and converts to a hard reject."""
+
+    intent = _approved_intent()
+    # Re-build with a fake signature so we reach the verifier branch.
+    proposal = create_execution_intent(
+        ts_ns=intent.ts_ns,
+        origin=intent.origin,
+        signal=intent.signal,
+    )
+    intent_signed = mark_approved(
+        proposal,
+        governance_decision_id=intent.governance_decision_id,
+        decision_signature="0" * 64,
+    )
+
+    def boom(*_args: str) -> bool:
+        raise RuntimeError("verifier exploded")
+
+    hazards: list[HazardEvent] = []
+    guard = AuthorityGuard(
+        caller_allowlist=frozenset({"tests.fixtures"}),
+        hazard_sink=lambda h: hazards.append(h),
+        signature_verifier=boom,
+    )
+    with pytest.raises(UnauthorizedActorError) as exc:
+        guard.assert_can_execute(intent_signed, caller="tests.fixtures")
+    assert "decision_signature failed HMAC verification" in str(exc.value)
+
+
+def test_mark_approved_rejects_signature_overwrite():
+    """Idempotent re-approval is fine, but a second caller cannot
+    overwrite an existing signature with a different one. Otherwise
+    a downstream module could swap the live Governance signature for
+    a forged one between approval and execute()."""
+
+    proposal = create_execution_intent(
+        ts_ns=1_000_000_000,
+        origin="tests.fixtures",
+        signal=_signal(),
+    )
+    first = mark_approved(
+        proposal,
+        governance_decision_id="GOV-1",
+        decision_signature="aa" * 32,
+    )
+    # Same id + same signature is a no-op (round-trip safe).
+    same = mark_approved(
+        first,
+        governance_decision_id="GOV-1",
+        decision_signature="aa" * 32,
+    )
+    assert same is first
+    # Same id + different signature is rejected.
+    with pytest.raises(ValueError):
+        mark_approved(
+            first,
+            governance_decision_id="GOV-1",
+            decision_signature="bb" * 32,
+        )
