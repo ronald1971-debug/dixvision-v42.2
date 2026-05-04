@@ -28,7 +28,7 @@ from __future__ import annotations
 
 from types import MappingProxyType
 
-from core.contracts.events import EventKind, SignalEvent, Side
+from core.contracts.events import EventKind, Side, SignalEvent
 from core.contracts.external_signal_trust import (
     ExternalSignalSource,
     ExternalSignalTrustRegistry,
@@ -42,7 +42,6 @@ from governance_engine.harness_approver import (
     apply_signal_trust_cap,
     approve_signal_for_execution,
 )
-
 
 _TS_NS = 1_700_000_000_000_000_000
 

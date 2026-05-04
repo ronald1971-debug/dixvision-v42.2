@@ -77,16 +77,16 @@ from core.contracts.api.operator import (
     OperatorUnlockRequest,
     WalletInfoResponse,
 )
-from core.contracts.external_signal_trust import (
-    ExternalSignalTrustRegistry,
-    load_external_signal_trust,
-)
 from core.contracts.events import (
     Event,
     EventKind,
     HazardEvent,
     Side,
     SignalEvent,
+)
+from core.contracts.external_signal_trust import (
+    ExternalSignalTrustRegistry,
+    load_external_signal_trust,
 )
 from core.contracts.governance import (
     OperatorAction,
