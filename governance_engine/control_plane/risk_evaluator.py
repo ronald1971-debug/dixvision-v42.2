@@ -25,32 +25,65 @@ from core.contracts.governance import (
     ConstraintScope,
     RiskAssessment,
 )
+from governance_engine.control_plane.exposure_store import ExposureStore
 
 
 class ExposureBook:
     """Authoritative per-symbol exposure book.
 
-    Phase 1 keeps the book in process memory. Persistence (DB-22 in
-    ``directory_tree.md``) lands in Phase 4 reusing the same surface.
+    AUDIT-P0.4 — when constructed with an :class:`ExposureStore`, the
+    book hydrates from the store at boot and writes through every
+    ``set`` / ``apply``. Without a store the book is in-memory-only
+    (the historical Phase-1 default).
+
+    The store is **not** the arbiter — the in-memory dict still
+    answers every read on the hot path, the store is a pure
+    persistence sink so a kill -9 plus relaunch resumes from the
+    last committed exposure rather than zero.
     """
 
     def __init__(
-        self, exposures: Mapping[str, float] | None = None
+        self,
+        exposures: Mapping[str, float] | None = None,
+        *,
+        store: ExposureStore | None = None,
     ) -> None:
-        self._exposures: dict[str, float] = dict(exposures or {})
+        self._store = store
+        if store is not None:
+            persisted = store.load_exposures()
+            seed: dict[str, float] = dict(persisted)
+            seed.update(exposures or {})
+            self._exposures: dict[str, float] = seed
+        else:
+            self._exposures = dict(exposures or {})
 
     def get(self, symbol: str) -> float:
         return self._exposures.get(symbol, 0.0)
 
-    def set(self, symbol: str, qty: float) -> None:
+    def set(self, symbol: str, qty: float, *, ts_ns: int = 0) -> None:
         self._exposures[symbol] = qty
+        if self._store is not None:
+            self._store.write_exposure(
+                symbol=symbol, qty=qty, ts_ns=ts_ns
+            )
 
-    def apply(self, symbol: str, side: str, qty: float) -> float:
+    def apply(
+        self,
+        symbol: str,
+        side: str,
+        qty: float,
+        *,
+        ts_ns: int = 0,
+    ) -> float:
         """Mutate exposure for ``symbol`` and return the new value."""
 
         signed = qty if side == "BUY" else -qty
         new = self._exposures.get(symbol, 0.0) + signed
         self._exposures[symbol] = new
+        if self._store is not None:
+            self._store.write_exposure(
+                symbol=symbol, qty=new, ts_ns=ts_ns
+            )
         return new
 
     def snapshot(self) -> Mapping[str, float]:

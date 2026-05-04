@@ -102,6 +102,7 @@ from governance_engine.control_plane.decision_signer import (
     DecisionSigner,
     make_decision_signer,
 )
+from governance_engine.control_plane.exposure_store import ExposureStore
 from governance_engine.control_plane.ledger_authority_writer import (
     LedgerAuthorityWriter,
 )
@@ -364,14 +365,28 @@ class _State:
         # request: the learning engine's ``UPDATE_PROPOSED`` events were
         # acknowledged but never applied to the registry FSM, so no
         # strategy ever advanced from PROPOSED -> CANARY -> LIVE.
-        # Constructing the registry against the same ledger the engine
-        # uses (the ``ValueError`` guard in ``GovernanceEngine.__init__``
-        # enforces this identity) lets ``UpdateValidator`` and
-        # ``UpdateApplier`` come online and the loop closes end-to-end.
         self.strategy_registry = StrategyRegistry(ledger=ledger)
+        # AUDIT-P0.4 -- the per-symbol exposure book and per-domain
+        # daily caps need the same durability profile as the
+        # authority ledger. We co-locate the SQLite file next to the
+        # ledger ("governance.db" -> "exposure.db") so a single
+        # ``DIXVISION_LEDGER_PATH`` setting enables both. When the
+        # operator has explicitly opted into an ephemeral ledger
+        # (``DIXVISION_PERMIT_EPHEMERAL_LEDGER=1``) the exposure
+        # store also stays in-memory.
+        if ledger_path:
+            from pathlib import Path as _Path
+
+            exposure_db_path: _Path | None = (
+                _Path(ledger_path).with_name("exposure.db")
+            )
+        else:
+            exposure_db_path = None
+        self.exposure_store = ExposureStore(db_path=exposure_db_path)
         self.governance = GovernanceEngine(
             ledger=ledger,
             strategy_registry=self.strategy_registry,
+            exposure_store=self.exposure_store,
         )
         # Hardening-S1 item 4-ext -- bind the SHA-256 of every
         # canonical policy YAML to the authority ledger at boot. The
