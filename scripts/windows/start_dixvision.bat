@@ -30,16 +30,33 @@ set "DASH_URL=http://127.0.0.1:8080/"
 set "DASH_PORT=8080"
 set "LAUNCHER_LOG=%REPO_ROOT%\launcher.log"
 
+REM --- AUDIT-P0.3 / Sprint-1 "Trust the Ledger" ---------------------------------
+REM The harness refuses to boot without ``DIXVISION_LEDGER_PATH`` so a
+REM crash-recoverable SQLite governance ledger is always mounted in
+REM production. We default it under ``%APPDATA%\DIX VISION\`` (a
+REM per-user, roaming-profile-friendly location that survives venv
+REM resets) unless the operator has explicitly exported the env var
+REM themselves before launching.
+if not defined DIXVISION_LEDGER_PATH (
+    set "DIXVISION_LEDGER_DIR=%APPDATA%\DIX VISION"
+    if not exist "%APPDATA%\DIX VISION" mkdir "%APPDATA%\DIX VISION" >nul 2>&1
+    set "DIXVISION_LEDGER_PATH=%APPDATA%\DIX VISION\governance.db"
+)
+
 REM Truncate the previous launcher.log so each run starts clean and the
 REM operator (or Devin Review) can paste the latest failure verbatim.
 break > "%LAUNCHER_LOG%" 2>nul
 
 echo.
 echo === DIX VISION v42.2 — Windows launcher ===
-echo Repo:  %REPO_ROOT%
-echo Venv:  %VENV_DIR%
-echo URL:   %DASH_URL%
-echo Log:   %LAUNCHER_LOG%
+echo Repo:   %REPO_ROOT%
+echo Venv:   %VENV_DIR%
+echo URL:    %DASH_URL%
+echo Log:    %LAUNCHER_LOG%
+echo Ledger: %DIXVISION_LEDGER_PATH%
+echo.
+echo Governance ledger is SQLite-backed and persists across restarts.
+echo Set DIXVISION_LEDGER_PATH before launch to override the default.
 echo.
 
 REM --- find a usable Python interpreter ---------------------------------------
