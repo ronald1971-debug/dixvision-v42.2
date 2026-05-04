@@ -176,6 +176,47 @@ def test_process_ignores_multi_arg_sensors() -> None:
     assert out == ()
 
 
+def test_process_dispatches_keyword_only_observe() -> None:
+    """Sensors with ``observe(self, *, ts_ns)`` (KEYWORD_ONLY) work.
+
+    `_is_pollable` admits both ``POSITIONAL_OR_KEYWORD`` and
+    ``KEYWORD_ONLY`` shapes, so the dispatch must bind ``ts_ns``
+    by keyword. A positional dispatch would crash with
+    ``TypeError: observe() takes 0 positional arguments but 1 was given``
+    on the next sensor that follows the documented contract.
+    """
+
+    class _KwOnlySensor:
+        name = "kw_only_stub"
+        code = "HAZ-KW-ONLY"
+        emitted: list[int] = []
+
+        def observe(self, *, ts_ns: int) -> tuple[HazardEvent, ...]:
+            self.emitted.append(ts_ns)
+            return (
+                HazardEvent(
+                    ts_ns=ts_ns,
+                    code=self.code,
+                    severity=HazardSeverity.LOW,
+                    source="tests",
+                    detail="kw-only fired",
+                    meta={},
+                    produced_by_engine="system_engine",
+                ),
+            )
+
+    sensor = _KwOnlySensor()
+    assert _is_pollable(sensor)
+    array = SensorArray()
+    array.register(sensor)
+    engine = SystemEngine(sensor_array=array)
+    out = engine.process(_tick(7_777))
+    assert len(out) == 1
+    assert out[0].code == "HAZ-KW-ONLY"
+    assert out[0].ts_ns == 7_777
+    assert sensor.emitted == [7_777]
+
+
 def test_process_returns_in_registration_order() -> None:
     """When two pollable sensors fire on the same tick, registration order wins.
 

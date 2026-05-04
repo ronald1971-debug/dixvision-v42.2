@@ -111,7 +111,11 @@ class SystemEngine(RuntimeEngine):
         ts_ns = int(getattr(event, "ts_ns", 0))
         out: list[HazardEvent] = []
         for sensor in self._pollable:
-            out.extend(sensor.observe(ts_ns))
+            # Bind ``ts_ns`` by keyword so sensors with
+            # ``def observe(self, *, ts_ns)`` (KEYWORD_ONLY) are
+            # also dispatchable — the detector explicitly admits
+            # both POSITIONAL_OR_KEYWORD and KEYWORD_ONLY shapes.
+            out.extend(sensor.observe(ts_ns=ts_ns))
         return tuple(out)
 
     def check_self(self) -> HealthStatus:
