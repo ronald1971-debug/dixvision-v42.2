@@ -28,6 +28,21 @@ function pickPrice(o: Record<string, unknown>): number | null {
   return null;
 }
 
+function pickSym(o: Record<string, unknown>): string {
+  for (const k of ["symbol", "ticker", "name", "mint", "base"]) {
+    const v = o[k];
+    if (typeof v === "string" && v) return v;
+  }
+  return "";
+}
+
+function matchesPair(o: Record<string, unknown>, pairSymbol: string): boolean {
+  const sym = pickSym(o).toUpperCase();
+  if (!sym) return false;
+  const base = pairSymbol.toUpperCase().split("/")[0];
+  return sym === base || sym.startsWith(base + "/") || sym === pairSymbol.toUpperCase();
+}
+
 function pickTs(o: Record<string, unknown>): number {
   for (const k of ["ts", "time", "timestamp"]) {
     const v = o[k];
@@ -49,17 +64,24 @@ export function TradePage() {
     refetchInterval: 2_000,
   });
 
+  // Reset buffer when the operator switches pair so the chart never
+  // mixes prices from a previous symbol (Devin Review BUG_0002
+  // follow-up on PR #181).
+  useEffect(() => {
+    buf.current = [];
+    setPoints([]);
+  }, [pair.symbol]);
+
   useEffect(() => {
     const incoming: PricePoint[] = [];
     for (const r of q.data?.items ?? []) {
+      if (!matchesPair(r, pair.symbol)) continue;
       const p = pickPrice(r);
       if (p != null) incoming.push({ ts: pickTs(r), price: p });
     }
     if (incoming.length === 0) return;
     // Dedup by ts so overlapping refetches (every 2s) do not pad the
-    // buffer with duplicates and shrink the effective time window
-    // (Devin Review BUG_0001 follow-up on PR #181, mirrors
-    // PairExplorerPage).
+    // buffer with duplicates and shrink the effective time window.
     const merged = [...buf.current, ...incoming].sort((a, b) => a.ts - b.ts);
     const seen = new Set<number>();
     const dedup: PricePoint[] = [];
@@ -71,7 +93,7 @@ export function TradePage() {
     }
     buf.current = dedup.slice(-600);
     setPoints([...buf.current]);
-  }, [q.data]);
+  }, [q.data, pair.symbol]);
 
   return (
     <div className="grid h-full min-h-0 grid-cols-12 grid-rows-12 gap-2 p-2">

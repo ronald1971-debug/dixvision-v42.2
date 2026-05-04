@@ -129,7 +129,7 @@ where npm >nul 2>&1
 if %errorlevel% neq 0 (
     echo [WARN] npm not found ^(install Node 20+ from https://nodejs.org/^).
     echo         /meme/ will fall back to the harness root if dash_meme/dist is missing.
-    goto :start_server
+    goto :install_shortcut
 )
 
 REM Build dash_meme (this dashboard's primary surface).

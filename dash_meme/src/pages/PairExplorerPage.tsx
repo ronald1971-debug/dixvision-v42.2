@@ -23,6 +23,21 @@ function pickPrice(o: Record<string, unknown>): number | null {
   return null;
 }
 
+function pickSym(o: Record<string, unknown>): string {
+  for (const k of ["symbol", "ticker", "name", "mint", "base"]) {
+    const v = o[k];
+    if (typeof v === "string" && v) return v;
+  }
+  return "";
+}
+
+function matchesPair(o: Record<string, unknown>, pairSymbol: string): boolean {
+  const sym = pickSym(o).toUpperCase();
+  if (!sym) return false;
+  const base = pairSymbol.toUpperCase().split("/")[0];
+  return sym === base || sym.startsWith(base + "/") || sym === pairSymbol.toUpperCase();
+}
+
 function pickTs(o: Record<string, unknown>): number {
   for (const k of ["ts", "time", "timestamp"]) {
     const v = o[k];
@@ -53,14 +68,25 @@ export function PairExplorerPage() {
     refetchInterval: 5_000,
   });
 
-  // Roll the price buffer from pump+ray feeds. Keep last 600 points.
+  // Reset buffer when the operator changes the active pair so we never
+  // mix prices from a previous symbol into the new chart
+  // (Devin Review BUG_0001 on PR #181 follow-up).
+  useEffect(() => {
+    buf.current = [];
+    setPoints([]);
+  }, [pair.symbol]);
+
+  // Roll the price buffer from pump+ray feeds, filtered to the
+  // selected pair. Keep last 600 points.
   useEffect(() => {
     const incoming: PricePoint[] = [];
     for (const r of pump.data?.items ?? []) {
+      if (!matchesPair(r, pair.symbol)) continue;
       const p = pickPrice(r);
       if (p != null) incoming.push({ ts: pickTs(r), price: p });
     }
     for (const r of ray.data?.items ?? []) {
+      if (!matchesPair(r, pair.symbol)) continue;
       const p = pickPrice(r);
       if (p != null) incoming.push({ ts: pickTs(r), price: p });
     }
@@ -76,7 +102,7 @@ export function PairExplorerPage() {
     }
     buf.current = dedup.slice(-600);
     setPoints(buf.current);
-  }, [pump.data, ray.data]);
+  }, [pump.data, ray.data, pair.symbol]);
 
   const lastPrice = points.length ? points[points.length - 1].price : null;
 
