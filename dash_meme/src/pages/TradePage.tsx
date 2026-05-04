@@ -51,7 +51,7 @@ export function TradePage() {
 
   useEffect(() => {
     const incoming: PricePoint[] = [];
-    for (const r of q.data?.recent ?? []) {
+    for (const r of q.data?.items ?? []) {
       const p = pickPrice(r);
       if (p != null) incoming.push({ ts: pickTs(r), price: p });
     }

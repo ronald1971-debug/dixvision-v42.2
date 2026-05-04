@@ -39,23 +39,39 @@ export function PoolExplorerPage() {
   });
 
   const rows = useMemo(() => {
-    const raw = q.data?.recent ?? [];
+    const raw = q.data?.items ?? [];
+    // Normalize age to a duration in seconds. ``age_seconds`` and
+    // ``age`` are already durations (lower = newer); ``ts`` is a Unix
+    // timestamp (higher = newer) so we convert it to ``now - ts``
+    // before sorting (Devin Review BUG_0002 on PR #181).
+    const nowSec = Date.now() / 1000;
+    const ageSeconds = (r: Record<string, unknown>): number | null => {
+      const direct = pickNum(r, "age_seconds", "age");
+      if (direct !== null) return direct;
+      const ts = pickNum(r, "ts");
+      if (ts === null) return null;
+      // Heuristic: if value is too large to be seconds, assume ms.
+      const tsSec = ts > 1e12 ? ts / 1000 : ts;
+      return Math.max(0, nowSec - tsSec);
+    };
     const mapped = raw.map((r) => ({
       symbol: pickStr(r, "symbol", "pair", "name", "pool"),
       pool: pickStr(r, "pool", "address", "id"),
       liq: pickNum(r, "liq_usd", "liquidity_usd", "liquidity"),
       vol: pickNum(r, "volume_24h", "vol_24h", "volume"),
       fee: pickNum(r, "fee_pct", "fee", "fees_24h"),
-      age: pickNum(r, "age_seconds", "age", "ts"),
+      age: ageSeconds(r),
       raw: r,
     }));
-    const cmp = (a: number | null, b: number | null) =>
+    const cmpDesc = (a: number | null, b: number | null) =>
       (b ?? -Infinity) - (a ?? -Infinity);
+    const cmpAsc = (a: number | null, b: number | null) =>
+      (a ?? Infinity) - (b ?? Infinity);
     return [...mapped].sort((a, b) => {
-      if (sort === "liq") return cmp(a.liq, b.liq);
-      if (sort === "vol") return cmp(a.vol, b.vol);
-      if (sort === "fee") return cmp(a.fee, b.fee);
-      return cmp(b.age, a.age); // newest first
+      if (sort === "liq") return cmpDesc(a.liq, b.liq);
+      if (sort === "vol") return cmpDesc(a.vol, b.vol);
+      if (sort === "fee") return cmpDesc(a.fee, b.fee);
+      return cmpAsc(a.age, b.age); // newest first (lowest age)
     });
   }, [q.data, sort]);
 

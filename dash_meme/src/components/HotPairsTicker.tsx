@@ -48,8 +48,8 @@ export function HotPairsTicker() {
 
   const rows: ReadonlyArray<TickerRow> = useMemo(() => {
     const out: TickerRow[] = [];
-    if (pump.data?.recent) {
-      for (const r of pump.data.recent.slice(0, 24)) {
+    if (pump.data?.items) {
+      for (const r of pump.data.items.slice(0, 24)) {
         out.push({
           source: "PUMP",
           symbol: pickString(r, "symbol", "ticker", "name", "mint"),
@@ -57,8 +57,8 @@ export function HotPairsTicker() {
         });
       }
     }
-    if (ray.data?.recent) {
-      for (const r of ray.data.recent.slice(0, 24)) {
+    if (ray.data?.items) {
+      for (const r of ray.data.items.slice(0, 24)) {
         out.push({
           source: "RAY",
           symbol: pickString(r, "symbol", "pair", "name", "pool"),

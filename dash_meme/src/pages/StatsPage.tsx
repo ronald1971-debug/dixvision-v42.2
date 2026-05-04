@@ -44,7 +44,7 @@ export function StatsPage() {
 
   const rows: ReadonlyArray<Row> = useMemo(() => {
     const all: Row[] = [];
-    for (const r of pump.data?.recent ?? []) {
+    for (const r of pump.data?.items ?? []) {
       all.push({
         symbol: pickStr(r, "symbol", "ticker", "name", "mint"),
         price: pickNum(r, "price", "price_usd"),
@@ -52,7 +52,7 @@ export function StatsPage() {
         vol: pickNum(r, "volume_24h", "vol", "volume"),
       });
     }
-    for (const r of ray.data?.recent ?? []) {
+    for (const r of ray.data?.items ?? []) {
       all.push({
         symbol: pickStr(r, "symbol", "pair", "pool"),
         price: pickNum(r, "price", "price_usd"),

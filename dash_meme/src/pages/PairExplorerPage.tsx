@@ -56,11 +56,11 @@ export function PairExplorerPage() {
   // Roll the price buffer from pump+ray feeds. Keep last 600 points.
   useEffect(() => {
     const incoming: PricePoint[] = [];
-    for (const r of pump.data?.recent ?? []) {
+    for (const r of pump.data?.items ?? []) {
       const p = pickPrice(r);
       if (p != null) incoming.push({ ts: pickTs(r), price: p });
     }
-    for (const r of ray.data?.recent ?? []) {
+    for (const r of ray.data?.items ?? []) {
       const p = pickPrice(r);
       if (p != null) incoming.push({ ts: pickTs(r), price: p });
     }

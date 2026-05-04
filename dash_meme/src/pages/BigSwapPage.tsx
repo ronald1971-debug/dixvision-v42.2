@@ -58,7 +58,7 @@ export function BigSwapPage() {
 
   const swaps: ReadonlyArray<Swap> = useMemo(() => {
     const all: Swap[] = [];
-    for (const r of pump.data?.recent ?? []) {
+    for (const r of pump.data?.items ?? []) {
       all.push({
         ts: pickNum(r, "ts", "time", "timestamp") ?? Date.now(),
         symbol: pickStr(r, "symbol", "ticker", "name", "mint"),
@@ -68,7 +68,7 @@ export function BigSwapPage() {
         source: "PUMP",
       });
     }
-    for (const r of ray.data?.recent ?? []) {
+    for (const r of ray.data?.items ?? []) {
       all.push({
         ts: pickNum(r, "ts", "time", "timestamp") ?? Date.now(),
         symbol: pickStr(r, "symbol", "pair", "pool", "name"),

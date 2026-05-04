@@ -58,7 +58,7 @@ export function TxFeed({ height = "100%" }: { height?: string | number }) {
   });
 
   const rows: TxRow[] = [];
-  for (const r of pump.data?.recent ?? []) {
+  for (const r of pump.data?.items ?? []) {
     rows.push({
       ts: fmtTs(r.ts ?? r.time ?? r.timestamp),
       side: inferSide(r),
@@ -68,7 +68,7 @@ export function TxFeed({ height = "100%" }: { height?: string | number }) {
       source: "PUMP",
     });
   }
-  for (const r of ray.data?.recent ?? []) {
+  for (const r of ray.data?.items ?? []) {
     rows.push({
       ts: fmtTs(r.ts ?? r.time ?? r.timestamp),
       side: inferSide(r),

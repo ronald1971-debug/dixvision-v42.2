@@ -69,7 +69,7 @@ export function MultichartPage() {
   });
 
   useEffect(() => {
-    const recent = q.data?.recent ?? [];
+    const recent = q.data?.items ?? [];
     let changed = false;
     for (const r of recent) {
       const sym = pickSym(r);
