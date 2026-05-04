@@ -40,7 +40,35 @@ export type ModeSnapshot = {
 export type FeedStatus = {
   status: "running" | "stopped" | "error";
   detail?: string;
+  feed: Record<string, unknown>;
 };
+
+type FeedStatusRaw = {
+  feed?: Record<string, unknown> & { running?: unknown };
+  detail?: string;
+  error?: string;
+};
+
+function asStatus(raw: FeedStatusRaw): FeedStatus {
+  const feed = raw.feed ?? {};
+  const running = feed.running;
+  let status: FeedStatus["status"];
+  if (raw.error) {
+    status = "error";
+  } else if (running === true) {
+    status = "running";
+  } else {
+    status = "stopped";
+  }
+  return {
+    status,
+    detail:
+      raw.detail ??
+      raw.error ??
+      (typeof feed.url === "string" ? feed.url : undefined),
+    feed,
+  };
+}
 
 function asItems(
   arr: ReadonlyArray<Record<string, unknown>> | undefined,
@@ -69,8 +97,12 @@ export const fetchMemecoinSummary = () =>
 
 export const fetchMode = () => apiGet<ModeSnapshot>("/api/dashboard/mode");
 
-export const fetchPumpFunStatus = () =>
-  apiGet<FeedStatus>("/api/feeds/pumpfun/status");
+export const fetchPumpFunStatus = async (): Promise<FeedStatus> => {
+  const raw = await apiGet<FeedStatusRaw>("/api/feeds/pumpfun/status");
+  return asStatus(raw);
+};
 
-export const fetchRaydiumStatus = () =>
-  apiGet<FeedStatus>("/api/feeds/raydium/status");
+export const fetchRaydiumStatus = async (): Promise<FeedStatus> => {
+  const raw = await apiGet<FeedStatusRaw>("/api/feeds/raydium/status");
+  return asStatus(raw);
+};
