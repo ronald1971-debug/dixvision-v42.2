@@ -161,6 +161,35 @@ def test_post_accepts_minimal_body(client: TestClient) -> None:
     assert rows[-1]["reason"] == ""
 
 
+def test_post_holds_lock_across_mutation_and_audit() -> None:
+    """Devin Review BUG_0001 — the mutation and the audit-row write
+    must happen atomically under ``STATE.lock``.
+
+    A concurrent POST that grabs the lock between the mutation and
+    the ledger append would corrupt the audit chain (rows whose
+    sequence does not match mutation order). This test pins the
+    invariant by inspecting the route handler's bytecode for a
+    single ``with STATE.lock:`` block that wraps both the assignment
+    to ``learning_override_enabled`` and the call to
+    ``STATE.governance.ledger.append``.
+    """
+
+    import inspect
+
+    from ui.server import operator_learning_override_post
+
+    source = inspect.getsource(operator_learning_override_post)
+    # The handler must contain exactly one ``with STATE.lock:`` block,
+    # and the ledger.append call must be inside it (i.e. before the
+    # ``return _learning_override_response()`` line that closes the
+    # function body).
+    assert source.count("with STATE.lock:") == 1, source
+    lock_idx = source.index("with STATE.lock:")
+    return_idx = source.index("return _learning_override_response()")
+    append_idx = source.index("STATE.governance.ledger.append")
+    assert lock_idx < append_idx < return_idx, source
+
+
 def test_boot_seed_honours_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
     """Setting ``DIXVISION_LEARNING_OVERRIDE=1`` at boot pre-arms the flag.
 

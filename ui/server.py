@@ -1378,17 +1378,23 @@ def operator_learning_override_post(
         previous = STATE.learning_override_enabled
         STATE.learning_override_enabled = bool(body.enabled)
         mode = STATE.governance.state_transitions.current_mode()
-    STATE.governance.ledger.append(
-        ts_ns=wall_ns(),
-        kind="OPERATOR_LEARNING_OVERRIDE_CHANGED",
-        payload={
-            "requestor": body.requestor,
-            "reason": body.reason,
-            "previous": "true" if previous else "false",
-            "next": "true" if body.enabled else "false",
-            "mode": mode.name,
-        },
-    )
+        # Devin Review BUG_0001 — keep the mutation + audit-row write
+        # atomic under ``STATE.lock`` so concurrent POSTs cannot
+        # interleave: ledger sequence must agree with mutation order,
+        # and the response projection downstream must observe a value
+        # that matches the ``next`` field of the row this request
+        # just wrote.
+        STATE.governance.ledger.append(
+            ts_ns=wall_ns(),
+            kind="OPERATOR_LEARNING_OVERRIDE_CHANGED",
+            payload={
+                "requestor": body.requestor,
+                "reason": body.reason,
+                "previous": "true" if previous else "false",
+                "next": "true" if body.enabled else "false",
+                "mode": mode.name,
+            },
+        )
     return _learning_override_response()
 
 
