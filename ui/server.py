@@ -81,6 +81,7 @@ from core.contracts.governance import (
     OperatorRequest,
 )
 from core.contracts.market import MarketTick
+from core.contracts.risk import RiskSnapshot
 from dashboard_backend.control_plane.decision_trace import DecisionTracePanel
 from dashboard_backend.control_plane.engine_status_grid import EngineStatusGrid
 from dashboard_backend.control_plane.memecoin_control_panel import MemecoinControlPanel
@@ -140,6 +141,7 @@ from intelligence_engine.trader_modeling import (
 from learning_engine.engine import LearningEngine
 from state.ledger.reader import LedgerReader
 from system.time_source import wall_ns
+from system_engine.coupling import HazardThrottleAdapter
 from system_engine.credentials import (
     DEFAULT_TIMEOUT_S as CREDENTIAL_VERIFY_TIMEOUT_S,
 )
@@ -210,7 +212,28 @@ class _State:
         self.intelligence = IntelligenceEngine(
             microstructure_plugins=(MicrostructureV1(),),
         )
-        self.execution = ExecutionEngine()
+        # AUDIT-WIRE.1 / P0-2 — close the BEHAVIOR-P3 hazard throttle
+        # chain. Until this wiring landed the harness constructed a
+        # bare ``ExecutionEngine()`` with ``throttle_adapter=None``,
+        # so observed :class:`HazardEvent` rows never tightened the
+        # hot-path :class:`RiskSnapshot` and the ``apply_throttle``
+        # primitive built in PR #139 was inert in production. Hazards
+        # delivered to ``self.execution.on_hazard`` now feed the
+        # adapter's observer ring, and every subsequent
+        # :meth:`ExecutionEngine.execute` projects the active throttle
+        # decision onto the configured baseline.
+        self.hazard_throttle = HazardThrottleAdapter()
+        # The baseline RiskSnapshot is the un-throttled FastRiskCache
+        # view; the harness has no live cache yet (Phase 7 wave) so
+        # the seed below is a deterministic, permissive baseline that
+        # the throttle adapter narrows in place. ``halted`` flips to
+        # True the moment a CRITICAL hazard is observed inside the
+        # active window, which short-circuits dispatch to a single
+        # REJECTED ExecutionEvent with reason ``hazard_throttled``.
+        self.execution = ExecutionEngine(
+            throttle_adapter=self.hazard_throttle,
+            risk_baseline=RiskSnapshot(version=0, ts_ns=wall_ns()),
+        )
         self.system = SystemEngine()
         # Sprint-1 / Class-B "Trust the Ledger" — if the operator sets
         # ``DIXVISION_LEDGER_PATH`` the harness opens a SQLite-backed
@@ -544,6 +567,12 @@ class _State:
         """
         with self.lock:
             self.record("hazard.news", hazard)
+            # AUDIT-WIRE.1 — every hazard the harness sees must reach
+            # the execution-engine throttle adapter, not just the
+            # governance FSM. Without this branch the ``apply_throttle``
+            # chain stayed dark for hazards that never crossed the
+            # mode-FSM CRITICAL/HIGH gate (e.g. WARN-tier news shocks).
+            self.execution.on_hazard(hazard)
             for downstream in self.governance.process(hazard):
                 self.record("governance", downstream)
 
