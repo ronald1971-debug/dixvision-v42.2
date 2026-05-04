@@ -1697,6 +1697,167 @@ def _check_b32(
 
 
 # ---------------------------------------------------------------------------
+# B36 — no-policy-mutation-outside-session-boundary (Hardening-S1 item 10).
+# ---------------------------------------------------------------------------
+#
+# The :class:`PolicyHashAnchor` (Hardening-S1 item 4-ext) binds a
+# SHA-256 of every policy YAML at session boot and emits
+# ``HAZ-POLICY-DRIFT`` (CRITICAL) on any mid-session mutation. That is
+# the *runtime* defence: it catches drift *after* the file has already
+# been written. B36 catches it *earlier* — at PR time — by forbidding
+# any code outside an allowlist from writing to the policy YAMLs at all.
+#
+# Forbidden patterns (all must hit a literal policy path):
+#
+#   * ``open("registry/<policy>.yaml", "w"|"a"|"x"|"wb"|"ab"|"xb"|...)``
+#   * ``Path("registry/<policy>.yaml").write_text(...)``
+#   * ``Path("registry/<policy>.yaml").write_bytes(...)``
+#
+# Allowlist:
+#
+#   * ``tools.*`` — codegen, migrations, lint helpers may need to
+#     regenerate the YAMLs at build time;
+#   * ``tests.*`` — fixtures often write copies of the YAMLs into
+#     ``tmp_path`` for exercise scenarios;
+#   * ``scripts.*`` — operator-side migration scripts.
+#
+# Production code (engines, adapters, dashboard, harness) may *read*
+# these files but must never *write* them. The session boundary is the
+# only legal mutation window: edit the YAML on disk while the process
+# is stopped, restart, and the policy hash anchor binds a new SHA-256
+# at boot. Any mid-session write would either be detected by the
+# anchor (if anchor is bound) or sneak past it (if the writer races
+# anchor.bind_session). B36 prevents either path from existing in the
+# code at all.
+
+B36_POLICY_PATHS: tuple[str, ...] = (
+    "registry/authority_matrix.yaml",
+    "registry/constraint_rules.yaml",
+    "registry/data_source_registry.yaml",
+    "registry/plugins.yaml",
+    "docs/promotion_gates.yaml",
+)
+
+B36_ALLOWED_PATH_PARTS: tuple[tuple[str, ...], ...] = (
+    ("tools",),
+    ("tests",),
+    ("scripts",),
+)
+
+
+def _b36_path_allowed(path: Path, repo_root: Path) -> bool:
+    try:
+        rel_parts = path.relative_to(repo_root).parts
+    except ValueError:
+        return False
+    for prefix in B36_ALLOWED_PATH_PARTS:
+        if rel_parts[: len(prefix)] == prefix:
+            return True
+    return False
+
+
+def _b36_is_policy_path_literal(node: ast.AST) -> str | None:
+    if not isinstance(node, ast.Constant):
+        return None
+    value = node.value
+    if not isinstance(value, str):
+        return None
+    for policy in B36_POLICY_PATHS:
+        if policy in value:
+            return policy
+    return None
+
+
+def _b36_is_write_mode_literal(node: ast.AST) -> bool:
+    if not isinstance(node, ast.Constant):
+        return False
+    value = node.value
+    if not isinstance(value, str):
+        return False
+    return any(c in value for c in ("w", "a", "x"))
+
+
+def _b36_keyword_value(call: ast.Call, name: str) -> ast.expr | None:
+    for kw in call.keywords:
+        if kw.arg == name:
+            return kw.value
+    return None
+
+
+def _b36_open_mode_arg(call: ast.Call) -> ast.expr | None:
+    if len(call.args) >= 2:
+        return call.args[1]
+    return _b36_keyword_value(call, "mode")
+
+
+def _check_b36(
+    importer: str, file: Path, repo_root: Path, tree: ast.AST
+) -> list[Violation]:
+    """B36 — policy YAMLs are immutable mid-session (item 10)."""
+
+    if _b36_path_allowed(file, repo_root):
+        return []
+    out: list[Violation] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        # Pattern 1: open("<policy_path>", "w...")
+        if (
+            isinstance(node.func, ast.Name)
+            and node.func.id == "open"
+            and node.args
+        ):
+            policy = _b36_is_policy_path_literal(node.args[0])
+            if policy is not None:
+                mode_node = _b36_open_mode_arg(node)
+                if mode_node is not None and _b36_is_write_mode_literal(
+                    mode_node
+                ):
+                    out.append(
+                        Violation(
+                            "B36",
+                            file,
+                            getattr(node, "lineno", 0),
+                            importer,
+                            f"open({policy!r}, write-mode)",
+                            "no-policy-mutation-outside-session"
+                            " (Hardening-S1 item 10): policy YAMLs are"
+                            " immutable mid-session — only tools.*,"
+                            " tests.*, and scripts.* may write them.",
+                        )
+                    )
+        # Pattern 2: Path("<policy_path>").write_text(...)
+        #            Path("<policy_path>").write_bytes(...)
+        if (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr in {"write_text", "write_bytes"}
+        ):
+            recv = node.func.value
+            if (
+                isinstance(recv, ast.Call)
+                and isinstance(recv.func, ast.Name)
+                and recv.func.id == "Path"
+                and recv.args
+            ):
+                policy = _b36_is_policy_path_literal(recv.args[0])
+                if policy is not None:
+                    out.append(
+                        Violation(
+                            "B36",
+                            file,
+                            getattr(node, "lineno", 0),
+                            importer,
+                            f"Path({policy!r}).{node.func.attr}(...)",
+                            "no-policy-mutation-outside-session"
+                            " (Hardening-S1 item 10): policy YAMLs are"
+                            " immutable mid-session — only tools.*,"
+                            " tests.*, and scripts.* may write them.",
+                        )
+                    )
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Driver
 # ---------------------------------------------------------------------------
 
@@ -1760,6 +1921,8 @@ def lint_repo(repo_root: Path) -> list[Violation]:
         violations.extend(_check_b32(importer, path, repo_root, tree))
         # B35 — Operator-vs-AI separation (Hardening-S1 item 7).
         violations.extend(_check_b35(importer, path, repo_root, tree))
+        # B36 — no-policy-mutation-outside-session (Hardening-S1 item 10).
+        violations.extend(_check_b36(importer, path, repo_root, tree))
     # B23 — chat widget static files (HTML / JS).
     violations.extend(_check_b23_static(repo_root))
     return violations
