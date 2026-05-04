@@ -77,6 +77,7 @@ from core.contracts.api.operator import (
 )
 from core.contracts.events import (
     Event,
+    EventKind,
     HazardEvent,
     Side,
     SignalEvent,
@@ -694,6 +695,24 @@ class _State:
         # ``_seed_for_tests`` as its only ingestion API; that is fine
         # for the in-process harness.
         self.ledger_reader._seed_for_tests((event,))
+        # AUDIT-P2.3 — route SIGNAL/EXECUTION events through Governance
+        # so the authority ledger gains a SIGNAL_AUDIT / EXECUTION_AUDIT
+        # row for every harness-emitted decision. ``governance.process``
+        # is a no-op for these kinds beyond the ledger append (it
+        # returns ``()``), so this does not loop and does not produce
+        # downstream bus events. Hazards still reach Governance via
+        # ``_emit_hazard_locked`` (the canonical hazard fan-in path);
+        # we deliberately do not double-route them here. Any exception
+        # is swallowed so a misclassified event cannot poison the
+        # in-memory event ring.
+        if event.kind in (EventKind.SIGNAL, EventKind.EXECUTION):
+            try:
+                self.governance.process(event)
+            except Exception:  # pragma: no cover - defensive guard
+                # A misclassified event must not poison the in-memory
+                # event ring or propagate up to the FastAPI handler;
+                # the missing audit row is the only observable effect.
+                pass
 
     def _ingest_market_tick_locked(self, tick: MarketTick) -> None:
         """Sink callable used by ``ui/feeds/runner.FeedRunner``.
