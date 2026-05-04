@@ -108,10 +108,11 @@ def main() -> int:
                     edges.append((path, alias.name))
             elif isinstance(node, ast.ImportFrom):
                 if node.level:
-                    # relative import — resolve against package
+                    # relative import — resolve against the *containing*
+                    # package, so always drop the final segment whether it
+                    # is ``__init__`` or a regular module name.
                     pkg_parts = path[:-3].split("/")
-                    if pkg_parts[-1] == "__init__":
-                        pkg_parts = pkg_parts[:-1]
+                    pkg_parts = pkg_parts[:-1]
                     base = pkg_parts[: len(pkg_parts) - node.level + 1]
                     if not base:
                         continue
