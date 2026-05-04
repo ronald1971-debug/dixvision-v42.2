@@ -210,7 +210,9 @@ class PluginRegistry:
       ``DISABLED`` calls ``stop()``.
     * ``adapter`` — ``execution_engine.adapters.AdapterRegistry``
       entries. Read-only; the lifecycle column reflects the live
-      ``AdapterStatus.connected`` flag.
+      ``AdapterStatus.state`` enum (``READY``/``CONNECTING``/
+      ``DEGRADED`` render as ACTIVE; ``DISCONNECTED``/``HALTED`` as
+      DISABLED).
     * ``sensor`` — every ``HazardSensor`` registered on the system
       ``SensorArray``. Read-only; lifecycle reflects whether the
       sensor is registered (``ACTIVE``) or absent.

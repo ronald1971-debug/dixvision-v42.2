@@ -80,6 +80,22 @@ export interface OperatorActionResponse {
   decision: Record<string, unknown>;
 }
 
+export interface OperatorUnlockRequest {
+  reason?: string;
+  requestor?: string;
+}
+
+export interface OperatorModeRequest {
+  target_mode: string;
+  reason?: string;
+  requestor?: string;
+  operator_authorized?: boolean;
+  consent_operator_id?: string;
+  consent_policy_hash?: string;
+  consent_nonce?: string;
+  consent_ts_ns?: number;
+}
+
 export interface ChatStatusResponse {
   enabled: boolean;
   eligible_providers: string[];

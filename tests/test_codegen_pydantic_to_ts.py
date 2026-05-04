@@ -40,6 +40,8 @@ _DASHBOARD_API_MODELS: tuple[str, ...] = (
     "core.contracts.api.credentials.CredentialsStatusResponse",
     "core.contracts.api.operator.OperatorSummaryResponse",
     "core.contracts.api.operator.OperatorActionResponse",
+    "core.contracts.api.operator.OperatorUnlockRequest",
+    "core.contracts.api.operator.OperatorModeRequest",
     "core.contracts.api.cognitive_chat.ChatStatusResponse",
     "core.contracts.api.cognitive_chat.ChatTurnRequest",
     "core.contracts.api.cognitive_chat.ChatTurnResponse",

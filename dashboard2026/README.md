@@ -39,6 +39,8 @@ python -m tools.codegen.pydantic_to_ts \
     core.contracts.api.credentials.CredentialsStatusResponse \
     core.contracts.api.operator.OperatorSummaryResponse \
     core.contracts.api.operator.OperatorActionResponse \
+    core.contracts.api.operator.OperatorUnlockRequest \
+    core.contracts.api.operator.OperatorModeRequest \
     core.contracts.api.cognitive_chat.ChatStatusResponse \
     core.contracts.api.cognitive_chat.ChatTurnRequest \
     core.contracts.api.cognitive_chat.ChatTurnResponse \
