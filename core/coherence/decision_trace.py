@@ -45,6 +45,7 @@ from core.contracts.events import (
     SystemEvent,
     SystemEventKind,
 )
+from core.contracts.signal_trust import SignalTrust
 
 DECISION_TRACE_BUILDER_SOURCE = "core.coherence.decision_trace"
 _TRACE_ID_LEN: int = 16
@@ -95,6 +96,7 @@ def build_decision_trace(
     throttle_applied: ThrottleInfluence | None = None,
     execution_outcome: ExecutionOutcome | None = None,
     why: WhyLayer | None = None,
+    validation_score: float | None = None,
 ) -> DecisionTrace:
     """Assemble a :class:`DecisionTrace` from the supplied inputs.
 
@@ -142,6 +144,9 @@ def build_decision_trace(
         throttle_applied=throttle_applied,
         execution_outcome=execution_outcome,
         why=why,
+        signal_trust=signal.signal_trust,
+        signal_source=signal.signal_source or None,
+        validation_score=validation_score,
     )
 
 
@@ -178,6 +183,11 @@ def as_system_event(
         "throttle_applied": _throttle_to_json(trace.throttle_applied),
         "execution_outcome": _execution_to_json(trace.execution_outcome),
         "why": _why_to_json(trace.why),
+        "signal_trust": (
+            trace.signal_trust.value if trace.signal_trust is not None else None
+        ),
+        "signal_source": trace.signal_source,
+        "validation_score": trace.validation_score,
     }
     payload = {
         "trace": json.dumps(body, sort_keys=True, separators=(",", ":")),
@@ -228,6 +238,13 @@ def trace_from_system_event(event: SystemEvent) -> DecisionTrace:
         throttle_applied=_throttle_from_json(body["throttle_applied"]),
         execution_outcome=_execution_from_json(body["execution_outcome"]),
         why=_why_from_json(body.get("why")),
+        signal_trust=(
+            SignalTrust(body["signal_trust"])
+            if body.get("signal_trust") is not None
+            else None
+        ),
+        signal_source=body.get("signal_source"),
+        validation_score=body.get("validation_score"),
     )
 
 

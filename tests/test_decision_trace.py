@@ -46,6 +46,7 @@ from core.contracts.events import (
     SignalEvent,
     SystemEventKind,
 )
+from core.contracts.signal_trust import SignalTrust
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -476,6 +477,102 @@ def test_round_trip_minimal_trace() -> None:
     event = as_system_event(original)
     recovered = trace_from_system_event(event)
     assert recovered == original
+
+
+# ---------------------------------------------------------------------------
+# Paper-S1 — provenance triplet projection + round-trip parity
+# ---------------------------------------------------------------------------
+
+
+def test_build_decision_trace_projects_signal_trust_and_source() -> None:
+    """Builder lifts SignalTrust + signal_source from the event."""
+
+    sig = SignalEvent(
+        ts_ns=1_000_000_000,
+        symbol="BTCUSDT",
+        side=Side.BUY,
+        confidence=0.42,
+        plugin_chain=("tradingview_webhook",),
+        signal_trust=SignalTrust.EXTERNAL_LOW,
+        signal_source="tradingview:user-123",
+    )
+    trace = build_decision_trace(signal=sig, validation_score=0.91)
+    assert trace.signal_trust is SignalTrust.EXTERNAL_LOW
+    assert trace.signal_source == "tradingview:user-123"
+    assert trace.validation_score == 0.91
+
+
+def test_build_decision_trace_normalises_empty_signal_source_to_none() -> None:
+    """Default SignalEvent.signal_source='' must surface as ``None``.
+
+    Empty string is the SignalEvent default but DecisionTrace.signal_source
+    requires non-empty-or-None. The builder must perform that conversion
+    so callers do not have to.
+    """
+
+    trace = build_decision_trace(signal=_signal())
+    assert trace.signal_trust is SignalTrust.INTERNAL
+    assert trace.signal_source is None
+    assert trace.validation_score is None
+
+
+def test_round_trip_external_signal_preserves_paper_s1_fields() -> None:
+    """as_system_event/trace_from_system_event must round-trip the trio.
+
+    Regression for Devin Review BUG_0001/BUG_0002 on PR #182: the
+    serializer + deserializer were silently dropping signal_trust /
+    signal_source / validation_score, breaking the v3 schema bump.
+    """
+
+    sig = SignalEvent(
+        ts_ns=2_000_000_000,
+        symbol="ETHUSDT",
+        side=Side.SELL,
+        confidence=0.65,
+        plugin_chain=("quantconnect_backtest",),
+        signal_trust=SignalTrust.EXTERNAL_MED,
+        signal_source="quantconnect:strategy-7",
+    )
+    original = build_decision_trace(signal=sig, validation_score=0.83)
+    event = as_system_event(original)
+
+    body = json.loads(event.payload["trace"])
+    assert body["signal_trust"] == "EXTERNAL_MED"
+    assert body["signal_source"] == "quantconnect:strategy-7"
+    assert body["validation_score"] == 0.83
+
+    recovered = trace_from_system_event(event)
+    assert recovered == original
+    assert recovered.signal_trust is SignalTrust.EXTERNAL_MED
+    assert recovered.signal_source == "quantconnect:strategy-7"
+    assert recovered.validation_score == 0.83
+
+
+def test_trace_from_system_event_tolerates_pre_paper_s1_payload() -> None:
+    """Reader must accept v3 payloads missing the Paper-S1 fields.
+
+    Earlier ledger rows (and rows produced before Paper-S1 lands in
+    every writer) will not carry signal_trust / signal_source /
+    validation_score. The deserializer must surface them as ``None``
+    rather than raise.
+    """
+
+    base = build_decision_trace(signal=_signal())
+    event = as_system_event(base)
+    body = json.loads(event.payload["trace"])
+    body.pop("signal_trust")
+    body.pop("signal_source")
+    body.pop("validation_score")
+    legacy_event = type(event)(
+        ts_ns=event.ts_ns,
+        sub_kind=event.sub_kind,
+        source=event.source,
+        payload={"trace": json.dumps(body, sort_keys=True, separators=(",", ":"))},
+    )
+    recovered = trace_from_system_event(legacy_event)
+    assert recovered.signal_trust is None
+    assert recovered.signal_source is None
+    assert recovered.validation_score is None
 
 
 def test_trace_from_system_event_rejects_wrong_sub_kind() -> None:
