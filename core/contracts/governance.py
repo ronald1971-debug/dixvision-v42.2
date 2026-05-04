@@ -91,7 +91,17 @@ class OperatorRequest:
 
 @dataclass(frozen=True, slots=True)
 class ModeTransitionRequest:
-    """Request to move from one ``SystemMode`` to another."""
+    """Request to move from one ``SystemMode`` to another.
+
+    ``consent`` carries a typed
+    :class:`core.contracts.operator_consent.OperatorConsent`
+    envelope when the edge requires explicit operator approval per
+    Hardening-S1 item 8 (currently ``SAFE → PAPER`` and
+    ``LIVE → AUTO``). The legacy ``operator_authorized`` bool is kept
+    for backward compatibility on edges that are still gated by
+    promotion-gates + operator-authorised flag (PAPER → SHADOW,
+    SHADOW → CANARY, CANARY → LIVE).
+    """
 
     ts_ns: int
     requestor: str
@@ -99,6 +109,11 @@ class ModeTransitionRequest:
     target_mode: SystemMode
     reason: str
     operator_authorized: bool = False
+    # ``object | None`` rather than the typed import so this contract
+    # module stays a leaf — :mod:`core.contracts.operator_consent`
+    # imports :class:`SystemMode` from here. The state transition
+    # manager performs the typed downcast at validation time.
+    consent: object | None = None
 
 
 @dataclass(frozen=True, slots=True)

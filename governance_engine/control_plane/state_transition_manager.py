@@ -43,6 +43,11 @@ from core.contracts.governance import (
     ModeTransitionRequest,
     SystemMode,
 )
+from core.contracts.operator_consent import (
+    OperatorConsent,
+    OperatorConsentValidator,
+    edge_requires_consent,
+)
 from governance_engine.control_plane.ledger_authority_writer import (
     LedgerAuthorityWriter,
 )
@@ -107,6 +112,7 @@ class StateTransitionManager:
         ledger: LedgerAuthorityWriter,
         initial_mode: SystemMode = SystemMode.SAFE,
         promotion_gates: PromotionGates | None = None,
+        consent_validator: OperatorConsentValidator | None = None,
     ) -> None:
         self._policy = policy
         self._ledger = ledger
@@ -118,6 +124,18 @@ class StateTransitionManager:
         # ``None`` the manager skips the gate check entirely; production
         # call sites must pass an instance so the gate is enforced.
         self._promotion_gates = promotion_gates
+        # Hardening-S1 item 8 — typed OperatorConsent envelope check.
+        # When ``None`` the manager auto-constructs a fresh validator;
+        # production wiring should pass a singleton so the nonce ring
+        # is shared across the whole process. Backward compatibility:
+        # call sites that don't pass consent on edges that require it
+        # are rejected with ``CONSENT_MISSING`` — the manager never
+        # silently downgrades to the legacy bool gate for those edges.
+        self._consent_validator = (
+            consent_validator
+            if consent_validator is not None
+            else OperatorConsentValidator()
+        )
 
     # ------------------------------------------------------------------
     # Public API
@@ -151,6 +169,7 @@ class StateTransitionManager:
                 target_mode=request.target_mode,
                 reason=request.reason,
                 operator_authorized=request.operator_authorized,
+                consent=request.consent,
             )
 
             legal, fsm_code = _is_legal_edge(prev, normalised.target_mode)
@@ -175,6 +194,99 @@ class StateTransitionManager:
                     reason=normalised.reason,
                     rejection_code=fsm_code,
                     ledger_seq=entry.seq,
+                )
+
+            # Hardening-S1 item 8 — typed OperatorConsent envelope.
+            # Edges in CONSENT_REQUIRED_EDGES (today: SAFE → PAPER and
+            # LIVE → AUTO) refuse to advance without a fresh,
+            # policy-bound, replay-protected OperatorConsent envelope.
+            # The check runs *after* FSM legality (so we never validate
+            # an illegal edge) and *before* the promotion-gates check
+            # (so the consent rejection surfaces ahead of any
+            # downstream policy code).
+            #
+            # Validation here is read-only: nothing is written to the
+            # ledger and no nonce is registered yet. The
+            # ``OPERATOR_CONSENT_ACCEPTED`` audit row + the nonce
+            # commit happen *after* the promotion-gates and policy
+            # checks have also passed, otherwise a downstream
+            # rejection would burn a semantically-valid nonce and
+            # leave an orphan audit row in the ledger.
+            consent_envelope_to_commit: OperatorConsent | None = None
+            if edge_requires_consent(prev, normalised.target_mode):
+                consent_obj = normalised.consent
+                if consent_obj is not None and not isinstance(
+                    consent_obj, OperatorConsent
+                ):
+                    rejection_payload = {
+                        "requestor": normalised.requestor,
+                        "prev_mode": prev.name,
+                        "target_mode": normalised.target_mode.name,
+                        "reason": normalised.reason,
+                        "rejection_code": "CONSENT_TYPE_INVALID",
+                    }
+                    entry = self._ledger.append(
+                        ts_ns=normalised.ts_ns,
+                        kind="MODE_TRANSITION_REJECTED",
+                        payload=rejection_payload,
+                    )
+                    return ModeTransitionDecision(
+                        ts_ns=normalised.ts_ns,
+                        approved=False,
+                        prev_mode=prev,
+                        new_mode=prev,
+                        reason=normalised.reason,
+                        rejection_code="CONSENT_TYPE_INVALID",
+                        ledger_seq=entry.seq,
+                    )
+                consent_envelope: OperatorConsent | None = consent_obj  # type: ignore[assignment]
+                consent_result = self._consent_validator.validate(
+                    consent=consent_envelope,
+                    request_ts_ns=normalised.ts_ns,
+                    prev_mode=prev,
+                    target_mode=normalised.target_mode,
+                    live_policy_hash=self._policy.table_hash,
+                )
+                if not consent_result.ok:
+                    rejection_payload = {
+                        "requestor": normalised.requestor,
+                        "prev_mode": prev.name,
+                        "target_mode": normalised.target_mode.name,
+                        "reason": normalised.reason,
+                        "rejection_code": consent_result.code,
+                        "detail": consent_result.detail,
+                    }
+                    entry = self._ledger.append(
+                        ts_ns=normalised.ts_ns,
+                        kind="MODE_TRANSITION_REJECTED",
+                        payload=rejection_payload,
+                    )
+                    return ModeTransitionDecision(
+                        ts_ns=normalised.ts_ns,
+                        approved=False,
+                        prev_mode=prev,
+                        new_mode=prev,
+                        reason=normalised.reason,
+                        rejection_code=consent_result.code,
+                        ledger_seq=entry.seq,
+                    )
+                # Consent envelope is valid -- but defer the audit
+                # row + nonce commit until promotion-gates and
+                # policy have also accepted the transition.
+                consent_envelope_to_commit = consent_envelope
+                # A valid OperatorConsent envelope is strictly
+                # stronger than the legacy ``operator_authorized``
+                # bool — refresh the normalised request so the
+                # downstream policy gate sees authorised=True without
+                # the call site having to set both fields.
+                normalised = ModeTransitionRequest(
+                    ts_ns=normalised.ts_ns,
+                    requestor=normalised.requestor,
+                    current_mode=prev,
+                    target_mode=normalised.target_mode,
+                    reason=normalised.reason,
+                    operator_authorized=True,
+                    consent=normalised.consent,
                 )
 
             # Reviewer #4 finding 4 -- hash-anchored promotion-gate
@@ -234,6 +346,28 @@ class StateTransitionManager:
                     reason=normalised.reason,
                     rejection_code=policy_code,
                     ledger_seq=entry.seq,
+                )
+
+            # All checks (FSM legality, consent envelope if required,
+            # promotion gates, policy decision table) have passed.
+            # Commit the consent side effects now -- the nonce is
+            # registered in the replay ring and the
+            # ``OPERATOR_CONSENT_ACCEPTED`` row is written
+            # immediately before the ``MODE_TRANSITION`` row so
+            # replay tools see them as a paired commit.
+            if consent_envelope_to_commit is not None:
+                self._consent_validator.commit(consent_envelope_to_commit)
+                self._ledger.append(
+                    ts_ns=normalised.ts_ns,
+                    kind="OPERATOR_CONSENT_ACCEPTED",
+                    payload={
+                        "operator_id": consent_envelope_to_commit.operator_id,
+                        "mode_from": prev.name,
+                        "mode_to": normalised.target_mode.name,
+                        "policy_hash": consent_envelope_to_commit.policy_hash,
+                        "nonce": consent_envelope_to_commit.nonce,
+                        "consent_ts_ns": str(consent_envelope_to_commit.ts_ns),
+                    },
                 )
 
             approval_payload = {

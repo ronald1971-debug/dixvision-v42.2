@@ -13,6 +13,10 @@ from core.contracts.governance import (
     ModeTransitionRequest,
     SystemMode,
 )
+from core.contracts.operator_consent import (
+    OperatorConsent,
+    edge_requires_consent,
+)
 from governance_engine.control_plane.drift_oracle import (
     DEFAULT_DOWNGRADE_THRESHOLD,
     DriftComponentReading,
@@ -50,14 +54,30 @@ def _ratchet_to(
     )
     target_idx = chain.index(target)
     for nxt in chain[1 : target_idx + 1]:
+        ts_ns = int(nxt.value) * 10
+        prev = stm.current_mode()
+        consent = None
+        if edge_requires_consent(prev, nxt):
+            # Hardening-S1 item 8 — SAFE→PAPER and LIVE→AUTO require
+            # a typed consent envelope. Bind to the live policy hash
+            # so the validator accepts it.
+            consent = OperatorConsent(
+                ts_ns=ts_ns,
+                operator_id="bringup",
+                mode_from=prev,
+                mode_to=nxt,
+                policy_hash=stm._policy.table_hash,
+                nonce=f"ratchet-{prev.name}-{nxt.name}-{ts_ns}",
+            )
         decision = stm.propose(
             ModeTransitionRequest(
-                ts_ns=int(nxt.value) * 10,
+                ts_ns=ts_ns,
                 requestor="bringup",
-                current_mode=stm.current_mode(),
+                current_mode=prev,
                 target_mode=nxt,
                 reason="ratchet for test",
                 operator_authorized=operator,
+                consent=consent,
             )
         )
         assert decision.approved, (nxt, decision.rejection_code)

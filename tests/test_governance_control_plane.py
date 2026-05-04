@@ -33,6 +33,7 @@ from core.contracts.governance import (
     OperatorRequest,
     SystemMode,
 )
+from core.contracts.operator_consent import OperatorConsent
 from governance_engine.control_plane import (
     ComplianceValidator,
     EventClassifier,
@@ -105,8 +106,30 @@ def _build_state(initial: SystemMode = SystemMode.SAFE) -> tuple[
     return state, ledger, policy
 
 
+def _consent(
+    *,
+    ts_ns: int,
+    mode_from: SystemMode,
+    mode_to: SystemMode,
+    policy: PolicyEngine,
+    operator_id: str = "op",
+    nonce: str | None = None,
+) -> OperatorConsent:
+    """Build a fresh, valid OperatorConsent for the SAFE→PAPER and
+    LIVE→AUTO consent-required edges (Hardening-S1 item 8)."""
+
+    return OperatorConsent(
+        ts_ns=ts_ns,
+        operator_id=operator_id,
+        mode_from=mode_from,
+        mode_to=mode_to,
+        policy_hash=policy.table_hash,
+        nonce=nonce or f"nonce-{ts_ns}-{mode_from.name}-{mode_to.name}",
+    )
+
+
 def test_mode_fsm_forward_ratchet_one_step():
-    state, ledger, _ = _build_state()
+    state, ledger, policy = _build_state()
     decision = state.propose(
         ModeTransitionRequest(
             ts_ns=10,
@@ -114,12 +137,24 @@ def test_mode_fsm_forward_ratchet_one_step():
             current_mode=SystemMode.SAFE,
             target_mode=SystemMode.PAPER,
             reason="bring up paper trading",
+            consent=_consent(
+                ts_ns=10,
+                mode_from=SystemMode.SAFE,
+                mode_to=SystemMode.PAPER,
+                policy=policy,
+            ),
         )
     )
     assert decision.approved is True
     assert state.current_mode() is SystemMode.PAPER
-    assert decision.ledger_seq == 0
-    assert ledger.read()[0].kind == "MODE_TRANSITION"
+    # Hardening-S1 item 8 — OPERATOR_CONSENT_ACCEPTED row is
+    # paired with the MODE_TRANSITION row (consent first, then
+    # transition). decision.ledger_seq points at the
+    # MODE_TRANSITION row.
+    rows = ledger.read()
+    assert rows[0].kind == "OPERATOR_CONSENT_ACCEPTED"
+    assert rows[1].kind == "MODE_TRANSITION"
+    assert decision.ledger_seq == 1
 
 
 def test_mode_fsm_forward_skip_rejected():
@@ -157,7 +192,12 @@ def test_mode_fsm_live_requires_operator_authorisation():
 
 
 def test_mode_fsm_auto_requires_operator_authorisation():
-    state, _, _ = _build_state(initial=SystemMode.LIVE)
+    state, _, policy = _build_state(initial=SystemMode.LIVE)
+    # Hardening-S1 item 8 — LIVE → AUTO requires a typed consent
+    # envelope. The legacy ``operator_authorized=False`` path now
+    # surfaces ``CONSENT_MISSING`` instead of the old
+    # ``POLICY_OPERATOR_REQUIRED`` because the consent gate runs
+    # before the policy gate.
     no_op = state.propose(
         ModeTransitionRequest(
             ts_ns=13,
@@ -169,7 +209,7 @@ def test_mode_fsm_auto_requires_operator_authorisation():
         )
     )
     assert no_op.approved is False
-    assert no_op.rejection_code == "POLICY_OPERATOR_REQUIRED"
+    assert no_op.rejection_code == "CONSENT_MISSING"
 
     ok = state.propose(
         ModeTransitionRequest(
@@ -178,11 +218,113 @@ def test_mode_fsm_auto_requires_operator_authorisation():
             current_mode=SystemMode.LIVE,
             target_mode=SystemMode.AUTO,
             reason="autonomous",
-            operator_authorized=True,
+            consent=_consent(
+                ts_ns=14,
+                mode_from=SystemMode.LIVE,
+                mode_to=SystemMode.AUTO,
+                policy=policy,
+            ),
         )
     )
     assert ok.approved is True
     assert state.current_mode() is SystemMode.AUTO
+
+
+def test_consent_nonce_not_burned_when_promotion_gates_rejects():
+    """Regression for the orphaned-consent-row bug.
+
+    When LIVE → AUTO is consent-gated AND promotion-gated, a consent
+    envelope that passes the consent validator must NOT have its nonce
+    registered (and the OPERATOR_CONSENT_ACCEPTED audit row must NOT
+    be written) until promotion gates and policy have also accepted
+    the transition. Otherwise a downstream rejection would burn a
+    semantically-valid nonce and leave an orphan audit row in the
+    ledger, breaking the consent → MODE_TRANSITION pairing contract.
+    """
+
+    class _RejectingPromotionGates:
+        """Stub gates that always reject AUTO."""
+
+        def check(self, target_mode_name: str) -> tuple[bool, str]:
+            if target_mode_name == "AUTO":
+                return False, "PROMOTION_GATES_HASH_MISMATCH"
+            return True, ""
+
+        def bind(self, *, ts_ns: int, requestor: str) -> str:
+            return "0" * 64
+
+    ledger = LedgerAuthorityWriter()
+    policy = PolicyEngine()
+    state = StateTransitionManager(
+        policy=policy,
+        ledger=ledger,
+        initial_mode=SystemMode.LIVE,
+        promotion_gates=_RejectingPromotionGates(),
+    )
+
+    consent = _consent(
+        ts_ns=100,
+        mode_from=SystemMode.LIVE,
+        mode_to=SystemMode.AUTO,
+        policy=policy,
+        nonce="reusable-nonce-1",
+    )
+    rejected = state.propose(
+        ModeTransitionRequest(
+            ts_ns=100,
+            requestor="op",
+            current_mode=SystemMode.LIVE,
+            target_mode=SystemMode.AUTO,
+            reason="autonomous",
+            consent=consent,
+        )
+    )
+    assert rejected.approved is False
+    assert rejected.rejection_code == "PROMOTION_GATES_HASH_MISMATCH"
+
+    # No OPERATOR_CONSENT_ACCEPTED row was written for the rejected
+    # transition (the row only ships paired with MODE_TRANSITION).
+    kinds = [row.kind for row in ledger.read()]
+    assert "OPERATOR_CONSENT_ACCEPTED" not in kinds
+    assert "MODE_TRANSITION_REJECTED" in kinds
+
+    # The same nonce can be reused -- it was not burned by the
+    # rejected attempt. Swap in a passthrough gates so the retry
+    # actually reaches the approval branch and the nonce gets
+    # committed exactly once.
+    class _PassThroughPromotionGates:
+        def check(self, target_mode_name: str) -> tuple[bool, str]:
+            return True, ""
+
+        def bind(self, *, ts_ns: int, requestor: str) -> str:
+            return "0" * 64
+
+    state._promotion_gates = _PassThroughPromotionGates()
+    retry = state.propose(
+        ModeTransitionRequest(
+            ts_ns=101,
+            requestor="op",
+            current_mode=SystemMode.LIVE,
+            target_mode=SystemMode.AUTO,
+            reason="autonomous (retry)",
+            consent=_consent(
+                ts_ns=101,
+                mode_from=SystemMode.LIVE,
+                mode_to=SystemMode.AUTO,
+                policy=policy,
+                nonce="reusable-nonce-1",
+            ),
+        )
+    )
+    assert retry.approved is True
+    assert state.current_mode() is SystemMode.AUTO
+
+    # Now exactly one OPERATOR_CONSENT_ACCEPTED, paired with the
+    # successful MODE_TRANSITION row.
+    kinds = [row.kind for row in ledger.read()]
+    assert kinds.count("OPERATOR_CONSENT_ACCEPTED") == 1
+    accepted_idx = kinds.index("OPERATOR_CONSENT_ACCEPTED")
+    assert kinds[accepted_idx + 1] == "MODE_TRANSITION"
 
 
 def test_mode_fsm_emergency_lock_from_any_state():
@@ -456,6 +598,31 @@ def _build_engine() -> GovernanceEngine:
     return GovernanceEngine()
 
 
+def _consent_payload(
+    *,
+    eng: GovernanceEngine,
+    ts_ns: int,
+    target_mode: str,
+    operator_id: str = "ronald",
+    extra: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """Build a REQUEST_MODE payload with the four ``consent_*`` fields
+    expected by ``OperatorInterfaceBridge._handle_mode`` for
+    consent-required edges (Hardening-S1 item 8).
+    """
+
+    payload: dict[str, str] = {
+        "target_mode": target_mode,
+        "consent_operator_id": operator_id,
+        "consent_policy_hash": eng.policy.table_hash,
+        "consent_nonce": f"nonce-bridge-{ts_ns}-{target_mode}",
+        "consent_ts_ns": str(ts_ns),
+    }
+    if extra:
+        payload.update(extra)
+    return payload
+
+
 def test_operator_bridge_mode_transition_approved():
     eng = _build_engine()
     decision = eng.operator.submit(
@@ -463,7 +630,12 @@ def test_operator_bridge_mode_transition_approved():
             ts_ns=1,
             requestor="ronald",
             action=OperatorAction.REQUEST_MODE,
-            payload={"target_mode": "PAPER", "reason": "bring up"},
+            payload=_consent_payload(
+                eng=eng,
+                ts_ns=1,
+                target_mode="PAPER",
+                extra={"reason": "bring up"},
+            ),
         )
     )
     assert decision.approved is True
@@ -479,7 +651,7 @@ def test_operator_bridge_kill_locks_system():
             ts_ns=1,
             requestor="ronald",
             action=OperatorAction.REQUEST_MODE,
-            payload={"target_mode": "PAPER"},
+            payload=_consent_payload(eng=eng, ts_ns=1, target_mode="PAPER"),
         )
     )
     decision = eng.operator.submit(
@@ -550,7 +722,9 @@ def test_operator_bridge_plugin_lifecycle_logs_audit_row():
             ts_ns=1,
             requestor="op",
             action=OperatorAction.REQUEST_MODE,
-            payload={"target_mode": "PAPER"},
+            payload=_consent_payload(
+                eng=eng, ts_ns=1, target_mode="PAPER", operator_id="op"
+            ),
         )
     )
     decision = eng.operator.submit(
@@ -686,7 +860,9 @@ def test_two_engines_same_inputs_produce_same_ledger():
             ts_ns=1,
             requestor="op",
             action=OperatorAction.REQUEST_MODE,
-            payload={"target_mode": "PAPER"},
+            payload=_consent_payload(
+                eng=a, ts_ns=1, target_mode="PAPER", operator_id="op"
+            ),
         ),
         OperatorRequest(
             ts_ns=2,

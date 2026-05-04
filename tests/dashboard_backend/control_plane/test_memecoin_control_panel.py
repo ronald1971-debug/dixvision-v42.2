@@ -10,17 +10,20 @@ from core.contracts.governance import (
 from dashboard_backend.control_plane.memecoin_control_panel import MemecoinControlPanel
 
 
-def _move_to_paper(router) -> None:
+def _move_to_paper(router, consent_payload) -> None:
     out = router.submit(
         OperatorRequest(
             ts_ns=1,
             requestor="op",
             action=OperatorAction.REQUEST_MODE,
-            payload={
-                "target_mode": "PAPER",
-                "reason": "bring up paper",
-                "operator_authorized": "false",
-            },
+            payload=consent_payload(
+                ts_ns=1,
+                target_mode="PAPER",
+                extra={
+                    "reason": "bring up paper",
+                    "operator_authorized": "false",
+                },
+            ),
         )
     )
     assert out.approved is True
@@ -45,8 +48,8 @@ def test_request_enable_in_safe_is_rejected_by_policy(governance_stack, router):
     assert panel.status().enabled is False
 
 
-def test_request_enable_in_paper_is_approved(governance_stack, router):
-    _move_to_paper(router)
+def test_request_enable_in_paper_is_approved(governance_stack, router, consent_payload):
+    _move_to_paper(router, consent_payload)
     panel = MemecoinControlPanel(router=router)
     outcome = panel.request_enable(
         ts_ns=2, requestor="op", reason="bring up memecoin"
@@ -55,8 +58,8 @@ def test_request_enable_in_paper_is_approved(governance_stack, router):
     assert panel.status().enabled is True
 
 
-def test_request_disable_after_enable(governance_stack, router):
-    _move_to_paper(router)
+def test_request_disable_after_enable(governance_stack, router, consent_payload):
+    _move_to_paper(router, consent_payload)
     panel = MemecoinControlPanel(router=router)
     panel.request_enable(ts_ns=2, requestor="op", reason="up")
     outcome = panel.request_disable(
@@ -68,9 +71,9 @@ def test_request_disable_after_enable(governance_stack, router):
     assert status.killed is False
 
 
-def test_request_kill_marks_status_killed(governance_stack, router):
+def test_request_kill_marks_status_killed(governance_stack, router, consent_payload):
     _, _, state, _ = governance_stack
-    _move_to_paper(router)
+    _move_to_paper(router, consent_payload)
     panel = MemecoinControlPanel(router=router)
     panel.request_enable(ts_ns=2, requestor="op", reason="up")
     outcome = panel.request_kill(

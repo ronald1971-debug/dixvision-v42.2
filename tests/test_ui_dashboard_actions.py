@@ -56,10 +56,18 @@ def test_legacy_static_assets_are_gone(client):
 
 
 def test_action_mode_safe_to_paper_approved(client):
+    # Hardening-S1 item 8 — SAFE→PAPER requires a typed
+    # ``OperatorConsent`` envelope. The dashboard exposes the four
+    # ``consent_*`` fields on ``ModeActionIn``.
+    policy_hash = ui_server.STATE.governance.policy.table_hash
     payload = {
         "target_mode": "PAPER",
         "reason": "boot up",
         "operator_authorized": True,
+        "consent_operator_id": "operator",
+        "consent_policy_hash": policy_hash,
+        "consent_nonce": "ui-dash-actions-safe-to-paper",
+        "consent_ts_ns": str(ui_server.wall_ns()),
     }
     r = client.post("/api/dashboard/action/mode", json=payload)
     assert r.status_code == 200, r.text
@@ -164,9 +172,18 @@ def test_action_lifecycle_incomplete_payload_rejected(client):
 
 
 def test_action_endpoints_route_through_governance_only(client):
+    policy_hash = ui_server.STATE.governance.policy.table_hash
     r = client.post(
         "/api/dashboard/action/mode",
-        json={"target_mode": "PAPER", "reason": "x", "operator_authorized": True},
+        json={
+            "target_mode": "PAPER",
+            "reason": "x",
+            "operator_authorized": True,
+            "consent_operator_id": "operator",
+            "consent_policy_hash": policy_hash,
+            "consent_nonce": "ui-dash-route-through-gov",
+            "consent_ts_ns": str(ui_server.wall_ns()),
+        },
     )
     body = r.json()
     # The decision *must* carry a ledger sequence — proof it went

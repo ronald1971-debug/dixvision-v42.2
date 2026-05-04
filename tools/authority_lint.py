@@ -1187,6 +1187,12 @@ B31_ALLOWED_PREFIXES: tuple[str, ...] = (
     "core.contracts.governance",
     "core.contracts.mode_effects",
     "core.contracts.learning_evolution_freeze",
+    # Hardening-S1 item 8 — ``OperatorConsent`` is the typed envelope
+    # binding operator approval to a specific mode edge. The contract
+    # MUST enumerate the consent-required edges (SAFE→PAPER and
+    # LIVE→AUTO) by name; allowlisting is required so the contract
+    # itself can declare the edges it is bound to.
+    "core.contracts.operator_consent",
     "dashboard_backend.control_plane.mode_control_bar",
     # P0-1b -- the SAFE-01 kill-switch primitive is the single named
     # chokepoint for ``SystemMode.LOCKED`` engagement. Operator,

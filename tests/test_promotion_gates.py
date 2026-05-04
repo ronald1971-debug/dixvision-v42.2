@@ -27,6 +27,10 @@ from pathlib import Path
 import pytest
 
 from core.contracts.governance import ModeTransitionRequest, SystemMode
+from core.contracts.operator_consent import (
+    OperatorConsent,
+    edge_requires_consent,
+)
 from governance_engine.control_plane import (
     LedgerAuthorityWriter,
     PolicyEngine,
@@ -189,6 +193,16 @@ def _ratchet_to_shadow(state: StateTransitionManager, ts_ns: int = 1) -> None:
         (SystemMode.SAFE, SystemMode.PAPER),
         (SystemMode.PAPER, SystemMode.SHADOW),
     ):
+        consent = None
+        if edge_requires_consent(prev_mode, target_mode):
+            consent = OperatorConsent(
+                ts_ns=ts_ns,
+                operator_id="op",
+                mode_from=prev_mode,
+                mode_to=target_mode,
+                policy_hash=state._policy.table_hash,
+                nonce=f"ratchet-{prev_mode.name}-{target_mode.name}-{ts_ns}",
+            )
         decision = state.propose(
             ModeTransitionRequest(
                 ts_ns=ts_ns,
@@ -196,6 +210,7 @@ def _ratchet_to_shadow(state: StateTransitionManager, ts_ns: int = 1) -> None:
                 current_mode=prev_mode,
                 target_mode=target_mode,
                 reason="ratchet",
+                consent=consent,
             )
         )
         assert decision.approved is True

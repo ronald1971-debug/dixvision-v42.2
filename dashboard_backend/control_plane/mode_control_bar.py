@@ -20,7 +20,6 @@ governance rules even if the FSM is later refined.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 
 from core.contracts.governance import (
@@ -80,14 +79,29 @@ class ModeControlBar:
         target_mode: str,
         reason: str,
         operator_authorized: bool = False,
+        consent_operator_id: str = "",
+        consent_policy_hash: str = "",
+        consent_nonce: str = "",
+        consent_ts_ns: int | None = None,
     ) -> RouteOutcome:
         if target_mode not in SystemMode.__members__:
             raise ValueError(f"unknown target mode: {target_mode!r}")
-        payload: Mapping[str, str] = {
+        payload: dict[str, str] = {
             "target_mode": target_mode,
             "reason": reason,
             "operator_authorized": "true" if operator_authorized else "false",
         }
+        # Hardening-S1 item 8 — forward typed consent envelope when the
+        # caller supplies it. Required on SAFE→PAPER and LIVE→AUTO; for
+        # any other edge these fields are ignored by the bridge.
+        if consent_operator_id:
+            payload["consent_operator_id"] = consent_operator_id
+        if consent_policy_hash:
+            payload["consent_policy_hash"] = consent_policy_hash
+        if consent_nonce:
+            payload["consent_nonce"] = consent_nonce
+        if consent_ts_ns is not None and consent_ts_ns > 0:
+            payload["consent_ts_ns"] = str(consent_ts_ns)
         return self._router.submit(
             OperatorRequest(
                 ts_ns=ts_ns,
