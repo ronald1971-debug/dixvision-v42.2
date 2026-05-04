@@ -1387,6 +1387,7 @@ def post_tick(body: TickIn) -> dict[str, Any]:
     signals_out: list[dict[str, Any]] = []
     executions_out: list[dict[str, Any]] = []
     with STATE.lock:
+        STATE._check_policy_drift_locked()
         STATE.execution.on_market(tick)
         STATE.events.appendleft(
             {
@@ -1434,6 +1435,7 @@ def post_signal(body: SignalIn) -> dict[str, Any]:
     )
     out_events: list[dict[str, Any]] = []
     with STATE.lock:
+        STATE._check_policy_drift_locked()
         STATE.record("ui_harness", sig)
         for ev in STATE.intelligence.process(sig):
             STATE.record("intelligence", ev)
