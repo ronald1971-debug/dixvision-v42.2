@@ -96,6 +96,7 @@ from dashboard_backend.control_plane.strategy_lifecycle_panel import (
 )
 from evolution_engine.engine import EvolutionEngine
 from execution_engine.engine import ExecutionEngine
+from execution_engine.protections.feedback import FeedbackCollector
 from governance_engine.control_plane.ledger_authority_writer import (
     LedgerAuthorityWriter,
 )
@@ -134,6 +135,7 @@ from intelligence_engine.cognitive.chat.http_chat_transport import (
 )
 from intelligence_engine.engine import IntelligenceEngine
 from intelligence_engine.knowledge import NewsKnowledgeIndex
+from intelligence_engine.learning_interface import LearningInterface
 from intelligence_engine.mcp import OpenNewsServer
 from intelligence_engine.plugins import MicrostructureV1
 from intelligence_engine.strategy_runtime.state_machine import (
@@ -250,9 +252,24 @@ class _State:
         # True the moment a CRITICAL hazard is observed inside the
         # active window, which short-circuits dispatch to a single
         # REJECTED ExecutionEvent with reason ``hazard_throttled``.
+        # AUDIT-WIRE.3 / P0-3 — close the closed learning loop.
+        # ``ExecutionEngine`` records every terminal
+        # :class:`ExecutionEvent` into two sinks: the ``FeedbackCollector``
+        # (a ring of :class:`TradeOutcome` rows consumed by
+        # ``learning_engine.lanes.patch_outcome_feedback``) and the
+        # ``IntelligenceFeedbackSink`` (the duck-typed learning surface
+        # that ``intelligence_engine.LearningInterface`` implements).
+        # Without this wiring both sinks were ``None`` so the engine
+        # short-circuited to a no-op early return; learning therefore
+        # observed *zero* trade outcomes and the per-strategy weight
+        # adjuster never updated its rolling stats.
+        self.feedback_collector = FeedbackCollector()
+        self.learning_interface = LearningInterface()
         self.execution = ExecutionEngine(
             throttle_adapter=self.hazard_throttle,
             risk_baseline=RiskSnapshot(version=0, ts_ns=wall_ns()),
+            feedback_collector=self.feedback_collector,
+            intelligence_feedback=self.learning_interface,
         )
         # AUDIT-WIRE.4 / P1-3 — bind the 12 frozen HAZ-XX sensors
         # into a single SensorArray and hand it to ``SystemEngine``.
