@@ -427,7 +427,15 @@ class _State:
 
         # Phase 6 dashboard widgets (DASH-1).
         self.strategy_fsm = StrategyStateMachine()
-        self.ledger_reader = LedgerReader()
+        # AUDIT-P0.2 — when the harness has a SQLite-backed authority
+        # ledger (the production default; ephemeral only under the
+        # explicit test-mode opt-in), the offline ``LedgerReader``
+        # opens the same file in read-only mode so dashboard widgets
+        # and offline engines can replay governance rows by ``seq``.
+        # Without ``ledger_path`` (ephemeral mode) the reader keeps
+        # its in-memory event buffer and ``authority_entries()``
+        # degrades to an empty tuple.
+        self.ledger_reader = LedgerReader(db_path=ledger_path)
         self.dashboard_router = ControlPlaneRouter(
             bridge=self.governance.operator,
         )
