@@ -100,7 +100,7 @@ export async function postOperatorMode(
       target_mode: body.target_mode,
       reason: body.reason ?? "operator mode request",
       requestor: body.requestor ?? "operator",
-      operator_authorized: body.operator_authorized ?? true,
+      operator_authorized: body.operator_authorized ?? false,
       consent_operator_id: body.consent_operator_id ?? "",
       consent_policy_hash: body.consent_policy_hash ?? "",
       consent_nonce: body.consent_nonce ?? "",
