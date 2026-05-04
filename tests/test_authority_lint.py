@@ -804,3 +804,128 @@ def test_b35_allows_tests_directory(fake_repo: Path):
         "    )\n",
     )
     assert "B35" not in _rule_codes(lint_repo(fake_repo))
+
+
+# ---------------------------------------------------------------------------
+# B36 — no-policy-mutation-outside-session-boundary (Hardening-S1 item 10)
+# ---------------------------------------------------------------------------
+
+
+def test_b36_fires_on_open_write_to_authority_matrix(fake_repo: Path):
+    _write(
+        fake_repo,
+        "intelligence_engine/sneaky.py",
+        "def mutate() -> None:\n"
+        "    with open('registry/authority_matrix.yaml', 'w') as f:\n"
+        "        f.write('whatever')\n",
+    )
+    assert "B36" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b36_fires_on_open_append_to_constraint_rules(fake_repo: Path):
+    _write(
+        fake_repo,
+        "execution_engine/sneaky.py",
+        "def mutate() -> None:\n"
+        "    with open('registry/constraint_rules.yaml', 'a') as f:\n"
+        "        f.write('whatever')\n",
+    )
+    assert "B36" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b36_fires_on_open_keyword_mode(fake_repo: Path):
+    _write(
+        fake_repo,
+        "ui/sneaky.py",
+        "def mutate() -> None:\n"
+        "    open('registry/plugins.yaml', mode='wb').close()\n",
+    )
+    assert "B36" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b36_fires_on_path_write_text(fake_repo: Path):
+    _write(
+        fake_repo,
+        "governance_engine/sneaky.py",
+        "from pathlib import Path\n"
+        "def mutate() -> None:\n"
+        "    Path('registry/data_source_registry.yaml').write_text('x')\n",
+    )
+    assert "B36" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b36_fires_on_path_write_bytes_promotion_gates(fake_repo: Path):
+    _write(
+        fake_repo,
+        "ui/sneaky.py",
+        "from pathlib import Path\n"
+        "def mutate() -> None:\n"
+        "    Path('docs/promotion_gates.yaml').write_bytes(b'x')\n",
+    )
+    assert "B36" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b36_silent_for_read_mode(fake_repo: Path):
+    _write(
+        fake_repo,
+        "intelligence_engine/reader.py",
+        "def load() -> None:\n"
+        "    with open('registry/authority_matrix.yaml', 'r') as f:\n"
+        "        f.read()\n",
+    )
+    assert "B36" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b36_silent_for_default_open_mode(fake_repo: Path):
+    _write(
+        fake_repo,
+        "intelligence_engine/reader.py",
+        "def load() -> None:\n"
+        "    with open('registry/plugins.yaml') as f:\n"
+        "        f.read()\n",
+    )
+    assert "B36" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b36_allows_tools_directory(fake_repo: Path):
+    _write(
+        fake_repo,
+        "tools/migrate_authority.py",
+        "from pathlib import Path\n"
+        "def migrate() -> None:\n"
+        "    Path('registry/authority_matrix.yaml').write_text('v: 2')\n",
+    )
+    assert "B36" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b36_allows_tests_directory(fake_repo: Path):
+    _write(
+        fake_repo,
+        "tests/test_fixture.py",
+        "from pathlib import Path\n"
+        "def test_x(tmp_path):\n"
+        "    Path('registry/plugins.yaml').write_text('x')\n",
+    )
+    assert "B36" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b36_allows_scripts_directory(fake_repo: Path):
+    _write(
+        fake_repo,
+        "scripts/seed_policy.py",
+        "from pathlib import Path\n"
+        "def seed() -> None:\n"
+        "    Path('docs/promotion_gates.yaml').write_text('seeded')\n",
+    )
+    assert "B36" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b36_silent_for_non_policy_yaml(fake_repo: Path):
+    _write(
+        fake_repo,
+        "intelligence_engine/cache.py",
+        "from pathlib import Path\n"
+        "def write() -> None:\n"
+        "    Path('cache/anything_else.yaml').write_text('ok')\n",
+    )
+    assert "B36" not in _rule_codes(lint_repo(fake_repo))
