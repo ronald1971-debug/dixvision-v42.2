@@ -66,10 +66,16 @@ class HealthStatus:
 
 
 class PluginLifecycle(StrEnum):
-    """Plugin activation state. See PLUGIN-ACT-02."""
+    """Plugin activation state. See PLUGIN-ACT-02.
+
+    Plugin-level SHADOW was demolished by SHADOW-DEMOLITION-01: a
+    plugin is either ``DISABLED`` (skipped entirely) or ``ACTIVE``
+    (its signals flow through the conflict resolver into the
+    governance gate). Any signals-on/execution-off behaviour now
+    lives at the system-mode layer only (mode-effect table).
+    """
 
     DISABLED = "DISABLED"
-    SHADOW = "SHADOW"
     ACTIVE = "ACTIVE"
 
 
@@ -107,10 +113,12 @@ class MicrostructurePlugin(Protocol):
     (INV-15 / TEST-01): output must be a pure function of the tick stream
     and the plugin's own state — no clocks, no randomness, no IO.
 
-    A plugin in :attr:`PluginLifecycle.SHADOW` still emits signals, but the
-    host engine tags them with ``meta["shadow"] = "true"`` so the
-    Execution Engine rejects them without contacting any broker
-    (Phase E2 exit: "Shadow mode wired (no live trades)").
+    Plugin-level SHADOW was demolished by SHADOW-DEMOLITION-01: a
+    plugin is either ``DISABLED`` or ``ACTIVE`` and ACTIVE signals
+    flow into the conflict resolver. Any signals-on/execution-off
+    behaviour now lives at the system-mode layer only (mode-effect
+    table; see ``execution_engine.engine.ExecutionEngine.execute``
+    ``current_mode`` parameter).
     """
 
     name: str

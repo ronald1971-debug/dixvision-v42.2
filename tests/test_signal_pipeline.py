@@ -152,34 +152,6 @@ def test_pipeline_skips_eligible_but_not_due_plugin():
     assert pipe.on_tick(_tick(3)).fired == ("a",)
 
 
-def test_pipeline_shadow_signals_tagged():
-    plugin = _ScriptedPlugin(
-        "a", Side.BUY, 0.6, lifecycle=PluginLifecycle.SHADOW
-    )
-    fsm = StrategyStateMachine()
-    sch = StrategyScheduler()
-    orc = StrategyOrchestrator(fsm)
-    fsm.propose(strategy_id="a", ts_ns=0)
-    fsm.transition(
-        strategy_id="a",
-        new_state=StrategyState.SHADOW,
-        ts_ns=0,
-        reason="promote",
-    )
-    sch.register(strategy_id="a", cadence=1)
-    orc.register(strategy_id="a", min_state=StrategyState.SHADOW)
-    pipe = SignalPipeline(
-        plugins={"a": plugin},
-        regime_detector=RegimeDetector(window=4),
-        scheduler=sch,
-        orchestrator=orc,
-        conflict_resolver=ConflictResolver(),
-    )
-    out = pipe.on_tick(_tick(1))
-    assert out.raw_signals
-    assert out.raw_signals[0].meta.get("shadow") == "true"
-
-
 def test_pipeline_disabled_plugin_does_not_fire():
     plugin = _ScriptedPlugin(
         "a", Side.BUY, 0.6, lifecycle=PluginLifecycle.DISABLED

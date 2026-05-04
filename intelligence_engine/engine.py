@@ -5,8 +5,7 @@ microstructure) under the ``microstructure`` slot. Wave 1 adds the
 optional :class:`MetaControllerHotPath` integration so that a single
 :meth:`run_meta_tick` call:
 
-1. drives all enabled microstructure plugins from a :class:`MarketTick`
-   (preserving the Phase-E2 SHADOW tagging contract),
+1. drives all enabled microstructure plugins from a :class:`MarketTick`,
 2. appends the emitted signals to a bounded rolling window owned by
    the engine,
 3. invokes :meth:`MetaControllerHotPath.step` with the rolling window
@@ -26,9 +25,10 @@ The engine still satisfies :class:`RuntimeEngine`:
 * :meth:`run_meta_tick` is opt-in — it requires a
   :class:`MetaControllerHotPath` to have been passed at construction.
 
-A plugin in :attr:`PluginLifecycle.SHADOW` has its emitted signals
-tagged ``meta["shadow"] = "true"`` so the Execution Engine rejects them
-without contacting any broker.
+Plugin-level SHADOW was demolished by SHADOW-DEMOLITION-01: a plugin
+is either ``DISABLED`` (skipped) or ``ACTIVE`` (its signals flow
+into the conflict resolver). Signals-on/execution-off behaviour now
+lives at the system-mode layer only.
 """
 
 from __future__ import annotations
@@ -99,30 +99,16 @@ class IntelligenceEngine(RuntimeEngine):
         """Run all enabled microstructure plugins against ``tick``.
 
         Returns the concatenated, in-order tuple of emitted signals.
-        SHADOW signals are tagged with ``meta["shadow"] = "true"`` so the
-        Execution Engine refuses to fill them.
 
-        Wave 1: the engine also appends the emitted signals (after
-        SHADOW tagging) to its rolling window so a subsequent
-        :meth:`run_meta_tick` sees a coherent recent-signal context.
+        Wave 1: the engine also appends the emitted signals to its
+        rolling window so a subsequent :meth:`run_meta_tick` sees a
+        coherent recent-signal context.
         """
         out: list[SignalEvent] = []
         for plugin in self._microstructure:
             if plugin.lifecycle is PluginLifecycle.DISABLED:
                 continue
             for sig in plugin.on_tick(tick):
-                if plugin.lifecycle is PluginLifecycle.SHADOW:
-                    meta = dict(sig.meta)
-                    meta["shadow"] = "true"
-                    sig = SignalEvent(
-                        ts_ns=sig.ts_ns,
-                        symbol=sig.symbol,
-                        side=sig.side,
-                        confidence=sig.confidence,
-                        plugin_chain=sig.plugin_chain,
-                        meta=meta,
-                        produced_by_engine="intelligence_engine",
-                    )
                 out.append(sig)
         emitted = tuple(out)
         for sig in emitted:

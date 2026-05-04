@@ -126,17 +126,6 @@ def test_intelligence_engine_runs_loaded_plugin():
     assert out[0].meta.get("shadow") != "true"
 
 
-def test_intelligence_engine_tags_shadow_signals():
-    engine = IntelligenceEngine(
-        microstructure_plugins=(
-            MicrostructureV1(lifecycle=PluginLifecycle.SHADOW),
-        )
-    )
-    out = engine.on_market(_tick("EURUSD", 99.99, 100.01, 100.10))
-    assert len(out) == 1
-    assert out[0].meta["shadow"] == "true"
-
-
 def test_intelligence_engine_skips_disabled_plugins():
     engine = IntelligenceEngine(
         microstructure_plugins=(
@@ -230,33 +219,6 @@ def test_end_to_end_tick_drives_filled_execution_when_active():
     assert len(executions) == 1
     assert executions[0].status is ExecutionStatus.FILLED
     assert executions[0].price == pytest.approx(50_050.0)
-
-
-def test_end_to_end_shadow_signals_are_rejected_by_execution():
-    intel = IntelligenceEngine(
-        microstructure_plugins=(
-            MicrostructureV1(
-                tolerance_bps=2.0,
-                lifecycle=PluginLifecycle.SHADOW,
-            ),
-        )
-    )
-    execution = ExecutionEngine()
-
-    tick = MarketTick(
-        ts_ns=210, symbol="BTCUSDT", bid=49_990.0, ask=50_010.0, last=50_050.0
-    )
-    execution.on_market(tick)
-    signals = intel.on_market(tick)
-    assert len(signals) == 1
-    assert signals[0].meta["shadow"] == "true"
-
-    intent = approve_signal_for_execution(signals[0], ts_ns=signals[0].ts_ns)
-    out = execution.execute(intent)
-    assert len(out) == 1
-    assert out[0].status is ExecutionStatus.REJECTED
-    assert out[0].meta["reason"] == "shadow signal"
-    assert out[0].order_id == ""
 
 
 def test_end_to_end_replay_determinism():

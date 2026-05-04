@@ -29,7 +29,7 @@ class _FakeLedger:
 
 
 def _build_app(*, env_enabled: bool = True):
-    plugin = MicrostructureV1(lifecycle=PluginLifecycle.SHADOW)
+    plugin = MicrostructureV1(lifecycle=PluginLifecycle.DISABLED)
     toggle = PluginToggleState()
     registry = PluginRegistry(
         microstructure_plugins=(plugin,),
@@ -88,14 +88,15 @@ def test_cognitive_chat_disable_via_dashboard_overrides_env() -> None:
     assert cognitive["lifecycle"] == "DISABLED"
 
 
-def test_cognitive_chat_rejects_shadow_lifecycle() -> None:
+def test_microstructure_rejects_shadow_lifecycle() -> None:
+    """Plugin-level SHADOW was demolished; the route must reject it."""
+
     client, _, _, _, _ = _build_app()
     res = client.post(
-        "/api/plugins/cognitive_chat/lifecycle",
+        "/api/plugins/microstructure_v1/lifecycle",
         json={"lifecycle": "SHADOW"},
     )
     assert res.status_code == 400
-    assert "SHADOW" in res.json()["detail"]
 
 
 def test_unknown_plugin_returns_404() -> None:

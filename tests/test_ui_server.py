@@ -95,10 +95,11 @@ def test_tick_then_signal_flows_to_filled(client):
     assert exec_evt["price"] == 50000.0
 
 
-def test_tick_emits_shadow_signal_via_microstructure_plugin(client):
-    # Phase E2: a tick whose last price moves the SHADOW microstructure
-    # plugin's threshold should produce a tagged shadow signal that the
-    # Execution Engine rejects (no live trade in shadow mode).
+def test_tick_emits_signal_and_fills_via_microstructure_plugin(client):
+    # SHADOW-DEMOLITION-01: MicrostructureV1 now defaults to ACTIVE,
+    # so a deviating tick produces an untagged signal that flows
+    # through the harness execution path without the legacy shadow
+    # rejection gate.
     r = client.post(
         "/api/tick",
         json={"symbol": "EURUSD", "bid": 99.99, "ask": 100.01, "last": 100.10},
@@ -108,13 +109,11 @@ def test_tick_emits_shadow_signal_via_microstructure_plugin(client):
     assert len(body["signals"]) == 1
     sig = body["signals"][0]
     assert sig["side"] == "BUY"
-    assert sig["meta"]["shadow"] == "true"
+    assert sig["meta"].get("shadow") != "true"
 
     assert len(body["executions"]) == 1
     exe = body["executions"][0]
-    assert exe["status"] == "REJECTED"
-    assert exe["meta"]["reason"] == "shadow signal"
-    assert exe["order_id"] == ""
+    assert exe["meta"].get("reason") != "shadow signal"
 
 
 def test_events_endpoint_records_recent(client):

@@ -275,10 +275,11 @@ def test_microstructure_v1_canonical_decomp_matches_plugin_fields() -> None:
         decomp.entry.parameters["confidence_scale_bps"]
         == f"{plugin.confidence_scale_bps:.1f}"
     )
-    # SHADOW lifecycle ⇔ zero-size, stop=NONE.
+    # MicrostructureV1 maps to a zero-size, no-stop risk model
+    # (plugin-level SHADOW was demolished by SHADOW-DEMOLITION-01).
     assert decomp.risk.max_position_size_pct == "0.0"
     assert decomp.risk.stop is StopStyle.NONE
-    assert decomp.risk.parameters["lifecycle"] == "SHADOW"
+    assert "lifecycle" not in decomp.risk.parameters
 
 
 def test_canonical_registry_signatures_are_stable() -> None:

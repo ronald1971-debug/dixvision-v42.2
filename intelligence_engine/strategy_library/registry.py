@@ -137,16 +137,12 @@ CANONICAL_EXIT_LOGIC: MappingProxyType[str, ExitLogic] = MappingProxyType(
 # ---------------------------------------------------------------------------
 
 _RISK_MODELS: dict[str, RiskModel] = {
-    "shadow_zero_size_v1": RiskModel(
-        component_id="shadow_zero_size_v1",
+    "observe_zero_size_v1": RiskModel(
+        component_id="observe_zero_size_v1",
         sizing=SizingStyle.FIXED_NOTIONAL,
         stop=StopStyle.NONE,
         max_position_size_pct="0.0",
-        parameters=MappingProxyType(
-            {
-                "lifecycle": "SHADOW",
-            }
-        ),
+        parameters=MappingProxyType({}),
     ),
     "fixed_risk_tight_v1": RiskModel(
         component_id="fixed_risk_tight_v1",
@@ -267,8 +263,8 @@ CANONICAL_MARKET_CONDITIONS: MappingProxyType[str, MarketCondition] = (
 #
 # ``microstructure_v1`` mirrors
 # :class:`intelligence_engine.plugins.microstructure.microstructure_v1.MicrostructureV1`
-# in lifecycle SHADOW (zero-size, no stop). The plugin is currently
-# the *only* live intelligence plugin in the system; once Wave-04 PR-4
+# with a zero-size, no-stop risk model. The plugin is currently the
+# *only* live intelligence plugin in the system; once Wave-04 PR-4
 # wires the composition engine, additional decompositions get minted
 # by recombining catalogued components, not by hand-writing them here.
 
@@ -277,7 +273,7 @@ _DECOMPOSITIONS: dict[str, StrategyDecomposition] = {
         decomposition_id="microstructure_v1",
         entry=_ENTRY_LOGIC["midpoint_deviation_v1"],
         exit_=_EXIT_LOGIC["signal_reversal_v1"],
-        risk=_RISK_MODELS["shadow_zero_size_v1"],
+        risk=_RISK_MODELS["observe_zero_size_v1"],
         timeframe=_TIMEFRAMES["tick_scalp_v1"],
         market_condition=_MARKET_CONDITIONS["any_liquid_v1"],
     ),
