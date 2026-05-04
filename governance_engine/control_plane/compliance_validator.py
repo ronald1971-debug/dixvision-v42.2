@@ -19,6 +19,10 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 
 from core.contracts.governance import ComplianceReport, SystemMode
+from governance_engine.control_plane.exposure_store import (
+    ExposureStore,
+    day_iso_from_ns,
+)
 
 # Per-domain hard caps. Spec is explicit (manifest.md §0.6 / addons §INV-20):
 # memecoin trades are tightly bounded; everything else inherits global
@@ -38,11 +42,21 @@ class ComplianceValidator:
         self,
         *,
         domain_caps: Mapping[str, Mapping[str, float]] | None = None,
+        store: ExposureStore | None = None,
     ) -> None:
         self._domain_caps: dict[str, dict[str, float]] = {
             domain: dict(caps)
             for domain, caps in (domain_caps or _DEFAULT_DOMAIN_CAPS).items()
         }
+        # AUDIT-P0.4 -- ``_daily_spent`` is the running spend total
+        # for *today only* (UTC). The companion :class:`ExposureStore`
+        # row is keyed by ``(domain, day_iso)`` so tomorrow's first
+        # accept silently rolls over without needing a midnight
+        # scheduler call. ``_daily_iso`` records which UTC day the
+        # current in-memory map corresponds to so a long-running
+        # process detects rollover and rehydrates from disk.
+        self._store = store
+        self._daily_iso: str | None = None
         self._daily_spent: dict[str, float] = {}
 
     # ------------------------------------------------------------------
@@ -53,8 +67,33 @@ class ComplianceValidator:
     def domain_caps(self) -> Mapping[str, Mapping[str, float]]:
         return {d: dict(c) for d, c in self._domain_caps.items()}
 
+    @property
+    def daily_spent(self) -> Mapping[str, float]:
+        return dict(self._daily_spent)
+
     def reset_daily(self) -> None:
         self._daily_spent.clear()
+        self._daily_iso = None
+
+    def _ensure_today(self, *, day_iso: str) -> None:
+        """Rotate the in-memory cache when the UTC day changes.
+
+        Called at the start of every ``validate_order``. If the
+        cached day differs from ``day_iso`` (or no day was cached
+        yet) the store is consulted for the new day's persisted
+        spend, which is normally empty -- so the cap rolls over
+        cleanly across midnight even if the process never restarts.
+        """
+
+        if self._daily_iso == day_iso:
+            return
+        self._daily_iso = day_iso
+        if self._store is not None:
+            self._daily_spent = dict(
+                self._store.load_daily(day_iso=day_iso)
+            )
+        else:
+            self._daily_spent = {}
 
     def validate_order(
         self,
@@ -62,8 +101,16 @@ class ComplianceValidator:
         domain: str,
         notional_usd: float,
         mode: SystemMode,
+        ts_ns: int = 0,
     ) -> ComplianceReport:
-        """Validate an outbound order against the active domain caps."""
+        """Validate an outbound order against the active domain caps.
+
+        ``ts_ns`` is used to derive the UTC day key for the durable
+        daily-cap counter (AUDIT-P0.4). The default of ``0`` keeps
+        legacy in-memory test callers working unchanged; harness
+        wiring always passes the current ``wall_ns`` so kill-9 plus
+        relaunch resumes from the last committed spend.
+        """
 
         violations: list[str] = []
 
@@ -79,6 +126,9 @@ class ComplianceValidator:
             return ComplianceReport(
                 passed=False, violations=tuple(violations)
             )
+
+        day_iso = day_iso_from_ns(ts_ns) if ts_ns >= 0 else "1970-01-01"
+        self._ensure_today(day_iso=day_iso)
 
         caps = self._domain_caps[domain]
         per_trade_cap = caps.get("max_per_trade_usd")
@@ -96,9 +146,17 @@ class ComplianceValidator:
                 )
 
         if not violations:
-            self._daily_spent[domain] = (
+            new_spent = (
                 self._daily_spent.get(domain, 0.0) + notional_usd
             )
+            self._daily_spent[domain] = new_spent
+            if self._store is not None:
+                self._store.write_daily(
+                    domain=domain,
+                    day_iso=day_iso,
+                    spent_usd=new_spent,
+                    ts_ns=ts_ns,
+                )
             return ComplianceReport(passed=True)
 
         return ComplianceReport(passed=False, violations=tuple(violations))

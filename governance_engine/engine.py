@@ -52,7 +52,9 @@ from governance_engine.control_plane import (
 )
 from governance_engine.control_plane.drift_oracle import DriftCompositeOracle
 from governance_engine.control_plane.event_classifier import PipelineStage
+from governance_engine.control_plane.exposure_store import ExposureStore
 from governance_engine.control_plane.policy_engine import install_policy_table
+from governance_engine.control_plane.risk_evaluator import ExposureBook
 from governance_engine.control_plane.update_applier import UpdateApplier
 from governance_engine.control_plane.update_validator import (
     ProposedUpdate,
@@ -75,6 +77,7 @@ class GovernanceEngine(RuntimeEngine):
         policy_table_installed_at_ns: int = 0,
         strategy_registry: StrategyRegistry | None = None,
         ledger: LedgerAuthorityWriter | None = None,
+        exposure_store: ExposureStore | None = None,
     ) -> None:
         self.plugin_slots: Mapping[str, Sequence[Plugin]] = dict(
             plugin_slots or {}
@@ -113,8 +116,18 @@ class GovernanceEngine(RuntimeEngine):
             self.ledger,
             ts_ns=policy_table_installed_at_ns,
         )
-        self.risk = RiskEvaluator(constraints=tuple(constraints))
-        self.compliance = ComplianceValidator()
+        # AUDIT-P0.4 -- both the per-symbol exposure book and the
+        # per-domain daily-cap counter become durable when the
+        # harness injects an ``ExposureStore``. Without one, both
+        # primitives fall back to their historical in-memory shape
+        # (the test default).
+        self._exposure_store = exposure_store
+        exposure_book = ExposureBook(store=exposure_store)
+        self.risk = RiskEvaluator(
+            exposure_book=exposure_book,
+            constraints=tuple(constraints),
+        )
+        self.compliance = ComplianceValidator(store=exposure_store)
         self.classifier = EventClassifier()
         self.state_transitions = StateTransitionManager(
             policy=self.policy,
