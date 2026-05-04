@@ -83,8 +83,12 @@ class PendingBuffer:
     @staticmethod
     def _hitl_id_for(curated: CuratedItem) -> str:
         # Stable, deterministic-replay-safe id derived from
-        # (seed_id, url, ts_ns). Tab-separated to avoid ambiguity.
-        return f"{curated.seed_id}\t{curated.url}\t{curated.ts_ns}"
+        # ``(seed_id, url)`` only — re-crawls of the same document
+        # carry a fresh ``ts_ns`` but must collapse to the same row
+        # so the dashboard never shows duplicates (re-crawl idempotency
+        # guarantee documented in the module docstring above).
+        # Tab-separated to avoid collisions with URLs that contain '|'.
+        return f"{curated.seed_id}\t{curated.url}"
 
     def add(self, curated: CuratedItem) -> bool:
         """Enqueue ``curated``; return True iff it was added.

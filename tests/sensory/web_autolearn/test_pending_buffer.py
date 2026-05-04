@@ -90,16 +90,33 @@ def test_take_returns_none_for_unknown() -> None:
     assert buf.take("unknown") is None
 
 
-def test_hitl_id_is_stable_per_curated_triplet() -> None:
+def test_hitl_id_dedupes_by_seed_url_pair_across_recrawls() -> None:
+    """Re-crawls (same seed_id+url, fresh ts_ns) collapse to one row.
+
+    Documents the contract in the module docstring: dedup is by
+    ``(seed_id, url)`` so the dashboard never shows duplicates from
+    re-crawls of the same document.
+    """
+
     buf = PendingBuffer(capacity=2)
     a = _curated(url="https://x", ts_ns=1)
-    b = _curated(url="https://x", ts_ns=1)  # same triplet
-    c = _curated(url="https://x", ts_ns=2)  # different ts_ns
+    b = _curated(url="https://x", ts_ns=1)  # exact duplicate
+    c = _curated(url="https://x", ts_ns=2)  # re-crawl, fresh ts_ns
 
     assert buf.add(a)
-    assert not buf.add(b)  # idempotent
-    assert buf.add(c)  # distinct
-    assert len(buf) == 2
+    assert not buf.add(b)  # exact duplicate -> idempotent reject
+    assert not buf.add(c)  # re-crawl of same (seed_id, url) -> reject
+    assert len(buf) == 1
+
+
+def test_hitl_id_treats_different_seed_or_url_as_distinct() -> None:
+    """Different seed_id OR different url -> distinct row."""
+
+    buf = PendingBuffer(capacity=4)
+    assert buf.add(_curated(seed_id="s1", url="https://x"))
+    assert buf.add(_curated(seed_id="s2", url="https://x"))  # other seed
+    assert buf.add(_curated(seed_id="s1", url="https://y"))  # other url
+    assert len(buf) == 3
 
 
 def test_buffer_thread_safety_smoke() -> None:
