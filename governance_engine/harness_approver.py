@@ -65,6 +65,7 @@ from core.contracts.execution_intent import (
     create_execution_intent,
     mark_approved,
 )
+from governance_engine.control_plane.decision_signer import DecisionSigner
 
 __all__ = [
     "DEFAULT_HARNESS_ORIGIN",
@@ -140,6 +141,7 @@ def approve_signal_for_execution(
     origin: str = DEFAULT_HARNESS_ORIGIN,
     decision_id: str | None = None,
     enabled: bool | None = None,
+    signer: DecisionSigner | None = None,
 ) -> ExecutionIntent:
     """Build + approve an :class:`ExecutionIntent` in one deterministic call.
 
@@ -206,11 +208,32 @@ def approve_signal_for_execution(
         origin=origin,
         signal=signal,
     )
+    final_decision_id = (
+        decision_id
+        if decision_id is not None
+        else f"{HARNESS_DECISION_ID_PREFIX}:{ts_ns}"
+    )
+    # Hardening-S1 item 2 -- when a signer is injected, mint the
+    # signature here (the only place that holds both the post-approval
+    # content_hash and the live secret). The AuthorityGuard verifier
+    # is wired with the same signer's verify(), so the gate refuses
+    # any intent whose signature was not produced by this process's
+    # signer instance.
+    decision_signature = ""
+    if signer is not None:
+        # Run mark_approved twice: first to materialise the
+        # post-approval content_hash, then to bind the signature.
+        # The factory is idempotent on the (decision_id, signature)
+        # pair so the second call returns the canonical intent.
+        approved_unsigned = mark_approved(
+            intent, governance_decision_id=final_decision_id
+        )
+        decision_signature = signer.sign(
+            content_hash=approved_unsigned.content_hash,
+            governance_decision_id=final_decision_id,
+        )
     return mark_approved(
         intent,
-        governance_decision_id=(
-            decision_id
-            if decision_id is not None
-            else f"{HARNESS_DECISION_ID_PREFIX}:{ts_ns}"
-        ),
+        governance_decision_id=final_decision_id,
+        decision_signature=decision_signature,
     )
