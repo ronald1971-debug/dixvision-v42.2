@@ -22,7 +22,6 @@ import pytest
 from core.contracts.events import ExecutionStatus, Side, SignalEvent
 from execution_engine.adapters.paper import PaperBroker
 
-
 # ---------------------------------------------------------------------------
 # 1. Deterministic latency model
 # ---------------------------------------------------------------------------
