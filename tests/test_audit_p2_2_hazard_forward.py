@@ -84,7 +84,7 @@ def test_record_forwards_emitted_hazards_into_governance(
 
     state, sensor = state_with_test_sensor
 
-    from core.contracts.events import EventKind, SignalEvent, Side
+    from core.contracts.events import EventKind, Side, SignalEvent
 
     sig = SignalEvent(
         ts_ns=1_234_000_000,
