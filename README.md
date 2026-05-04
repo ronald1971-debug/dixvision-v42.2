@@ -115,6 +115,37 @@ Python.Python.3.12`. If a `pip install` fails because of missing C
 build tools, run `winget install Microsoft.VisualStudio.2022.BuildTools`
 once and retry.
 
+#### Both dashboards at once (DIX VISION cockpit + DIX MEME)
+
+A single uvicorn process serves **both** dashboards on the same port:
+
+| Surface | URL | Source |
+| --- | --- | --- |
+| DIX VISION cockpit (operator) | `http://127.0.0.1:8080/dash2/` | `dashboard2026/` |
+| DIX MEME (memecoin)           | `http://127.0.0.1:8080/meme/`  | `dash_meme/`     |
+
+Because they share the same harness, **only one launcher needs to run
+at a time** — running two launchers fails on the second `bind()` to
+port 8080. Pick whichever fits your workflow:
+
+```bat
+REM Cockpit only — opens /dash2/ in the browser
+scripts\windows\start_dixvision.bat
+
+REM Memecoin only — opens /meme/ in the browser
+scripts\windows\start_dixvision_meme.bat
+
+REM Both — opens /dash2/ AND /meme/ side-by-side after the harness boots
+scripts\windows\start_dixvision_both.bat
+```
+
+All three boot the same harness; they differ only in which dashboard
+tab(s) they open. After any of them is running, the other dashboard is
+always reachable in a second browser tab — closing or refreshing the
+browser does **not** stop the harness. The sensing, learning,
+governance, and audit-ledger layers all live in the harness, not in
+the browser.
+
 ## References
 
 * `docs/total_recall_index.md` — every architectural ID.
