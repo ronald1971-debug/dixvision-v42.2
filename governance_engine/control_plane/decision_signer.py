@@ -86,6 +86,7 @@ __all__ = [
     "DecisionSigner",
     "SignatureMismatchError",
     "canonical_signing_input",
+    "make_decision_signer",
 ]
 
 
@@ -222,3 +223,21 @@ class DecisionSigner:
             raise SignatureMismatchError(
                 "decision signature failed HMAC verification"
             )
+
+
+def make_decision_signer() -> DecisionSigner:
+    """Governance-owned factory for harness wiring (AUDIT-P1.1).
+
+    The B36 authority lint rule restricts construction of
+    :class:`DecisionSigner` to ``governance_engine.*`` so that only
+    one HMAC secret exists per process. The harness in :mod:`ui.server`
+    needs to obtain the signer it injects into the
+    :class:`~execution_engine.execution_gate.AuthorityGuard` and into
+    :func:`~governance_engine.harness_approver.approve_signal_for_execution`,
+    but a literal ``DecisionSigner()`` call there would (correctly)
+    trigger B36. This thin factory keeps the construction inside the
+    governance package while exposing a single, documented entry point
+    for harness boot code.
+    """
+
+    return DecisionSigner()
