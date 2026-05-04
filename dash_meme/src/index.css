@@ -1,0 +1,77 @@
+/*
+ * DIX MEME — DEXtools-styled memecoin dashboard.
+ *
+ * Same theme tokens as `/dash2/` so theme switching is consistent
+ * across both apps. Loaded fonts mirror dashboard2026 (IBM Plex Sans
+ * for display, JetBrains Mono for tabular numerics).
+ */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+@import "./theme/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: rgb(var(--bg));
+  color: rgb(var(--text-primary));
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tabular numerics by default — DEX prices, volumes, market caps must
+ * not jitter on update. */
+table,
+.tabular-nums,
+.font-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* DEXtools-style hairline grid — used for the per-pair / per-pool table
+ * rows so density stays high but the eye still tracks rows. */
+.dex-row {
+  border-bottom: 1px solid rgb(var(--hairline) / 1);
+}
+
+.dex-row:hover {
+  background: rgb(var(--surface-raised));
+}
+
+/* Direction indicators (BUY = ok-soft, SELL = danger-soft). */
+.dex-buy {
+  color: rgb(var(--ok));
+  background: var(--ok-soft);
+}
+
+.dex-sell {
+  color: rgb(var(--danger));
+  background: var(--danger-soft);
+}
+
+/* Custom scrollbar — DEXtools-style thin track on dense panels. */
+.dex-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.dex-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dex-scroll::-webkit-scrollbar-thumb {
+  background: rgb(var(--hairline));
+  border-radius: 3px;
+}
+.dex-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--text-disabled));
+}

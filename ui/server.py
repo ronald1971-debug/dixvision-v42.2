@@ -743,6 +743,17 @@ _DASH2_INDEX = _DASH2_DIST / "index.html"
 # on PR #123 caught this.
 _DASH2_AVAILABLE: bool = _DASH2_DIST.exists() and _DASH2_INDEX.exists()
 
+# DIX MEME — DEXtools-styled memecoin dashboard. Same conditional-mount
+# pattern as ``/dash2/``: separate React app, separate launcher, but a
+# *viewer* on the same harness — every execution intent it submits goes
+# through the same ``/api/dashboard/action/intent`` chokepoint and the
+# same Governance FSM as ``/dash2/``. Closing the browser does not stop
+# the harness; the learning loop, sensors, and audit ledger keep
+# running independent of which (or no) dashboard is open.
+_MEME_DIST = Path(__file__).resolve().parent.parent / "dash_meme" / "dist"
+_MEME_INDEX = _MEME_DIST / "index.html"
+_MEME_AVAILABLE: bool = _MEME_DIST.exists() and _MEME_INDEX.exists()
+
 
 @app.get("/", response_class=HTMLResponse)
 def index() -> Any:
@@ -809,6 +820,20 @@ if _DASH2_AVAILABLE:
         "/dash2",
         StaticFiles(directory=str(_DASH2_DIST), html=True),
         name="dash2",
+    )
+
+
+# DIX MEME — same StaticFiles pattern, mounted at ``/meme/``. Operators
+# launch it via ``start_dixvision_meme.bat`` (separate from the cockpit
+# launcher), but it talks to the *same* API surface as ``/dash2/``. The
+# mount is conditional on a built artefact under ``dash_meme/dist`` so
+# the harness still boots when the app hasn't been built (e.g. CI jobs
+# that skip the npm build, or a fresh clone where Node isn't installed).
+if _MEME_AVAILABLE:
+    app.mount(
+        "/meme",
+        StaticFiles(directory=str(_MEME_DIST), html=True),
+        name="meme",
     )
 
 
