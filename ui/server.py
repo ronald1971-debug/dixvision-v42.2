@@ -77,6 +77,13 @@ from core.contracts.api.operator import (
     OperatorUnlockRequest,
     WalletInfoResponse,
 )
+from core.contracts.api.source_trust import (
+    SourceTrustDemotionRequest,
+    SourceTrustListResponse,
+    SourceTrustPromotionRequest,
+    SourceTrustPromotionResponse,
+    SourceTrustRow,
+)
 from core.contracts.events import (
     Event,
     EventKind,
@@ -98,6 +105,13 @@ from core.contracts.learning_evolution_freeze import (
 )
 from core.contracts.market import MarketTick
 from core.contracts.risk import RiskSnapshot
+from core.contracts.signal_trust import SignalTrust, default_cap_for
+from core.contracts.source_trust_promotions import (
+    DEMOTION_LEDGER_KIND,
+    PROMOTION_LEDGER_KIND,
+    SourceTrustPromotionStore,
+    is_promotable_target,
+)
 from dashboard_backend.control_plane.decision_trace import DecisionTracePanel
 from dashboard_backend.control_plane.engine_status_grid import EngineStatusGrid
 from dashboard_backend.control_plane.memecoin_control_panel import MemecoinControlPanel
@@ -249,6 +263,59 @@ REGISTRY_DIR = REPO_ROOT / "registry"
 SOURCE_REGISTRY_PATH = REGISTRY_DIR / "data_source_registry.yaml"
 
 
+def _replay_source_trust_promotions(
+    *,
+    ledger_writer: LedgerAuthorityWriter,
+    store: SourceTrustPromotionStore,
+) -> None:
+    """Rebuild *store* from the authority ledger (Paper-S6).
+
+    Walks every authority row in chronological order and applies
+    ``OPERATOR_SOURCE_TRUST_PROMOTED`` / ``..._DEMOTED`` payloads to
+    *store* so promotions recorded before a restart survive the
+    bounce. Replay is fail-soft per-row: a malformed payload (missing
+    fields, bad enum value, non-int ts_ns) is skipped rather than
+    aborting the whole replay so one corrupted historical row cannot
+    take down boot.
+
+    INV-15: replay is purely a function of (ledger contents, store);
+    no clock or PRNG is consulted. The caller passes the ledger
+    writer (which holds the authoritative in-memory mirror) so the
+    same path is used in tests with an in-memory ledger and in
+    production with a SQLite-backed one.
+    """
+
+    for entry in ledger_writer.read():
+        if entry.kind == PROMOTION_LEDGER_KIND:
+            payload = entry.payload
+            try:
+                source_id = str(payload["source_id"])
+                target_trust = SignalTrust(str(payload["target_trust"]))
+                requestor = str(payload.get("requestor", "operator"))
+                reason = str(payload.get("reason", ""))
+                ts_ns = int(payload.get("ts_ns", entry.ts_ns))
+            except (KeyError, ValueError, TypeError):
+                continue
+            if not source_id or not is_promotable_target(target_trust):
+                continue
+            try:
+                store.promote(
+                    source_id=source_id,
+                    target_trust=target_trust,
+                    requestor=requestor,
+                    reason=reason,
+                    ts_ns=ts_ns,
+                )
+            except ValueError:
+                continue
+        elif entry.kind == DEMOTION_LEDGER_KIND:
+            payload = entry.payload
+            source_id = str(payload.get("source_id", ""))
+            if not source_id:
+                continue
+            store.demote(source_id)
+
+
 # ---------------------------------------------------------------------------
 # State (in-process; harness only)
 # ---------------------------------------------------------------------------
@@ -313,6 +380,14 @@ class _State:
             # ``default_cap_for`` for every external signal in that
             # case (still fail-closed).
             self.signal_trust_registry = None
+        # Paper-S6 -- in-memory operator overlay for source-trust
+        # promotions. The store is rebuilt at boot via
+        # :func:`_replay_source_trust_promotions` so promotions
+        # recorded on the authority ledger survive restarts. The
+        # harness approver consults it at cap-application time to
+        # decide whether an ``EXTERNAL_LOW`` source's effective trust
+        # class should be widened to ``EXTERNAL_MED``.
+        self.signal_trust_promotions = SourceTrustPromotionStore()
         self.authority_guard = AuthorityGuard(
             signature_verifier=lambda content_hash, decision_id, signature: (
                 self.decision_signer.verify(
@@ -444,6 +519,17 @@ class _State:
         else:
             exposure_db_path = None
         self.exposure_store = ExposureStore(db_path=exposure_db_path)
+        # Paper-S6 -- rebuild the in-memory operator promotion overlay
+        # from the authority ledger so promotions recorded before a
+        # restart still cap at the widened class. Replay walks every
+        # OPERATOR_SOURCE_TRUST_PROMOTED / DEMOTED row in chronological
+        # order; the per-row payload is parsed defensively so a
+        # malformed historical row drops the offending source without
+        # tearing down the whole replay.
+        _replay_source_trust_promotions(
+            ledger_writer=self.ledger_writer,
+            store=self.signal_trust_promotions,
+        )
         self.governance = GovernanceEngine(
             ledger=ledger,
             strategy_registry=self.strategy_registry,
@@ -826,6 +912,7 @@ class _State:
                     ts_ns=wall_ns(),
                     signer=self.decision_signer,
                     registry=self.signal_trust_registry,
+                    promotion_store=self.signal_trust_promotions,
                 )
                 for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
@@ -854,6 +941,7 @@ class _State:
                     ts_ns=wall_ns(),
                     signer=self.decision_signer,
                     registry=self.signal_trust_registry,
+                    promotion_store=self.signal_trust_promotions,
                 )
                 for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
@@ -879,6 +967,7 @@ class _State:
                     ts_ns=wall_ns(),
                     signer=self.decision_signer,
                     registry=self.signal_trust_registry,
+                    promotion_store=self.signal_trust_promotions,
                 )
                 for downstream in self.execution.execute(intent):
                     self.record("execution", downstream)
@@ -1839,6 +1928,244 @@ def wallet_info() -> WalletInfoResponse:
     )
 
 
+def _source_trust_row(
+    *,
+    source_id: str,
+    declared_trust: SignalTrust,
+    declared_cap: float | None,
+) -> SourceTrustRow:
+    """Project one ``(source_id, declared_trust, declared_cap)`` triple.
+
+    Computes the effective trust class via the live promotion overlay
+    and resolves the effective per-source cap through the same
+    governance gate the harness approver uses
+    (:meth:`ExternalSignalTrustRegistry.cap_for`). Holding both in
+    one row lets the dashboard render before/after at a glance.
+    """
+
+    promotion = STATE.signal_trust_promotions.get(source_id)
+    effective_trust = STATE.signal_trust_promotions.effective_trust(
+        source_id, declared_trust
+    )
+    if STATE.signal_trust_registry is not None:
+        effective_cap = STATE.signal_trust_registry.cap_for(
+            source_id, effective_trust
+        )
+    else:
+        effective_cap = default_cap_for(effective_trust)
+    return SourceTrustRow(
+        source_id=source_id,
+        declared_trust=declared_trust.value,
+        effective_trust=effective_trust.value,
+        declared_cap=declared_cap,
+        effective_cap=effective_cap,
+        promoted=promotion is not None,
+        promoted_target_trust=(
+            promotion.target_trust.value if promotion is not None else ""
+        ),
+        promoted_ts_ns=promotion.ts_ns if promotion is not None else 0,
+        promoted_requestor=(
+            promotion.requestor if promotion is not None else ""
+        ),
+        promoted_reason=promotion.reason if promotion is not None else "",
+    )
+
+
+@app.get(
+    "/api/operator/source-trust",
+    response_model=SourceTrustListResponse,
+)
+def operator_source_trust_list() -> SourceTrustListResponse:
+    """Paper-S6 -- enumerate every source the gate knows about.
+
+    Union of (a) the YAML registry rows and (b) any operator
+    promotion overlay rows whose ``source_id`` is not in the YAML
+    (an operator can pre-promote an unregistered source so its
+    first signal lands at the widened cap). The response is
+    deterministic-ordered by ``source_id`` for stable UI rendering.
+    """
+
+    with STATE.lock:
+        registry_rows: list[SourceTrustRow] = []
+        registered_ids: set[str] = set()
+        if STATE.signal_trust_registry is not None:
+            for source_id, row in STATE.signal_trust_registry.sources.items():
+                registered_ids.add(source_id)
+                registry_rows.append(
+                    _source_trust_row(
+                        source_id=source_id,
+                        declared_trust=row.trust,
+                        declared_cap=row.cap,
+                    )
+                )
+        for source_id in STATE.signal_trust_promotions.list_all():
+            if source_id in registered_ids:
+                continue
+            registry_rows.append(
+                _source_trust_row(
+                    source_id=source_id,
+                    declared_trust=SignalTrust.EXTERNAL_LOW,
+                    declared_cap=None,
+                )
+            )
+        registry_rows.sort(key=lambda r: r.source_id)
+        promotion_count = len(STATE.signal_trust_promotions)
+    return SourceTrustListResponse(
+        rows=registry_rows,
+        promotion_count=promotion_count,
+    )
+
+
+@app.post(
+    "/api/operator/source-trust/promote",
+    response_model=SourceTrustPromotionResponse,
+)
+def operator_source_trust_promote(
+    body: SourceTrustPromotionRequest,
+) -> SourceTrustPromotionResponse:
+    """Paper-S6 -- promote a source from EXTERNAL_LOW to EXTERNAL_MED.
+
+    Writes one ``OPERATOR_SOURCE_TRUST_PROMOTED`` ledger row and
+    updates the in-memory overlay. The ledger row carries the
+    operator-supplied ``requestor`` + ``reason`` so the audit trail
+    is replayable; on a restart ``_replay_source_trust_promotions``
+    rebuilds the same overlay state.
+
+    Validation is fail-closed: any non-permitted ``target_trust``
+    returns 400 *before* the ledger row is written, so a malformed
+    request never lands an audit row.
+    """
+
+    try:
+        target_trust = SignalTrust(body.target_trust)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=f"unknown trust class {body.target_trust!r}",
+        ) from exc
+    if not is_promotable_target(target_trust):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "only EXTERNAL_MED is a valid promotion target; "
+                f"got {target_trust.value}"
+            ),
+        )
+    ts_ns = wall_ns()
+    payload: dict[str, str] = {
+        "source_id": body.source_id,
+        "target_trust": target_trust.value,
+        "requestor": body.requestor,
+        "reason": body.reason,
+        "ts_ns": str(ts_ns),
+    }
+    with STATE.lock:
+        entry = STATE.governance.ledger.append(
+            ts_ns=ts_ns,
+            kind=PROMOTION_LEDGER_KIND,
+            payload=payload,
+        )
+        STATE.signal_trust_promotions.promote(
+            source_id=body.source_id,
+            target_trust=target_trust,
+            requestor=body.requestor,
+            reason=body.reason,
+            ts_ns=ts_ns,
+        )
+        if (
+            STATE.signal_trust_registry is not None
+            and body.source_id in STATE.signal_trust_registry.sources
+        ):
+            row = STATE.signal_trust_registry.sources[body.source_id]
+            declared_trust = row.trust
+            declared_cap = row.cap
+        else:
+            declared_trust = SignalTrust.EXTERNAL_LOW
+            declared_cap = None
+        projection = _source_trust_row(
+            source_id=body.source_id,
+            declared_trust=declared_trust,
+            declared_cap=declared_cap,
+        )
+    return SourceTrustPromotionResponse(
+        accepted=True,
+        source_id=projection.source_id,
+        declared_trust=projection.declared_trust,
+        effective_trust=projection.effective_trust,
+        declared_cap=projection.declared_cap,
+        effective_cap=projection.effective_cap,
+        promoted=projection.promoted,
+        promoted_target_trust=projection.promoted_target_trust,
+        promoted_ts_ns=projection.promoted_ts_ns,
+        promoted_requestor=projection.promoted_requestor,
+        promoted_reason=projection.promoted_reason,
+        ledger_seq=entry.seq,
+        ledger_kind=entry.kind,
+    )
+
+
+@app.post(
+    "/api/operator/source-trust/demote",
+    response_model=SourceTrustPromotionResponse,
+)
+def operator_source_trust_demote(
+    body: SourceTrustDemotionRequest,
+) -> SourceTrustPromotionResponse:
+    """Paper-S6 -- revert a previously-applied operator promotion.
+
+    Idempotent: demoting a source with no active overlay still
+    writes the ledger row (so the operator's intent is auditable)
+    but the in-memory store mutation is a no-op. The response shape
+    matches the promote route so a single dashboard handler can
+    consume both.
+    """
+
+    ts_ns = wall_ns()
+    payload: dict[str, str] = {
+        "source_id": body.source_id,
+        "requestor": body.requestor,
+        "reason": body.reason,
+        "ts_ns": str(ts_ns),
+    }
+    with STATE.lock:
+        entry = STATE.governance.ledger.append(
+            ts_ns=ts_ns,
+            kind=DEMOTION_LEDGER_KIND,
+            payload=payload,
+        )
+        STATE.signal_trust_promotions.demote(body.source_id)
+        if (
+            STATE.signal_trust_registry is not None
+            and body.source_id in STATE.signal_trust_registry.sources
+        ):
+            row = STATE.signal_trust_registry.sources[body.source_id]
+            declared_trust = row.trust
+            declared_cap = row.cap
+        else:
+            declared_trust = SignalTrust.EXTERNAL_LOW
+            declared_cap = None
+        projection = _source_trust_row(
+            source_id=body.source_id,
+            declared_trust=declared_trust,
+            declared_cap=declared_cap,
+        )
+    return SourceTrustPromotionResponse(
+        accepted=True,
+        source_id=projection.source_id,
+        declared_trust=projection.declared_trust,
+        effective_trust=projection.effective_trust,
+        declared_cap=projection.declared_cap,
+        effective_cap=projection.effective_cap,
+        promoted=projection.promoted,
+        promoted_target_trust=projection.promoted_target_trust,
+        promoted_ts_ns=projection.promoted_ts_ns,
+        promoted_requestor=projection.promoted_requestor,
+        promoted_reason=projection.promoted_reason,
+        ledger_seq=entry.seq,
+        ledger_kind=entry.kind,
+    )
+
+
 def _project_learning_override(
     *, enabled: bool, mode: SystemMode
 ) -> LearningOverrideResponse:
@@ -2142,6 +2469,7 @@ def post_tick(body: TickIn) -> dict[str, Any]:
                 ts_ns=wall_ns(),
                 signer=STATE.decision_signer,
                 registry=STATE.signal_trust_registry,
+                promotion_store=STATE.signal_trust_promotions,
             )
             for downstream in STATE.execution.execute(intent):
                 STATE.record("execution", downstream)
@@ -2178,6 +2506,7 @@ def post_signal(body: SignalIn) -> dict[str, Any]:
                 ts_ns=wall_ns(),
                 signer=STATE.decision_signer,
                 registry=STATE.signal_trust_registry,
+                promotion_store=STATE.signal_trust_promotions,
             )
             for downstream in STATE.execution.execute(intent):
                 STATE.record("execution", downstream)
@@ -2730,6 +3059,7 @@ def post_tradingview_alert(body: TradingViewAlertIn) -> dict[str, Any]:
                 ts_ns=wall_ns(),
                 signer=STATE.decision_signer,
                 registry=STATE.signal_trust_registry,
+                promotion_store=STATE.signal_trust_promotions,
             )
             for downstream in STATE.execution.execute(intent):
                 STATE.record("execution", downstream)
