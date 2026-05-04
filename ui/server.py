@@ -133,6 +133,9 @@ from governance_engine.strategy_registry import StrategyRegistry
 # authority lint B33 rule fires at CI time and at runtime the call
 # raises :class:`HarnessApproverDisabledError`.
 os.environ.setdefault(HARNESS_APPROVER_ENV_VAR, "1")
+from execution_engine.adapters.registry import (
+    default_registry as default_adapter_registry,
+)
 from intelligence_engine.cognitive.approval_edge import (
     ApprovalAlreadyDecidedError,
     ApprovalEdge,
@@ -216,9 +219,6 @@ from ui.cognitive_chat_runtime import (
     build_runtime as build_cognitive_chat_runtime,
 )
 from ui.dashboard_routes import build_dashboard_router
-from execution_engine.adapters.registry import (
-    default_registry as default_adapter_registry,
-)
 from ui.execution_routes import build_execution_router
 from ui.feeds.news_runner import CoinDeskRSSFeedRunner
 from ui.feeds.pumpfun_runner import PumpFunFeedRunner
