@@ -53,10 +53,8 @@ from core.contracts.governance import (
     DecisionKind,
     GovernanceDecision,
     ModeTransitionRequest,
+    StateTransitionProtocol,
     SystemMode,
-)
-from governance_engine.control_plane.state_transition_manager import (
-    StateTransitionManager,
 )
 from system.time_source import wall_ns
 
@@ -101,7 +99,16 @@ class KillSwitch:
     name: str = "kill_switch"
     spec_id: str = "SAFE-01"
 
-    def __init__(self, *, state_transitions: StateTransitionManager) -> None:
+    def __init__(
+        self, *, state_transitions: StateTransitionProtocol
+    ) -> None:
+        # AUDIT-P1.2 — typed against ``StateTransitionProtocol`` (a
+        # structural-typing surface in ``core.contracts.governance``)
+        # rather than the concrete ``StateTransitionManager`` so this
+        # ``system/`` primitive never imports ``governance_engine``.
+        # Any object exposing ``current_mode`` and ``propose`` with
+        # the documented shape is accepted; the harness still passes
+        # the real :class:`StateTransitionManager`.
         self._state = state_transitions
 
     def engage(self, request: KillRequest) -> GovernanceDecision:

@@ -30,6 +30,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import IntEnum, StrEnum
+from typing import Protocol, runtime_checkable
 
 # ---------------------------------------------------------------------------
 # System mode (locked by Build Compiler Spec §7)
@@ -321,6 +322,40 @@ class LedgerEntry:
     hash_chain: str
 
 
+# ---------------------------------------------------------------------------
+# AUDIT-P1.2 — StateTransitionProtocol
+#
+# Structural type that ``system/kill_switch.py`` (SAFE-01) and other
+# ``system/`` primitives consume so they do not have to import the
+# concrete :class:`governance_engine.control_plane.state_transition_manager
+# .StateTransitionManager`. Keeping ``system/`` a true leaf module is a
+# lint invariant (B1 + B30): ``system.*`` may import from
+# ``core.contracts.*`` and ``core.types.*`` but never from
+# ``governance_engine.*``.
+#
+# The protocol exposes the minimum surface a ``system/`` primitive needs:
+# inspect the current mode and propose a transition. The full
+# :class:`StateTransitionManager` keeps additional methods
+# (``propose_intent``, drift hooks, etc.) that ``system/`` callers do not
+# use. The runtime check is keyed on duck-typed attribute presence so
+# the existing :class:`StateTransitionManager` satisfies it without any
+# inheritance change.
+# ---------------------------------------------------------------------------
+
+
+@runtime_checkable
+class StateTransitionProtocol(Protocol):
+    """Minimum mode-FSM surface required by ``system/`` leaf primitives."""
+
+    def current_mode(self) -> SystemMode:
+        """Return the live :class:`SystemMode` (snapshot, no lock leak)."""
+
+    def propose(
+        self, request: ModeTransitionRequest
+    ) -> ModeTransitionDecision:
+        """Apply the full transition pipeline atomically."""
+
+
 __all__ = [
     "ComplianceReport",
     "Constraint",
@@ -339,5 +374,6 @@ __all__ = [
     "OperatorAction",
     "OperatorRequest",
     "RiskAssessment",
+    "StateTransitionProtocol",
     "SystemMode",
 ]
