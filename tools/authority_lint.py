@@ -884,6 +884,68 @@ def _check_b35(
 
 
 # ---------------------------------------------------------------------------
+# B36 — DecisionSigner construction restriction (Hardening-S1 item 2)
+# ---------------------------------------------------------------------------
+#
+# :class:`governance_engine.control_plane.decision_signer.DecisionSigner`
+# holds the per-process HMAC secret used to sign approved
+# :class:`ExecutionIntent` envelopes. Every constructor call mints
+# *another* secret — so any module other than ``governance_engine.*``
+# that instantiates :class:`DecisionSigner` would hold a forged
+# secret and could mint signatures the AuthorityGuard would refuse
+# to verify against the live secret (a denial-of-service hazard) or,
+# worse, swap the verifier reference for a forged one.
+#
+# The verifier *reference* may be passed anywhere the guard runs
+# (``execution_engine.*``, ``ui.*``) — only the *construction* of a
+# new signer is restricted. This rule complements B25 (only
+# governance can mark an intent approved) and B36's runtime sibling
+# in :class:`AuthorityGuard` (rejects any approved intent without a
+# verifier-passing signature whenever the verifier is wired).
+
+B36_ALLOWED_PREFIXES: tuple[str, ...] = (
+    "governance_engine",
+    "tests",
+)
+
+
+def _check_b36(
+    importer: str, file: Path, repo_root: Path, tree: ast.AST
+) -> list[Violation]:
+    """B36 — DecisionSigner construction is governance-only."""
+
+    if _is_triad_constructor_test_exempt(file, repo_root):
+        return []
+    if _starts_with_any(importer, B36_ALLOWED_PREFIXES):
+        return []
+    out: list[Violation] = []
+    for node in ast.walk(tree):
+        if not (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "DecisionSigner"
+        ):
+            continue
+        out.append(
+            Violation(
+                "B36",
+                file,
+                node.lineno,
+                importer,
+                "DecisionSigner(...)",
+                "DecisionSigner construction restriction (Hardening-S1 "
+                "item 2): only governance_engine.* may instantiate "
+                "DecisionSigner — every constructor call mints a new "
+                "HMAC secret, so a non-governance instance would hold "
+                "a forged secret incompatible with the AuthorityGuard's "
+                "live verifier. Pass the existing GovernanceEngine "
+                "signer reference instead of constructing a new one.",
+            )
+        )
+    return out
+
+
+# ---------------------------------------------------------------------------
 # B25 — Execution Gate origin restriction (HARDEN-01 / INV-68)
 # ---------------------------------------------------------------------------
 
@@ -1766,6 +1828,8 @@ def lint_repo(repo_root: Path) -> list[Violation]:
         violations.extend(_check_b32(importer, path, repo_root, tree))
         # B35 — Operator-vs-AI separation (Hardening-S1 item 7).
         violations.extend(_check_b35(importer, path, repo_root, tree))
+        # B36 — DecisionSigner construction restriction (Hardening-S1 item 2).
+        violations.extend(_check_b36(importer, path, repo_root, tree))
     # B23 — chat widget static files (HTML / JS).
     violations.extend(_check_b23_static(repo_root))
     return violations
