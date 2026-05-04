@@ -212,6 +212,10 @@ from ui.feeds.news_runner import CoinDeskRSSFeedRunner
 from ui.feeds.pumpfun_runner import PumpFunFeedRunner
 from ui.feeds.raydium_runner import RaydiumPoolFeedRunner
 from ui.feeds.runner import FeedRunner
+from ui.feeds.tradingview_alert import (
+    TRADINGVIEW_ALERT_SOURCE_FEED,
+    parse_tradingview_alert_payload,
+)
 from ui.feeds.tradingview_ideas import (
     TRADINGVIEW_SOURCE_FEED,
     parse_tradingview_idea_payload,
@@ -969,6 +973,34 @@ class TradingViewObservationIn(BaseModel):
         description=(
             "Optional caller-supplied monotonic timestamp. Defaults to "
             "the harness's monotonic counter (TimeAuthority surrogate)."
+        ),
+    )
+
+
+class TradingViewAlertIn(BaseModel):
+    """Envelope for ``POST /api/feeds/tradingview/alert`` (Paper-S4).
+
+    The body's ``payload`` is the raw JSON the operator's Pine-script
+    ``alert()`` / ``strategy.entry`` hook pushes to the configured
+    webhook URL. See :mod:`ui.feeds.tradingview_alert` for the
+    canonical envelope shape (``ticker``, ``side``, optional
+    ``confidence`` / ``qty`` / ``strategy`` / ``comment``).
+
+    The receiver layer never constructs a :class:`SignalEvent`
+    directly — :func:`ui.feeds.tradingview_alert.parse_tradingview_alert_payload`
+    is the only producer, which keeps the parser pure (INV-15) and
+    the route trivially auditable.
+    """
+
+    payload: dict[str, Any] = Field(
+        ..., description="Decoded Pine-script alert envelope (parser input)."
+    )
+    ts_ns: int | None = Field(
+        default=None,
+        description=(
+            "Optional caller-supplied monotonic timestamp. Defaults to "
+            "``wall_ns()`` (TimeAuthority surrogate). The Pine alert "
+            "envelope itself carries no trustworthy clock."
         ),
     )
 
@@ -2208,6 +2240,59 @@ def post_tradingview_observation(body: TradingViewObservationIn) -> dict[str, An
         "trader_id": observation.trader_id,
         "observation_kind": observation.observation_kind,
         "ts_ns": observation.ts_ns,
+    }
+
+
+@app.post("/api/feeds/tradingview/alert")
+def post_tradingview_alert(body: TradingViewAlertIn) -> dict[str, Any]:
+    """Ingest one TradingView Pine-script alert (Paper-S4).
+
+    The operator configures their Pine ``alert()`` / ``strategy.entry``
+    hook to push a JSON envelope at this URL. The body's ``payload``
+    is fed to :func:`ui.feeds.tradingview_alert.parse_tradingview_alert_payload`,
+    which is the *only* producer of the resulting :class:`SignalEvent`
+    (the route layer never builds one directly — keeps the parser
+    pure under INV-15 and the route trivially auditable).
+
+    The signal is stamped :attr:`SignalTrust.EXTERNAL_LOW` and
+    ``signal_source = TRADINGVIEW_ALERT_SOURCE_FEED`` so the
+    governance gate (Paper-S5/S6) can apply the per-source cap from
+    ``registry/external_signal_trust.yaml`` before the resulting
+    intent reaches the execute chokepoint. From there the flow is
+    identical to :func:`post_signal` — Intelligence -> Execution
+    via the harness approver shim.
+
+    Returns ``{"accepted": False, "reason": "..."}`` (HTTP 200) for
+    malformed payloads so TradingView's webhook engine does not retry
+    on a Pine-side authoring bug. Returns
+    ``{"accepted": True, "executions": [...]}`` on success.
+    """
+
+    ts = body.ts_ns if body.ts_ns is not None else wall_ns()
+    parsed = parse_tradingview_alert_payload(body.payload, ts_ns=ts)
+    if parsed is None:
+        return {
+            "accepted": False,
+            "reason": "payload rejected by tradingview alert parser",
+            "source_feed": TRADINGVIEW_ALERT_SOURCE_FEED,
+        }
+    sig = parsed.signal
+    out_events: list[dict[str, Any]] = []
+    with STATE.lock:
+        STATE.record("feed.tradingview_alert", sig)
+        for ev in STATE.intelligence.process(sig):
+            STATE.record("intelligence", ev)
+            intent = approve_signal_for_execution(
+                ev, ts_ns=wall_ns(), signer=STATE.decision_signer
+            )
+            for downstream in STATE.execution.execute(intent):
+                STATE.record("execution", downstream)
+                out_events.append(_event_to_dict(downstream))
+    return {
+        "accepted": True,
+        "source_feed": TRADINGVIEW_ALERT_SOURCE_FEED,
+        "signal": _event_to_dict(sig),
+        "executions": out_events,
     }
 
 

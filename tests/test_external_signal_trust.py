@@ -29,8 +29,13 @@ class TestLoadShippedRegistry:
         reg = load_external_signal_trust(DEFAULT_REGISTRY_PATH)
         assert isinstance(reg, ExternalSignalTrustRegistry)
         assert reg.version >= 1
-        # Ships empty on purpose — adapter PRs add their own rows.
-        assert dict(reg.sources) == {}
+        # Paper-S4 added the first row — TradingView Pine alert webhook.
+        # All registered rows must be EXTERNAL_LOW with a cap below the
+        # built-in DEFAULT_LOW_CAP (0.5) until governance promotes them.
+        for source_id, row in reg.sources.items():
+            assert row.trust is SignalTrust.EXTERNAL_LOW, source_id
+            assert row.cap is not None and 0.0 <= row.cap <= 0.5, source_id
+        assert "SRC-SIGNAL-TRADINGVIEW-ALERT-001" in reg.sources
 
 
 class TestParseRows:

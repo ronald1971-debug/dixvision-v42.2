@@ -27,4 +27,17 @@
 
 version: 1
 
-sources: {}
+sources:
+  # Paper-S4 — TradingView Pine-script alert webhook.
+  # Operator configures their Pine ``alert()`` hook to POST at
+  # ``/api/feeds/tradingview/alert``. Anyone can author a Pine
+  # script, so we treat the source as EXTERNAL_LOW and clamp
+  # ``confidence`` to 0.4 — well below the conservative
+  # built-in ``DEFAULT_LOW_CAP`` (0.5). The cap can only be
+  # raised after the operator has documented their Pine alert
+  # set in the audit ledger and the governance gate gives the
+  # source a track record (Paper-S5/S6 promotion).
+  SRC-SIGNAL-TRADINGVIEW-ALERT-001:
+    trust: EXTERNAL_LOW
+    cap: 0.4
+    note: TradingView Pine alert webhook (Paper-S4)
