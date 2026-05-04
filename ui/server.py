@@ -63,12 +63,15 @@ from core.contracts.api.credentials import (
 )
 from core.contracts.api.operator import (
     OperatorActionResponse,
+    OperatorAuditRequest,
+    OperatorAuditResponse,
     OperatorEngineRow,
     OperatorKillRequest,
     OperatorMemecoinSnapshot,
     OperatorModeSnapshot,
     OperatorStrategyCounts,
     OperatorSummaryResponse,
+    WalletInfoResponse,
 )
 from core.contracts.events import (
     Event,
@@ -1240,6 +1243,98 @@ def operator_action_kill(body: OperatorKillRequest) -> OperatorActionResponse:
         approved=outcome.approved,
         summary=outcome.summary,
         decision=decision_dict,
+    )
+
+
+@app.post(
+    "/api/operator/audit",
+    response_model=OperatorAuditResponse,
+)
+def operator_audit(body: OperatorAuditRequest) -> OperatorAuditResponse:
+    """AUDIT-P1.5 — write an ``OPERATOR_SETTINGS_CHANGED`` ledger row.
+
+    The dashboard fires a fire-and-forget POST on every autonomy-mode
+    flip and SL/TP commit. Without this route the call silently 404s
+    and the authority ledger never sees the operator's settings
+    transition. The handler serialises ``previous`` / ``next`` to
+    JSON strings so the ledger payload stays
+    ``Mapping[str, str]``-shaped (the writer's storage contract) and
+    appends one row to the SQLite-backed authority ledger.
+
+    The route never touches Governance — settings audit rows are
+    operator-side metadata, not state-machine transitions, so they
+    do not require a governance decision (B7 lint scope: this route
+    writes the ledger directly because it is the audit sink, not a
+    governance bypass).
+    """
+
+    ts_ns = wall_ns()
+    payload: dict[str, str] = {
+        "setting": body.setting,
+        "previous_json": json.dumps(body.previous, sort_keys=True, default=str),
+        "next_json": json.dumps(body.next, sort_keys=True, default=str),
+        "autonomy_mode": body.autonomy_mode,
+        "timestamp_iso": body.timestamp_iso,
+    }
+    with STATE.lock:
+        entry = STATE.governance.ledger.append(
+            ts_ns=ts_ns,
+            kind=body.kind,
+            payload=payload,
+        )
+    return OperatorAuditResponse(
+        accepted=True,
+        seq=entry.seq,
+        kind=entry.kind,
+        persisted=STATE.governance.ledger.db_path is not None,
+    )
+
+
+@app.get(
+    "/api/feeds/memecoin/summary",
+    response_model=OperatorMemecoinSnapshot,
+)
+def feeds_memecoin_summary() -> OperatorMemecoinSnapshot:
+    """AUDIT-P1.5 — typed memecoin subsystem summary.
+
+    Forward-compatible alias of the legacy
+    ``/api/dashboard/memecoin`` payload, scoped to the audit-named
+    path. Returns the same in-process status the operator widget
+    reads — ``enabled``, ``killed``, and a one-line summary — so the
+    dash_meme ``HoldersPanel`` and ``RugScoreCard`` components can
+    consume a stable typed contract without coupling to the legacy
+    untyped dashboard endpoint.
+    """
+
+    with STATE.lock:
+        snap = STATE.memecoin_widget.status()
+    return OperatorMemecoinSnapshot(
+        enabled=snap.enabled,
+        killed=snap.killed,
+        summary=snap.summary,
+    )
+
+
+@app.get(
+    "/api/wallet/info",
+    response_model=WalletInfoResponse,
+)
+def wallet_info() -> WalletInfoResponse:
+    """AUDIT-P1.5 — wallet connection summary (DISCONNECTED stub).
+
+    Until real wallet credentials are wired (UniswapX EIP-712
+    signer + Solana keypair), this route reports DISCONNECTED with
+    an explicit reason so the dash_meme ``WalletInfoPage`` can
+    render an actionable message instead of a generic null. The
+    shape is intentionally minimal; richer per-chain detail will
+    land alongside the credential surface in a later wave.
+    """
+
+    return WalletInfoResponse(
+        connected=False,
+        chain="",
+        address="",
+        reason="wallet credentials not configured",
     )
 
 
