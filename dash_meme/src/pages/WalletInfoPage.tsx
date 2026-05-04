@@ -9,7 +9,7 @@ type DashboardSnapshot = Record<string, unknown>;
 export function WalletInfoPage() {
   const q = useQuery({
     queryKey: ["wallet", "info"],
-    queryFn: () => apiGet<DashboardSnapshot>("/api/dashboard"),
+    queryFn: () => apiGet<DashboardSnapshot>("/api/dashboard/summary"),
     refetchInterval: 5_000,
   });
 
@@ -34,7 +34,7 @@ export function WalletInfoPage() {
           {Object.keys(balances).length === 0 ? (
             <p className="text-xs text-text-disabled">
               No balance data exposed by{" "}
-              <span className="font-mono">/api/dashboard</span>.
+              <span className="font-mono">/api/dashboard/summary</span>.
             </p>
           ) : (
             <dl className="grid grid-cols-2 gap-1 text-xs">
