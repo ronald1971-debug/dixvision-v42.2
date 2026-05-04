@@ -46,6 +46,10 @@ _DASHBOARD_API_MODELS: tuple[str, ...] = (
     "core.contracts.api.cognitive_chat_approvals.ApprovalsListResponse",
     "core.contracts.api.cognitive_chat_approvals.ApprovalDecisionRequest",
     "core.contracts.api.cognitive_chat_approvals.ApprovalDecisionResponse",
+    "core.contracts.api.governance.PromotionGatesResponse",
+    "core.contracts.api.governance.DriftResponse",
+    "core.contracts.api.governance.SourcesResponse",
+    "core.contracts.api.governance.HazardsResponse",
 )
 
 

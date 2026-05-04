@@ -134,3 +134,71 @@ export interface ApprovalDecisionResponse {
   request: ApprovalRequestApi;
   emitted_signal_id?: string;
 }
+
+export interface PromotionGatesResponse {
+  path: string;
+  file_present: boolean;
+  file_hash: string | null;
+  bound_hash: string | null;
+  matches: boolean | null;
+  backend_wired: boolean;
+  gated_targets: string[];
+  doc_url: string;
+}
+
+export interface DriftResponse {
+  backend_wired: boolean;
+  composite: number | null;
+  expected_components: DriftComponent[];
+  components: DriftComponent[];
+  downgrade_threshold: number;
+}
+
+export interface DriftComponent {
+  id: string;
+  label: string;
+  threshold: number;
+  description: string;
+  value?: number | null;
+}
+
+export interface SourcesResponse {
+  backend_wired: boolean;
+  registry_loaded: boolean;
+  rows: SourceRow[];
+}
+
+export interface SourceRow {
+  source_id: string;
+  name: string;
+  category: string;
+  provider: string;
+  auth: string;
+  enabled: boolean;
+  critical: boolean;
+  liveness_threshold_ms: number;
+  status: string;
+  last_heartbeat_ns: number;
+  last_data_ns: number;
+  gap_ns: number;
+}
+
+export interface HazardsResponse {
+  backend_wired: boolean;
+  taxonomy: HazardTaxonomyRow[];
+  recent: HazardEventRow[];
+}
+
+export interface HazardTaxonomyRow {
+  code: string;
+  label: string;
+  description: string;
+}
+
+export interface HazardEventRow {
+  code: string;
+  severity: string;
+  ts_ns: number;
+  source: string;
+  summary: string;
+}
