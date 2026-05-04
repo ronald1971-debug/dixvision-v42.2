@@ -94,6 +94,9 @@ from execution_engine.engine import ExecutionEngine
 from governance_engine.control_plane.ledger_authority_writer import (
     LedgerAuthorityWriter,
 )
+from governance_engine.control_plane.policy_drift_sentry import (
+    PolicyDriftSentry,
+)
 from governance_engine.control_plane.policy_hash_anchor import (
     PolicyHashAnchor,
 )
@@ -239,6 +242,24 @@ class _State:
         self.policy_hash_anchor = PolicyHashAnchor(ledger=ledger)
         self.policy_hash_anchor.bind_session(
             ts_ns=wall_ns(), requestor="ui_harness_boot"
+        )
+        # Hardening-S1 item 4-ext (wiring) -- the sentry runs the
+        # detector on each hot-path hazard ingestion and, on drift,
+        # hands the hazard to ``governance.process`` so the single FSM
+        # mutator downgrades the mode through the audited chain.
+        # Detection-only is not protection; this is the protection.
+        # The ``on_hazard`` callback persists the hazard on the audit
+        # ring before it is forwarded to ``governance.process``.
+        # Without it, the drift would be invisible to ``/api/events``
+        # because ``GovernanceEngine.process`` returns ``()`` for
+        # HAZARD events (the FSM mutation happens inside
+        # ``_handle_hazard``, not via a downstream emission).
+        self.policy_drift_sentry = PolicyDriftSentry(
+            anchor=self.policy_hash_anchor,
+            governance_process=self.governance.process,
+            on_hazard=lambda hazard: self.record(
+                "governance.policy_drift", hazard
+            ),
         )
         self.learning = LearningEngine()
         self.evolution = EvolutionEngine()
@@ -447,6 +468,27 @@ class _State:
         # for the in-process harness.
         self.ledger_reader._seed_for_tests((event,))
 
+    def _check_policy_drift_locked(self) -> None:
+        """Hardening-S1 item 4-ext (wiring) -- policy drift hot-path hook.
+
+        Runs :meth:`PolicyDriftSentry.check` under the harness lock.
+        On no drift the call is a one-line no-op; on drift it routes a
+        ``CRITICAL`` ``HAZ-POLICY-DRIFT`` :class:`HazardEvent` through
+        :meth:`GovernanceEngine.process`, which the classifier folds
+        into the ``emergency_lock=True`` arm so the single FSM mutator
+        transitions the mode to ``LOCKED`` (B32 / GOV-CP-03). Resulting
+        events are recorded on the audit ring so the operator UI can
+        show why the mode flipped.
+
+        Called at the head of every locked ingestion that touches
+        Governance or Execution; placed there so a mid-session policy
+        edit is detected *before* a decision is made against the
+        mutated document of record.
+        """
+
+        for downstream in self.policy_drift_sentry.check(now_ns=wall_ns()):
+            self.record("governance", downstream)
+
     def _ingest_market_tick_locked(self, tick: MarketTick) -> None:
         """Sink callable used by ``ui/feeds/runner.FeedRunner``.
 
@@ -458,6 +500,7 @@ class _State:
         """
 
         with self.lock:
+            self._check_policy_drift_locked()
             self.execution.on_market(tick)
             self.event_seq += 1
             self.events.appendleft(
@@ -495,6 +538,7 @@ class _State:
         """
 
         with self.lock:
+            self._check_policy_drift_locked()
             self.record("cognitive_chat", sig)
             for ev in self.intelligence.process(sig):
                 self.record("intelligence", ev)
@@ -515,6 +559,7 @@ class _State:
         runner's asyncio thread, so the lock is mandatory.
         """
         with self.lock:
+            self._check_policy_drift_locked()
             self.record("news.coindesk", sig)
             for ev in self.intelligence.process(sig):
                 self.record("intelligence", ev)
@@ -533,6 +578,7 @@ class _State:
         runner's asyncio thread.
         """
         with self.lock:
+            self._check_policy_drift_locked()
             self.record("hazard.news", hazard)
             for downstream in self.governance.process(hazard):
                 self.record("governance", downstream)
@@ -1350,6 +1396,7 @@ def post_tick(body: TickIn) -> dict[str, Any]:
     signals_out: list[dict[str, Any]] = []
     executions_out: list[dict[str, Any]] = []
     with STATE.lock:
+        STATE._check_policy_drift_locked()
         STATE.execution.on_market(tick)
         STATE.events.appendleft(
             {
@@ -1397,6 +1444,7 @@ def post_signal(body: SignalIn) -> dict[str, Any]:
     )
     out_events: list[dict[str, Any]] = []
     with STATE.lock:
+        STATE._check_policy_drift_locked()
         STATE.record("ui_harness", sig)
         for ev in STATE.intelligence.process(sig):
             STATE.record("intelligence", ev)
