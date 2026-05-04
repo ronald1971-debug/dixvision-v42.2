@@ -210,9 +210,16 @@ class OperatorConsentValidator:
 
         Order of checks is deterministic — the *first* failure wins,
         so the rejection code surfaces the most actionable cause.
-        Successful validation registers ``(operator_id, nonce)`` in
-        the seen-ring; further calls with the same pair while still
-        within the freshness window will fail with ``CONSENT_REPLAY``.
+
+        Successful validation returns ``ok=True`` but does **not**
+        register the nonce in the seen-ring. Registration is deferred
+        to :meth:`commit`, which the caller must invoke once *all*
+        downstream checks (promotion gates, policy decision table,
+        etc.) have also accepted the transition. This two-phase
+        commit prevents a downstream rejection from burning a
+        semantically-valid nonce. Future calls inside the freshness
+        window with the same ``(operator_id, nonce)`` pair will fail
+        with ``CONSENT_REPLAY`` only after :meth:`commit` has run.
         """
 
         if consent is None:
