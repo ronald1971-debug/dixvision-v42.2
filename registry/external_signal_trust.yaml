@@ -1,0 +1,30 @@
+# Per-source confidence caps for external signal producers (Paper-S1).
+#
+# Schema:
+#   version: int      — bumped whenever the trust policy changes; logged
+#                       into the DecisionTrace so a replay can identify
+#                       the exact policy that capped a signal.
+#   sources:
+#     <source_id>:
+#       trust: INTERNAL | EXTERNAL_LOW | EXTERNAL_MED
+#       cap:   float in [0.0, 1.0]   — overrides DEFAULT_LOW_CAP /
+#                                      DEFAULT_MED_CAP from
+#                                      core.contracts.signal_trust
+#       note:  free-form (audit only; no behaviour)
+#
+# Authority:
+#   * The governance gate (Paper-S5/S6) is the only consumer that may
+#     apply a cap. This file is a value table; it does not execute.
+#   * Missing source_id -> the producer's declared SignalTrust class
+#     defaults to EXTERNAL_LOW with the built-in DEFAULT_LOW_CAP.
+#   * INTERNAL entries are still allowed (e.g. for parity with the
+#     learning calibrator) but cap=null is the only legal cap value.
+#
+# This file ships an empty source table on purpose: every external
+# adapter (TradingView, QuantConnect, MT5, ...) lands its own row in a
+# follow-up PR alongside the adapter that needs it, so the YAML diff
+# is co-located with the producing code.
+
+version: 1
+
+sources: {}

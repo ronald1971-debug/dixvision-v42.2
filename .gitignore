@@ -31,3 +31,9 @@ dashboard2026/node_modules/
 dashboard2026/dist/
 dashboard2026/.vite/
 dashboard2026/*.tsbuildinfo
+
+# DIX MEME React/Vite app build artefacts (PR #181)
+dash_meme/node_modules/
+dash_meme/dist/
+dash_meme/.vite/
+dash_meme/*.tsbuildinfo

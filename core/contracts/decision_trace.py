@@ -27,8 +27,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from core.contracts.events import ExecutionStatus, HazardSeverity, Side
+from core.contracts.signal_trust import SignalTrust
 
-DECISION_TRACE_VERSION: int = 2
+DECISION_TRACE_VERSION: int = 3
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,8 +62,7 @@ class ConfidenceContribution:
         _check_unit("ConfidenceContribution.weight", self.weight)
         if self.weighted < 0.0 or self.weighted > 1.0:
             raise ValueError(
-                "ConfidenceContribution.weighted must be in [0.0, 1.0]; "
-                f"got {self.weighted}"
+                f"ConfidenceContribution.weighted must be in [0.0, 1.0]; got {self.weighted}"
             )
         expected = self.value * self.weight
         if abs(self.weighted - expected) > 1e-9:
@@ -119,9 +119,7 @@ class HazardInfluence:
         if not self.source:
             raise ValueError("HazardInfluence.source must be non-empty")
         if self.ts_ns < 0:
-            raise ValueError(
-                f"HazardInfluence.ts_ns must be non-negative; got {self.ts_ns}"
-            )
+            raise ValueError(f"HazardInfluence.ts_ns must be non-negative; got {self.ts_ns}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -143,10 +141,7 @@ class ThrottleInfluence:
         _check_unit("ThrottleInfluence.confidence_floor", self.confidence_floor)
         for code in self.contributing_codes:
             if not code:
-                raise ValueError(
-                    "ThrottleInfluence.contributing_codes entries must "
-                    "be non-empty"
-                )
+                raise ValueError("ThrottleInfluence.contributing_codes entries must be non-empty")
 
 
 @dataclass(frozen=True, slots=True)
@@ -167,13 +162,9 @@ class ExecutionOutcome:
 
     def __post_init__(self) -> None:
         if self.qty < 0.0:
-            raise ValueError(
-                f"ExecutionOutcome.qty must be non-negative; got {self.qty}"
-            )
+            raise ValueError(f"ExecutionOutcome.qty must be non-negative; got {self.qty}")
         if self.price < 0.0:
-            raise ValueError(
-                f"ExecutionOutcome.price must be non-negative; got {self.price}"
-            )
+            raise ValueError(f"ExecutionOutcome.price must be non-negative; got {self.price}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -258,8 +249,7 @@ class WhyLayer:
             value = getattr(self, fld)
             if value is not None and not value:
                 raise ValueError(
-                    f"WhyLayer.{fld} must be non-empty when set; "
-                    "use None to mean 'unknown'"
+                    f"WhyLayer.{fld} must be non-empty when set; use None to mean 'unknown'"
                 )
         seen_belief_names: set[str] = set()
         for belief in self.beliefs:
@@ -275,8 +265,7 @@ class WhyLayer:
                 raise ValueError("WhyLayer.notes keys must be non-empty")
             if key in seen_note_keys:
                 raise ValueError(
-                    f"WhyLayer.notes must not contain duplicate keys; "
-                    f"got duplicate {key!r}"
+                    f"WhyLayer.notes must not contain duplicate keys; got duplicate {key!r}"
                 )
             if not isinstance(text, str):
                 raise ValueError(
@@ -339,23 +328,31 @@ class DecisionTrace:
     throttle_applied: ThrottleInfluence | None
     execution_outcome: ExecutionOutcome | None
     why: WhyLayer | None = None
+    # Paper-S1 — provenance triplet projected from the SignalEvent +
+    # SCVS validator. Optional because pre-Paper-S1 traces never had
+    # them; the audit-ledger reader must tolerate ``None``.
+    signal_trust: SignalTrust | None = None
+    signal_source: str | None = None
+    validation_score: float | None = None
 
     def __post_init__(self) -> None:
         if self.version < 1:
-            raise ValueError(
-                f"DecisionTrace.version must be >= 1; got {self.version}"
-            )
+            raise ValueError(f"DecisionTrace.version must be >= 1; got {self.version}")
         if not self.trace_id:
             raise ValueError("DecisionTrace.trace_id must be non-empty")
         if self.ts_ns < 0:
-            raise ValueError(
-                f"DecisionTrace.ts_ns must be non-negative; got {self.ts_ns}"
-            )
+            raise ValueError(f"DecisionTrace.ts_ns must be non-negative; got {self.ts_ns}")
         if not self.symbol:
             raise ValueError("DecisionTrace.symbol must be non-empty")
         _check_unit("DecisionTrace.final_confidence", self.final_confidence)
         if self.safety_modifier is not None:
             _check_unit("DecisionTrace.safety_modifier", self.safety_modifier)
+        if self.validation_score is not None:
+            _check_unit("DecisionTrace.validation_score", self.validation_score)
+        if self.signal_source is not None and not self.signal_source:
+            raise ValueError(
+                "DecisionTrace.signal_source must be either None or a non-empty string"
+            )
 
 
 def _check_unit(name: str, value: float) -> None:
