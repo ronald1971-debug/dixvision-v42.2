@@ -24,7 +24,6 @@ interface PromoteStage {
 const STAGES: readonly PromoteStage[] = [
   { id: "backtest", label: "Backtest", mode: null },
   { id: "paper", label: "Paper", mode: "PAPER" },
-  { id: "shadow", label: "Shadow", mode: "SHADOW" },
   { id: "canary", label: "Canary", mode: "CANARY" },
   { id: "live", label: "Live", mode: "LIVE" },
   { id: "auto", label: "Auto", mode: "AUTO" },

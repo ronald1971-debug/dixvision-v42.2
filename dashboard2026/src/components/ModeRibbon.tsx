@@ -7,7 +7,8 @@ import { fetchMode } from "@/api/dashboard";
  * the dashboard.
  *
  * Per the system manifest the legal modes are
- * LOCKED · SAFE · PAPER · SHADOW · CANARY · LIVE · AUTO.
+ * LOCKED · SAFE · PAPER · CANARY · LIVE · AUTO.
+ * (SHADOW-DEMOLITION-02 collapsed system-mode SHADOW into PAPER.)
  * The ribbon renders one chip per mode, colour-coded by the role of
  * that mode in the safety pipeline, and highlights the chip the
  * Governance FSM currently reports as `current_mode`. A tooltip on
@@ -44,12 +45,6 @@ const CHIPS: readonly ModeChipSpec[] = [
     tone: "info",
     tooltip:
       "PAPER — paper broker only. Real signals routed to a fake fill engine; ledger and learning loop fully active.",
-  },
-  {
-    name: "SHADOW",
-    tone: "info",
-    tooltip:
-      "SHADOW — signals on, execution off. Strategies emit candidate trades that are scored and logged but never sent.",
   },
   {
     name: "CANARY",

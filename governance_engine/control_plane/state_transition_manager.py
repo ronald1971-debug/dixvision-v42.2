@@ -8,9 +8,12 @@ approved and the authority ledger has accepted the row.
 
 Legal edges (Build Compiler Spec §7):
 
-* Forward ratchet: ``SAFE → PAPER → SHADOW → CANARY → LIVE → AUTO``
+* Forward ratchet: ``SAFE → PAPER → CANARY → LIVE → AUTO``
   (one step at a time; LIVE and AUTO additionally require operator
   authorisation, gated upstream by :class:`PolicyEngine`).
+  System-mode SHADOW was demolished by SHADOW-DEMOLITION-02; the
+  signals-on/no-fills tier collapses into PAPER (paper-broker dispatch
+  with no live venue).
 * De-escalation: any backward step in the chain is permitted.
 * Emergency: any state may transition to ``LOCKED`` (kill).
 * Recovery: ``LOCKED → SAFE`` is the **only** way out of LOCKED.
@@ -54,12 +57,11 @@ from governance_engine.control_plane.ledger_authority_writer import (
 from governance_engine.control_plane.policy_engine import PolicyEngine
 from governance_engine.control_plane.promotion_gates import PromotionGates
 
-# The forward ratchet, in order. Index gaps mean: SHADOW → LIVE is
-# illegal (must go SHADOW → CANARY → LIVE).
+# The forward ratchet, in order. Index gaps mean: PAPER → LIVE is
+# illegal (must go PAPER → CANARY → LIVE).
 _FORWARD_CHAIN: tuple[SystemMode, ...] = (
     SystemMode.SAFE,
     SystemMode.PAPER,
-    SystemMode.SHADOW,
     SystemMode.CANARY,
     SystemMode.LIVE,
     SystemMode.AUTO,
@@ -292,7 +294,7 @@ class StateTransitionManager:
             # Reviewer #4 finding 4 -- hash-anchored promotion-gate
             # enforcement. CANARY / LIVE / AUTO refuse to enter unless the
             # live ``docs/promotion_gates.yaml`` hash matches the hash that
-            # was bound at SHADOW entry. Pre-FSM-state-flip and pre-policy
+            # was bound at PAPER entry. Pre-FSM-state-flip and pre-policy
             # so the rejection_code surfaces the gate violation, not a
             # downstream policy code that would obscure the real cause.
             if self._promotion_gates is not None:
@@ -387,15 +389,18 @@ class StateTransitionManager:
             self._mode = normalised.target_mode
 
             # Reviewer #4 finding 4 -- bind the live promotion-gates
-            # file hash on every SHADOW entry. ``bind`` writes a
+            # file hash on every PAPER entry. ``bind`` writes a
             # ``PROMOTION_GATES_BOUND`` ledger row immediately after
             # the ``MODE_TRANSITION`` row so replay sees them as a
-            # paired commit. Re-entry into SHADOW (after a
+            # paired commit. Re-entry into PAPER (after a
             # de-escalation) overwrites the bound hash, which is the
             # documented "edit the file, restart the clock" path.
+            # SHADOW-DEMOLITION-02 moved this binding moment from SHADOW
+            # entry to PAPER entry when the SHADOW system-mode tier was
+            # collapsed into PAPER.
             if (
                 self._promotion_gates is not None
-                and normalised.target_mode is SystemMode.SHADOW
+                and normalised.target_mode is SystemMode.PAPER
             ):
                 self._promotion_gates.bind(
                     ts_ns=normalised.ts_ns,

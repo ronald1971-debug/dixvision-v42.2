@@ -27,11 +27,16 @@ mode              signals  exec   size_cap   learn_emit   learn_apply   op_auth 
 LOCKED            False    False  0%         False        False         n/a      none
 SAFE              False    False  0%         False        False         False    per_trade
 PAPER             True     paper  0%         True         False         False    per_trade
-SHADOW            True     False  0%         True         False         False    per_trade
 CANARY            True     True   1%         True         True          True     per_trade
 LIVE              True     True   None       True         True          True     per_trade
 AUTO              True     True   None       True         True          True     exception_only
 ================  =======  =====  =========  ===========  ============  =======  ================
+
+System-mode ``SHADOW`` was demolished by SHADOW-DEMOLITION-02. The
+"signals-on, no execution" tier collapses into ``PAPER`` (paper-broker
+dispatch with no live venue). Removing the row changes
+:func:`mode_effect_table_hash`, so the next bootstrap writes a fresh
+``MODE_EFFECTS_INSTALLED`` ledger anchor.
 
 The table is *declarative*. PR-B / PR-C / PR-E in the same wave wire
 each row into the engines that act on it; this PR only ships the table
@@ -120,15 +125,6 @@ _MODE_EFFECTS_RAW: dict[SystemMode, ModeEffect] = {
     SystemMode.PAPER: ModeEffect(
         signals_emit=True,
         executions_dispatch=True,  # paper broker dispatch, no live venue
-        size_cap_pct=0.0,
-        learning_emit=True,
-        learning_apply=False,
-        operator_auth_required=False,
-        oversight_kind="per_trade",
-    ),
-    SystemMode.SHADOW: ModeEffect(
-        signals_emit=True,
-        executions_dispatch=False,  # signals fire, no broker dispatch
         size_cap_pct=0.0,
         learning_emit=True,
         learning_apply=False,

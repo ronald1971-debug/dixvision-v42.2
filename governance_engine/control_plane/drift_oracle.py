@@ -13,9 +13,11 @@ module fills both gaps:
   one-step *backward* transition through the system-mode chain via
   :meth:`StateTransitionManager.propose` whenever the composite
   exceeds ``downgrade_threshold`` and the current mode is at or above
-  ``CANARY``. Lower modes (``SHADOW`` and below) are already
+  ``CANARY``. Lower modes (``PAPER`` and below) are already
   signals-on-execution-off or fully read-only, so a drift-driven
-  downgrade has nothing to act on.
+  downgrade has nothing to act on. SHADOW-DEMOLITION-02 collapsed
+  the SHADOW tier into PAPER, so the lowest gated downgrade now
+  lands on PAPER.
 
 Determinism (INV-15): every input is caller-supplied; the oracle
 reads no clock and no PRNG.
@@ -62,7 +64,7 @@ DEFAULT_DOWNGRADE_THRESHOLD: float = 0.25
 _DOWNGRADE_CHAIN: tuple[tuple[SystemMode, SystemMode], ...] = (
     (SystemMode.AUTO, SystemMode.LIVE),
     (SystemMode.LIVE, SystemMode.CANARY),
-    (SystemMode.CANARY, SystemMode.SHADOW),
+    (SystemMode.CANARY, SystemMode.PAPER),
 )
 
 
@@ -212,7 +214,7 @@ class DriftCompositeOracle:
         Returns the reading plus the ``ModeTransitionDecision`` from
         :meth:`StateTransitionManager.propose`, or ``None`` when no
         downgrade applies (no breach, or current mode already at or
-        below ``SHADOW``).
+        below ``PAPER``).
         """
 
         reading = self.observe(ts_ns=ts_ns, readings=readings)

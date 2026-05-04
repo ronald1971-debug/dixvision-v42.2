@@ -3,8 +3,10 @@
 Build Compiler Spec §6 / §7 enforcement:
 
 * dashboard requests are the only operator write path
-* Mode FSM: SAFE → PAPER → SHADOW → CANARY → LIVE → AUTO ratchet,
+* Mode FSM: SAFE → PAPER → CANARY → LIVE → AUTO ratchet,
   emergency LOCK from anywhere, LOCKED → SAFE only
+  (system-mode SHADOW was demolished by SHADOW-DEMOLITION-02 and
+  collapsed into PAPER.)
 * every approved transition is one ledger row
 * AUTO requires ``operator_authorized``
 """
@@ -74,7 +76,7 @@ def test_ledger_writer_is_deterministic():
     rows = [
         (1, "MODE_TRANSITION", {"prev_mode": "SAFE", "new_mode": "PAPER"}),
         (2, "OPERATOR_REJECTED", {"action": "REQUEST_KILL", "rejection_code": "X"}),
-        (3, "MODE_TRANSITION", {"prev_mode": "PAPER", "new_mode": "SHADOW"}),
+        (3, "MODE_TRANSITION", {"prev_mode": "PAPER", "new_mode": "CANARY"}),
     ]
     for ts, kind, payload in rows:
         a.append(ts_ns=ts, kind=kind, payload=payload)
@@ -330,7 +332,6 @@ def test_consent_nonce_not_burned_when_promotion_gates_rejects():
 def test_mode_fsm_emergency_lock_from_any_state():
     for start in (
         SystemMode.PAPER,
-        SystemMode.SHADOW,
         SystemMode.CANARY,
         SystemMode.LIVE,
         SystemMode.AUTO,
@@ -381,7 +382,7 @@ def test_mode_fsm_locked_only_to_safe():
 
 def test_mode_fsm_de_escalation_always_allowed():
     state, _, _ = _build_state(initial=SystemMode.AUTO)
-    for target in (SystemMode.LIVE, SystemMode.SHADOW, SystemMode.SAFE):
+    for target in (SystemMode.LIVE, SystemMode.PAPER, SystemMode.SAFE):
         d = state.propose(
             ModeTransitionRequest(
                 ts_ns=40,
@@ -735,7 +736,7 @@ def test_operator_bridge_plugin_lifecycle_logs_audit_row():
             payload={
                 "plugin_path": "intelligence_engine.plugins.microstructure",
                 "target_status": "ACTIVE",
-                "reason": "promote v1 from SHADOW",
+                "reason": "promote v1 from PROPOSED",
             },
         )
     )
@@ -868,7 +869,7 @@ def test_two_engines_same_inputs_produce_same_ledger():
             ts_ns=2,
             requestor="op",
             action=OperatorAction.REQUEST_MODE,
-            payload={"target_mode": "SHADOW"},
+            payload={"target_mode": "INVALID_MODE"},
         ),
         OperatorRequest(
             ts_ns=3,

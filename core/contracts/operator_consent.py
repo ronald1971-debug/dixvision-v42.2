@@ -26,10 +26,12 @@ item 8) are:
 * ``LIVE → AUTO``    — operator-removed autonomy; AI now acts
   without per-trade ratification.
 
-Other forward edges (``PAPER → SHADOW``, ``SHADOW → CANARY``,
-``CANARY → LIVE``) keep their existing operator-authorised gate
-plus the hash-anchored promotion-gates check (PR #124). They are
-candidates to upgrade to typed consent in a follow-up PR.
+Other forward edges (``PAPER → CANARY``, ``CANARY → LIVE``) keep
+their existing operator-authorised gate plus the hash-anchored
+promotion-gates check (PR #124). They are candidates to upgrade to
+typed consent in a follow-up PR. SHADOW-DEMOLITION-02 collapsed
+the SHADOW system-mode tier into PAPER, so the historic
+``PAPER → SHADOW`` and ``SHADOW → CANARY`` edges no longer exist.
 
 This module is contract-only — it has no governance-engine,
 state-transition-manager, or policy-engine dependencies, so it can

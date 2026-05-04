@@ -14,7 +14,7 @@ Refs:
 
 Mode FSM (per the operator's Build Compiler Spec §7):
 
-    SAFE → PAPER → SHADOW → CANARY → LIVE → AUTO
+    SAFE → PAPER → CANARY → LIVE → AUTO
 
 The forward path is a strict ratchet: each step requires policy
 approval, risk approval and compliance approval, and the AUTO step
@@ -23,6 +23,13 @@ additionally requires an explicit ``operator_authorized`` request.
 ``LOCKED → SAFE`` is the only path out of ``LOCKED``. Backward
 de-escalation (e.g. ``AUTO → LIVE``, ``LIVE → CANARY``) is always
 permitted.
+
+System-mode ``SHADOW`` was demolished by SHADOW-DEMOLITION-02. The
+"signals-on, no execution" tier is no longer a distinct mode -- ``PAPER``
+emits signals and dispatches via the simulated paper broker, and operators
+who want strictly-no-fills set up the paper broker with a refusal hook.
+The rank-2 slot is intentionally left vacant so persisted ledger rows
+carrying ``mode=2`` remain decodable in archival readers.
 """
 
 from __future__ import annotations
@@ -47,7 +54,9 @@ class SystemMode(IntEnum):
 
     SAFE = 0
     PAPER = 1
-    SHADOW = 2
+    # rank=2 vacated by SHADOW-DEMOLITION-02 (system-level SHADOW removed).
+    # Kept as a gap so persisted ledger rows that historically carried
+    # ``mode=2`` decode without renumbering CANARY/LIVE/AUTO.
     CANARY = 3
     LIVE = 4
     AUTO = 5
@@ -100,8 +109,8 @@ class ModeTransitionRequest:
     Hardening-S1 item 8 (currently ``SAFE → PAPER`` and
     ``LIVE → AUTO``). The legacy ``operator_authorized`` bool is kept
     for backward compatibility on edges that are still gated by
-    promotion-gates + operator-authorised flag (PAPER → SHADOW,
-    SHADOW → CANARY, CANARY → LIVE).
+    promotion-gates + operator-authorised flag (PAPER → CANARY,
+    CANARY → LIVE).
     """
 
     ts_ns: int

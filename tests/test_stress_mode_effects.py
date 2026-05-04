@@ -13,9 +13,14 @@ HARDEN-04). This file hammers the table from every angle:
 * :func:`equity_notional_cap_qty` must be a pure deterministic function
   of ``(mode, equity, price)`` and must reject negative equity / non-
   positive price.
-* Per-mode invariants the build plan documents (e.g. SHADOW emits
-  signals but never dispatches; LOCKED is fully gated; CANARY caps at
-  1%) must hold.
+* Per-mode invariants the build plan documents (e.g. PAPER emits
+  signals but dispatches via the paper-broker only; LOCKED is fully
+  gated; CANARY caps at 1%) must hold.
+
+SHADOW-DEMOLITION-02 collapsed system-mode SHADOW into PAPER, so the
+``signals on, execution off`` slot is now ``LOCKED``/``SAFE`` (no
+signals, no dispatch) on one side and ``PAPER`` (signals on, paper
+broker dispatch only) on the other.
 
 Backend-only — no UI surface. INV-15: every assertion is a pure
 function of the canonical table; no I/O, no clock, no PRNG without a
@@ -109,19 +114,6 @@ def test_paper_emits_and_dispatches_to_paper_broker() -> None:
     assert eff.executions_dispatch is True
 
 
-def test_shadow_emits_signals_but_never_dispatches() -> None:
-    """SHADOW = signals-on, execution-off (the whole point of SHADOW).
-
-    Reviewer #3's primary callout: SHADOW is required *before* CANARY,
-    and is operationally distinct from PAPER (no broker dispatch at all).
-    """
-    eff = effect_for(SystemMode.SHADOW)
-    assert eff.signals_emit is True, "SHADOW must emit signals"
-    assert eff.executions_dispatch is False, (
-        "SHADOW must NOT dispatch executions — that is the SHADOW invariant"
-    )
-
-
 def test_canary_is_capped_at_one_percent_equity() -> None:
     """CANARY must cap notional at 1% of equity (PR #112 invariant)."""
     eff = effect_for(SystemMode.CANARY)
@@ -174,7 +166,7 @@ def test_learning_emit_only_when_signals_emit() -> None:
     """Without a signal stream there is no learning input to emit (HARDEN-04).
 
     LOCKED / SAFE: no signals -> no learning input.
-    SHADOW / PAPER / CANARY / LIVE / AUTO: signals on -> learning input
+    PAPER / CANARY / LIVE / AUTO: signals on -> learning input
     flows; whether *apply* happens is a separate gate (CANARY/LIVE/AUTO
     only, per PR #114).
     """
@@ -189,8 +181,8 @@ def test_size_cap_zero_means_dispatch_suppressed_or_paper() -> None:
     """``size_cap_pct == 0.0`` is meaningful only for non-equity modes.
 
     Documented in :func:`equity_notional_cap_qty` docstring: size_cap_pct
-    of ``0.0`` is moot for dispatch-suppressed modes (LOCKED, SAFE,
-    SHADOW) and for PAPER (paper broker is not equity-bearing).
+    of ``0.0`` is moot for dispatch-suppressed modes (LOCKED, SAFE)
+    and for PAPER (paper broker is not equity-bearing).
     """
     for mode, eff in MODE_EFFECTS.items():
         if eff.size_cap_pct == 0.0:
@@ -323,7 +315,6 @@ def test_equity_notional_cap_zero_pct_modes_return_none() -> None:
     for mode in (
         SystemMode.LOCKED,
         SystemMode.SAFE,
-        SystemMode.SHADOW,
         SystemMode.PAPER,
     ):
         assert (

@@ -167,7 +167,7 @@ def test_no_strategy_id_skips_feedback_collector_only() -> None:
 
 
 def test_mode_suppressed_event_still_feeds_loop() -> None:
-    """SHADOW / SAFE / LOCKED dispatch suppression should still record
+    """SAFE / LOCKED dispatch suppression should still record
     a learning row -- the goal is to capture *every* terminal event."""
 
     fc = FeedbackCollector()
@@ -183,7 +183,7 @@ def test_mode_suppressed_event_still_feeds_loop() -> None:
     events = engine.execute(
         _intent(),
         caller="tests.fixtures",
-        current_mode=SystemMode.SHADOW,
+        current_mode=SystemMode.SAFE,
     )
 
     assert events[0].status is ExecutionStatus.REJECTED

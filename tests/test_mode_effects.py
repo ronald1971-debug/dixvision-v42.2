@@ -89,17 +89,6 @@ def test_paper_emits_signals_and_dispatches_to_paper_broker() -> None:
     assert eff.operator_auth_required is False
 
 
-def test_shadow_emits_signals_but_suppresses_execution() -> None:
-    """SHADOW is exactly the slot reviewer #3 named: signals on, execution off."""
-
-    eff = MODE_EFFECTS[SystemMode.SHADOW]
-    assert eff.signals_emit is True
-    assert eff.executions_dispatch is False
-    # Learning observes shadow signals but cannot apply updates yet.
-    assert eff.learning_emit is True
-    assert eff.learning_apply is False
-
-
 def test_canary_caps_size_and_requires_operator() -> None:
     """CANARY: live execution at constrained size + operator-gated entry."""
 
@@ -133,16 +122,19 @@ def test_auto_relaxes_oversight_to_exception_only() -> None:
     assert eff.operator_auth_required is True
 
 
-def test_shadow_and_paper_differ_only_in_dispatch() -> None:
-    """SHADOW vs PAPER: identical except executions_dispatch."""
+def test_safe_and_paper_differ_only_in_signal_emission() -> None:
+    """SAFE vs PAPER: identical except signals_emit / executions_dispatch.
 
-    p = MODE_EFFECTS[SystemMode.PAPER]
-    s = MODE_EFFECTS[SystemMode.SHADOW]
-    assert p.signals_emit == s.signals_emit
-    assert p.executions_dispatch != s.executions_dispatch
-    assert p.size_cap_pct == s.size_cap_pct
-    assert p.learning_emit == s.learning_emit
-    assert p.learning_apply == s.learning_apply
+    SHADOW-DEMOLITION-02 collapsed system-mode SHADOW into PAPER, so
+    the canonical 'observe but do not act' divide now lives between
+    SAFE (no signals, no dispatch) and PAPER (signals on, dispatch on
+    via paper-broker).
+    """
+
+    safe = MODE_EFFECTS[SystemMode.SAFE]
+    paper = MODE_EFFECTS[SystemMode.PAPER]
+    assert safe.size_cap_pct == paper.size_cap_pct
+    assert safe.signals_emit != paper.signals_emit
 
 
 def test_canary_and_live_differ_in_size_cap() -> None:
@@ -228,13 +220,13 @@ def test_table_hash_changes_when_any_field_changes() -> None:
 
     base = mode_effect_table_hash()
     mutated = dict(MODE_EFFECTS)
-    mutated[SystemMode.SHADOW] = ModeEffect(
+    mutated[SystemMode.PAPER] = ModeEffect(
         signals_emit=True,
-        executions_dispatch=True,  # the bug we want the hash to surface
+        executions_dispatch=False,  # the bug we want the hash to surface
         size_cap_pct=0.0,
         learning_emit=True,
         learning_apply=False,
-        operator_auth_required=False,
+        operator_auth_required=True,
         oversight_kind="per_trade",
     )
     assert mode_effect_table_hash(mutated) != base
