@@ -70,19 +70,35 @@ export function MultichartPage() {
 
   useEffect(() => {
     const recent = q.data?.items ?? [];
-    let changed = false;
+    // Group incoming points by symbol first, then merge+dedup each
+    // symbol's buffer once at the end (Devin Review BUG_0002 on PR
+    // #181 — overlapping 2.5s refetches were padding the per-symbol
+    // 300-point caps with duplicates, shrinking effective history).
+    const incoming: Record<string, PricePoint[]> = {};
     for (const r of recent) {
       const sym = pickSym(r);
       const price = pickPrice(r);
       if (!sym || price == null) continue;
-      // crude symbol matching — backend symbol vs operator-typed symbol
       const matched = symbols.find(
         (s) => s.toUpperCase().split("/")[0] === sym.toUpperCase(),
       );
       if (!matched) continue;
-      const buf = buffers.current[matched] ?? [];
-      buf.push({ ts: pickTs(r), price });
-      buffers.current[matched] = buf.slice(-300);
+      (incoming[matched] ??= []).push({ ts: pickTs(r), price });
+    }
+    let changed = false;
+    for (const [matched, points] of Object.entries(incoming)) {
+      const merged = [...(buffers.current[matched] ?? []), ...points].sort(
+        (a, b) => a.ts - b.ts,
+      );
+      const seen = new Set<number>();
+      const dedup: PricePoint[] = [];
+      for (const p of merged) {
+        if (!seen.has(p.ts)) {
+          seen.add(p.ts);
+          dedup.push(p);
+        }
+      }
+      buffers.current[matched] = dedup.slice(-300);
       changed = true;
     }
     if (changed) setTick((t) => t + 1);

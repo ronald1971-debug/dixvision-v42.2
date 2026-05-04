@@ -56,9 +56,20 @@ export function TradePage() {
       if (p != null) incoming.push({ ts: pickTs(r), price: p });
     }
     if (incoming.length === 0) return;
-    buf.current = [...buf.current, ...incoming]
-      .sort((a, b) => a.ts - b.ts)
-      .slice(-600);
+    // Dedup by ts so overlapping refetches (every 2s) do not pad the
+    // buffer with duplicates and shrink the effective time window
+    // (Devin Review BUG_0001 follow-up on PR #181, mirrors
+    // PairExplorerPage).
+    const merged = [...buf.current, ...incoming].sort((a, b) => a.ts - b.ts);
+    const seen = new Set<number>();
+    const dedup: PricePoint[] = [];
+    for (const p of merged) {
+      if (!seen.has(p.ts)) {
+        seen.add(p.ts);
+        dedup.push(p);
+      }
+    }
+    buf.current = dedup.slice(-600);
     setPoints([...buf.current]);
   }, [q.data]);
 
