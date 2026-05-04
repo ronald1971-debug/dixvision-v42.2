@@ -217,7 +217,12 @@ class RiskEvaluator:
 
         if not assessment.approved:
             raise ValueError("cannot commit a rejected assessment")
-        self._book.apply(assessment.symbol, assessment.side, assessment.qty)
+        self._book.apply(
+            assessment.symbol,
+            assessment.side,
+            assessment.qty,
+            ts_ns=assessment.ts_ns,
+        )
 
 
 __all__ = ["ExposureBook", "RiskEvaluator"]

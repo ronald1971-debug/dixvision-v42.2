@@ -194,6 +194,60 @@ def test_compliance_validator_in_memory_default_unchanged() -> None:
     assert fresh.passed is True
 
 
+def test_risk_evaluator_commit_propagates_ts_ns(
+    store_path: Path,
+) -> None:
+    """``RiskEvaluator.commit`` must persist the assessment's ts_ns.
+
+    Regression for Devin Review BUG_0001 on PR #196 -- the initial
+    AUDIT-P0.4 commit threaded ``ts_ns`` through ``ExposureBook.set``
+    and direct ``apply`` calls, but ``RiskEvaluator.commit`` still
+    invoked ``self._book.apply(symbol, side, qty)`` without the
+    timestamp, silently writing ``updated_ns=0`` for every
+    governance-committed exposure. The audit row keeps the qty but
+    loses the timestamp -- breaking the durable-audit invariant.
+    """
+
+    from core.contracts.governance import RiskAssessment
+    from governance_engine.control_plane.risk_evaluator import RiskEvaluator
+
+    store = ExposureStore(db_path=store_path)
+    book = ExposureBook(store=store)
+    evaluator = RiskEvaluator(exposure_book=book)
+
+    assessment = RiskAssessment(
+        ts_ns=1_700_000_000_000_000_000,
+        symbol="BTC-USD",
+        side="BUY",
+        qty=2.5,
+        approved=True,
+        rejection_code="",
+        breached_limits=(),
+        exposure_after=2.5,
+    )
+    evaluator.commit(assessment)
+    store.close()
+
+    # Re-open the SQLite file with a raw connection to inspect the
+    # persisted updated_ns -- the assertion the bug reporter
+    # flagged.
+    import sqlite3
+
+    conn = sqlite3.connect(str(store_path))
+    try:
+        row = conn.execute(
+            "SELECT symbol, qty, updated_ns FROM exposure_book "
+            "WHERE symbol = ?",
+            ("BTC-USD",),
+        ).fetchone()
+    finally:
+        conn.close()
+    assert row is not None
+    assert row[0] == "BTC-USD"
+    assert row[1] == pytest.approx(2.5)
+    assert row[2] == 1_700_000_000_000_000_000
+
+
 def test_day_iso_from_ns_known_dates() -> None:
     # 2023-11-14 22:13:20 UTC == 1700000000 s
     assert day_iso_from_ns(1_700_000_000_000_000_000) == "2023-11-14"
