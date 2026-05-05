@@ -1,0 +1,32 @@
+# Agent state-snapshot key allowlist (INV-54, B19).
+#
+# Every concrete agent in `intelligence_engine/agents/` exposes a
+# pure `state_snapshot() -> Mapping[str, str]`. The keys it returns
+# must be a SUBSET of the keys listed below. Adding a new key
+# requires explicit architectural review and a recorded rationale in
+# the PR description.
+#
+# Schema:
+#   keys:
+#     <agent_id>:
+#       - key_name_1
+#       - key_name_2
+#     ...
+#
+# Conventions:
+#   * Keys are snake_case ASCII (no spaces, no unicode).
+#   * Values returned by snapshot() are strings; no float drift
+#     across replay.
+#   * Common keys (`agent_id`, `lifecycle`) are repeated per agent
+#     for explicitness rather than inherited from a shared block.
+
+keys:
+  AGT-01-scalper:
+    - agent_id
+    - lifecycle
+    - last_decision_direction
+    - last_decision_confidence
+    - last_decision_ts_ns
+    - decisions_in_window
+    - mid_window_size
+    - momentum_threshold

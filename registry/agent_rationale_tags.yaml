@@ -1,0 +1,19 @@
+# AgentDecisionTrace.rationale_tags allowlist (INV-54, B19).
+#
+# Every entry in `AgentDecisionTrace.rationale_tags` must be drawn
+# from this allowlist. Tags are global across agents (an agent can
+# only emit a tag listed here, but not all tags need to be emitted
+# by every agent).
+#
+# Adding a new tag requires explicit architectural review.
+
+tags:
+  - momentum_up
+  - momentum_down
+  - momentum_neutral
+  - mid_drift_buy
+  - mid_drift_sell
+  - confidence_below_floor
+  - cooldown_active
+  - book_invalid
+  - signal_missing
