@@ -15,6 +15,7 @@ from intelligence_engine.plugins.on_chain_pulse import OnChainPulseV1
 from intelligence_engine.plugins.order_book_pressure import OrderBookPressureV1
 from intelligence_engine.plugins.regime_classifier import RegimeClassifierV1
 from intelligence_engine.plugins.sentiment_aggregator import SentimentAggregatorV1
+from intelligence_engine.plugins.trader_imitation import TraderImitationV1
 from intelligence_engine.plugins.vpin_imbalance import VpinImbalanceV1
 
 __all__ = [
@@ -25,5 +26,6 @@ __all__ = [
     "OrderBookPressureV1",
     "RegimeClassifierV1",
     "SentimentAggregatorV1",
+    "TraderImitationV1",
     "VpinImbalanceV1",
 ]
