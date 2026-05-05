@@ -1357,8 +1357,11 @@ B30_ALLOWED_LEAF_PRODUCERS: frozenset[str] = frozenset(
         "intelligence_engine.engine",
         "intelligence_engine.signal_pipeline",
         "intelligence_engine.strategy_runtime.conflict_resolver",
+        "intelligence_engine.plugins.liquidity_physics.v1",
         "intelligence_engine.plugins.microstructure.microstructure_v1",
         "intelligence_engine.plugins.order_book_pressure.v1",
+        "intelligence_engine.plugins.regime_classifier.v1",
+        "intelligence_engine.plugins.vpin_imbalance.v1",
         "intelligence_engine.cognitive.approval_edge",
     }
 )
