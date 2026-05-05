@@ -135,6 +135,17 @@ def test_invalid_drift_or_volatility_rejected() -> None:
         LatencyJitter().step(seed=0, scenario=_scenario(price_volatility=-0.1))
 
 
+def test_nan_inputs_rejected() -> None:
+    nan = float("nan")
+    for key in (
+        "jitter_std_ms",
+        "price_drift_per_ms",
+        "price_volatility",
+    ):
+        with pytest.raises(ValueError):
+            LatencyJitter().step(seed=0, scenario=_scenario(**{key: nan}))
+
+
 def test_invalid_entry_or_size_rejected() -> None:
     with pytest.raises(ValueError):
         LatencyJitter().step(seed=0, scenario=_scenario(entry_price=0.0))

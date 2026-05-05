@@ -105,8 +105,10 @@ def _require_non_negative_float(meta: dict[str, Any], key: str) -> float:
         v = float(raw)
     except (TypeError, ValueError) as exc:
         raise ValueError(f"meta[{key!r}] must be numeric, got {raw!r}") from exc
-    if v < 0.0:
-        raise ValueError(f"meta[{key!r}] must be >= 0, got {v!r}")
+    # Phrased as `not v >= 0.0` so NaN (which compares False to every
+    # numeric) is rejected. `v < 0.0` would silently pass NaN through.
+    if not v >= 0.0:
+        raise ValueError(f"meta[{key!r}] must be >= 0 and finite, got {v!r}")
     return v
 
 
