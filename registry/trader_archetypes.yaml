@@ -2636,3 +2636,1203 @@ archetypes:
         high_vol: 0.85
         low_vol: 0.3
 
+  TA-PAIRS-131:
+    name: 'Cointegration Pair Trader'
+    state: ACTIVE
+    decay_rate: 0.008
+    performance_score: 0.0
+    seed_trader: anonymous_coint_archetype
+    dimensions:
+      belief_system:
+        statistical_arbitrage: 0.92
+        mean_reversion: 0.92
+        fundamentals: 0.55
+      risk_attitude: MODERATE
+      time_horizon: SWING
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.45
+        ranging: 0.85
+        high_vol: 0.5
+        low_vol: 0.85
+
+  TA-PAIRS-132:
+    name: 'Sector-Pair Reverter'
+    state: ACTIVE
+    decay_rate: 0.009
+    performance_score: 0.0
+    seed_trader: anonymous_sectorpair_archetype
+    dimensions:
+      belief_system:
+        statistical_arbitrage: 0.88
+        mean_reversion: 0.85
+        fundamentals: 0.65
+      risk_attitude: MODERATE
+      time_horizon: SWING
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.5
+        ranging: 0.78
+        high_vol: 0.5
+        low_vol: 0.82
+
+  TA-PAIRS-133:
+    name: 'Long-Short Equity Quant'
+    state: ACTIVE
+    decay_rate: 0.006
+    performance_score: 0.0
+    seed_trader: anonymous_lseq_archetype
+    dimensions:
+      belief_system:
+        statistical_arbitrage: 0.85
+        factor_investing: 0.85
+        fundamentals: 0.78
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.55
+        ranging: 0.78
+        high_vol: 0.55
+        low_vol: 0.85
+
+  TA-PAIRS-134:
+    name: 'Z-Score Mean Reverter'
+    state: ACTIVE
+    decay_rate: 0.014
+    performance_score: 0.0
+    seed_trader: anonymous_zscore_archetype
+    dimensions:
+      belief_system:
+        statistical_arbitrage: 0.85
+        mean_reversion: 0.92
+        microstructure: 0.55
+      risk_attitude: MODERATE
+      time_horizon: INTRADAY
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.4
+        ranging: 0.85
+        high_vol: 0.45
+        low_vol: 0.85
+
+  TA-PAIRS-135:
+    name: 'Distance-Based Pairs'
+    state: ACTIVE
+    decay_rate: 0.008
+    performance_score: 0.0
+    seed_trader: evan_gatev_archetype
+    dimensions:
+      belief_system:
+        statistical_arbitrage: 0.82
+        mean_reversion: 0.85
+        fundamentals: 0.5
+      risk_attitude: CONSERVATIVE
+      time_horizon: SWING
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.45
+        ranging: 0.85
+        high_vol: 0.45
+        low_vol: 0.85
+
+  TA-INDEX-136:
+    name: 'Index-Rebalance Front Runner'
+    state: ACTIVE
+    decay_rate: 0.012
+    performance_score: 0.0
+    seed_trader: anonymous_rebal_archetype
+    dimensions:
+      belief_system:
+        catalyst_driven: 0.88
+        statistical_arbitrage: 0.78
+        factor_investing: 0.65
+      risk_attitude: MODERATE
+      time_horizon: SWING
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.55
+        ranging: 0.65
+        high_vol: 0.55
+        low_vol: 0.78
+
+  TA-INDEX-137:
+    name: 'Russell-Reconstitution'
+    state: ACTIVE
+    decay_rate: 0.011
+    performance_score: 0.0
+    seed_trader: anonymous_russell_archetype
+    dimensions:
+      belief_system:
+        catalyst_driven: 0.85
+        factor_investing: 0.78
+        statistical_arbitrage: 0.75
+      risk_attitude: MODERATE
+      time_horizon: SWING
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.55
+        ranging: 0.65
+        high_vol: 0.55
+        low_vol: 0.75
+
+  TA-INDEX-138:
+    name: 'ETF-Creation Arb'
+    state: ACTIVE
+    decay_rate: 0.02
+    performance_score: 0.0
+    seed_trader: anonymous_etf_create_archetype
+    dimensions:
+      belief_system:
+        statistical_arbitrage: 0.92
+        latency_arbitrage: 0.78
+        microstructure: 0.78
+      risk_attitude: CONSERVATIVE
+      time_horizon: SCALP
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.55
+        ranging: 0.85
+        high_vol: 0.5
+        low_vol: 0.88
+
+  TA-INDEX-139:
+    name: 'Smart-Beta Factor Tilter'
+    state: ACTIVE
+    decay_rate: 0.005
+    performance_score: 0.0
+    seed_trader: anonymous_smartbeta_archetype
+    dimensions:
+      belief_system:
+        factor_investing: 0.92
+        fundamentals: 0.78
+        value: 0.65
+      risk_attitude: CONSERVATIVE
+      time_horizon: POSITION
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.65
+        ranging: 0.65
+        high_vol: 0.55
+        low_vol: 0.78
+
+  TA-INDEX-140:
+    name: 'Passive-Flow Surfer'
+    state: ACTIVE
+    decay_rate: 0.007
+    performance_score: 0.0
+    seed_trader: anonymous_passive_archetype
+    dimensions:
+      belief_system:
+        factor_investing: 0.78
+        trend_following: 0.65
+        supply_demand: 0.78
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: REACTIVE
+      regime_performance:
+        trending: 0.78
+        ranging: 0.45
+        high_vol: 0.5
+        low_vol: 0.78
+
+  TA-COMMOD-141:
+    name: 'COT-Report Trader'
+    state: ACTIVE
+    decay_rate: 0.007
+    performance_score: 0.0
+    seed_trader: larry_williams_archetype
+    dimensions:
+      belief_system:
+        sentiment: 0.85
+        fundamentals: 0.78
+        contrarian: 0.65
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.65
+        ranging: 0.55
+        high_vol: 0.55
+        low_vol: 0.65
+
+  TA-COMMOD-142:
+    name: 'Backwardation Carry'
+    state: ACTIVE
+    decay_rate: 0.005
+    performance_score: 0.0
+    seed_trader: anonymous_backward_archetype
+    dimensions:
+      belief_system:
+        carry: 0.92
+        term_structure: 0.92
+        fundamentals: 0.65
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.65
+        ranging: 0.55
+        high_vol: 0.5
+        low_vol: 0.78
+
+  TA-COMMOD-143:
+    name: 'Contango-Decay Short'
+    state: ACTIVE
+    decay_rate: 0.006
+    performance_score: 0.0
+    seed_trader: anonymous_contango_archetype
+    dimensions:
+      belief_system:
+        carry: 0.88
+        term_structure: 0.88
+        mean_reversion: 0.65
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.65
+        ranging: 0.55
+        high_vol: 0.5
+        low_vol: 0.78
+
+  TA-COMMOD-144:
+    name: 'Storage-Spread Trader'
+    state: ACTIVE
+    decay_rate: 0.005
+    performance_score: 0.0
+    seed_trader: anonymous_storage_archetype
+    dimensions:
+      belief_system:
+        fundamentals: 0.85
+        carry: 0.85
+        supply_demand: 0.85
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.55
+        ranging: 0.7
+        high_vol: 0.55
+        low_vol: 0.78
+
+  TA-COMMOD-145:
+    name: 'Crack-Spread Refiner'
+    state: ACTIVE
+    decay_rate: 0.005
+    performance_score: 0.0
+    seed_trader: anonymous_crack_archetype
+    dimensions:
+      belief_system:
+        fundamentals: 0.92
+        supply_demand: 0.88
+        carry: 0.65
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.65
+        ranging: 0.55
+        high_vol: 0.55
+        low_vol: 0.65
+
+  TA-ENERGY-146:
+    name: 'WTI-Brent Spread'
+    state: ACTIVE
+    decay_rate: 0.01
+    performance_score: 0.0
+    seed_trader: anonymous_wti_brent_archetype
+    dimensions:
+      belief_system:
+        statistical_arbitrage: 0.85
+        fundamentals: 0.82
+        carry: 0.55
+      risk_attitude: MODERATE
+      time_horizon: SWING
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.55
+        ranging: 0.78
+        high_vol: 0.55
+        low_vol: 0.78
+
+  TA-ENERGY-147:
+    name: 'Nat-Gas Seasonality'
+    state: ACTIVE
+    decay_rate: 0.01
+    performance_score: 0.0
+    seed_trader: anonymous_natgas_archetype
+    dimensions:
+      belief_system:
+        seasonality: 0.92
+        fundamentals: 0.78
+        supply_demand: 0.85
+      risk_attitude: AGGRESSIVE
+      time_horizon: SWING
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.65
+        ranging: 0.45
+        high_vol: 0.78
+        low_vol: 0.55
+
+  TA-ENERGY-148:
+    name: 'EIA-Inventory Reaction'
+    state: ACTIVE
+    decay_rate: 0.018
+    performance_score: 0.0
+    seed_trader: anonymous_eia_archetype
+    dimensions:
+      belief_system:
+        catalyst_driven: 0.92
+        fundamentals: 0.78
+        sentiment: 0.55
+      risk_attitude: AGGRESSIVE
+      time_horizon: INTRADAY
+      conviction_style: REACTIVE
+      regime_performance:
+        trending: 0.55
+        ranging: 0.55
+        high_vol: 0.85
+        low_vol: 0.45
+
+  TA-ENERGY-149:
+    name: 'OPEC-Decision Trader'
+    state: ACTIVE
+    decay_rate: 0.014
+    performance_score: 0.0
+    seed_trader: anonymous_opec_archetype
+    dimensions:
+      belief_system:
+        catalyst_driven: 0.92
+        fundamentals: 0.85
+        macro_thesis: 0.78
+      risk_attitude: AGGRESSIVE
+      time_horizon: SWING
+      conviction_style: REACTIVE
+      regime_performance:
+        trending: 0.65
+        ranging: 0.45
+        high_vol: 0.85
+        low_vol: 0.4
+
+  TA-ENERGY-150:
+    name: 'Power-Curve Trader'
+    state: ACTIVE
+    decay_rate: 0.005
+    performance_score: 0.0
+    seed_trader: anonymous_power_archetype
+    dimensions:
+      belief_system:
+        fundamentals: 0.88
+        term_structure: 0.85
+        seasonality: 0.78
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.55
+        ranging: 0.65
+        high_vol: 0.55
+        low_vol: 0.78
+
+  TA-METAL-151:
+    name: 'Gold-Real-Yield Trader'
+    state: ACTIVE
+    decay_rate: 0.004
+    performance_score: 0.0
+    seed_trader: anonymous_gold_real_archetype
+    dimensions:
+      belief_system:
+        macro_thesis: 0.92
+        fundamentals: 0.78
+        carry: 0.65
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.65
+        ranging: 0.55
+        high_vol: 0.65
+        low_vol: 0.55
+
+  TA-METAL-152:
+    name: 'Silver-Gold Ratio'
+    state: ACTIVE
+    decay_rate: 0.006
+    performance_score: 0.0
+    seed_trader: anonymous_silv_gold_archetype
+    dimensions:
+      belief_system:
+        statistical_arbitrage: 0.85
+        mean_reversion: 0.78
+        macro_thesis: 0.65
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.55
+        ranging: 0.78
+        high_vol: 0.55
+        low_vol: 0.78
+
+  TA-METAL-153:
+    name: 'Copper-Macro Indicator'
+    state: ACTIVE
+    decay_rate: 0.005
+    performance_score: 0.0
+    seed_trader: anonymous_copper_archetype
+    dimensions:
+      belief_system:
+        fundamentals: 0.92
+        macro_thesis: 0.92
+        supply_demand: 0.85
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.78
+        ranging: 0.45
+        high_vol: 0.55
+        low_vol: 0.65
+
+  TA-METAL-154:
+    name: 'LBMA-Fix Trader'
+    state: ACTIVE
+    decay_rate: 0.018
+    performance_score: 0.0
+    seed_trader: anonymous_lbma_archetype
+    dimensions:
+      belief_system:
+        microstructure: 0.85
+        catalyst_driven: 0.78
+        liquidity_provision: 0.65
+      risk_attitude: CONSERVATIVE
+      time_horizon: SCALP
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.55
+        ranging: 0.78
+        high_vol: 0.55
+        low_vol: 0.85
+
+  TA-METAL-155:
+    name: 'Battery-Metals Thematic'
+    state: ACTIVE
+    decay_rate: 0.005
+    performance_score: 0.0
+    seed_trader: anonymous_battery_archetype
+    dimensions:
+      belief_system:
+        fundamentals: 0.85
+        macro_thesis: 0.85
+        supply_demand: 0.88
+      risk_attitude: AGGRESSIVE
+      time_horizon: POSITION
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.78
+        ranging: 0.4
+        high_vol: 0.65
+        low_vol: 0.55
+
+  TA-FX-156:
+    name: 'DXY-Carry Trader'
+    state: ACTIVE
+    decay_rate: 0.006
+    performance_score: 0.0
+    seed_trader: anonymous_dxy_archetype
+    dimensions:
+      belief_system:
+        carry: 0.92
+        macro_thesis: 0.85
+        trend_following: 0.65
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.78
+        ranging: 0.45
+        high_vol: 0.5
+        low_vol: 0.78
+
+  TA-FX-157:
+    name: 'EM-Carry Trader'
+    state: ACTIVE
+    decay_rate: 0.008
+    performance_score: 0.0
+    seed_trader: anonymous_em_carry_archetype
+    dimensions:
+      belief_system:
+        carry: 0.92
+        macro_thesis: 0.78
+        fundamentals: 0.65
+      risk_attitude: AGGRESSIVE
+      time_horizon: POSITION
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.65
+        ranging: 0.55
+        high_vol: 0.45
+        low_vol: 0.85
+
+  TA-FX-158:
+    name: 'JPY-Safe-Haven'
+    state: ACTIVE
+    decay_rate: 0.005
+    performance_score: 0.0
+    seed_trader: anonymous_jpy_archetype
+    dimensions:
+      belief_system:
+        macro_thesis: 0.85
+        carry: 0.78
+        contrarian: 0.65
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: REACTIVE
+      regime_performance:
+        trending: 0.55
+        ranging: 0.55
+        high_vol: 0.85
+        low_vol: 0.45
+
+  TA-FX-159:
+    name: 'London-Fix Trader'
+    state: ACTIVE
+    decay_rate: 0.02
+    performance_score: 0.0
+    seed_trader: anonymous_lonfix_archetype
+    dimensions:
+      belief_system:
+        microstructure: 0.85
+        catalyst_driven: 0.78
+        liquidity_provision: 0.65
+      risk_attitude: CONSERVATIVE
+      time_horizon: SCALP
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.55
+        ranging: 0.78
+        high_vol: 0.55
+        low_vol: 0.85
+
+  TA-FX-160:
+    name: 'Triangular FX Arb'
+    state: ACTIVE
+    decay_rate: 0.025
+    performance_score: 0.0
+    seed_trader: anonymous_triarb_archetype
+    dimensions:
+      belief_system:
+        statistical_arbitrage: 0.92
+        latency_arbitrage: 0.85
+        microstructure: 0.78
+      risk_attitude: CONSERVATIVE
+      time_horizon: SCALP
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.55
+        ranging: 0.85
+        high_vol: 0.5
+        low_vol: 0.88
+
+  TA-RATES-161:
+    name: 'Yield-Curve Steepener'
+    state: ACTIVE
+    decay_rate: 0.005
+    performance_score: 0.0
+    seed_trader: anonymous_steep_archetype
+    dimensions:
+      belief_system:
+        yield_curve: 0.92
+        macro_thesis: 0.88
+        carry: 0.78
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.78
+        ranging: 0.45
+        high_vol: 0.55
+        low_vol: 0.65
+
+  TA-RATES-162:
+    name: 'Yield-Curve Flattener'
+    state: ACTIVE
+    decay_rate: 0.005
+    performance_score: 0.0
+    seed_trader: anonymous_flat_archetype
+    dimensions:
+      belief_system:
+        yield_curve: 0.92
+        macro_thesis: 0.88
+        carry: 0.78
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.78
+        ranging: 0.45
+        high_vol: 0.55
+        low_vol: 0.65
+
+  TA-RATES-163:
+    name: 'Butterfly-Spread Rates'
+    state: ACTIVE
+    decay_rate: 0.007
+    performance_score: 0.0
+    seed_trader: anonymous_butterfly_archetype
+    dimensions:
+      belief_system:
+        yield_curve: 0.92
+        statistical_arbitrage: 0.85
+        carry: 0.65
+      risk_attitude: MODERATE
+      time_horizon: SWING
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.55
+        ranging: 0.78
+        high_vol: 0.5
+        low_vol: 0.85
+
+  TA-RATES-164:
+    name: 'TIPS-Breakeven Trader'
+    state: ACTIVE
+    decay_rate: 0.005
+    performance_score: 0.0
+    seed_trader: anonymous_tips_archetype
+    dimensions:
+      belief_system:
+        macro_thesis: 0.88
+        yield_curve: 0.85
+        fundamentals: 0.65
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.65
+        ranging: 0.55
+        high_vol: 0.55
+        low_vol: 0.65
+
+  TA-RATES-165:
+    name: 'FOMC-Reaction Rates'
+    state: ACTIVE
+    decay_rate: 0.02
+    performance_score: 0.0
+    seed_trader: anonymous_fomc_archetype
+    dimensions:
+      belief_system:
+        catalyst_driven: 0.92
+        macro_thesis: 0.85
+        yield_curve: 0.78
+      risk_attitude: AGGRESSIVE
+      time_horizon: INTRADAY
+      conviction_style: REACTIVE
+      regime_performance:
+        trending: 0.65
+        ranging: 0.45
+        high_vol: 0.92
+        low_vol: 0.3
+
+  TA-VOL-166:
+    name: 'VIX-Term-Structure Trader'
+    state: ACTIVE
+    decay_rate: 0.008
+    performance_score: 0.0
+    seed_trader: anonymous_vix_term_archetype
+    dimensions:
+      belief_system:
+        volatility_premium: 0.92
+        term_structure: 0.92
+        carry: 0.78
+      risk_attitude: MODERATE
+      time_horizon: SWING
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.55
+        ranging: 0.78
+        high_vol: 0.55
+        low_vol: 0.85
+
+  TA-VOL-167:
+    name: 'Short-Vol Premium Harvester'
+    state: ACTIVE
+    decay_rate: 0.011
+    performance_score: 0.0
+    seed_trader: anonymous_shortvol_archetype
+    dimensions:
+      belief_system:
+        volatility_premium: 0.95
+        carry: 0.85
+        mean_reversion: 0.65
+      risk_attitude: AGGRESSIVE
+      time_horizon: SWING
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.45
+        ranging: 0.65
+        high_vol: 0.2
+        low_vol: 0.92
+
+  TA-VOL-168:
+    name: 'Long-Vol Hedger'
+    state: ACTIVE
+    decay_rate: 0.005
+    performance_score: 0.0
+    seed_trader: nassim_taleb_archetype
+    dimensions:
+      belief_system:
+        contrarian: 0.85
+        tail_risk: 0.92
+        volatility_premium: 0.55
+      risk_attitude: CONSERVATIVE
+      time_horizon: POSITION
+      conviction_style: CONTRARIAN
+      regime_performance:
+        trending: 0.4
+        ranging: 0.45
+        high_vol: 0.92
+        low_vol: 0.3
+
+  TA-VOL-169:
+    name: 'VIX-Spike Reverter'
+    state: ACTIVE
+    decay_rate: 0.014
+    performance_score: 0.0
+    seed_trader: anonymous_vix_spike_archetype
+    dimensions:
+      belief_system:
+        mean_reversion: 0.92
+        volatility_premium: 0.85
+        contrarian: 0.78
+      risk_attitude: AGGRESSIVE
+      time_horizon: SWING
+      conviction_style: CONTRARIAN
+      regime_performance:
+        trending: 0.4
+        ranging: 0.65
+        high_vol: 0.85
+        low_vol: 0.45
+
+  TA-VOL-170:
+    name: 'Variance-Swap Trader'
+    state: ACTIVE
+    decay_rate: 0.009
+    performance_score: 0.0
+    seed_trader: anonymous_varswap_archetype
+    dimensions:
+      belief_system:
+        options_pricing: 0.92
+        volatility_premium: 0.92
+        statistical_arbitrage: 0.65
+      risk_attitude: MODERATE
+      time_horizon: SWING
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.55
+        ranging: 0.78
+        high_vol: 0.55
+        low_vol: 0.78
+
+  TA-CRYPTO-171:
+    name: 'Bitcoin-Dominance Trader'
+    state: ACTIVE
+    decay_rate: 0.006
+    performance_score: 0.0
+    seed_trader: anonymous_btcdom_archetype
+    dimensions:
+      belief_system:
+        macro_thesis: 0.85
+        trend_following: 0.78
+        factor_investing: 0.65
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.78
+        ranging: 0.45
+        high_vol: 0.65
+        low_vol: 0.55
+
+  TA-CRYPTO-172:
+    name: 'Stablecoin-Premium Arb'
+    state: ACTIVE
+    decay_rate: 0.018
+    performance_score: 0.0
+    seed_trader: anonymous_stable_arb_archetype
+    dimensions:
+      belief_system:
+        statistical_arbitrage: 0.92
+        on_chain: 0.78
+        carry: 0.65
+      risk_attitude: CONSERVATIVE
+      time_horizon: SCALP
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.55
+        ranging: 0.85
+        high_vol: 0.55
+        low_vol: 0.88
+
+  TA-CRYPTO-173:
+    name: 'Perpetual-Funding Harvester'
+    state: ACTIVE
+    decay_rate: 0.01
+    performance_score: 0.0
+    seed_trader: anonymous_perp_archetype
+    dimensions:
+      belief_system:
+        carry: 0.92
+        statistical_arbitrage: 0.85
+        on_chain: 0.55
+      risk_attitude: MODERATE
+      time_horizon: SWING
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.65
+        ranging: 0.78
+        high_vol: 0.55
+        low_vol: 0.78
+
+  TA-CRYPTO-174:
+    name: 'Basis-Trade Crypto'
+    state: ACTIVE
+    decay_rate: 0.008
+    performance_score: 0.0
+    seed_trader: anonymous_basis_archetype
+    dimensions:
+      belief_system:
+        carry: 0.92
+        statistical_arbitrage: 0.92
+        term_structure: 0.85
+      risk_attitude: CONSERVATIVE
+      time_horizon: SWING
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.55
+        ranging: 0.78
+        high_vol: 0.45
+        low_vol: 0.88
+
+  TA-CRYPTO-175:
+    name: 'Altcoin-Season Trader'
+    state: ACTIVE
+    decay_rate: 0.014
+    performance_score: 0.0
+    seed_trader: anonymous_altseason_archetype
+    dimensions:
+      belief_system:
+        sentiment: 0.85
+        factor_investing: 0.65
+        momentum: 0.85
+      risk_attitude: AGGRESSIVE
+      time_horizon: SWING
+      conviction_style: REACTIVE
+      regime_performance:
+        trending: 0.85
+        ranging: 0.3
+        high_vol: 0.65
+        low_vol: 0.55
+
+  TA-DEFI-176:
+    name: 'LP-Yield Maximizer'
+    state: ACTIVE
+    decay_rate: 0.008
+    performance_score: 0.0
+    seed_trader: anonymous_lp_yield_archetype
+    dimensions:
+      belief_system:
+        on_chain: 0.92
+        carry: 0.85
+        liquidity_provision: 0.85
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.55
+        ranging: 0.78
+        high_vol: 0.45
+        low_vol: 0.85
+
+  TA-DEFI-177:
+    name: 'Yield-Farming Rotator'
+    state: ACTIVE
+    decay_rate: 0.012
+    performance_score: 0.0
+    seed_trader: anonymous_yfarm_archetype
+    dimensions:
+      belief_system:
+        on_chain: 0.92
+        carry: 0.85
+        factor_investing: 0.55
+      risk_attitude: AGGRESSIVE
+      time_horizon: SWING
+      conviction_style: REACTIVE
+      regime_performance:
+        trending: 0.65
+        ranging: 0.65
+        high_vol: 0.55
+        low_vol: 0.78
+
+  TA-DEFI-178:
+    name: 'Governance-Token Voter'
+    state: ACTIVE
+    decay_rate: 0.007
+    performance_score: 0.0
+    seed_trader: anonymous_gov_archetype
+    dimensions:
+      belief_system:
+        on_chain: 0.88
+        fundamentals: 0.78
+        catalyst_driven: 0.65
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.65
+        ranging: 0.55
+        high_vol: 0.55
+        low_vol: 0.65
+
+  TA-DEFI-179:
+    name: 'MEV-Sandwich Defender'
+    state: ACTIVE
+    decay_rate: 0.02
+    performance_score: 0.0
+    seed_trader: anonymous_mev_def_archetype
+    dimensions:
+      belief_system:
+        on_chain: 0.92
+        adversarial: 0.85
+        microstructure: 0.78
+      risk_attitude: CONSERVATIVE
+      time_horizon: SCALP
+      conviction_style: REACTIVE
+      regime_performance:
+        trending: 0.55
+        ranging: 0.65
+        high_vol: 0.78
+        low_vol: 0.55
+
+  TA-DEFI-180:
+    name: 'Bridge-Arbitrageur'
+    state: ACTIVE
+    decay_rate: 0.018
+    performance_score: 0.0
+    seed_trader: anonymous_bridge_archetype
+    dimensions:
+      belief_system:
+        on_chain: 0.92
+        statistical_arbitrage: 0.88
+        latency_arbitrage: 0.65
+      risk_attitude: MODERATE
+      time_horizon: SCALP
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.55
+        ranging: 0.78
+        high_vol: 0.65
+        low_vol: 0.78
+
+  TA-NFT-181:
+    name: 'NFT-Floor Sweeper'
+    state: ACTIVE
+    decay_rate: 0.018
+    performance_score: 0.0
+    seed_trader: anonymous_nft_sweep_archetype
+    dimensions:
+      belief_system:
+        on_chain: 0.85
+        sentiment: 0.78
+        supply_demand: 0.78
+      risk_attitude: AGGRESSIVE
+      time_horizon: SWING
+      conviction_style: REACTIVE
+      regime_performance:
+        trending: 0.65
+        ranging: 0.55
+        high_vol: 0.78
+        low_vol: 0.45
+
+  TA-NFT-182:
+    name: 'Trait-Rarity Hunter'
+    state: ACTIVE
+    decay_rate: 0.011
+    performance_score: 0.0
+    seed_trader: anonymous_trait_archetype
+    dimensions:
+      belief_system:
+        on_chain: 0.85
+        fundamentals: 0.65
+        supply_demand: 0.78
+      risk_attitude: AGGRESSIVE
+      time_horizon: POSITION
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.65
+        ranging: 0.55
+        high_vol: 0.55
+        low_vol: 0.65
+
+  TA-NFT-183:
+    name: 'Mint-Flipper'
+    state: ACTIVE
+    decay_rate: 0.022
+    performance_score: 0.0
+    seed_trader: anonymous_mint_flip_archetype
+    dimensions:
+      belief_system:
+        catalyst_driven: 0.92
+        sentiment: 0.85
+        on_chain: 0.78
+      risk_attitude: AGGRESSIVE
+      time_horizon: INTRADAY
+      conviction_style: REACTIVE
+      regime_performance:
+        trending: 0.65
+        ranging: 0.4
+        high_vol: 0.78
+        low_vol: 0.3
+
+  TA-NFT-184:
+    name: 'Bid-Ladder Arbitrageur'
+    state: ACTIVE
+    decay_rate: 0.011
+    performance_score: 0.0
+    seed_trader: anonymous_nft_bid_archetype
+    dimensions:
+      belief_system:
+        liquidity_provision: 0.85
+        microstructure: 0.78
+        on_chain: 0.78
+      risk_attitude: MODERATE
+      time_horizon: SWING
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.55
+        ranging: 0.78
+        high_vol: 0.55
+        low_vol: 0.78
+
+  TA-NFT-185:
+    name: 'Wash-Trade Detector'
+    state: ACTIVE
+    decay_rate: 0.011
+    performance_score: 0.0
+    seed_trader: anonymous_wash_archetype
+    dimensions:
+      belief_system:
+        adversarial: 0.92
+        on_chain: 0.85
+        sentiment: 0.65
+      risk_attitude: CONSERVATIVE
+      time_horizon: POSITION
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.45
+        ranging: 0.65
+        high_vol: 0.55
+        low_vol: 0.65
+
+  TA-AI-186:
+    name: 'LSTM-Sequence Trader'
+    state: ACTIVE
+    decay_rate: 0.01
+    performance_score: 0.0
+    seed_trader: anonymous_lstm_archetype
+    dimensions:
+      belief_system:
+        deep_learning: 0.92
+        trend_following: 0.65
+        factor_investing: 0.65
+      risk_attitude: MODERATE
+      time_horizon: SWING
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.78
+        ranging: 0.55
+        high_vol: 0.55
+        low_vol: 0.65
+
+  TA-AI-187:
+    name: 'Transformer-Attention Trader'
+    state: ACTIVE
+    decay_rate: 0.011
+    performance_score: 0.0
+    seed_trader: anonymous_transformer_archetype
+    dimensions:
+      belief_system:
+        deep_learning: 0.92
+        sentiment: 0.78
+        factor_investing: 0.65
+      risk_attitude: MODERATE
+      time_horizon: SWING
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.65
+        ranging: 0.65
+        high_vol: 0.55
+        low_vol: 0.65
+
+  TA-AI-188:
+    name: 'Reinforcement-Learner Adapter'
+    state: ACTIVE
+    decay_rate: 0.015
+    performance_score: 0.0
+    seed_trader: anonymous_rl_archetype
+    dimensions:
+      belief_system:
+        deep_learning: 0.92
+        self_play: 0.85
+        regime_adaptation: 0.85
+      risk_attitude: MODERATE
+      time_horizon: SWING
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.65
+        ranging: 0.65
+        high_vol: 0.65
+        low_vol: 0.65
+
+  TA-AI-189:
+    name: 'LLM-News-Reasoner'
+    state: ACTIVE
+    decay_rate: 0.018
+    performance_score: 0.0
+    seed_trader: anonymous_llm_news_archetype
+    dimensions:
+      belief_system:
+        sentiment: 0.92
+        deep_learning: 0.88
+        catalyst_driven: 0.78
+      risk_attitude: MODERATE
+      time_horizon: INTRADAY
+      conviction_style: REACTIVE
+      regime_performance:
+        trending: 0.65
+        ranging: 0.55
+        high_vol: 0.78
+        low_vol: 0.5
+
+  TA-AI-190:
+    name: 'Genetic-Algorithm Evolver'
+    state: ACTIVE
+    decay_rate: 0.014
+    performance_score: 0.0
+    seed_trader: anonymous_ga_archetype
+    dimensions:
+      belief_system:
+        genetic_evolution: 0.92
+        regime_adaptation: 0.85
+        factor_investing: 0.65
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.65
+        ranging: 0.65
+        high_vol: 0.55
+        low_vol: 0.65
+
