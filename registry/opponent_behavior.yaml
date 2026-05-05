@@ -1,0 +1,54 @@
+# Opponent-model thresholds (OPP-01 BehaviorPredictor).
+#
+# Versioned parameters — patch pipeline is the only mutator (no runtime
+# mutation, INV-08 / INV-15). Loaded by
+# ``opponent_model.behavior_predictor.load_behavior_predictor_config``.
+#
+# Refs:
+# - manifest_v3.1_delta.md §"Opponent model"
+# - full_feature_spec.md §"Behavior predictor"
+# - build_plan.md Phase 10.10 OPPONENT MODEL
+
+# --- HFT_MAKER ---------------------------------------------------------
+# High cancel/fill ratio AND fast top-of-book refresh AND small resting
+# size. These are quoting bots — they don't take, they remake.
+hft_cancel_to_fill_min: 8.0       # cancellations per fill
+hft_refresh_rate_hz_min: 5.0      # quote refreshes per second
+hft_resting_size_usd_max: 5_000.0 # small per-quote size
+
+# --- SWEEPER -----------------------------------------------------------
+# Very large taker print on a *narrow* book — someone walking the ladder
+# in one shot rather than working an order.
+sweeper_taker_size_usd_min: 100_000.0
+sweeper_spread_bps_max: 5.0
+
+# --- MOMENTUM_TAKER ----------------------------------------------------
+# Sustained one-sided aggressor flow with mid-size prints. The
+# directional bias must clear ``imbalance_min`` and the average taker
+# print must clear ``taker_size_usd_min`` (smaller than SWEEPER so the
+# two rules don't collide).
+momentum_imbalance_min: 0.5
+momentum_taker_size_usd_min: 10_000.0
+
+# --- SLOW_RESTING_LIQUIDITY -------------------------------------------
+# Patient size sitting on the book — low cancel/fill, slow refresh,
+# large resting size. The opposite shape of HFT_MAKER.
+slow_cancel_to_fill_max: 1.0
+slow_refresh_rate_hz_max: 1.0
+slow_resting_size_usd_min: 50_000.0
+
+# --- Confidence shaping -----------------------------------------------
+# Every rule clamps its confidence into ``[floor, ceiling]`` after the
+# normalised excess is computed. The floor is the confidence assigned
+# the moment a rule matches; the ceiling caps it so a single
+# microstructure spike can't pin confidence at 1.0.
+confidence_floor: 0.55
+confidence_ceiling: 0.95
+
+# --- Predicted-action mapping -----------------------------------------
+# Confidence multipliers applied when projecting an
+# :class:`OpponentClassification` into a :class:`BehaviorPrediction`.
+# ``noise_action_confidence`` is the flat confidence assigned to the
+# HOLD prediction emitted for the NOISE archetype.
+prediction_confidence_scale: 0.85
+noise_action_confidence: 0.4
