@@ -41,3 +41,13 @@ keys:
     - fast_window_size
     - slow_window_size
     - crossover_threshold
+
+  AGT-03-macro:
+    - agent_id
+    - lifecycle
+    - current_regime
+    - last_decision_direction
+    - last_decision_confidence
+    - last_decision_ts_ns
+    - decisions_in_window
+    - neutral_confidence_scale
