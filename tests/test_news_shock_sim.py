@@ -51,7 +51,8 @@ def test_outcome_round_trip() -> None:
     assert isinstance(out, RealityOutcome)
     assert out.scenario_id == "S"
     assert out.seed == 7
-    assert out.fills_count == 50
+    # fills_count is the latency-to-shock; bounded by num_steps.
+    assert 0 <= out.fills_count <= 50
 
 
 def test_zero_shock_probability_yields_no_shock() -> None:
@@ -112,10 +113,50 @@ def test_drawdown_non_negative_and_matches_negative_pnl() -> None:
         assert out.terminal_drawdown_usd == 0.0
 
 
-def test_fills_count_equals_num_steps() -> None:
+def test_fills_count_encodes_latency_to_shock() -> None:
+    """fills_count = step at which shock fired, or num_steps if no shock.
+
+    The docstring on simulation/news_shock_sim.py explicitly
+    overloads fills_count to carry latency-to-shock semantic;
+    this test pins that contract.
+    """
+    sim = NewsShockSim()
+
+    # No shock: fills_count == num_steps for any n.
     for n in (1, 10, 100):
-        out = NewsShockSim().step(seed=0, scenario=_scenario(num_steps=n))
+        out = sim.step(
+            seed=0,
+            scenario=_scenario(
+                num_steps=n, shock_probability_per_step=0.0
+            ),
+        )
+        assert out.rule_fired == "no_shock"
         assert out.fills_count == n
+
+    # Guaranteed shock at p=1.0 fires at step 0.
+    out = sim.step(
+        seed=0,
+        scenario=_scenario(
+            num_steps=50,
+            shock_probability_per_step=1.0,
+            shock_bullish_probability=1.0,
+        ),
+    )
+    assert out.rule_fired == "buy_shock"
+    assert out.fills_count == 0
+
+    # 0 < p < 1: latency must be a valid step index when fired.
+    for seed in range(40):
+        out = sim.step(
+            seed=seed,
+            scenario=_scenario(
+                num_steps=50, shock_probability_per_step=0.5
+            ),
+        )
+        if out.rule_fired == "no_shock":
+            assert out.fills_count == 50
+        else:
+            assert 0 <= out.fills_count < 50
 
 
 def test_rule_fired_diversity_across_seeds() -> None:
