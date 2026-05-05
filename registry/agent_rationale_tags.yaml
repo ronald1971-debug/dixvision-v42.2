@@ -25,6 +25,9 @@ tags:
   - lp_quote_buy
   - lp_quote_sell
   - mean_reversion_neutral
+  - adversarial_fade_buy
+  - adversarial_fade_sell
+  - adversarial_below_threshold
   - confidence_below_floor
   - cooldown_active
   - book_invalid

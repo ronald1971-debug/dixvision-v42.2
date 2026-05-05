@@ -61,3 +61,13 @@ keys:
     - decisions_in_window
     - fair_value_window
     - band_threshold
+
+  AGT-05-adversarial:
+    - agent_id
+    - lifecycle
+    - last_decision_direction
+    - last_decision_confidence
+    - last_decision_ts_ns
+    - decisions_in_window
+    - fade_threshold
+    - fade_confidence_scale
