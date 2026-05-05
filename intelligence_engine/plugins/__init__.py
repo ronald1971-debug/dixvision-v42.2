@@ -13,6 +13,7 @@ from intelligence_engine.plugins.liquidity_physics import LiquidityPhysicsV1
 from intelligence_engine.plugins.microstructure import MicrostructureV1
 from intelligence_engine.plugins.order_book_pressure import OrderBookPressureV1
 from intelligence_engine.plugins.regime_classifier import RegimeClassifierV1
+from intelligence_engine.plugins.sentiment_aggregator import SentimentAggregatorV1
 from intelligence_engine.plugins.vpin_imbalance import VpinImbalanceV1
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     "MicrostructureV1",
     "OrderBookPressureV1",
     "RegimeClassifierV1",
+    "SentimentAggregatorV1",
     "VpinImbalanceV1",
 ]
