@@ -1,0 +1,238 @@
+# Trader Archetype registry — TI-CONS source of truth (Phase 10 seed).
+#
+# Spec: dixvision_executive_summary.md — "Scale: 30 seed traders × 5
+# behavioural dimensions → 300 archetypes. Each archetype in
+# registry/trader_archetypes.yaml carries {state, decay_rate,
+# performance_score} (INV-51)."
+#
+# This file ships the v0 hand-written seed (10 archetypes covering 10
+# named seed-trader philosophies). The full 30×5=300 grid will be
+# minted by the offline trader-intelligence pipeline (TI-LRN +
+# TI-CONS) over time. Until that pipeline is live, this hand-written
+# set is the bootstrap corpus the composition engine reads from.
+#
+# Governance rules:
+#   * State transitions (PROPOSED → ACTIVE → DECAYING → DEMOTED) are
+#     offline-only and flow through the Governance patch pipeline
+#     (INV-51 — "offline-only demotion"). Engines never mutate state
+#     here on the hot path; the loader is read-only.
+#   * The 5 behavioural dimensions are: belief_system, risk_attitude,
+#     time_horizon, conviction_style, regime_performance.
+#   * Each archetype declares a stable opaque archetype_id (TA-XXXX-NNN
+#     family/index). The seed_trader field is documentation only;
+#     identity for matching is the archetype_id.
+#
+# Schema (per entry under archetypes:):
+#   archetype_id:                # TA-<family>-<index>
+#     name: str                  # human-readable label
+#     state: PROPOSED|ACTIVE|DECAYING|DEMOTED
+#     decay_rate: float          # in [0, 1]; per-window performance decay
+#     performance_score: float   # in [-1, 1]; live-ledger weighted
+#     seed_trader: str           # documentation-only seed name
+#     dimensions:
+#       belief_system: {tag: strength}      # tag→[0,1]
+#       risk_attitude: CONSERVATIVE|MODERATE|AGGRESSIVE|UNKNOWN
+#       time_horizon: SCALP|INTRADAY|SWING|POSITION|UNKNOWN
+#       conviction_style: REACTIVE|PREDICTIVE|CONTRARIAN|SYSTEMATIC|UNKNOWN
+#       regime_performance: {regime: score}  # regime→[-1,1]
+
+archetypes:
+  TA-TREND-001:
+    name: "Classic Trend Follower"
+    state: ACTIVE
+    decay_rate: 0.01
+    performance_score: 0.0
+    seed_trader: ed_seykota_archetype
+    dimensions:
+      belief_system:
+        trend_following: 0.95
+        momentum: 0.85
+        mean_reversion: 0.05
+      risk_attitude: MODERATE
+      time_horizon: SWING
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.90
+        ranging: 0.10
+        high_vol: 0.55
+        low_vol: 0.65
+
+  TA-MOMO-002:
+    name: "Breakout Momentum"
+    state: ACTIVE
+    decay_rate: 0.02
+    performance_score: 0.0
+    seed_trader: dan_zanger_archetype
+    dimensions:
+      belief_system:
+        momentum: 0.95
+        breakout: 0.90
+        mean_reversion: 0.05
+      risk_attitude: AGGRESSIVE
+      time_horizon: INTRADAY
+      conviction_style: REACTIVE
+      regime_performance:
+        trending: 0.85
+        ranging: 0.15
+        high_vol: 0.80
+        low_vol: 0.40
+
+  TA-MEAN-003:
+    name: "Statistical Mean Reversion"
+    state: ACTIVE
+    decay_rate: 0.015
+    performance_score: 0.0
+    seed_trader: jim_simons_archetype
+    dimensions:
+      belief_system:
+        mean_reversion: 0.95
+        statistical_arbitrage: 0.90
+        trend_following: 0.10
+      risk_attitude: CONSERVATIVE
+      time_horizon: INTRADAY
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.30
+        ranging: 0.90
+        high_vol: 0.40
+        low_vol: 0.85
+
+  TA-VOLPREM-004:
+    name: "Volatility Premium Seller"
+    state: ACTIVE
+    decay_rate: 0.012
+    performance_score: 0.0
+    seed_trader: euan_sinclair_archetype
+    dimensions:
+      belief_system:
+        volatility_premium: 0.95
+        mean_reversion: 0.65
+        contrarian: 0.55
+      risk_attitude: MODERATE
+      time_horizon: SWING
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.40
+        ranging: 0.80
+        high_vol: 0.20
+        low_vol: 0.85
+
+  TA-MACRO-005:
+    name: "Macro Discretionary"
+    state: ACTIVE
+    decay_rate: 0.008
+    performance_score: 0.0
+    seed_trader: stanley_druckenmiller_archetype
+    dimensions:
+      belief_system:
+        macro_thesis: 0.95
+        regime_persists: 0.85
+        trend_following: 0.65
+      risk_attitude: AGGRESSIVE
+      time_horizon: POSITION
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.85
+        ranging: 0.30
+        high_vol: 0.75
+        low_vol: 0.55
+
+  TA-CONTRA-006:
+    name: "Deep Value Contrarian"
+    state: ACTIVE
+    decay_rate: 0.005
+    performance_score: 0.0
+    seed_trader: howard_marks_archetype
+    dimensions:
+      belief_system:
+        contrarian: 0.95
+        value: 0.90
+        mean_reversion: 0.65
+      risk_attitude: MODERATE
+      time_horizon: POSITION
+      conviction_style: CONTRARIAN
+      regime_performance:
+        trending: 0.40
+        ranging: 0.65
+        high_vol: 0.85
+        low_vol: 0.55
+
+  TA-MARKETMAKE-007:
+    name: "Liquidity-Provision Market Maker"
+    state: ACTIVE
+    decay_rate: 0.02
+    performance_score: 0.0
+    seed_trader: ken_griffin_archetype
+    dimensions:
+      belief_system:
+        liquidity_provision: 0.95
+        mean_reversion: 0.70
+        statistical_arbitrage: 0.65
+      risk_attitude: CONSERVATIVE
+      time_horizon: SCALP
+      conviction_style: SYSTEMATIC
+      regime_performance:
+        trending: 0.40
+        ranging: 0.85
+        high_vol: 0.25
+        low_vol: 0.90
+
+  TA-SCALP-008:
+    name: "Order-Flow Scalper"
+    state: ACTIVE
+    decay_rate: 0.025
+    performance_score: 0.0
+    seed_trader: linda_raschke_archetype
+    dimensions:
+      belief_system:
+        order_flow: 0.95
+        microstructure: 0.90
+        momentum: 0.55
+      risk_attitude: MODERATE
+      time_horizon: SCALP
+      conviction_style: REACTIVE
+      regime_performance:
+        trending: 0.65
+        ranging: 0.65
+        high_vol: 0.70
+        low_vol: 0.50
+
+  TA-SWING-009:
+    name: "Position-Trend Swing"
+    state: ACTIVE
+    decay_rate: 0.01
+    performance_score: 0.0
+    seed_trader: mark_minervini_archetype
+    dimensions:
+      belief_system:
+        trend_following: 0.85
+        momentum: 0.80
+        breakout: 0.70
+      risk_attitude: MODERATE
+      time_horizon: SWING
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.85
+        ranging: 0.20
+        high_vol: 0.60
+        low_vol: 0.65
+
+  TA-EVENT-010:
+    name: "Event-Driven Catalyst"
+    state: PROPOSED
+    decay_rate: 0.015
+    performance_score: 0.0
+    seed_trader: john_paulson_archetype
+    dimensions:
+      belief_system:
+        catalyst_driven: 0.95
+        macro_thesis: 0.65
+        contrarian: 0.55
+      risk_attitude: AGGRESSIVE
+      time_horizon: POSITION
+      conviction_style: PREDICTIVE
+      regime_performance:
+        trending: 0.55
+        ranging: 0.45
+        high_vol: 0.80
+        low_vol: 0.40
