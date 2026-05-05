@@ -137,14 +137,29 @@ class TraderArchetypeRegistry:
 
         return self.by_id.get(archetype_id)
 
-    def __contains__(self, archetype_id: object) -> bool:
-        return archetype_id in self.by_id
+    def __contains__(self, item: object) -> bool:
+        """Membership test supporting both archetype-id strings and records.
+
+        Iteration yields :class:`TraderArchetype` records (so callers can
+        write ``for a in registry: ...``); supporting the natural
+        ``a in registry`` symmetry requires accepting both shapes here.
+        """
+
+        if isinstance(item, TraderArchetype):
+            existing = self.by_id.get(item.archetype_id)
+            return existing is item
+        return item in self.by_id
 
     def __len__(self) -> int:
         return len(self.by_id)
 
     def __iter__(self):
         return iter(self.by_id.values())
+
+    def ids(self) -> tuple[str, ...]:
+        """Return archetype-ids in iteration order (sorted, INV-15)."""
+
+        return tuple(self.by_id.keys())
 
     def active(self) -> tuple[TraderArchetype, ...]:
         return tuple(

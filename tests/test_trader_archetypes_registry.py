@@ -132,3 +132,24 @@ def test_canonical_registry_path_resolves() -> None:
 def test_get_returns_none_on_miss() -> None:
     registry = load_trader_archetypes()
     assert registry.get("TA-DOES-NOT-EXIST") is None
+
+
+def test_contains_supports_both_id_and_archetype() -> None:
+    registry = load_trader_archetypes()
+    a = registry.get("TA-TREND-001")
+    assert a is not None
+    # iteration yields archetypes -> "in" must work on archetype objects
+    for archetype in registry:
+        assert archetype in registry
+    # ...and on archetype-ids (the natural string lookup)
+    assert "TA-TREND-001" in registry
+    assert "TA-DOES-NOT-EXIST" not in registry
+    # arbitrary objects are not members
+    assert object() not in registry
+
+
+def test_ids_iteration_order_is_sorted() -> None:
+    registry = load_trader_archetypes()
+    ids = registry.ids()
+    assert list(ids) == sorted(ids)
+    assert len(ids) == len(registry)
