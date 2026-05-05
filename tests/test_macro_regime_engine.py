@@ -145,6 +145,32 @@ def test_crisis_fires_on_extreme_correlation() -> None:
     assert r.rule_fired == "crisis_correlation"
 
 
+def test_crisis_label_uses_normalised_dominant_driver() -> None:
+    """When both CRISIS dimensions trip, rule_fired must reflect the
+    dominant driver on a common scale.
+
+    Regression: comparing raw vol_excess (range 0–60) against raw
+    corr_excess (range 0–0.15) almost always picked vol even when
+    correlation was the overwhelmingly larger violation. The label must
+    be derived from the normalised confidences instead.
+    """
+
+    eng = _engine()
+
+    # vol just barely over crisis (40.0), correlation deeply over crisis (0.85).
+    # Raw excess: vol=0.5 vs corr=0.149. Normalised: vol≈0.017 of span,
+    # corr≈0.99 of span. Correlation is the dominant driver.
+    r_corr = eng.classify(_snap(vol_index=40.5, return_correlation=0.999))
+    assert r_corr.regime is MacroRegime.CRISIS
+    assert r_corr.rule_fired == "crisis_correlation"
+
+    # Mirror case: vol deeply over crisis, correlation just barely over.
+    # Vol must dominate the label.
+    r_vol = eng.classify(_snap(vol_index=70.0, return_correlation=0.86))
+    assert r_vol.regime is MacroRegime.CRISIS
+    assert r_vol.rule_fired == "crisis_vol"
+
+
 def test_risk_off_fires_on_elevated_vol_alone() -> None:
     eng = _engine()
     r = eng.classify(
