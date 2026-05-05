@@ -245,12 +245,19 @@ class NewsShockSim:
         else:
             rule_fired = "sell_shock"
 
+        # fills_count carries latency-to-shock semantic: the step
+        # index at which the wire printed (0-based), or num_steps
+        # if no shock fired during the window. This lets an auditor
+        # answer "how long did the strategy live before the event"
+        # from the outcome alone.
+        latency_to_shock = shock_step if shock_fired else num_steps
+
         return RealityOutcome(
             scenario_id=scenario.scenario_id,
             seed=seed,
             pnl_usd=pnl,
             terminal_drawdown_usd=drawdown,
-            fills_count=num_steps,
+            fills_count=latency_to_shock,
             rule_fired=rule_fired,
         )
 
