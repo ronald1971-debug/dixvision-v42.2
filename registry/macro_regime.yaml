@@ -1,0 +1,30 @@
+# Macro Regime Engine — rule thresholds (Phase 10 macro layer).
+#
+# Refs:
+#   docs/manifest_v3.3_delta.md §1.1 (J1 macro regime)
+#   intelligence_engine/macro/regime_engine.py (consumer)
+#
+# Schema: see MacroRegimeEngineConfig.
+#
+# Default thresholds are conservative defaults derived from cross-cycle
+# averages; the patch pipeline tunes them after backtest calibration.
+
+version: v3.3-macro-1
+
+# CRISIS branch — extreme vol or extreme cross-asset correlation.
+vol_crisis: 40.0              # vol_index ≥ 40 ≈ panic regime
+correlation_crisis: 0.85      # cross-asset realised correlation ≥ 0.85
+
+# RISK_OFF branch — any one of: elevated vol, negative breadth, wide credit.
+vol_risk_off: 25.0            # 25 ≤ vol_index < 40 = elevated
+breadth_risk_off: -0.20       # advance-decline ≤ -0.20 = persistently down
+credit_risk_off_bps: 500.0    # HY spread ≥ 500 bps = stress
+
+# RISK_ON branch — all three pro-risk dimensions must agree.
+vol_risk_on: 18.0             # vol_index ≤ 18 = compressed
+breadth_risk_on: 0.20         # advance-decline ≥ 0.20 = persistently up
+credit_risk_on_bps: 350.0     # HY spread ≤ 350 bps = tight
+
+# Confidence shaping — every reading sits in [floor, ceiling].
+confidence_floor: 0.40
+confidence_ceiling: 0.95
