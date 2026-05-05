@@ -1360,6 +1360,7 @@ B30_ALLOWED_LEAF_PRODUCERS: frozenset[str] = frozenset(
         "intelligence_engine.plugins.footprint_delta.v1",
         "intelligence_engine.plugins.liquidity_physics.v1",
         "intelligence_engine.plugins.microstructure.microstructure_v1",
+        "intelligence_engine.plugins.on_chain_pulse.v1",
         "intelligence_engine.plugins.order_book_pressure.v1",
         "intelligence_engine.plugins.regime_classifier.v1",
         "intelligence_engine.plugins.sentiment_aggregator.v1",
