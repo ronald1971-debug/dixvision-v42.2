@@ -259,3 +259,40 @@ def test_invalid_config_rejected() -> None:
         FillStarvationConfig(max_steps=-1)
     with pytest.raises(ValueError):
         FillStarvationConfig(max_steps=10_000_000)
+
+
+def test_zero_fill_fraction_does_not_inflate_fills_count() -> None:
+    """Devin Review BUG_0002 regression: with per_step_fill_fraction=0
+    and per_step_fill_probability>0, every step would have passed the
+    probability check and produced a zero-notional 'fill', incrementing
+    fills_count without changing filled_usd. The guard rejects those."""
+    out = FillStarvation().step(
+        seed=1,
+        scenario=_scenario(
+            num_steps=200,
+            per_step_fill_probability=1.0,
+            per_step_fill_fraction=0.0,
+        ),
+    )
+    assert out.fills_count == 0
+    assert out.rule_fired == "starved"
+    assert out.terminal_drawdown_usd == pytest.approx(10_000.0)
+
+
+def test_overflow_walk_raises_value_error() -> None:
+    """Devin Review BUG_0001 regression: with default max_steps the
+    walk cannot overflow, but a custom config + drift+std combination
+    can compound past float64 range. Rather than silently emit NaN /
+    inf in pnl_usd we fail fast with a clear ValueError."""
+    sim = FillStarvation(FillStarvationConfig(max_steps=200_000))
+    with pytest.raises(ValueError, match="non-finite mid"):
+        sim.step(
+            seed=0,
+            scenario=_scenario(
+                num_steps=200_000,
+                per_step_drift=0.005,
+                per_step_std=0.0,
+                per_step_fill_probability=0.0,
+                per_step_fill_fraction=0.0,
+            ),
+        )

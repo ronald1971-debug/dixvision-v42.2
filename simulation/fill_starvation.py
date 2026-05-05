@@ -203,9 +203,22 @@ class FillStarvation:
             mid = mid * (1.0 + rng.gauss(drift, std))
             if rng.random() < fill_p and unfilled_usd > 0.0:
                 filled_this_step = unfilled_usd * fill_fraction
-                filled_usd += filled_this_step
-                unfilled_usd -= filled_this_step
-                fills_count += 1
+                # Skip zero-notional fills (per_step_fill_fraction=0)
+                # so fills_count stays consistent with filled_usd.
+                if filled_this_step > 0.0:
+                    filled_usd += filled_this_step
+                    unfilled_usd -= filled_this_step
+                    fills_count += 1
+
+        # Reject overflow / non-finite mids — happens for valid
+        # inputs only when (drift, std, num_steps) compound past
+        # float64 range under a custom max_steps. Rather than
+        # silently propagate NaN/inf into ``pnl_usd``, fail fast.
+        if not math.isfinite(mid):
+            raise ValueError(
+                "fill_starvation walk overflowed to non-finite mid; "
+                "tighten num_steps or per_step_drift / per_step_std"
+            )
 
         # PnL: only the filled portion participates in the price
         # move; entry was at the limit price ``entry``, mark to
