@@ -171,6 +171,18 @@ class GovernanceEngine(RuntimeEngine):
     # Engine surface
     # ------------------------------------------------------------------
 
+    def accept_hazard(self, event: HazardEvent) -> None:
+        """Typed hazard ingress (``IGovernanceHazardSink`` Protocol).
+
+        Closes the Phase 1 build_plan deliverable for a typed hazard
+        sink. Equivalent to ``self.process(event)`` for a
+        :class:`HazardEvent`, but expresses the contract explicitly so
+        adapters and sensors can declare "I deliver hazards to
+        governance" without importing this engine module directly.
+        """
+
+        self.process(event)
+
     def process(self, event: Event) -> Sequence[Event]:
         route = self.classifier.classify(event)
         if PipelineStage.NOOP in route.stages:

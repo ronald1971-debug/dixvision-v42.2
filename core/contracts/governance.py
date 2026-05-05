@@ -365,6 +365,49 @@ class StateTransitionProtocol(Protocol):
         """Apply the full transition pipeline atomically."""
 
 
+# ---------------------------------------------------------------------------
+# Hazard ingress (Phase 1 backlog item B-01)
+# ---------------------------------------------------------------------------
+#
+# The build_plan.md Phase 1 deliverable list calls out a typed
+# ``IGovernanceHazardSink`` Protocol so any sensor or coupling adapter
+# (HazardThrottleAdapter, the SCVS source-liveness FSM, the policy-hash
+# anchor) can deliver a :class:`HazardEvent` into governance through a
+# single typed surface rather than relying solely on the event-bus
+# ``process()`` overload. Both shapes are equivalent in semantics --
+# governance internally classifies the event and routes through the
+# existing ``_handle_hazard`` pipeline -- but the typed Protocol gives
+# callers an explicit, lint-checkable contract.
+
+
+@runtime_checkable
+class IGovernanceHazardSink(Protocol):
+    """Typed ingress contract for components that deliver hazards to governance.
+
+    Implementations must accept a :class:`HazardEvent` (from
+    ``core.contracts.events``) and route it through the same
+    classifier+ledger pipeline that ``process()`` uses on the event
+    bus. ``HazardSeverity.CRITICAL`` events MUST trigger the
+    LOCKED-emergency path; lower severities MUST be appended to the
+    audit ledger via GOV-CP-05.
+
+    Backward-compatibility: callers may continue to use the bus
+    surface (``GovernanceEngine.process(event)``); this Protocol is
+    additive and does not change the existing semantics. It exists so
+    type-checked code paths can declare "I deliver hazards to
+    governance" without importing the concrete engine class.
+    """
+
+    def accept_hazard(self, event: object) -> None:
+        """Deliver one ``HazardEvent`` to governance (typed contract).
+
+        ``event`` is typed as :class:`object` here because adding the
+        concrete ``HazardEvent`` import would couple this contracts
+        module to ``core.contracts.events`` for a single annotation.
+        Implementations narrow the type at the call site.
+        """
+
+
 __all__ = [
     "ComplianceReport",
     "Constraint",
@@ -372,6 +415,7 @@ __all__ = [
     "ConstraintScope",
     "DecisionKind",
     "GovernanceDecision",
+    "IGovernanceHazardSink",
     "IntentHorizon",
     "IntentObjective",
     "IntentRiskMode",
