@@ -178,18 +178,25 @@ class MacroRegimeEngine:
             vol_excess = snapshot.vol_index - cfg.vol_crisis
             corr_excess = snapshot.return_correlation - cfg.correlation_crisis
             # span: vol can blow out by ~30 above crisis line; correlation
-            # by ~0.15 (already saturated near 1). Both dimensions are
-            # normalised by their span before being compared so the
-            # rule_fired label reflects the dominant driver on a common
-            # scale instead of raw vol-points vs raw correlation units.
+            # by ~0.15 (already saturated near 1).
+            vol_span = 30.0
+            corr_span = 0.15
+            # The rule_fired label is picked from the *unclamped* normalised
+            # fractions so that a non-triggering dimension (negative excess)
+            # always loses to a triggering one. Comparing the shaped
+            # confidences directly would tie at ``floor`` whenever both
+            # excesses clamp to zero, mis-attributing the audit row when
+            # only one of the two CRISIS conditions actually fired.
+            vol_frac = vol_excess / vol_span
+            corr_frac = corr_excess / corr_span
             vol_conf = _shape_confidence(
-                vol_excess, 30.0, cfg.confidence_floor, cfg.confidence_ceiling
+                vol_excess, vol_span, cfg.confidence_floor, cfg.confidence_ceiling
             )
             corr_conf = _shape_confidence(
-                corr_excess, 0.15, cfg.confidence_floor, cfg.confidence_ceiling
+                corr_excess, corr_span, cfg.confidence_floor, cfg.confidence_ceiling
             )
             confidence = max(vol_conf, corr_conf)
-            rule = "crisis_vol" if vol_conf >= corr_conf else "crisis_correlation"
+            rule = "crisis_vol" if vol_frac >= corr_frac else "crisis_correlation"
             return MacroRegimeReading(
                 regime=MacroRegime.CRISIS,
                 confidence=confidence,

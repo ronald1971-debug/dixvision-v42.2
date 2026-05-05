@@ -171,6 +171,36 @@ def test_crisis_label_uses_normalised_dominant_driver() -> None:
     assert r_vol.rule_fired == "crisis_vol"
 
 
+def test_crisis_label_attributes_to_only_triggering_dimension() -> None:
+    """When only ONE CRISIS dimension trips, the label must point at it.
+
+    Regression: comparing the shaped confidences would tie at
+    ``confidence_floor`` whenever both excesses clamp to zero (because
+    ``_shape_confidence`` floors negative excess), so a non-triggering
+    dimension could win the ``>=`` comparison and mis-attribute the audit
+    row. The label compares the *unclamped* normalised fractions so a
+    negative fraction always loses to a non-negative one.
+    """
+
+    eng = _engine()
+
+    # Correlation exactly at threshold, vol well below crisis.
+    # Only correlation triggers; label must be crisis_correlation.
+    r = eng.classify(
+        _snap(vol_index=20.0, return_correlation=eng.config.correlation_crisis)
+    )
+    assert r.regime is MacroRegime.CRISIS
+    assert r.rule_fired == "crisis_correlation"
+
+    # Vol exactly at threshold, correlation far below crisis.
+    # Only vol triggers; label must be crisis_vol.
+    r2 = eng.classify(
+        _snap(vol_index=eng.config.vol_crisis, return_correlation=0.20)
+    )
+    assert r2.regime is MacroRegime.CRISIS
+    assert r2.rule_fired == "crisis_vol"
+
+
 def test_risk_off_fires_on_elevated_vol_alone() -> None:
     eng = _engine()
     r = eng.classify(
