@@ -1,0 +1,23 @@
+# Portfolio Allocator — capital-distribution thresholds (Phase 10).
+#
+# Refs:
+#   intelligence_engine/portfolio/allocator.py (consumer)
+#   manifest.md §"Portfolio brain"
+#
+# Schema: see PortfolioAllocatorConfig.
+
+version: v3.3-portfolio-1
+
+# Candidates with confidence below this floor get share=0 (rejected).
+confidence_floor: 0.20
+
+# Per-symbol notional cap. The allocator clamps allocations so projected
+# exposure (existing + this allocation's notional contribution) does not
+# exceed this number. Coarse default; tighter caps belong to the
+# governance-side ExposureStore.
+max_symbol_notional_usd: 50000.0
+
+# Maximum fraction of available capital the allocator will hand out in
+# a single decision pass (1.0 = all of it). The default leaves a
+# residual buffer so the broker has slippage-room headroom.
+max_total_share: 0.80
