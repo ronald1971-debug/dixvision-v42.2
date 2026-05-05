@@ -6,8 +6,15 @@ base in :mod:`intelligence_engine.agents._base`.
 """
 
 from intelligence_engine.agents._base import AgentBase
+from intelligence_engine.agents.lp import LiquidityProviderAgent
 from intelligence_engine.agents.macro import MacroAgent
 from intelligence_engine.agents.scalper import ScalperAgent
 from intelligence_engine.agents.swing import SwingAgent
 
-__all__ = ["AgentBase", "MacroAgent", "ScalperAgent", "SwingAgent"]
+__all__ = [
+    "AgentBase",
+    "LiquidityProviderAgent",
+    "MacroAgent",
+    "ScalperAgent",
+    "SwingAgent",
+]

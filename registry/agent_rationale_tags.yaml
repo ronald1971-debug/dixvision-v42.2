@@ -22,6 +22,9 @@ tags:
   - regime_unknown
   - macro_aligned_buy
   - macro_aligned_sell
+  - lp_quote_buy
+  - lp_quote_sell
+  - mean_reversion_neutral
   - confidence_below_floor
   - cooldown_active
   - book_invalid
