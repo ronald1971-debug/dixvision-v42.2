@@ -264,6 +264,31 @@ def test_decisions_sorted_by_candidate_id() -> None:
     assert ids == sorted(ids)
 
 
+def test_allocate_rejects_nan_available_capital() -> None:
+    """Regression: NaN must not pass `< 0.0` and silently disable the cap.
+
+    Devin Review on PR #234 noted that
+    ``available_capital_usd < 0.0`` is False for NaN under IEEE 754
+    (NaN compares False against every numeric), so a caller computing
+    capital via division (e.g. ``0.0 / 0.0``) would slip a NaN through
+    the guard, then the ``<= 0.0`` no_capital branch, then propagate it
+    through ``base_share * NaN -> NaN`` so the per-symbol cap clamp
+    ``NaN > room`` is always False and the cap is silently never
+    enforced. The validator is now phrased as ``not (x >= 0.0)`` —
+    same NaN-safe pattern as the ``max_symbol_notional_usd`` validator.
+    """
+
+    eng = _engine()
+    cands = [_cand("c1", confidence=0.7)]
+    snap = _empty_exposure()
+    with pytest.raises(ValueError, match="available_capital_usd"):
+        eng.allocate(cands, snap, float("nan"))
+    with pytest.raises(ValueError, match="available_capital_usd"):
+        eng.allocate(cands, snap, float("-inf"))
+    with pytest.raises(ValueError, match="available_capital_usd"):
+        eng.allocate(cands, snap, -1.0)
+
+
 def test_replay_determinism_same_input_same_output() -> None:
     eng = _engine()
     cands = [

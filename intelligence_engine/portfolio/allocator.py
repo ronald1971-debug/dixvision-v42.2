@@ -127,7 +127,15 @@ class PortfolioAllocator:
         exposure: ExposureSnapshot,
         available_capital_usd: float,
     ) -> tuple[AllocationDecision, ...]:
-        if available_capital_usd < 0.0:
+        # NB: phrased as ``not (x >= 0.0)`` rather than ``x < 0.0`` so NaN
+        # — which compares False against every numeric — is rejected here
+        # instead of silently passing through. A NaN would otherwise pass
+        # this guard, pass the ``<= 0.0`` no_capital check below, then
+        # propagate into ``base_share * NaN -> NaN`` so the per-symbol
+        # cap clamp ``NaN > room`` is always False and the cap is never
+        # enforced. Same NaN-vs-IEEE754 lesson as the
+        # ``max_symbol_notional_usd`` validator above.
+        if not (available_capital_usd >= 0.0):
             raise ValueError(
                 "available_capital_usd must be non-negative, "
                 f"got {available_capital_usd!r}"
