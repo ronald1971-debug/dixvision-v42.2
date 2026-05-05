@@ -3266,15 +3266,15 @@ archetypes:
       belief_system:
         yield_curve: 0.92
         macro_thesis: 0.88
-        carry: 0.78
+        mean_reversion: 0.65
       risk_attitude: MODERATE
       time_horizon: POSITION
-      conviction_style: PREDICTIVE
+      conviction_style: REACTIVE
       regime_performance:
-        trending: 0.78
-        ranging: 0.45
-        high_vol: 0.55
-        low_vol: 0.65
+        trending: 0.55
+        ranging: 0.65
+        high_vol: 0.78
+        low_vol: 0.55
 
   TA-RATES-163:
     name: 'Butterfly-Spread Rates'
