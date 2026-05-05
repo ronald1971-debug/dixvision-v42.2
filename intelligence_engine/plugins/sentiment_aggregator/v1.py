@@ -35,7 +35,7 @@ a single signal channel — same pattern as a smoothing transform.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from core.contracts.engine import (
     HealthState,
@@ -76,8 +76,8 @@ class SentimentAggregatorV1:
     sentiment_threshold: float = 0.25
     confidence_scale: float = 1.0
     min_confidence: float = 0.05
-    _ema: float = 0.0
-    _samples: int = 0
+    _ema: float = field(default=0.0, init=False, repr=False)
+    _samples: int = field(default=0, init=False, repr=False)
 
     def __post_init__(self) -> None:
         if not 0.0 < self.alpha <= 1.0:
