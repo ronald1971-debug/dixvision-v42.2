@@ -206,6 +206,20 @@ def test_nan_inputs_rejected() -> None:
             SlippageWalk().step(seed=0, scenario=_scenario(extra={key: nan}))
 
 
+def test_infinity_inputs_rejected() -> None:
+    # Regression for Devin Review BUG_pr-review-job-318da2deb_0001:
+    # `not v > 0.0` lets +inf through (inf > 0 is True), and
+    # `inf - inf = nan` then silently propagates NaN through the
+    # geometric walk. Both `entry_price` and `order_size_usd` use
+    # the positive-float validator and must reject +inf explicitly.
+    inf = float("inf")
+    for key in ("entry_price", "order_size_usd"):
+        with pytest.raises(ValueError):
+            SlippageWalk().step(seed=0, scenario=_scenario(extra={key: inf}))
+        with pytest.raises(ValueError):
+            SlippageWalk().step(seed=0, scenario=_scenario(extra={key: -inf}))
+
+
 def test_invalid_config_rejected() -> None:
     with pytest.raises(ValueError):
         SlippageWalkConfig(max_legs=0)

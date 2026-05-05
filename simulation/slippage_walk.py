@@ -51,6 +51,7 @@ Refs:
 from __future__ import annotations
 
 import dataclasses
+import math
 import random
 from typing import Any
 
@@ -89,7 +90,10 @@ def _require_positive_float(meta: dict[str, Any], key: str) -> float:
     except (TypeError, ValueError) as exc:
         raise ValueError(f"meta[{key!r}] must be numeric, got {raw!r}") from exc
     # `not v > 0.0` rejects NaN (NaN > 0 is False) — see PR #234 / #261.
-    if not v > 0.0:
+    # `math.isfinite` additionally rejects +inf, which `> 0.0` lets through
+    # and which silently produces NaN downstream (e.g. `inf - inf` in
+    # geometric walks). Devin Review BUG_pr-review-job-318da2deb_0001.
+    if not v > 0.0 or not math.isfinite(v):
         raise ValueError(f"meta[{key!r}] must be > 0 and finite, got {v!r}")
     return v
 
