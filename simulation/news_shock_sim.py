@@ -223,9 +223,14 @@ class NewsShockSim:
                 price = price * (1.0 + shock_direction * shock_mag_frac)
 
             if shock_fired and i > shock_step:
-                # Aftershock decay applied to volatility.
-                std = shock_mag_frac * math.exp(
-                    -aftershock_decay * (i - shock_step)
+                # Aftershock decay applied on top of baseline so std
+                # never drops below baseline_std as the aftershock
+                # contribution falls toward zero (Devin Review).
+                std = max(
+                    baseline_std,
+                    shock_mag_frac * math.exp(
+                        -aftershock_decay * (i - shock_step)
+                    ),
                 )
             else:
                 std = baseline_std

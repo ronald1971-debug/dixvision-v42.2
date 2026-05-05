@@ -304,3 +304,41 @@ def test_invalid_config_rejected() -> None:
         NewsShockSimConfig(max_steps=-1)
     with pytest.raises(ValueError):
         NewsShockSimConfig(max_steps=10_000_000)
+
+
+def test_aftershock_std_never_drops_below_baseline() -> None:
+    """Devin Review BUG_0001 regression: previously the aftershock std
+    overwrote (rather than augmented) baseline_std and decayed toward
+    zero, freezing the post-shock walk. With high decay + non-zero
+    baseline, dispersion across seeds must remain non-trivial."""
+    sim = NewsShockSim()
+    base_meta = {
+        "entry_price": 100.0,
+        "order_size_usd": 10_000.0,
+        "side": "buy",
+        "num_steps": 200,
+        "shock_probability_per_step": 1.0,  # fires step 0
+        "shock_magnitude_bps": 100.0,
+        "shock_bullish_probability": 1.0,
+        "baseline_drift": 0.0,
+        "baseline_std": 0.005,
+        # High decay → aftershock contribution near-zero by step ~10.
+        # The walk must still diffuse via baseline_std for the rest.
+        "aftershock_decay": 5.0,
+    }
+    pnls = []
+    for seed in range(20):
+        out = sim.step(
+            seed=seed,
+            scenario=RealityScenario(
+                scenario_id=f"floor_{seed}",
+                seed=seed,
+                meta=base_meta,
+            ),
+        )
+        pnls.append(out.pnl_usd)
+    # Without the fix, std collapses → near-deterministic pnl across
+    # seeds. With the fix, baseline_std keeps the walk diffusing so
+    # dispersion is meaningfully non-zero.
+    spread = max(pnls) - min(pnls)
+    assert spread > 50.0, f"expected spread>50, got {spread}"
