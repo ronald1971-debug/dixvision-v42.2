@@ -122,8 +122,20 @@ class TraderArchetypeRegistry:
 
     by_id: Mapping[str, TraderArchetype]
 
-    def get(self, archetype_id: str) -> TraderArchetype:
-        return self.by_id[archetype_id]
+    def get(self, archetype_id: str) -> TraderArchetype | None:
+        """Return the archetype for ``archetype_id`` or ``None`` if absent.
+
+        Mirrors the codebase-wide registry convention (see
+        :class:`governance_engine.strategy_registry.StrategyRegistry`,
+        :class:`execution_engine.lifecycle.order_state_machine.OrderStateMachine`,
+        and :mod:`core.contracts.source_trust_promotions`) so future
+        consumers (strategy synthesizer + Darwinian arena) can use the
+        ``if archetype is None: ...`` idiom uniformly. Use ``[]`` /
+        ``__getitem__`` (or ``.by_id[...]``) when callers want a
+        :class:`KeyError` on miss.
+        """
+
+        return self.by_id.get(archetype_id)
 
     def __contains__(self, archetype_id: object) -> bool:
         return archetype_id in self.by_id

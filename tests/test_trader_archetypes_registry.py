@@ -46,6 +46,7 @@ def test_active_filter() -> None:
 def test_known_archetype_shape() -> None:
     registry = load_trader_archetypes()
     a = registry.get("TA-TREND-001")
+    assert a is not None
     assert a.name == "Classic Trend Follower"
     assert a.state is ArchetypeState.ACTIVE
     assert a.risk_attitude is RiskAttitude.MODERATE
@@ -126,3 +127,8 @@ def test_canonical_registry_path_resolves() -> None:
     assert REGISTRY_PATH.exists(), str(REGISTRY_PATH)
     registry = load_trader_archetypes(REGISTRY_PATH)
     assert len(registry) >= 10
+
+
+def test_get_returns_none_on_miss() -> None:
+    registry = load_trader_archetypes()
+    assert registry.get("TA-DOES-NOT-EXIST") is None
