@@ -164,8 +164,11 @@ class ImpactFeedback:
 
         # avg_fill is computed for downstream consumers but doesn't
         # change the outcome contract; pin it via the rule_fired
-        # tag for audit and assert non-negative.
-        assert avg_fill > 0.0  # noqa: S101 - INV-29 invariant
+        # tag for audit and assert non-negative. avg_fill can hit
+        # 0.0 on a sell when slippage clamps to 1.0 (price went to
+        # zero), which is economically catastrophic but mathematically
+        # valid; only strictly-negative would indicate a bug.
+        assert avg_fill >= 0.0  # noqa: S101 - INV-29 invariant
 
         return RealityOutcome(
             scenario_id=scenario.scenario_id,

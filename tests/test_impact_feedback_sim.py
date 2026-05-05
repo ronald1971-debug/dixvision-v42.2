@@ -178,3 +178,26 @@ def test_buy_and_sell_have_same_cost_magnitude() -> None:
         out_buy.terminal_drawdown_usd
         == pytest.approx(out_sell.terminal_drawdown_usd)
     )
+
+
+def test_sell_with_slippage_clamped_to_one_does_not_crash() -> None:
+    """Regression: sell side at full slippage hits avg_fill = 0.0.
+
+    When slippage clamps to 1.0 (size >= max_ratio * depth at high
+    impact_coef), the sell branch computes ``avg_fill = ref * (1 -
+    slippage) = 0.0``. The internal invariant must allow this — the
+    price went to zero, which is catastrophic but valid — only a
+    strictly negative avg_fill would indicate a logic bug.
+    """
+    cfg = ImpactFeedbackConfig(
+        impact_coef=0.5, max_ratio=4.0, impact_jitter=0.0
+    )
+    s = _scenario(
+        order_size_usd=100_000_000.0,
+        liquidity_depth_usd=1_000_000.0,
+        side="sell",
+    )
+    out = ImpactFeedback(cfg).step(seed=0, scenario=s)
+    assert out.terminal_drawdown_usd == pytest.approx(100_000_000.0)
+    assert out.pnl_usd == pytest.approx(-100_000_000.0)
+    assert out.rule_fired == "sell_impact"
