@@ -7,5 +7,6 @@ base in :mod:`intelligence_engine.agents._base`.
 
 from intelligence_engine.agents._base import AgentBase
 from intelligence_engine.agents.scalper import ScalperAgent
+from intelligence_engine.agents.swing import SwingAgent
 
-__all__ = ["AgentBase", "ScalperAgent"]
+__all__ = ["AgentBase", "ScalperAgent", "SwingAgent"]

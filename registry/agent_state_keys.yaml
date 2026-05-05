@@ -30,3 +30,14 @@ keys:
     - decisions_in_window
     - mid_window_size
     - momentum_threshold
+
+  AGT-02-swing:
+    - agent_id
+    - lifecycle
+    - last_decision_direction
+    - last_decision_confidence
+    - last_decision_ts_ns
+    - decisions_in_window
+    - fast_window_size
+    - slow_window_size
+    - crossover_threshold
