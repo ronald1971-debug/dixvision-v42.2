@@ -214,6 +214,17 @@ class FeeInversion:
         for _ in range(num_steps):
             price = price * (1.0 + rng.gauss(drift, std))
 
+        # Reject overflow / non-finite prices — happens for valid
+        # inputs only when (drift, std, num_steps) compound past
+        # float64 range under a custom max_steps. Rather than
+        # silently propagate NaN/inf into ``pnl_usd``, fail fast.
+        # (Same guard as SIM-20 fill_starvation per Devin Review.)
+        if not math.isfinite(price):
+            raise ValueError(
+                "fee_inversion walk overflowed to non-finite price; "
+                "tighten num_steps or per_step_drift / per_step_std"
+            )
+
         delta_per_unit = (price - entry) / entry
         if side == _BUY:
             gross_pnl = size_usd * delta_per_unit

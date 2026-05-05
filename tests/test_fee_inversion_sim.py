@@ -335,3 +335,21 @@ def test_max_steps_config_bounds() -> None:
         FeeInversionConfig(max_steps=0)
     with pytest.raises(ValueError, match=r"max_steps"):
         FeeInversionConfig(max_steps=2_000_000)
+
+
+def test_overflow_walk_raises_value_error() -> None:
+    """Inf-overflow guard backported from PR #268 (SIM-20). With
+    default max_steps the walk cannot overflow, but a custom
+    config + drift+std combination can compound past float64 range.
+    Rather than silently emit NaN / inf in pnl_usd / burn we fail
+    fast with a clear ValueError."""
+    sim = FeeInversion(FeeInversionConfig(max_steps=200_000))
+    with pytest.raises(ValueError, match="non-finite price"):
+        sim.step(
+            seed=0,
+            scenario=_scenario(
+                num_steps=200_000,
+                per_step_drift=0.005,
+                per_step_std=0.0,
+            ),
+        )
