@@ -99,6 +99,38 @@ def test_config_rejects_invalid_values() -> None:
         )
 
 
+def test_config_rejects_nan_max_symbol_notional() -> None:
+    """Regression: NaN must not pass `<= 0.0` and silently disable allocation.
+
+    Devin Review on PR #234 noted that ``self.max_symbol_notional_usd <= 0.0``
+    is False for NaN under IEEE 754, so a config row containing ``.nan``
+    (parsed by ``yaml.safe_load`` into ``float('nan')``) would be accepted
+    and then cause the symbol-cap headroom calculation to clamp every
+    allocation to 0.0 — silently rejecting every candidate. The validator
+    is now phrased as ``not (x > 0.0)`` so NaN, -inf, 0.0 and negatives are
+    all rejected at construction time.
+    """
+
+    with pytest.raises(ValueError, match="max_symbol_notional_usd"):
+        PortfolioAllocatorConfig(
+            confidence_floor=0.2,
+            max_symbol_notional_usd=float("nan"),
+            max_total_share=0.5,
+        )
+    with pytest.raises(ValueError, match="max_symbol_notional_usd"):
+        PortfolioAllocatorConfig(
+            confidence_floor=0.2,
+            max_symbol_notional_usd=float("-inf"),
+            max_total_share=0.5,
+        )
+    with pytest.raises(ValueError, match="max_symbol_notional_usd"):
+        PortfolioAllocatorConfig(
+            confidence_floor=0.2,
+            max_symbol_notional_usd=0.0,
+            max_total_share=0.5,
+        )
+
+
 def test_load_portfolio_allocator_config_from_registry() -> None:
     cfg = load_portfolio_allocator_config()
     assert isinstance(cfg, PortfolioAllocatorConfig)

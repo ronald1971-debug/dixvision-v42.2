@@ -68,7 +68,11 @@ class PortfolioAllocatorConfig:
                 f"confidence_floor must be in [0, 1], "
                 f"got {self.confidence_floor!r}"
             )
-        if self.max_symbol_notional_usd <= 0.0:
+        # NB: phrased as ``not (x > 0.0)`` rather than ``x <= 0.0`` so NaN
+        # — which compares False against every numeric — is rejected here
+        # instead of silently passing through and causing the headroom math
+        # below to clamp every symbol's allocation to 0.
+        if not (self.max_symbol_notional_usd > 0.0):
             raise ValueError(
                 "max_symbol_notional_usd must be positive, "
                 f"got {self.max_symbol_notional_usd!r}"
