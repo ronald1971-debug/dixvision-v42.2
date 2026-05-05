@@ -51,3 +51,13 @@ keys:
     - last_decision_ts_ns
     - decisions_in_window
     - neutral_confidence_scale
+
+  AGT-04-lp:
+    - agent_id
+    - lifecycle
+    - last_decision_direction
+    - last_decision_confidence
+    - last_decision_ts_ns
+    - decisions_in_window
+    - fair_value_window
+    - band_threshold
