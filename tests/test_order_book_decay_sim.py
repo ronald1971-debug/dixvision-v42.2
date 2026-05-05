@@ -199,6 +199,19 @@ def test_nan_inputs_rejected() -> None:
             OrderBookDecay().step(seed=0, scenario=_scenario(extra={key: nan}))
 
 
+def test_infinity_inputs_rejected() -> None:
+    # Regression for the +inf gap caught by Devin Review on PR #263:
+    # `not v > 0.0` lets +inf through (inf > 0 is True) and produces
+    # NaN downstream. Both `reference_price` and `level_depth_usd`
+    # use the positive-float validator and must reject +inf.
+    inf = float("inf")
+    for key in ("reference_price", "order_size_usd", "level_depth_usd"):
+        with pytest.raises(ValueError):
+            OrderBookDecay().step(seed=0, scenario=_scenario(extra={key: inf}))
+        with pytest.raises(ValueError):
+            OrderBookDecay().step(seed=0, scenario=_scenario(extra={key: -inf}))
+
+
 def test_invalid_config_rejected() -> None:
     with pytest.raises(ValueError):
         OrderBookDecayConfig(max_levels=0)
