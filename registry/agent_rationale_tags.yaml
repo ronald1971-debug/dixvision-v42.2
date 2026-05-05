@@ -15,6 +15,13 @@ tags:
   - mid_drift_sell
   - ma_crossover_buy
   - ma_crossover_sell
+  - regime_risk_on
+  - regime_risk_off
+  - regime_neutral
+  - regime_crisis
+  - regime_unknown
+  - macro_aligned_buy
+  - macro_aligned_sell
   - confidence_below_floor
   - cooldown_active
   - book_invalid
