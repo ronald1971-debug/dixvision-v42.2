@@ -65,6 +65,27 @@ def test_apply_fill_rejects_bad_inputs() -> None:
         em.apply_fill(ts_ns=0, symbol="X", side="BUY", notional_usd=1.0)
 
 
+def test_apply_fill_rejects_nan_notional() -> None:
+    """Regression: NaN must not pass the notional_usd guard.
+
+    Devin Review on PR #234 noted that ``notional_usd < 0.0`` is False for
+    NaN under IEEE 754, so a NaN slips the guard, then
+    ``self._by_symbol[symbol] += NaN`` permanently corrupts the in-memory
+    book — every subsequent ``notional()`` / ``view()`` propagates NaN to
+    the allocator. The validator is now phrased as ``not (x >= 0.0)`` —
+    same NaN-safe pattern as the allocator's
+    ``max_symbol_notional_usd`` and ``available_capital_usd`` guards.
+    """
+
+    em = ExposureManager()
+    with pytest.raises(ValueError, match="notional_usd"):
+        em.apply_fill(ts_ns=1, symbol="X", side="BUY", notional_usd=float("nan"))
+    with pytest.raises(ValueError, match="notional_usd"):
+        em.apply_fill(ts_ns=1, symbol="X", side="BUY", notional_usd=float("-inf"))
+    # Confirms the book was not poisoned by the failed calls above.
+    assert em.notional("X") == 0.0
+
+
 def test_apply_fill_rejects_out_of_order_ts() -> None:
     em = ExposureManager()
     em.apply_fill(ts_ns=10, symbol="X", side="BUY", notional_usd=1.0)

@@ -53,7 +53,17 @@ class ExposureManager:
                 f"ExposureManager.apply_fill: side must be 'BUY' or 'SELL', "
                 f"got {side!r}"
             )
-        if notional_usd < 0.0:
+        # NB: phrased as ``not (x >= 0.0)`` rather than ``x < 0.0`` so NaN
+        # — which compares False against every numeric under IEEE 754 — is
+        # rejected here instead of silently passing through. A NaN would
+        # otherwise pass this guard, then ``self._by_symbol[symbol] += NaN``
+        # would permanently corrupt the in-memory book so every later
+        # ``notional()`` / ``view()`` call propagates NaN to the allocator.
+        # Same NaN-vs-IEEE754 lesson as the
+        # ``PortfolioAllocatorConfig.max_symbol_notional_usd`` validator and
+        # the ``PortfolioAllocator.allocate(available_capital_usd=...)``
+        # validator in the sibling module.
+        if not (notional_usd >= 0.0):
             raise ValueError(
                 "ExposureManager.apply_fill: notional_usd must be non-negative, "
                 f"got {notional_usd!r}"
