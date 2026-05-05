@@ -312,28 +312,23 @@ def test_aftershock_std_never_drops_below_baseline() -> None:
     zero, freezing the post-shock walk. With high decay + non-zero
     baseline, dispersion across seeds must remain non-trivial."""
     sim = NewsShockSim()
-    base_meta = {
-        "entry_price": 100.0,
-        "order_size_usd": 10_000.0,
-        "side": "buy",
-        "num_steps": 200,
-        "shock_probability_per_step": 1.0,  # fires step 0
-        "shock_magnitude_bps": 100.0,
-        "shock_bullish_probability": 1.0,
-        "baseline_drift": 0.0,
-        "baseline_std": 0.005,
-        # High decay → aftershock contribution near-zero by step ~10.
-        # The walk must still diffuse via baseline_std for the rest.
-        "aftershock_decay": 5.0,
-    }
     pnls = []
     for seed in range(20):
         out = sim.step(
             seed=seed,
-            scenario=RealityScenario(
+            scenario=_scenario(
                 scenario_id=f"floor_{seed}",
-                seed=seed,
-                meta=base_meta,
+                num_steps=200,
+                # Force shock at step 0.
+                shock_probability_per_step=1.0,
+                shock_magnitude_bps=100.0,
+                shock_bullish_probability=1.0,
+                baseline_drift=0.0,
+                baseline_std=0.005,
+                # High decay → aftershock contribution near-zero by
+                # step ~10. The walk must still diffuse via
+                # baseline_std for the rest.
+                aftershock_decay=5.0,
             ),
         )
         pnls.append(out.pnl_usd)
