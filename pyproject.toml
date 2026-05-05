@@ -76,6 +76,7 @@ include = [
     "system*",
     "enforcement*",
     "immutable_core*",
+    "opponent_model*",
 ]
 exclude = ["tests*", "rust*", "docs*"]
 
