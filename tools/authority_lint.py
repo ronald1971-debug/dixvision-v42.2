@@ -1341,6 +1341,10 @@ def _check_b31(
 #     the belief-state derivation then consumes.
 #   * ``intelligence_engine.plugins.microstructure.microstructure_v1``
 #     — raw microstructure leaf producer.
+#   * ``intelligence_engine.plugins.orderflow_imbalance.v1`` — raw
+#     microstructure leaf producer (rolling-window signed-flow
+#     imbalance derived directly from MarketTick price/volume tape;
+#     same category as microstructure_v1, no news/macro/sentiment).
 #   * ``intelligence_engine.cognitive.approval_edge`` — operator-
 #     approval edge (Wave-03 PR-5). Cognitive proposals are *gated by
 #     an operator click*, not by the belief state; B26 and INV-72
@@ -1358,6 +1362,7 @@ B30_ALLOWED_LEAF_PRODUCERS: frozenset[str] = frozenset(
         "intelligence_engine.signal_pipeline",
         "intelligence_engine.strategy_runtime.conflict_resolver",
         "intelligence_engine.plugins.microstructure.microstructure_v1",
+        "intelligence_engine.plugins.orderflow_imbalance.v1",
         "intelligence_engine.cognitive.approval_edge",
     }
 )
