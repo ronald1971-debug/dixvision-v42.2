@@ -180,6 +180,7 @@ def test_b30_leaf_producer_set_matches_expected_canonical_set() -> None:
             "intelligence_engine.plugins.microstructure.microstructure_v1",
             "intelligence_engine.plugins.order_book_pressure.v1",
             "intelligence_engine.plugins.regime_classifier.v1",
+            "intelligence_engine.plugins.vpin_imbalance.v1",
             "intelligence_engine.cognitive.approval_edge",
         }
     )
