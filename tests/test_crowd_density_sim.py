@@ -149,14 +149,17 @@ def test_invalid_config_rejected() -> None:
 
 
 def test_distribution_over_seeds_varies() -> None:
-    s = _scenario(crowd_share=0.6, squeeze_intensity=0.6)
-    runner = CrowdDensity()
+    # Pressure 0.36 sits below a 0.4 threshold; default jitter +/-0.15
+    # is wide enough to cross the threshold sometimes — must produce
+    # both squeeze and no_squeeze across the seed range.
+    cfg = CrowdDensityConfig(squeeze_threshold=0.4)
+    s = _scenario(side="long", crowd_share=0.6, squeeze_intensity=0.6)
+    runner = CrowdDensity(cfg)
     rules = {
-        runner.step(seed=seed, scenario=s).rule_fired for seed in range(50)
+        runner.step(seed=seed, scenario=s).rule_fired for seed in range(200)
     }
-    # Pressure of 0.36 sits below the 0.5 threshold but jitter +/-0.15
-    # should cross it sometimes — mix of squeeze and no_squeeze.
-    assert len(rules) >= 1
+    assert "no_squeeze" in rules
+    assert "long_squeeze" in rules
 
 
 def test_extreme_unwind_clamped_to_full_loss() -> None:
