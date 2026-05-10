@@ -1,0 +1,58 @@
+# ADAPTED FROM: PyO3/pyo3 (guide/src/class.md, guide/src/function.md,
+#               guide/src/types.md) and PyO3/maturin docs.
+#
+# B-20 — PATTERN_ONLY Rust hot-path template.
+#
+# This crate is a *template* for the future FastRiskCache hot-path
+# revival. It is intentionally NOT a member of any workspace and is
+# NOT wired into any Python import. It compiles in isolation under
+# `maturin build --manifest-path tools/rust_bridge/Cargo.toml` for
+# benchmark and shadow-equivalence purposes only.
+#
+# Reviewer #3 (audit v3, item 1) required deletion of the previous
+# dual-backend Python+Rust state. The conservative resolution
+# (see docs/rust_revival_schedule.yaml + tools/rust_revival_reminder.py)
+# was a 30-day shadow window before *any* Rust revival lands. This
+# crate stays template-only until that window elapses and the revival
+# checklist holds.
+
+[package]
+name = "dixvision_rust_bridge"
+version = "0.1.0"
+edition = "2021"
+description = "PATTERN_ONLY Rust hot-path template — FastRiskCache shape."
+license = "MIT"
+publish = false
+
+[lib]
+name = "dixvision_rust_bridge"
+# `cdylib` is required for the eventual maturin / PyO3 wheel build.
+# `rlib` keeps the crate compilable as a plain Rust library for
+# `cargo test` / `cargo bench` in isolation.
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Pin to a known-good PyO3 line; "abi3-py312" matches the repo's
+# minimum-supported CPython (3.12). `extension-module` is required
+# for maturin / `pip install .` wheels.
+pyo3 = { version = "0.22", features = ["extension-module", "abi3-py312"] }
+
+# Release profile per PyO3 + maturin guidance: full LTO + a single
+# codegen unit removes inlining boundaries between the Rust hot-path
+# branches, which is precisely what the FastExecutor reject ladder
+# benefits from. `panic = "abort"` keeps the unwind tables out of
+# the .so so we don't pay for stack-unwinding in the hot path.
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+opt-level = 3
+strip = "symbols"
+
+# `cargo bench` is gated by `cargo +nightly` historically, but for
+# the template we expose a stable `--release` bin target so the
+# Python-vs-Rust parity harness can call it without nightly.
+[[bin]]
+name = "fast_risk_cache_bench"
+path = "src/bin/fast_risk_cache_bench.rs"
+required-features = []
