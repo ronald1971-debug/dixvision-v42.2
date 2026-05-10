@@ -1,0 +1,27 @@
+# DIX feature-store registry (S-09).
+#
+# Adapted from feast's `feature_store.yaml`. We only model the fields
+# the SQLite-only DIX backend supports — provider/online_store/registry
+# are pinned because the adaptation deliberately drops the multi-backend
+# infra surface (see state/feature_store.py docstring).
+#
+# This file is consumed offline by training pipelines; the runtime read
+# path imports `state.feature_store.FeatureStore` directly with a path
+# argument and is not registry-driven.
+#
+# DO NOT add credentials here. The DIX feature store is a pure local
+# SQLite backend.
+project: dixvision
+provider: local
+online_store:
+  type: sqlite
+  # Resolved at runtime by the training pipeline. ":memory:" is the
+  # default for unit tests; production callers pass an absolute path
+  # under DIXVISION_FEATURE_STORE_PATH.
+  path: ":memory:"
+registry:
+  # The `feature_views` table inside the same SQLite file is the
+  # canonical registry — there is no second registry file to keep in
+  # sync.
+  path: ":memory:"
+schema_version: 1
