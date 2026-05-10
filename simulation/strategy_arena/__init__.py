@@ -26,6 +26,13 @@ from simulation.strategy_arena.arena import (
     TournamentBracket,
     TournamentResult,
 )
+from simulation.strategy_arena.kill_underperformers import (
+    DEMOTION_KIND,
+    DEMOTION_TOUCHPOINT,
+    DemotionRecommendation,
+    KillUnderperformersInputError,
+    build_demotion_recommendations,
+)
 
 __all__ = [
     "Arena",
@@ -33,6 +40,11 @@ __all__ = [
     "ArenaConfigError",
     "ArenaInputError",
     "Contestant",
+    "DEMOTION_KIND",
+    "DEMOTION_TOUCHPOINT",
+    "DemotionRecommendation",
+    "KillUnderperformersInputError",
     "TournamentBracket",
     "TournamentResult",
+    "build_demotion_recommendations",
 ]
