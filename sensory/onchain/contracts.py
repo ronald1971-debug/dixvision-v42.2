@@ -63,3 +63,133 @@ class OnChainMetric:
             raise ValueError(
                 "OnChainMetric.observed_ts_ns must be positive or None"
             )
+
+
+# ---------------------------------------------------------------------------
+# A-15 — Solana onchain intelligence value type
+# ---------------------------------------------------------------------------
+#
+# OnchainEvent is the advisory output produced by Solana-chain intelligence
+# adapters (Helius enhanced transactions, token holder shifts). It is
+# *not* a typed bus event — adapters under ``execution_engine.adapters``
+# cannot construct ``SignalEvent`` / ``HazardEvent`` (B27 / B28 / INV-71).
+# Downstream intelligence-tier coordinators project ``OnchainEvent`` into
+# typed events on the proper side of the authority boundary.
+
+@dataclass(frozen=True, slots=True)
+class OnchainEvent:
+    """Advisory record describing one parsed onchain observation.
+
+    Frozen + slotted (INV-15 deterministic-replay safe). Eager validation
+    on construction; no clock, no IO. Producers must supply ``ts_ns``
+    from :class:`system.time_source.TimeAuthority`.
+
+    Attributes:
+        ts_ns: Monotonic ingestion timestamp in nanoseconds.
+        source: Stable source identifier (e.g. ``"HELIUS"``). Non-empty.
+        chain: Chain identifier (e.g. ``"SOLANA"``). Non-empty.
+        kind: Event category — one of ``"TRANSFER"``, ``"SWAP"``,
+            ``"MINT"``, ``"BURN"``, ``"HOLDER_SHIFT"``, ``"PROGRAM_CALL"``,
+            ``"NFT_TRADE"``, ``"UNKNOWN"``. Non-empty.
+        asset: Token mint / asset symbol the event scopes to. Empty
+            string is allowed for chain-wide observations.
+        actor: Wallet address that initiated the event. Empty string
+            allowed when the source omits actor attribution.
+        signature: Onchain transaction signature (base58). Empty string
+            allowed for derived events (e.g. holder shift snapshots).
+        rug_score: ``[0.0, 1.0]`` heuristic risk score. ``None`` when
+            the source omits it. ``0.0`` is a legitimate "no risk"
+            observation.
+        meta: Free-form structural metadata (no PII, no secrets).
+    """
+
+    ts_ns: int
+    source: str
+    chain: str
+    kind: str
+    asset: str = ""
+    actor: str = ""
+    signature: str = ""
+    rug_score: float | None = None
+    meta: Mapping[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.ts_ns <= 0:
+            raise ValueError("OnchainEvent.ts_ns must be positive")
+        if not self.source:
+            raise ValueError("OnchainEvent.source must be non-empty")
+        if not self.chain:
+            raise ValueError("OnchainEvent.chain must be non-empty")
+        if not self.kind:
+            raise ValueError("OnchainEvent.kind must be non-empty")
+        if self.rug_score is not None and not (
+            0.0 <= float(self.rug_score) <= 1.0
+        ):
+            raise ValueError(
+                "OnchainEvent.rug_score must be in [0.0, 1.0] or None"
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class HolderShiftAdvisory:
+    """Advisory record describing a shift in a token's top-holder set.
+
+    Emitted by onchain intelligence adapters when a holder snapshot
+    diff exceeds a caller-supplied threshold. Frozen + slotted, no
+    clock, no IO, eager validation.
+
+    Attributes:
+        ts_ns: Monotonic snapshot timestamp in nanoseconds.
+        asset: Token mint / asset symbol. Non-empty.
+        top_holder_share_before: Combined balance share of the top-N
+            holders prior to the diff, in ``[0.0, 1.0]``.
+        top_holder_share_after: Combined balance share of the top-N
+            holders after the diff, in ``[0.0, 1.0]``.
+        holders_changed: Number of top-N wallet addresses that
+            entered or left the set. ``>= 0``.
+        rug_score: ``[0.0, 1.0]`` heuristic risk score. Required
+            (advisory only — never autonomously triggers anything).
+        meta: Free-form structural metadata (no PII, no secrets).
+    """
+
+    ts_ns: int
+    asset: str
+    top_holder_share_before: float
+    top_holder_share_after: float
+    holders_changed: int
+    rug_score: float
+    meta: Mapping[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.ts_ns <= 0:
+            raise ValueError("HolderShiftAdvisory.ts_ns must be positive")
+        if not self.asset:
+            raise ValueError(
+                "HolderShiftAdvisory.asset must be non-empty"
+            )
+        for name in (
+            "top_holder_share_before",
+            "top_holder_share_after",
+            "rug_score",
+        ):
+            v = float(getattr(self, name))
+            if not (0.0 <= v <= 1.0):
+                raise ValueError(
+                    f"HolderShiftAdvisory.{name} must be in [0.0, 1.0]"
+                )
+        if self.holders_changed < 0:
+            raise ValueError(
+                "HolderShiftAdvisory.holders_changed must be >= 0"
+            )
+
+    @property
+    def share_delta(self) -> float:
+        """Signed change in top-holder concentration."""
+        return self.top_holder_share_after - self.top_holder_share_before
+
+
+__all__ = [
+    "HolderShiftAdvisory",
+    "OnChainMetric",
+    "OnchainEvent",
+]
