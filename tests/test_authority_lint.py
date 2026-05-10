@@ -887,3 +887,154 @@ def test_b36_silent_when_decision_signer_only_referenced_not_called(
         "    return s.sign(content_hash='x', governance_decision_id='g')\n",
     )
     assert "B36" not in _rule_codes(lint_repo(fake_repo))
+
+
+# ---------------------------------------------------------------------------
+# B-POLARS — polars containment (S-10.4, INV-15)
+# ---------------------------------------------------------------------------
+
+
+def test_b_polars_fires_on_execution_engine_top_level_import(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "execution_engine/uses_polars.py",
+        "import polars as pl\n",
+    )
+    assert "B-POLARS" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_polars_fires_on_governance_engine_from_import(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "governance_engine/uses_polars.py",
+        "from polars import LazyFrame\n",
+    )
+    assert "B-POLARS" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_polars_fires_on_system_engine_top_level_import(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "system_engine/uses_polars.py",
+        "import polars\n",
+    )
+    assert "B-POLARS" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_polars_fires_on_core_top_level_import(fake_repo: Path):
+    _write(
+        fake_repo,
+        "core/uses_polars.py",
+        "import polars\n",
+    )
+    assert "B-POLARS" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_polars_fires_on_meta_controller_hot_path(fake_repo: Path):
+    _write(
+        fake_repo,
+        "intelligence_engine/meta_controller/__init__.py",
+        "",
+    )
+    _write(
+        fake_repo,
+        "intelligence_engine/meta_controller/hot_path.py",
+        "import polars\n",
+    )
+    assert "B-POLARS" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_polars_fires_on_lazy_function_local_import(fake_repo: Path):
+    _write(
+        fake_repo,
+        "execution_engine/lazy.py",
+        "def go():\n    import polars as pl\n    return pl\n",
+    )
+    # Lazy / function-local imports are caught because ``_iter_imports``
+    # walks the full AST. This is a tighter contract than per-file
+    # top-of-module scanning.
+    assert "B-POLARS" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_polars_fires_on_polars_subpackage_import(fake_repo: Path):
+    _write(
+        fake_repo,
+        "execution_engine/uses_polars.py",
+        "from polars.exceptions import ComputeError\n",
+    )
+    assert "B-POLARS" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_polars_allows_learning_engine_analytics(fake_repo: Path):
+    _write(
+        fake_repo,
+        "learning_engine/analytics/__init__.py",
+        "",
+    )
+    _write(
+        fake_repo,
+        "learning_engine/analytics/uses_polars.py",
+        "def go():\n    import polars as pl\n    return pl\n",
+    )
+    assert "B-POLARS" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_polars_allows_evolution_engine(fake_repo: Path):
+    _write(
+        fake_repo,
+        "evolution_engine/batch.py",
+        "import polars\n",
+    )
+    assert "B-POLARS" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_polars_allows_tests_directory(fake_repo: Path):
+    _write(
+        fake_repo,
+        "tests/test_polars_x.py",
+        "import polars as pl\n\ndef test_x():\n    assert pl is not None\n",
+    )
+    assert "B-POLARS" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_polars_allows_intelligence_engine_outside_hot_path(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "intelligence_engine/cognitive/__init__.py",
+        "",
+    )
+    _write(
+        fake_repo,
+        "intelligence_engine/cognitive/analytics.py",
+        "import polars\n",
+    )
+    # Only ``intelligence_engine.meta_controller.hot_path`` is locked
+    # down; the cognitive subsystem may use polars for offline analysis.
+    assert "B-POLARS" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_polars_silent_when_no_polars_imported_anywhere(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "execution_engine/clean.py",
+        "from core.contracts.events import SignalEvent\n",
+    )
+    assert "B-POLARS" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_polars_real_repo_passes(fake_repo: Path):
+    """Sanity — the real repo's polars usage must already be compliant."""
+    # Re-runs the top-of-file ``test_real_repo_passes_zero_violations``
+    # narrowed to B-POLARS specifically so a regression here is
+    # immediately attributable to the polars containment rule.
+    assert "B-POLARS" not in _rule_codes(lint_repo(REPO_ROOT))
