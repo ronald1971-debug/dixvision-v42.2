@@ -783,6 +783,68 @@ B33_ALLOWED_PREFIXES: tuple[str, ...] = (
 )
 
 
+# ---------------------------------------------------------------------------
+# B-POLARS — polars containment (S-10.4, INV-15).
+# ---------------------------------------------------------------------------
+#
+# polars is an OFFLINE-only batch analytics dependency adapted under the
+# S-10 spec (``learning_engine/analytics/``).  It pulls in a compiled
+# Rust runtime and uses a non-deterministic streaming engine for some
+# operations, both of which are incompatible with the runtime tiers'
+# replay determinism (INV-15) and Python-pure hot path.
+#
+# This rule bans ``import polars`` (top-level *or* lazy / function-local —
+# ``_iter_imports`` walks the full AST so deferred imports are caught
+# too) from every runtime tier:
+#
+#   * ``execution_engine`` — hot-path order routing.
+#   * ``governance_engine`` — Mode FSM + authority ledger writers.
+#   * ``system_engine``     — hazard sensors + system-state engine.
+#   * ``core``              — deterministic typed-event core + coherence.
+#   * ``intelligence_engine.meta_controller.hot_path`` — fast-tick
+#     meta-controller used by ``execution_engine.hot_path``.
+#
+# Allowed importers (offline / tooling):
+#
+#   * ``learning_engine.analytics`` — the OFFLINE adapter surface itself
+#     (``pnl_attribution.py`` / ``regime_stats.py`` / ``feature_importance.py``).
+#   * ``evolution_engine``          — offline evolution / batch analysis.
+#   * ``tools`` / ``scripts``       — operator-side utilities.
+#   * ``tests``                     — pytest exercise of the OFFLINE
+#     analytics modules.
+
+B_POLARS_FORBIDDEN_RUNTIME_PREFIXES: tuple[str, ...] = (
+    "execution_engine",
+    "governance_engine",
+    "system_engine",
+    "core",
+    "intelligence_engine.meta_controller.hot_path",
+)
+
+
+def _check_b_polars(
+    importer: str, target: str, file: Path, line: int
+) -> Violation | None:
+    """B-POLARS — polars import containment (S-10.4 / INV-15)."""
+
+    if not _starts_with_any(target, ("polars",)):
+        return None
+    if not _starts_with_any(importer, B_POLARS_FORBIDDEN_RUNTIME_PREFIXES):
+        return None
+    return Violation(
+        "B-POLARS",
+        file,
+        line,
+        importer,
+        target,
+        "polars imports are quarantined to OFFLINE tiers"
+        " (learning_engine.analytics / evolution_engine / tools / tests) —"
+        " runtime engines (execution / governance / system / core /"
+        " intelligence_engine.meta_controller.hot_path) must stay"
+        " polars-free for INV-15 replay determinism + Python-pure hot path.",
+    )
+
+
 RULE_CHECKS = (
     _check_t1,
     _check_c2,
@@ -798,6 +860,7 @@ RULE_CHECKS = (
     _check_b20,
     _check_b24,
     _check_b33,
+    _check_b_polars,
 )
 
 
