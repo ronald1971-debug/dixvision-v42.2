@@ -99,6 +99,18 @@ plugins:
           slippage_bps: 0.0
           default_qty: 1.0
         depends_on: []
+      - name: binance_spot
+        spec_id: S-01
+        version: "0.1.0"
+        # Scaffold mode by default — adapter stays in DISCONNECTED
+        # until both api_key and api_secret are supplied at construction
+        # and connect() is called. Adapted from ccxt/python/ccxt/binance.py.
+        status: ACTIVE
+        config:
+          sandbox: true
+          default_qty: 0.0
+          default_order_type: market
+        depends_on: []
       - name: adapter_router
         spec_id: EXEC-01
         version: "1.0.0"
