@@ -33,6 +33,16 @@ from simulation.strategy_arena.kill_underperformers import (
     KillUnderperformersInputError,
     build_demotion_recommendations,
 )
+from simulation.strategy_arena.promotion_engine import (
+    PROMOTION_KIND,
+    PROMOTION_TOUCHPOINT,
+    ROLE_BOTH,
+    ROLE_ELITE,
+    ROLE_WINNER,
+    PromotionEngineInputError,
+    PromotionRecommendation,
+    build_promotion_recommendations,
+)
 
 __all__ = [
     "Arena",
@@ -44,7 +54,15 @@ __all__ = [
     "DEMOTION_TOUCHPOINT",
     "DemotionRecommendation",
     "KillUnderperformersInputError",
+    "PROMOTION_KIND",
+    "PROMOTION_TOUCHPOINT",
+    "PromotionEngineInputError",
+    "PromotionRecommendation",
+    "ROLE_BOTH",
+    "ROLE_ELITE",
+    "ROLE_WINNER",
     "TournamentBracket",
     "TournamentResult",
     "build_demotion_recommendations",
+    "build_promotion_recommendations",
 ]
