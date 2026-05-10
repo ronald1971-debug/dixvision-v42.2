@@ -1,0 +1,39 @@
+# A-13 hypothesis — property-based replay-determinism CI job.
+# Runs the three property suites on every PR alongside the existing
+# unit-test workflow. Pinned to Python 3.12 to match the canonical
+# DIX toolchain.
+name: property-tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  hypothesis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+          python -m pip install hypothesis
+
+      - name: Run property tests
+        run: |
+          python -m pytest \
+            tests/test_execution_intent_hash_property.py \
+            tests/test_slippage_determinism_property.py \
+            tests/test_replay_determinism_property.py \
+            -q --tb=short
