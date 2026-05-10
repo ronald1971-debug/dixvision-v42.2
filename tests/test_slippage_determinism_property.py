@@ -24,8 +24,12 @@ S-02.1 slippage models (``ConstantBpsSlippage`` / ``BookWalkSlippage``
 
 from __future__ import annotations
 
-from hypothesis import HealthCheck, given, settings
-from hypothesis import strategies as st
+import pytest
+
+pytest.importorskip("hypothesis")
+
+from hypothesis import HealthCheck, given, settings  # noqa: E402
+from hypothesis import strategies as st  # noqa: E402
 
 from core.contracts.events import Side
 from simulation_engine.slippage_model import (

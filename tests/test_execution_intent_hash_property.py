@@ -28,8 +28,12 @@ These tests run on every PR via the
 
 from __future__ import annotations
 
-from hypothesis import HealthCheck, given, settings
-from hypothesis import strategies as st
+import pytest
+
+pytest.importorskip("hypothesis")
+
+from hypothesis import HealthCheck, given, settings  # noqa: E402
+from hypothesis import strategies as st  # noqa: E402
 
 from core.contracts.events import Side, SignalEvent
 from core.contracts.execution_intent import (
