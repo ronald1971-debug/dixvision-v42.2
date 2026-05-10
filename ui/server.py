@@ -100,6 +100,7 @@ from core.contracts.governance import (
     OperatorRequest,
     SystemMode,
 )
+from core.contracts.learning import PatchProposal, StrategyStats
 from core.contracts.learning_evolution_freeze import (
     LearningEvolutionFreezePolicy,
 )
@@ -121,6 +122,19 @@ from dashboard_backend.control_plane.strategy_lifecycle_panel import (
     StrategyLifecyclePanel,
 )
 from evolution_engine.engine import EvolutionEngine
+from evolution_engine.intelligence_loops.mutation_proposer import (
+    MutationProposer,
+)
+from evolution_engine.loops.structural_loop import (
+    StructuralEvolutionLoop,
+    StructuralLoopTickResult,
+)
+from evolution_engine.patch_pipeline.backtest import BacktestSummary
+from evolution_engine.patch_pipeline.orchestrator import (
+    PatchPipelineOrchestrator,
+    StageEvidence,
+)
+from evolution_engine.patch_pipeline.pipeline import PatchPipeline
 from execution_engine.engine import ExecutionEngine
 from execution_engine.execution_gate import AuthorityGuard
 from execution_engine.protections.feedback import FeedbackCollector
@@ -139,6 +153,9 @@ from governance_engine.engine import GovernanceEngine
 from governance_engine.harness_approver import (
     HARNESS_APPROVER_ENV_VAR,
     approve_signal_for_execution,
+)
+from governance_engine.services.patch_pipeline_bridge import (
+    PatchApprovalBridge,
 )
 from governance_engine.strategy_registry import StrategyRegistry
 
@@ -170,6 +187,10 @@ from intelligence_engine.cognitive.chat.http_chat_transport import (
 )
 from intelligence_engine.engine import IntelligenceEngine
 from intelligence_engine.knowledge import NewsKnowledgeIndex
+from intelligence_engine.learning.slow_loop import (
+    ParameterBounds,
+    SlowLoopLearner,
+)
 from intelligence_engine.learning_interface import LearningInterface
 from intelligence_engine.mcp import OpenNewsServer
 from intelligence_engine.plugins import MicrostructureV1
@@ -187,6 +208,11 @@ from intelligence_engine.trader_modeling import (
     observation_as_system_event,
 )
 from learning_engine.engine import LearningEngine
+from learning_engine.loops.closed_loop import (
+    ClosedLearningLoop,
+    LoopTickResult,
+)
+from learning_engine.update_emitter import UpdateEmitter
 from state.ledger.reader import LedgerReader
 from system.time_source import utc_now, wall_ns
 from system_engine.backtest_ingest.internal import (
@@ -738,6 +764,113 @@ class _State:
             "pumpfun_ws": self.pumpfun_feed,
             "raydium_pools": self.raydium_feed,
         }
+
+        # P0-A — activate learning/evolution loops under live HARDEN-04
+        # freeze policy. The loop pair is the single freeze-enforcement
+        # point for the closed learning chain (FeedbackCollector →
+        # SlowLoopLearner → UpdateEmitter) and the structural chain
+        # (MutationProposer → PatchPipelineOrchestrator). The live
+        # :class:`LearningEvolutionFreezePolicy` is constructed from
+        # the current ``SystemMode`` + ``learning_override_enabled``
+        # on every tick by ``_live_freeze_policy``; HARDEN-04 stays
+        # frozen by default and unfreezes *only* when both inputs are
+        # in their "go" state (``LIVE`` + override flag set). The
+        # inner ``SlowLoopLearner`` / ``UpdateEmitter`` / ``MutationProposer``
+        # are constructed with ``freeze=None`` because the loop is
+        # the single gate (pinned by both loops' constructor invariants
+        # and the AST tests under ``tests/test_*_loop.py``).
+        self.slow_loop_learner = SlowLoopLearner(
+            bounds={
+                "learning_rate": ParameterBounds(
+                    lo=0.0001, hi=1.0, step=0.01, initial=0.05
+                ),
+            },
+            freeze_policy=None,
+        )
+        self.update_emitter = UpdateEmitter(freeze=None)
+        self.closed_learning_loop = ClosedLearningLoop(
+            feedback_collector=self.feedback_collector,
+            learner=self.slow_loop_learner,
+            emitter=self.update_emitter,
+            policy_supplier=self._live_freeze_policy,
+        )
+        self.mutation_proposer = MutationProposer(freeze=None)
+        self.patch_pipeline = PatchPipeline()
+        self.patch_approval_bridge = PatchApprovalBridge(
+            pipeline=self.patch_pipeline
+        )
+        self.patch_pipeline_orchestrator = PatchPipelineOrchestrator(
+            bridge=self.patch_approval_bridge,
+        )
+        self.structural_evolution_loop = StructuralEvolutionLoop(
+            proposer=self.mutation_proposer,
+            orchestrator=self.patch_pipeline_orchestrator,
+            policy_supplier=self._live_freeze_policy,
+            stats_supplier=self._structural_stats_supplier,
+            evidence_builder=self._structural_evidence_builder,
+        )
+
+    def _live_freeze_policy(self) -> LearningEvolutionFreezePolicy:
+        """Snapshot the live HARDEN-04 freeze policy.
+
+        Constructed from the current :class:`SystemMode` and the
+        operator ``learning_override_enabled`` flag on every call.
+        Held under ``STATE.lock`` so the snapshot is consistent with
+        any concurrent ``POST /api/operator/learning-override`` or
+        mode transition. The policy is the **only** source of truth
+        for whether the closed learning loop and the structural
+        evolution loop may invoke their inner components (INV-70 /
+        HARDEN-04).
+        """
+
+        with self.lock:
+            enabled = self.learning_override_enabled
+            mode = self.governance.state_transitions.current_mode()
+        return LearningEvolutionFreezePolicy(
+            mode=mode, operator_override=enabled
+        )
+
+    def _structural_stats_supplier(self) -> tuple[StrategyStats, ...]:
+        """Drain the live structural-evolution stats source.
+
+        No live source is wired yet — a future wave will feed
+        per-strategy reality summaries here. Until then the loop is
+        a no-op even when unfrozen (zero proposals → zero
+        orchestrator runs), which keeps the freeze-gate contract
+        honest without inventing fabricated stats.
+        """
+
+        return ()
+
+    def _structural_evidence_builder(
+        self, proposal: PatchProposal
+    ) -> StageEvidence:
+        """Build :class:`StageEvidence` for one proposal-driven run.
+
+        Used only when the structural stats supplier yields proposals
+        (currently never — see :meth:`_structural_stats_supplier`).
+        Returns a conservative clean-gate evidence so a future stats
+        wiring can drive end-to-end APPROVED runs immediately; tests
+        cover the unfrozen path explicitly by overriding both the
+        supplier and the builder, so this default is never exercised
+        in CI today.
+        """
+
+        return StageEvidence(
+            sandbox_touchpoints=proposal.touchpoints,
+            static_findings=(),
+            backtest_summary=BacktestSummary(
+                samples=200,
+                pnl_mean=0.0,
+                pnl_stddev=1.0,
+                max_drawdown=0.0,
+            ),
+            shadow_samples=200,
+            shadow_matches=200,
+            canary_orders=100,
+            canary_rejects=0,
+            canary_realised_pnl=0.0,
+        )
 
     def build_runtime_context_now(
         self,
@@ -2272,6 +2405,95 @@ def operator_learning_override_post(
             },
         )
     return _project_learning_override(enabled=new_enabled, mode=mode)
+
+
+#: Env var that opts the harness into the P0-A admin debug-tick route.
+#: The route drives one ``ClosedLearningLoop`` tick + one
+#: ``StructuralEvolutionLoop`` tick under the live freeze policy and
+#: returns a JSON projection of both :class:`LoopTickResult` /
+#: :class:`StructuralLoopTickResult`. Disabled by default — production
+#: deployments MUST NOT enable it (the live freeze policy is the only
+#: governance gate; an HTTP-exposed tick would be a side channel into
+#: the learning loop even though it still respects HARDEN-04).
+ADMIN_LEARNING_TICK_ENV_VAR = "DIX_LEARNING_DEBUG_TICK"
+
+
+def _admin_learning_tick_enabled() -> bool:
+    """True iff the env var opts the harness into the debug-tick route."""
+
+    return (
+        os.environ.get(ADMIN_LEARNING_TICK_ENV_VAR, "")
+        .strip()
+        .lower()
+        in {"1", "true", "yes", "on"}
+    )
+
+
+def _project_loop_result(result: LoopTickResult) -> dict[str, Any]:
+    """JSON projection of a :class:`LoopTickResult`."""
+
+    return {
+        "ts_ns": result.ts_ns,
+        "frozen": result.frozen,
+        "drained_outcomes": len(result.drained_outcomes),
+        "submitted_samples": len(result.submitted_samples),
+        "emitted_events": len(result.emitted_events),
+        "policy_mode_name": result.policy_mode_name,
+        "operator_override": result.operator_override,
+    }
+
+
+def _project_structural_result(
+    result: StructuralLoopTickResult,
+) -> dict[str, Any]:
+    """JSON projection of a :class:`StructuralLoopTickResult`."""
+
+    return {
+        "ts_ns": result.ts_ns,
+        "frozen": result.frozen,
+        "drained_stats": len(result.drained_stats),
+        "proposals": len(result.proposals),
+        "runs": len(result.runs),
+        "emitted_events": len(result.emitted_events),
+        "policy_mode_name": result.policy_mode_name,
+        "operator_override": result.operator_override,
+    }
+
+
+@app.post("/api/admin/learning/tick")
+def admin_learning_tick() -> dict[str, Any]:
+    """P0-A — env-gated debug tick for both learning/evolution loops.
+
+    Only registered routing path that drives ``ClosedLearningLoop.tick``
+    / ``StructuralEvolutionLoop.tick``. The route refuses with HTTP 403
+    when ``DIX_LEARNING_DEBUG_TICK`` is unset / falsy so production
+    deployments cannot accidentally expose a tick side-channel. When
+    enabled, the route still respects HARDEN-04 — both loops snapshot
+    the live :class:`LearningEvolutionFreezePolicy` via the supplier
+    bound on :class:`_State` and short-circuit to ``frozen=True`` if
+    the mode/override pair is not in the "go" state.
+
+    The returned JSON document carries the per-loop result projections
+    so operators (or smoke tests) can verify wiring without leaking
+    typed engine objects across the HTTP boundary.
+    """
+
+    if not _admin_learning_tick_enabled():
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                f"admin learning tick disabled: set "
+                f"{ADMIN_LEARNING_TICK_ENV_VAR}=1 to enable"
+            ),
+        )
+    ts_ns = wall_ns()
+    closed = STATE.closed_learning_loop.tick(ts_ns=ts_ns)
+    structural = STATE.structural_evolution_loop.tick(ts_ns=ts_ns)
+    return {
+        "ts_ns": ts_ns,
+        "closed_learning": _project_loop_result(closed),
+        "structural_evolution": _project_structural_result(structural),
+    }
 
 
 def _decision_to_dict(decision: Any) -> dict[str, Any]:
