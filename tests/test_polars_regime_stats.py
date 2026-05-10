@@ -34,6 +34,12 @@ from learning_engine.analytics.regime_stats import (
     compute_regime_stats,
 )
 
+# Polars is required to actually exercise compute_regime_stats(). Skip the
+# whole module when it is not installed (matches S-10.1 pnl_attribution
+# pattern). Module-level metadata + dataclass-validation tests still
+# require polars only at call time, but it is simpler to gate the file.
+pl = pytest.importorskip("polars")  # noqa: F841
+
 MODULE_PATH = Path(rs.__file__)
 
 
