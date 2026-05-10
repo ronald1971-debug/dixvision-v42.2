@@ -1,0 +1,38 @@
+"""DIX strategy arena — DEAP-style tournament selection over RealitySummary.
+
+Phase 10 / A-03 leaf. The arena runs OFFLINE only and emits ranked
+survivor lists for the kill-underperformers (A-03.2) and promotion-
+engine (A-03.3) leaves to consume.
+
+Authority constraints:
+
+* OFFLINE_ONLY tier — never imported by execution_engine /
+  governance_engine / system_engine / intelligence_engine on the hot
+  path.
+* No clock, no IO, no PRNG without caller-supplied seed.
+* INV-13 / INV-14: arena outputs are advisory; demotions and
+  promotions go through governance via a typed proposal (handled by
+  A-03.2 / A-03.3, not by the arena itself).
+"""
+
+from __future__ import annotations
+
+from simulation.strategy_arena.arena import (
+    Arena,
+    ArenaConfig,
+    ArenaConfigError,
+    ArenaInputError,
+    Contestant,
+    TournamentBracket,
+    TournamentResult,
+)
+
+__all__ = [
+    "Arena",
+    "ArenaConfig",
+    "ArenaConfigError",
+    "ArenaInputError",
+    "Contestant",
+    "TournamentBracket",
+    "TournamentResult",
+]
