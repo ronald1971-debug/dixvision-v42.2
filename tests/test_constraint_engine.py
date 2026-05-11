@@ -151,6 +151,15 @@ def test_canonical_safe09_has_predicate_and_fires():
             "ledger_commit_budget_ns": 1,
             "actor": "x",
             "owner": "x",
+            # P0-B GOV-PATCH-* facts (passing defaults).
+            "sharpe_ratio": 2.0,
+            "sharpe_ratio_min": 1.0,
+            "max_drawdown": 0.01,
+            "max_drawdown_max": 0.05,
+            "samples": 1000,
+            "samples_min": 200,
+            "is_oos_divergence_sigma": 0.0,
+            "is_oos_divergence_max_sigma": 0.5,
         }
     )
     assert any(r.id == "SAFE-09" for r in fired)
@@ -167,6 +176,15 @@ def test_canonical_evaluate_is_deterministic():
         "ledger_commit_budget_ns": 1,
         "actor": "x",
         "owner": "x",
+        # P0-B GOV-PATCH-* facts (passing defaults).
+        "sharpe_ratio": 2.0,
+        "sharpe_ratio_min": 1.0,
+        "max_drawdown": 0.01,
+        "max_drawdown_max": 0.05,
+        "samples": 1000,
+        "samples_min": 200,
+        "is_oos_divergence_sigma": 0.0,
+        "is_oos_divergence_max_sigma": 0.5,
     }
     a = [r.id for r in g.evaluate(facts)]
     b = [r.id for r in g.evaluate(facts)]
