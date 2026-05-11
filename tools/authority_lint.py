@@ -1552,6 +1552,10 @@ CHAT_WIDGET_PYTHON_PREFIXES: tuple[str, ...] = (
 B23_PYTHON_EXEMPT_MODULES: frozenset[str] = frozenset(
     {
         "intelligence_engine.cognitive.chat.http_chat_transport",
+        # I-22 — typed audit surface mirroring the dispatch table in
+        # ``http_chat_transport``. Vendor names appear as registry
+        # keys, identical rationale.
+        "intelligence_engine.cognitive.chat.provider_transports",
     }
 )
 
