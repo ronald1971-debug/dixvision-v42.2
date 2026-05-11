@@ -159,6 +159,44 @@ def test_tick_emits_meta_controller_ledger(client):
     assert "BELIEF_STATE_SNAPSHOT" in seen_sub_kinds
 
 
+def test_tick_drives_closed_learning_and_structural_evolution(client):
+    # PR-C (P0-3) — ``/api/tick`` now drives both
+    # ``ClosedLearningLoop.tick`` and ``StructuralEvolutionLoop.tick`` on
+    # the production hot path so the loops actually run, not only via
+    # the env-gated ``/api/admin/learning/tick`` debug route. Both loops
+    # snapshot the live ``LearningEvolutionFreezePolicy`` so the default
+    # boot state must short-circuit to ``frozen=True``. Pinning the
+    # contract here so the wiring cannot regress.
+    r = client.post(
+        "/api/tick",
+        json={"symbol": "BTCUSDT", "bid": 99.99, "ask": 100.01, "last": 100.10},
+    )
+    assert r.status_code == 200
+    body = r.json()
+
+    closed = body.get("closed_learning")
+    structural = body.get("structural_evolution")
+    assert isinstance(closed, dict)
+    assert isinstance(structural, dict)
+
+    # Stable projection shape — operators (and smoke tests) read these
+    # keys to verify the loops are firing without leaking typed engine
+    # objects across the HTTP boundary.
+    for key in (
+        "ts_ns",
+        "frozen",
+        "policy_mode_name",
+        "operator_override",
+    ):
+        assert key in closed, key
+        assert key in structural, key
+
+    # Default boot is below LIVE + operator_override, so HARDEN-04 /
+    # INV-70 must short-circuit both loops.
+    assert closed["frozen"] is True
+    assert structural["frozen"] is True
+
+
 def test_signal_validates_side(client):
     r = client.post(
         "/api/signal",
