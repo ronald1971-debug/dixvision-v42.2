@@ -187,6 +187,7 @@ from intelligence_engine.cognitive.chat.http_chat_transport import (
 from intelligence_engine.engine import IntelligenceEngine
 from intelligence_engine.knowledge import NewsKnowledgeIndex
 from intelligence_engine.learning.slow_loop import (
+    FeedbackSample,
     ParameterBounds,
     SlowLoopLearner,
 )
@@ -211,6 +212,11 @@ from intelligence_engine.trader_modeling import (
     observation_as_system_event,
 )
 from learning_engine.engine import LearningEngine
+from learning_engine.lanes.patch_outcome_feedback import PatchOutcomeFeedback
+from learning_engine.loops.builders import (
+    make_diff_update_builder,
+    make_pnl_sample_builder,
+)
 from learning_engine.loops.closed_loop import (
     ClosedLearningLoop,
     LoopTickResult,
@@ -856,12 +862,39 @@ class _State:
             freeze_policy=None,
         )
         self.update_emitter = UpdateEmitter(freeze=None)
+        # PR-Z2 — wire concrete builders. ``make_pnl_sample_builder``
+        # maps drained :class:`TradeOutcome` rows into
+        # :class:`FeedbackSample` rows (one per tracked parameter,
+        # reward = trade pnl). ``make_diff_update_builder`` diffs the
+        # previous + current :class:`ParameterSnapshot` and emits one
+        # :class:`LearningUpdate` per changed parameter value. Both
+        # live under ``learning_engine.loops.builders`` so B27 /
+        # HARDEN-06 / INV-71 authority symmetry is preserved (only
+        # ``learning_engine.*`` may construct ``LearningUpdate``).
+        # The parameter tuple is sourced from the bounded
+        # :class:`SlowLoopLearner` so the builders auto-sync with any
+        # future bounds-set extension.
+        self._closed_loop_sample_builder = make_pnl_sample_builder(
+            tuple(self.slow_loop_learner.parameters),
+            FeedbackSample,
+        )
+        self._closed_loop_update_builder = make_diff_update_builder()
         self.closed_learning_loop = ClosedLearningLoop(
             feedback_collector=self.feedback_collector,
             learner=self.slow_loop_learner,
             emitter=self.update_emitter,
             policy_supplier=self._live_freeze_policy,
+            sample_builder=self._closed_loop_sample_builder,
+            update_builder=self._closed_loop_update_builder,
         )
+        # PR-Z2 — rolling per-strategy outcome aggregator. Observed
+        # from drained outcomes between the closed + structural tick
+        # calls (see :func:`admin_learning_tick` and the
+        # ``/api/tick`` production hot path). ``all_snapshots`` is
+        # the live source backing :meth:`_structural_stats_supplier`
+        # so the structural-evolution loop emits proposals when
+        # rolling stats breach the bounded thresholds.
+        self.patch_outcome_feedback = PatchOutcomeFeedback()
         self.mutation_proposer = MutationProposer(freeze=None)
         self.patch_pipeline = PatchPipeline()
         self.patch_approval_bridge = PatchApprovalBridge(
@@ -901,14 +934,19 @@ class _State:
     def _structural_stats_supplier(self) -> tuple[StrategyStats, ...]:
         """Drain the live structural-evolution stats source.
 
-        No live source is wired yet — a future wave will feed
-        per-strategy reality summaries here. Until then the loop is
-        a no-op even when unfrozen (zero proposals → zero
-        orchestrator runs), which keeps the freeze-gate contract
-        honest without inventing fabricated stats.
+        PR-Z2 wires this to :class:`PatchOutcomeFeedback`, the
+        rolling per-strategy aggregator fed from drained
+        :class:`TradeOutcome` rows on every closed-loop tick. The
+        snapshot is keyed by ``ts_ns = wall_ns()`` so the structural
+        loop sees the most-recent stats for every strategy that
+        has produced an outcome since boot. Empty when no outcomes
+        have been observed yet (preserves the original no-op
+        behavior on a cold runtime).
         """
 
-        return ()
+        ts_ns = wall_ns()
+        snapshots = self.patch_outcome_feedback.all_snapshots(ts_ns=ts_ns)
+        return tuple(snapshots.values())
 
     def _structural_evidence_builder(
         self, proposal: PatchProposal
@@ -2563,6 +2601,11 @@ def admin_learning_tick() -> dict[str, Any]:
         )
     ts_ns = wall_ns()
     closed = STATE.closed_learning_loop.tick(ts_ns=ts_ns)
+    # PR-Z2 — feed drained outcomes into the rolling aggregator
+    # *between* the closed + structural tick so the structural
+    # stats supplier observes the current tick's outcomes.
+    for outcome in closed.drained_outcomes:
+        STATE.patch_outcome_feedback.observe(outcome)
     structural = STATE.structural_evolution_loop.tick(ts_ns=ts_ns)
     return {
         "ts_ns": ts_ns,
@@ -2860,6 +2903,11 @@ def post_tick(body: TickIn) -> dict[str, Any]:
     # LIVE + operator_override state (HARDEN-04 / INV-70 preserved
     # by construction).
     closed_loop_result = STATE.closed_learning_loop.tick(ts_ns=ts)
+    # PR-Z2 — feed drained outcomes into the rolling aggregator so
+    # ``_structural_stats_supplier`` sees this tick's outcomes
+    # before the structural loop runs.
+    for outcome in closed_loop_result.drained_outcomes:
+        STATE.patch_outcome_feedback.observe(outcome)
     structural_loop_result = STATE.structural_evolution_loop.tick(ts_ns=ts)
     return {
         "accepted": True,
