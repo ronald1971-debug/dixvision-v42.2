@@ -1,8 +1,10 @@
 import { AssetGrid, type GridItemSpec } from "@/components/AssetGrid";
-import { PlaceholderWidget } from "@/components/PlaceholderWidget";
 import { ChartPanel } from "@/widgets/ChartPanel";
 import { CoherencePanel } from "@/widgets/CoherencePanel";
 import { OrderForm } from "@/widgets/OrderForm";
+import { FundingTable } from "@/widgets/perps/FundingTable";
+import { LiquidationMap } from "@/widgets/perps/LiquidationMap";
+import { OracleSpread } from "@/widgets/perps/OracleSpread";
 import { PositionsPanel } from "@/widgets/PositionsPanel";
 import { SLTPBuilder } from "@/widgets/SLTPBuilder";
 
@@ -29,14 +31,7 @@ const ITEMS: GridItemSpec[] = [
     h: 6,
     minW: 3,
     minH: 4,
-    render: () => (
-      <PlaceholderWidget
-        title="Funding Table"
-        subtitle="per-venue · next-funding countdown · cumulative-funding PnL"
-        badge="DASH-K"
-        status="stub"
-      />
-    ),
+    render: () => <FundingTable symbol={SYMBOL} />,
   },
   {
     i: "liq",
@@ -46,14 +41,7 @@ const ITEMS: GridItemSpec[] = [
     h: 6,
     minW: 3,
     minH: 4,
-    render: () => (
-      <PlaceholderWidget
-        title="Liquidation Heatmap"
-        subtitle="open-interest bands · projected liq prices"
-        badge="DASH-K"
-        status="stub"
-      />
-    ),
+    render: () => <LiquidationMap symbol={SYMBOL} />,
   },
   {
     i: "order",
@@ -103,14 +91,7 @@ const ITEMS: GridItemSpec[] = [
     h: 8,
     minW: 4,
     minH: 5,
-    render: () => (
-      <PlaceholderWidget
-        title="Per-venue Oracle"
-        subtitle="oracle price vs exec price · divergence alarm"
-        badge="DASH-K"
-        status="stub"
-      />
-    ),
+    render: () => <OracleSpread symbol={SYMBOL} />,
   },
 ];
 
