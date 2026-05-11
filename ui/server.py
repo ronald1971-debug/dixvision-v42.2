@@ -25,14 +25,12 @@ Endpoints:
 
 from __future__ import annotations
 
-import asyncio
 import json
 import os
 import threading
 from collections import deque
 from collections.abc import AsyncIterator, Mapping, Sequence
 from dataclasses import asdict, is_dataclass
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -219,7 +217,7 @@ from learning_engine.loops.closed_loop import (
 )
 from learning_engine.update_emitter import UpdateEmitter
 from state.ledger.reader import LedgerReader
-from system.time_source import utc_now, wall_ns
+from system.time_source import wall_ns
 from system_engine.backtest_ingest.internal import (
     BacktestRequest,
     run_deterministic_backtest,

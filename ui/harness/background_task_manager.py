@@ -48,15 +48,11 @@ import asyncio
 import json
 from collections.abc import AsyncIterator, Mapping
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from fastapi import Request
 
 from system.time_source import utc_now
-
-if TYPE_CHECKING:  # pragma: no cover - typing only
-    from ui.server import _State
-
 
 SSE_CHANNEL_ALIASES: Mapping[str, str] = {
     "MARKET_TICK": "ticks",
