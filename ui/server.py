@@ -2750,12 +2750,32 @@ def post_tick(body: TickIn) -> dict[str, Any]:
             for downstream in STATE.execution.execute(intent):
                 STATE.record("execution", downstream)
                 executions_out.append(_event_to_dict(downstream))
+    # PR-C (P0-3) — drive the closed-learning + structural-evolution
+    # loops on every production tick so the loops actually run in
+    # the hot path, not just under the env-gated debug route. Both
+    # loops snapshot the live :class:`LearningEvolutionFreezePolicy`
+    # via the policy supplier bound on :class:`_State`, which in
+    # turn reacquires ``STATE.lock`` to read the live mode +
+    # operator-override flag. The supplier therefore MUST run
+    # outside the outer lock (``STATE.lock`` is a non-reentrant
+    # :class:`threading.Lock`); ticking the loops here, after the
+    # ``with STATE.lock`` block, keeps the snapshot consistent
+    # with the just-emitted ledger events while avoiding reentrancy.
+    # Both loops short-circuit to ``frozen=True`` outside the
+    # LIVE + operator_override state (HARDEN-04 / INV-70 preserved
+    # by construction).
+    closed_loop_result = STATE.closed_learning_loop.tick(ts_ns=ts)
+    structural_loop_result = STATE.structural_evolution_loop.tick(ts_ns=ts)
     return {
         "accepted": True,
         "tick": _event_to_dict_tick(tick),
         "signals": signals_out,
         "executions": executions_out,
         "meta_ledger": meta_ledger_out,
+        "closed_learning": _project_loop_result(closed_loop_result),
+        "structural_evolution": _project_structural_result(
+            structural_loop_result
+        ),
     }
 
 
