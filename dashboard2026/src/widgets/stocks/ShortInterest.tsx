@@ -1,3 +1,5 @@
+import { WidgetStatusChip } from "@/components/WidgetStatusChip";
+
 interface ShortRow {
   symbol: string;
   pct: number; // % of float
@@ -38,11 +40,14 @@ export function ShortInterest({ symbol = "AAPL" }: { symbol?: string }) {
             % of float · days to cover · borrow fee · 14d change
           </p>
         </div>
-        <span
-          className={`rounded border px-1.5 py-0.5 font-mono text-[11px] ${severity(focus.pct).tone}`}
-        >
-          {severity(focus.pct).label}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span
+            className={`rounded border px-1.5 py-0.5 font-mono text-[11px] ${severity(focus.pct).tone}`}
+          >
+            {severity(focus.pct).label}
+          </span>
+          <WidgetStatusChip mode="mock" />
+        </div>
       </header>
       <div className="border-b border-border bg-slate-900/40 px-3 py-2 font-mono text-[11px]">
         <div className="grid grid-cols-4 gap-2 text-center">

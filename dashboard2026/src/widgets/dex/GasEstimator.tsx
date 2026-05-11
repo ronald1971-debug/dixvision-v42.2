@@ -9,6 +9,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { apiUrl } from "@/api/base";
+import { WidgetStatusChip } from "@/components/WidgetStatusChip";
 
 interface GasSnapshot {
   base_fee_lamports: number;
@@ -63,15 +64,7 @@ export function GasEstimator() {
             Helius p50/p75/p90 · base-fee + tip · MEV-protected RPC
           </p>
         </div>
-        <span
-          className={`rounded border px-1.5 py-0.5 font-mono text-[10px] uppercase ${
-            live
-              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
-              : "border-amber-500/40 bg-amber-500/10 text-amber-300"
-          }`}
-        >
-          {live ? "live" : "mock"}
-        </span>
+        <WidgetStatusChip mode={live ? "live" : "mock"} />
       </header>
       <div className="flex-1 overflow-auto p-3 font-mono text-[12px]">
         <Row k="base fee" v={`${snap.base_fee_lamports.toLocaleString()} λ`} />

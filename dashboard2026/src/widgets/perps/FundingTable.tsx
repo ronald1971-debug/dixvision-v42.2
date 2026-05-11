@@ -9,6 +9,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { apiUrl } from "@/api/base";
+import { WidgetStatusChip } from "@/components/WidgetStatusChip";
 
 interface FundingRow {
   venue: string;
@@ -87,15 +88,7 @@ export function FundingTable({ symbol = "BTC-PERP" }: { symbol?: string }) {
             per-venue · next-funding countdown · cumulative-funding PnL
           </p>
         </div>
-        <span
-          className={`rounded border px-1.5 py-0.5 font-mono text-[10px] uppercase ${
-            live
-              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
-              : "border-amber-500/40 bg-amber-500/10 text-amber-300"
-          }`}
-        >
-          {live ? "live" : "mock"}
-        </span>
+        <WidgetStatusChip mode={live ? "live" : "mock"} />
       </header>
       <div className="flex-1 overflow-auto p-3">
         <table className="w-full font-mono text-[11px]">
