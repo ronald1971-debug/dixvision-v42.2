@@ -2588,12 +2588,13 @@ def cognitive_chat_status() -> ChatStatusResponse:
 def cognitive_chat_turn(body: ChatTurnRequest) -> ChatTurnResponse:
     """Wave-03 PR-4 — drive one turn of the cognitive chat graph.
 
-    Honors ``DIX_COGNITIVE_CHAT_ENABLED`` (off by default — 503 in
-    that case). Dispatches through the registry-driven chat model
-    from PR-1 so no vendor name appears on the wire. State is
-    persisted to the audit ledger via PR-2's saver. Operator-
-    approval edges that gate ``SignalEvent`` proposal emission are
-    deferred to PR-5.
+    Honors ``DIX_COGNITIVE_CHAT_ENABLED`` (on by default since
+    PR #165 — only the explicit falsy set ``0`` / ``false`` /
+    ``no`` / ``off`` flips it off; 503 is returned in that case).
+    Dispatches through the registry-driven chat model from PR-1
+    so no vendor name appears on the wire. State is persisted to
+    the audit ledger via PR-2's saver. Operator-approval edges
+    that gate ``SignalEvent`` proposal emission land in PR-5.
     """
 
     # Snapshot the runtime under the process-wide lock, then drop
