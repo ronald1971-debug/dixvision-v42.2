@@ -27,8 +27,11 @@ import { fetchMode } from "@/api/dashboard";
  *   - Volume histogram (overlay, separate price scale)
  *   - EMA(20) line indicator
  *   - VWAP line indicator (running, derived from candles)
- *   - Mode watermark — `PAPER` / `SHADOW` / `CANARY` painted in
+ *   - Mode watermark — `PAPER` / `CANARY` / `LIVE` painted in
  *     bright diagonal text so the operator never confuses modes.
+ *     (System-mode SHADOW was demolished by SHADOW-DEMOLITION-02
+ *     in PR #221; PAPER supplies the equivalent observe-only
+ *     behaviour.)
  *
  * Indicator math is implemented client-side for now (deterministic,
  * cheap on small candle counts). When the SSE bridge lands the
@@ -347,8 +350,6 @@ function watermarkColor(mode: string): string {
   switch (mode) {
     case "PAPER":
       return "rgba(58,160,255,0.08)";
-    case "SHADOW":
-      return "rgba(58,160,255,0.10)";
     case "CANARY":
       return "rgba(255,170,59,0.10)";
     case "LIVE":

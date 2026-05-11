@@ -6,10 +6,14 @@ import {
   type StrategyRow,
 } from "@/api/governance";
 
+// Mirrors ``StrategyState`` plus the legacy PAPER/DECAY display
+// columns retained by PR #113's ledger-replay projection. Strategy-
+// level SHADOW was demolished by SHADOW-DEMOLITION-02 (PR #216);
+// PAPER at the system-mode layer supplies the equivalent observe-
+// only behaviour.
 const FSM_STATES = [
   "PROPOSED",
   "PAPER",
-  "SHADOW",
   "CANARY",
   "LIVE",
   "DECAY",
@@ -22,8 +26,8 @@ type FsmState = (typeof FSM_STATES)[number];
 /**
  * Tier-1 governance widget — Strategy registry FSM panel.
  *
- * PR #113 ledger-replayed FSM lifecycle: PROPOSED → PAPER → SHADOW →
- * CANARY → LIVE → DECAY → RETIRED, with FAILED as a side branch. The
+ * PR #113 ledger-replayed FSM lifecycle: PROPOSED → PAPER → CANARY
+ * → LIVE → DECAY → RETIRED, with FAILED as a side branch. The
  * panel reads `/api/dashboard/strategies` and groups strategies by
  * state across the lifecycle ribbon so the operator can see at a
  * glance how many strategies are at each promotion stage.
@@ -43,7 +47,7 @@ export function StrategyRegistryFSM() {
             Strategy registry FSM
           </h2>
           <p className="text-[11px] text-slate-500">
-            PROPOSED → PAPER → SHADOW → CANARY → LIVE → DECAY (PR #113)
+            PROPOSED → PAPER → CANARY → LIVE → DECAY (PR #113)
           </p>
         </div>
         <button
@@ -153,8 +157,6 @@ function stateChrome(state: FsmState): string {
       return "border-slate-600/40 bg-slate-800/40 text-slate-300";
     case "PAPER":
       return "border-sky-500/40 bg-sky-500/10 text-sky-300";
-    case "SHADOW":
-      return "border-indigo-500/40 bg-indigo-500/10 text-indigo-300";
     case "CANARY":
       return "border-amber-500/40 bg-amber-500/10 text-amber-300";
     case "LIVE":
@@ -174,8 +176,6 @@ function chipText(state: FsmState): string {
       return "text-emerald-300";
     case "CANARY":
       return "text-amber-300";
-    case "SHADOW":
-      return "text-indigo-300";
     case "PAPER":
       return "text-sky-300";
     case "FAILED":

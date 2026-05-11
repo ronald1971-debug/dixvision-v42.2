@@ -11,9 +11,11 @@ import type {
   OperatorStrategyCounts,
 } from "@/types/generated/api";
 
+// Mirrors ``StrategyState`` one-for-one. Strategy-level SHADOW was
+// demolished by SHADOW-DEMOLITION-02 (PR #216); PAPER at the
+// system-mode layer supplies the equivalent observe-only behaviour.
 const STRATEGY_LABELS: Array<[keyof OperatorStrategyCounts, string]> = [
   ["proposed", "PROPOSED"],
-  ["shadow", "SHADOW"],
   ["canary", "CANARY"],
   ["live", "LIVE"],
   ["retired", "RETIRED"],

@@ -5,9 +5,10 @@
  *
  * * ``GET  /api/plugins``                          → list every plugin
  * * ``POST /api/plugins/{id}/lifecycle``           → flip a plugin's
- *   lifecycle (DISABLED / SHADOW / ACTIVE). The server normalizes
- *   case and writes a ``PLUGIN_LIFECYCLE`` row to the authority
- *   ledger on success.
+ *   lifecycle (DISABLED / ACTIVE — plugin-level SHADOW was
+ *   demolished by SHADOW-DEMOLITION-01 in PR #189). The server
+ *   normalizes case and writes a ``PLUGIN_LIFECYCLE`` row to the
+ *   authority ledger on success.
  */
 
 const BASE = (import.meta.env.VITE_API_BASE ?? "").replace(/\/$/, "");

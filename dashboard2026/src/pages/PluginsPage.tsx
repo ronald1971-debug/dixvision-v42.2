@@ -7,9 +7,13 @@ import {
   type PluginRecord,
 } from "@/api/plugins";
 
+// Plugin-level SHADOW was demolished by SHADOW-DEMOLITION-01
+// (PR #189) — the lifecycle is now binary DISABLED / ACTIVE. The
+// SHADOW tone is retained as a fallback for any registry rows that
+// have not been re-emitted post-demolition so the dashboard never
+// renders a blank badge.
 const LIFECYCLE_TONE: Record<string, string> = {
   ACTIVE: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
-  SHADOW: "border-amber-500/40 bg-amber-500/10 text-amber-300",
   DISABLED: "border-slate-600/60 bg-slate-700/30 text-slate-400",
 };
 
@@ -144,11 +148,12 @@ export function PluginsPage() {
           </h1>
           <p className="text-sm text-slate-400 mt-1">
             Toggle every hot-swappable plugin in the runtime without
-            restarting. Microstructure plugins carry the tri-state
-            <code className="mx-1 text-xs">DISABLED / SHADOW / ACTIVE</code>
-            lifecycle; SHADOW emits signals that the Execution Engine
-            refuses to fill (so you can shadow-trade a strategy before
-            promoting it). Cognitive chat is binary — DISABLED returns
+            restarting. Microstructure plugins carry a binary
+            <code className="mx-1 text-xs">DISABLED / ACTIVE</code>
+            lifecycle (plugin-level SHADOW was demolished by
+            SHADOW-DEMOLITION-01 in PR #189 — the observe-only role
+            now lives at the system-mode layer as PAPER). Cognitive
+            chat is binary — DISABLED returns
             503 from <code className="text-xs">/api/cognitive/chat/*</code>{" "}
             and the chat page; ACTIVE serves it. Every successful flip
             writes a <code className="text-xs">PLUGIN_LIFECYCLE</code>{" "}

@@ -56,12 +56,18 @@ class OperatorStrategyCounts(BaseModel):
 
     The full per-strategy roll-up stays on the legacy endpoint; the
     React port renders aggregate counts only in this PR.
+
+    Mirrors :class:`intelligence_engine.strategy_runtime.state_machine.StrategyState`
+    one-for-one. Strategy-level SHADOW was demolished by
+    SHADOW-DEMOLITION-02 (PR #216); the surviving lifecycle is
+    ``PROPOSED → CANARY → LIVE → RETIRED`` (plus ``FAILED`` from
+    anywhere). The signals-on/execution-off observation tier now
+    lives only at the system-mode layer (``PAPER``).
     """
 
     model_config = ConfigDict(extra="forbid")
 
     proposed: int
-    shadow: int
     canary: int
     live: int
     retired: int

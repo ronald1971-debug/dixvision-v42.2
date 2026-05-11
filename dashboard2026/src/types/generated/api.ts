@@ -61,7 +61,6 @@ export interface OperatorEngineRow {
 
 export interface OperatorStrategyCounts {
   proposed: number;
-  shadow: number;
   canary: number;
   live: number;
   retired: number;
