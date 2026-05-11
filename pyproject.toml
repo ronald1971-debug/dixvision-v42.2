@@ -40,6 +40,15 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.5.0",
     "httpx>=0.25",
+    # A-13 — property-based replay-determinism suites
+    # (tests/test_*_property.py) ``pytest.importorskip("hypothesis")``,
+    # so without ``hypothesis`` on the dev install the three property
+    # suites silently skip. Pinning it in ``[dev]`` so a plain
+    # ``pip install -e '.[dev]'`` produces the full test surface;
+    # ``.github/workflows/property_tests.yml`` previously masked this
+    # via an ad-hoc ``python -m pip install hypothesis`` step that is
+    # now redundant.
+    "hypothesis>=6.0",
     # D3 — UniswapX EIP-712 signer + quote client. ``eth-account`` is
     # the canonical Python implementation of EIP-712 typed-data signing
     # used by Uniswap Labs / Foundation tooling.
@@ -58,6 +67,45 @@ ui = [
     "uvicorn>=0.27",
     "pydantic>=2.0",
     "websockets>=12.0",
+]
+# PR-B (P0-2) — lazy-adapter extras. The canonical-adaptation modules
+# under ``state/`` and ``sensory/neuromorphic/`` carry an
+# ``NEW_PIP_DEPENDENCIES`` tuple that names the optional deps the
+# adapter falls back to when a factory is constructed. The tuple was
+# documentary-only — nothing in the package metadata let an operator
+# request the adapter’s deps via ``pip install dixvision[<tag>]``. The
+# three extras below close that gap. The adapter source files keep
+# their lazy ``try: import … except ImportError`` pattern (so a base
+# install of ``dixvision`` still imports clean), but the deps are now
+# *requestable* through standard packaging.
+parquet = [
+    # state/ledger/snapshots.py lazy-imports ``pyarrow`` +
+    # ``pyarrow.parquet`` inside the two factory functions when the
+    # operator opts into Parquet ledger snapshots (OFFLINE_ONLY).
+    "pyarrow>=15.0",
+]
+memory_tensor = [
+    # state/memory_tensor/semantic_qdrant.py lazy-imports
+    # ``qdrant_client.QdrantClient`` inside the factory when the
+    # persistent semantic-memory backend is enabled.
+    "qdrant-client>=1.7,<2",
+]
+neuromorphic = [
+    # sensory/neuromorphic/snntorch_detector.py declares
+    # NEW_PIP_DEPENDENCIES = ("snntorch", "torch").
+    "snntorch>=0.7",
+    # sensory/neuromorphic/snn_lif.py + policy_distillation.py lazy-
+    # import ``torch`` (already named above; pinning floor here).
+    "torch>=2.0",
+    # sensory/neuromorphic/governance_risk_snn.py declares
+    # NEW_PIP_DEPENDENCIES = ("bindsnet",).
+    "bindsnet>=0.3",
+    # sensory/neuromorphic/neuro_prototype.py declares
+    # NEW_PIP_DEPENDENCIES = ("brian2",) (RESEARCH_SOURCE).
+    "brian2>=2.5",
+    # sensory/neuromorphic/spyke_encoder.py declares
+    # NEW_PIP_DEPENDENCIES = ("spyketorch",).
+    "spyketorch>=0.2",
 ]
 
 [tool.setuptools.packages.find]
