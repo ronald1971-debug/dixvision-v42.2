@@ -46,11 +46,11 @@ def test_operator_summary_shape(client):
     assert isinstance(parsed.mode.current_mode, str)
     assert isinstance(parsed.mode.legal_targets, list)
     assert isinstance(parsed.mode.is_locked, bool)
-    # Strategy counts are non-negative integers across all six states.
+    # Strategy counts are non-negative integers across all five
+    # surviving states (SHADOW was demolished by PR #216).
     counts = parsed.strategies
     for value in (
         counts.proposed,
-        counts.shadow,
         counts.canary,
         counts.live,
         counts.retired,
@@ -80,7 +80,6 @@ def test_operator_summary_keys_match_pydantic_definition(client):
     }
     assert set(body["strategies"].keys()) == {
         "proposed",
-        "shadow",
         "canary",
         "live",
         "retired",

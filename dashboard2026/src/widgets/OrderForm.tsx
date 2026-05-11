@@ -11,8 +11,10 @@ import { getAutonomyMode } from "@/state/autonomy";
  *
  * Order types: market / limit / stop-limit / OCO / bracket.
  * Mode-aware: disabled in LOCKED / SAFE; in CANARY notional clamped
- * by the mode-effect table; in SHADOW the form simulates without
- * sending. Autonomy-aware: in USER_CONTROLLED every submit prompts
+ * by the mode-effect table; in PAPER the form simulates without
+ * sending (system-mode SHADOW was demolished by SHADOW-DEMOLITION-02
+ * in PR #221 — PAPER now supplies the observe-only behaviour).
+ * Autonomy-aware: in USER_CONTROLLED every submit prompts
  * a confirm dialog, in SEMI_AUTO submit goes via approval queue, in
  * FULL_AUTO submit fires immediately within the active envelope.
  */

@@ -8,7 +8,9 @@ import { fetchDrift, type DriftComponent } from "@/api/governance";
  * Reviewer #4 finding 3 + Reviewer #5 AUTO safeguards: a continuous
  * drift composite over four axes (model / exec / latency / causal)
  * gates AUTO mode. When the composite breaches its threshold the
- * Mode FSM auto-downgrades AUTO → LIVE → SHADOW.
+ * Mode FSM auto-downgrades AUTO → LIVE → PAPER. (System-mode
+ * SHADOW was demolished by SHADOW-DEMOLITION-02 in PR #221; PAPER
+ * supplies the equivalent observe-only behaviour.)
  *
  * P0-7 wiring is incomplete on the live repo (no DriftMonitor
  * instance is constructed in `ui.server.STATE` per metric, and

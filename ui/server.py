@@ -1921,12 +1921,14 @@ def credentials_set(body: CredentialSetIn) -> dict[str, Any]:
 
 _STRATEGY_STATE_KEYS = (
     ("PROPOSED", "proposed"),
-    ("SHADOW", "shadow"),
     ("CANARY", "canary"),
     ("LIVE", "live"),
     ("RETIRED", "retired"),
     ("FAILED", "failed"),
 )
+# Mirrors ``StrategyState`` one-for-one. Strategy-level SHADOW was
+# demolished by SHADOW-DEMOLITION-02 (PR #216); ``PAPER`` at the
+# system-mode layer supplies the equivalent observe-only behaviour.
 
 
 @app.get("/api/operator/summary", response_model=OperatorSummaryResponse)
