@@ -306,6 +306,7 @@ from ui.harness.background_task_manager import (  # noqa: E402
     sse_ts_iso_for,
 )
 from ui.harness.boot_manager import HarnessBootManager  # noqa: E402
+from ui.harness.route_registrar import HarnessRouteRegistrar  # noqa: E402
 from ui.harness.source_trust_replay import (  # noqa: E402  (post-import shim)
     replay_source_trust_promotions as _replay_source_trust_promotions,
 )
@@ -2550,6 +2551,64 @@ def admin_learning_tick() -> dict[str, Any]:
     }
 
 
+_ROUTE_REGISTRAR = HarnessRouteRegistrar()
+"""Canonical FastAPI route → domain inventory + boot-time audit
+(P1.4). See :class:`ui.harness.route_registrar.HarnessRouteRegistrar`
+for the eight domains (core / credentials / operator / admin /
+cognitive / engine / dashboard / feeds) and their expected
+``(METHOD, PATH)`` membership."""
+
+
+@app.get("/api/admin/route_inventory")
+def admin_route_inventory() -> dict[str, Any]:
+    """P1.4 — read-only live route inventory grouped by domain.
+
+    Projects :meth:`HarnessRouteRegistrar.inventory` over the
+    running ``app`` instance so an operator (or a CI smoke test)
+    can confirm every expected route is mounted and grouped under
+    its canonical domain. The same machinery powers the
+    fail-closed boot-time audit invoked at module load: if any
+    expected route goes missing, the harness refuses to boot.
+
+    The response shape is::
+
+        {
+          "domains": [
+            {"name": "core", "routes": [{"method": "GET", "path": "/"}]},
+            ...
+          ],
+          "unexpected": [{"method": "GET", "path": "/foo"}],
+          "ok": true
+        }
+
+    ``unexpected`` is the set of mounted routes that no canonical
+    domain claims; a non-empty list is a signal that
+    :mod:`ui.harness.route_registrar` needs updating after a
+    route was added (boot also raises in that case).
+    """
+
+    report = _ROUTE_REGISTRAR.audit(app)
+    domain_payload: list[dict[str, Any]] = []
+    for domain in _ROUTE_REGISTRAR.domains():
+        domain_payload.append(
+            {
+                "name": domain,
+                "routes": [
+                    {"method": method, "path": path}
+                    for method, path in report.by_domain[domain]
+                ],
+            }
+        )
+    return {
+        "domains": domain_payload,
+        "unexpected": [
+            {"method": method, "path": path}
+            for method, path in report.unexpected
+        ],
+        "ok": report.ok,
+    }
+
+
 def _decision_to_dict(decision: Any) -> dict[str, Any]:
     """JSON-friendly conversion for governance decisions.
 
@@ -3322,6 +3381,14 @@ def _event_to_dict_tick(tick: MarketTick) -> dict[str, Any]:
         "volume": tick.volume,
         "venue": tick.venue,
     }
+
+
+_ROUTE_REGISTRAR.audit_or_raise(app)
+"""P1.4 boot-time fail-closed audit — every expected route must be
+mounted on ``app`` and grouped under its canonical domain in
+:mod:`ui.harness.route_registrar`. Any drift raises
+:class:`RuntimeError` here at module load so the harness refuses
+to boot with an out-of-date inventory."""
 
 
 __all__: Sequence[str] = ("app", "STATE")
