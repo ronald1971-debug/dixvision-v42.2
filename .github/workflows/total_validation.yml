@@ -18,13 +18,19 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Run TOTAL VALIDATION (advisory)
+      - name: Run TOTAL VALIDATION (data gathering)
+        # Always exit 0 -- this step produces analysis/*.csv +
+        # coverage_summary.json. The strict gate lives in
+        # ``tools/enforce.py`` which reads the summary against
+        # the regression-floor table.
         run: python tools/total_validation.py --advisory
 
-      - name: Enforce thresholds (advisory)
-        # Advisory mode for now. Flip to ``--strict`` once the
-        # remediation backlog surfaced by the report is cleared.
-        run: python tools/enforce.py
+      - name: TOTAL VALIDATION GATE (strict)
+        # PR-P0-3: gate is strict against the regression-floor
+        # thresholds pinned in ``tools/enforce.py``. Future PRs
+        # that improve a metric must tighten the floor in the
+        # same commit; PRs that regress a metric trip CI here.
+        run: python tools/enforce.py --strict
 
       - name: Upload analysis artifacts
         uses: actions/upload-artifact@v4

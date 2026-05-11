@@ -861,7 +861,10 @@ def _phase_11_runtime_telemetry(advisory: bool) -> tuple[Phase, bool]:
             "features_with_telemetry": 0,
         }
         _write_json("runtime_validation.json", payload)
-        # Skipped is acceptable in advisory mode.
+        # ``runtime_validation`` reflects reality (the log did not
+        # exist, so no telemetry was captured). The advisory /
+        # strict choice only affects the rollup status / exit code
+        # downstream -- the boolean must not lie.
         return (
             Phase(
                 phase_id=11,
@@ -870,7 +873,7 @@ def _phase_11_runtime_telemetry(advisory: bool) -> tuple[Phase, bool]:
                 status="skip" if advisory else "warn",
                 details=payload,
             ),
-            True if advisory else False,
+            False,
         )
     text = log_path.read_text(encoding="utf-8", errors="replace")
     feature_hits = 0
