@@ -300,6 +300,13 @@ SOURCE_REGISTRY_PATH = REGISTRY_DIR / "data_source_registry.yaml"
 # existing tests that import ``_replay_source_trust_promotions``
 # directly from ``ui.server`` continue to resolve to the same
 # canonical implementation.
+from ui.harness.background_task_manager import (  # noqa: E402
+    SSE_CHANNEL_ALIASES,
+    HarnessBackgroundTaskManager,
+    sse_channel_for,
+    sse_format,
+    sse_ts_iso_for,
+)
 from ui.harness.boot_manager import HarnessBootManager  # noqa: E402
 from ui.harness.source_trust_replay import (  # noqa: E402  (post-import shim)
     replay_source_trust_promotions as _replay_source_trust_promotions,
@@ -615,6 +622,16 @@ class _State:
 
         self.events: deque[dict[str, Any]] = deque(maxlen=500)
         self.event_seq: int = 0
+        # P1.3 — the SSE bridge (the only asyncio background coroutine
+        # in the harness) lives on a dedicated manager. The supplier is
+        # a closure returning ``self`` so every per-connection generator
+        # picks up the *current* lock / events deque rather than a
+        # snapshot taken at construction time. INV-15 byte-identical
+        # replay is preserved by construction: the manager has no
+        # per-instance state of its own.
+        self.background_tasks = HarnessBackgroundTaskManager(
+            state_supplier=lambda: self
+        )
 
     def _build_dashboard_widgets(self) -> None:
         """P1.2 — ``_State.__init__`` section: dashboard_widgets."""
@@ -2917,114 +2934,33 @@ def post_testing_backtest(body: BacktestRunIn) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-_SSE_CHANNEL_ALIASES: Mapping[str, str] = {
-    "MARKET_TICK": "ticks",
-    "SIGNAL": "signals",
-    "EXECUTION": "executions",
-    "HAZARD": "hazards",
-    "MODE_TRANSITION": "mode",
-    "OPERATOR_INTENT": "operator",
-    "OPERATOR_LEARNING_OVERRIDE_CHANGED": "operator",
-    "OPERATOR_SETTINGS_CHANGED": "operator",
-    "NEWS_ITEM": "news",
-}
-"""Stable channel aliases for the widgets the legacy mock generator
-targeted (``ticks`` / ``news`` / ``depth``). Anything not in this table
-falls through to ``kind.lower()``; never ``""`` so the dashboard side
-can always Set-bucket events by channel name."""
+# P1.3 — the SSE channel-alias table, the three per-record helpers,
+# and the ``_sse_event_stream`` async generator now live in
+# :mod:`ui.harness.background_task_manager`. The names below are
+# re-exports so the existing ``tests/test_dashboard_stream_sse.py``
+# regression suite (which imports them directly from ``ui.server``)
+# keeps working byte-stable.
+_SSE_CHANNEL_ALIASES = SSE_CHANNEL_ALIASES
+_sse_channel_for = sse_channel_for
+_sse_ts_iso_for = sse_ts_iso_for
+_sse_format = sse_format
 
 
-def _sse_channel_for(record: Mapping[str, Any]) -> str:
-    kind = str(record.get("kind") or "").upper().strip() or "EVENT"
-    if kind in _SSE_CHANNEL_ALIASES:
-        return _SSE_CHANNEL_ALIASES[kind]
-    if "NEWS" in kind:
-        return "news"
-    if kind.startswith("HAZ"):
-        return "hazards"
-    return kind.lower()
-
-
-def _sse_ts_iso_for(record: Mapping[str, Any]) -> str:
-    """Derive the ``ts_iso`` field for a ``StreamEvent``.
-
-    The recorded event dict carries ``ts_ns`` for typed events (the
-    canonical wall-clock timestamp under INV-15) and a few infra rows
-    omit it. Fall back to ``datetime.now(UTC)`` only for the latter so
-    replays of historical events keep their original timestamp.
-    """
-
-    ts_ns = record.get("ts_ns")
-    if isinstance(ts_ns, int) and ts_ns > 0:
-        return datetime.fromtimestamp(ts_ns / 1_000_000_000, tz=UTC).isoformat()
-    return utc_now().isoformat()
-
-
-def _sse_format(stream_event: Mapping[str, Any]) -> str:
-    """Format one ``StreamEvent`` as a single SSE message."""
-
-    return f"data: {json.dumps(stream_event, separators=(',', ':'))}\n\n"
-
-
-async def _sse_event_stream(
+def _sse_event_stream(
     request: Request,
     *,
     poll_interval_s: float = 0.25,
     keepalive_every_s: float = 15.0,
     backfill_only: bool = False,
 ) -> AsyncIterator[bytes]:
-    """Async generator yielding the canonical SSE byte stream.
+    """Re-export shim — delegates to the manager bound on ``STATE``."""
 
-    The generator polls :attr:`_State.events` (a bounded ``deque``
-    populated by every engine output via :meth:`_State.record`) and
-    yields any rows whose ``seq`` exceeds the last-shipped sequence
-    number. Polling is bounded at ``poll_interval_s`` so a quiet harness
-    does not burn CPU; long quiets emit a ``: keepalive\\n\\n`` comment
-    line every ``keepalive_every_s`` so reverse proxies and the browser
-    do not silently time the connection out.
-
-    ``backfill_only`` (driven by the ``?backfill_only=1`` query
-    parameter) emits the current event queue snapshot once and then
-    closes the connection. The dashboard never sets this flag — it is
-    used by the regression suite and by lightweight diagnostic clients
-    that want a one-shot read without holding an open connection.
-    """
-
-    last_seq = 0
-    last_keepalive = asyncio.get_event_loop().time()
-    yield b": connected\n\n"
-    try:
-        while True:
-            if await request.is_disconnected():
-                return
-            with STATE.lock:
-                # ``events`` is appended-left so the newest record is at
-                # index 0; iterate oldest-first so consumers see the
-                # natural chronological order.
-                snapshot = [
-                    dict(record)
-                    for record in reversed(STATE.events)
-                    if isinstance(record, Mapping)
-                    and isinstance(record.get("seq"), int)
-                    and record["seq"] > last_seq
-                ]
-            for record in snapshot:
-                last_seq = max(last_seq, int(record.get("seq", last_seq)))
-                stream_event = {
-                    "channel": _sse_channel_for(record),
-                    "ts_iso": _sse_ts_iso_for(record),
-                    "payload": record,
-                }
-                yield _sse_format(stream_event).encode("utf-8")
-            if backfill_only:
-                return
-            now_loop = asyncio.get_event_loop().time()
-            if now_loop - last_keepalive >= keepalive_every_s:
-                yield b": keepalive\n\n"
-                last_keepalive = now_loop
-            await asyncio.sleep(poll_interval_s)
-    except asyncio.CancelledError:  # pragma: no cover - client disconnect path
-        return
+    return STATE.background_tasks.sse_event_stream(
+        request,
+        poll_interval_s=poll_interval_s,
+        keepalive_every_s=keepalive_every_s,
+        backfill_only=backfill_only,
+    )
 
 
 @app.get("/api/dashboard/stream")
@@ -3039,7 +2975,9 @@ async def get_dashboard_stream(
         "X-Accel-Buffering": "no",
     }
     return StreamingResponse(
-        _sse_event_stream(request, backfill_only=backfill_only),
+        STATE.background_tasks.sse_event_stream(
+            request, backfill_only=backfill_only
+        ),
         media_type="text/event-stream",
         headers=headers,
     )
