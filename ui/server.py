@@ -294,58 +294,16 @@ REGISTRY_DIR = REPO_ROOT / "registry"
 SOURCE_REGISTRY_PATH = REGISTRY_DIR / "data_source_registry.yaml"
 
 
-def _replay_source_trust_promotions(
-    *,
-    ledger_writer: LedgerAuthorityWriter,
-    store: SourceTrustPromotionStore,
-) -> None:
-    """Rebuild *store* from the authority ledger (Paper-S6).
-
-    Walks every authority row in chronological order and applies
-    ``OPERATOR_SOURCE_TRUST_PROMOTED`` / ``..._DEMOTED`` payloads to
-    *store* so promotions recorded before a restart survive the
-    bounce. Replay is fail-soft per-row: a malformed payload (missing
-    fields, bad enum value, non-int ts_ns) is skipped rather than
-    aborting the whole replay so one corrupted historical row cannot
-    take down boot.
-
-    INV-15: replay is purely a function of (ledger contents, store);
-    no clock or PRNG is consulted. The caller passes the ledger
-    writer (which holds the authoritative in-memory mirror) so the
-    same path is used in tests with an in-memory ledger and in
-    production with a SQLite-backed one.
-    """
-
-    for entry in ledger_writer.read():
-        if entry.kind == PROMOTION_LEDGER_KIND:
-            payload = entry.payload
-            try:
-                source_id = str(payload["source_id"])
-                target_trust = SignalTrust(str(payload["target_trust"]))
-                requestor = str(payload.get("requestor", "operator"))
-                reason = str(payload.get("reason", ""))
-                ts_ns = int(payload.get("ts_ns", entry.ts_ns))
-            except (KeyError, ValueError, TypeError):
-                continue
-            if not source_id or not is_promotable_target(target_trust):
-                continue
-            try:
-                store.promote(
-                    source_id=source_id,
-                    target_trust=target_trust,
-                    requestor=requestor,
-                    reason=reason,
-                    ts_ns=ts_ns,
-                )
-            except ValueError:
-                continue
-        elif entry.kind == DEMOTION_LEDGER_KIND:
-            payload = entry.payload
-            source_id = str(payload.get("source_id", ""))
-            if not source_id:
-                continue
-            store.demote(source_id)
-
+# P1.2 — the Paper-S6 source-trust promotion replay was extracted to
+# :mod:`ui.harness.source_trust_replay` as part of the harness
+# god-object refactor. The legacy private alias is kept here so
+# existing tests that import ``_replay_source_trust_promotions``
+# directly from ``ui.server`` continue to resolve to the same
+# canonical implementation.
+from ui.harness.boot_manager import HarnessBootManager  # noqa: E402
+from ui.harness.source_trust_replay import (  # noqa: E402  (post-import shim)
+    replay_source_trust_promotions as _replay_source_trust_promotions,
+)
 
 # ---------------------------------------------------------------------------
 # State (in-process; harness only)
@@ -356,6 +314,18 @@ class _State:
     """Single-process holder for engines + ring buffer."""
 
     def __init__(self) -> None:
+        # P1.2 — the historic ~480-line constructor was split into
+        # named ``_build_*`` sections on this class so a reader can
+        # navigate one concern at a time. Construction order is
+        # preserved bit-for-bit by :class:`HarnessBootManager.populate`
+        # (intelligence / execution / system / governance / event
+        # buffers / dashboard / cognitive chat / plugin registry /
+        # approval edge / live feeds / learning-evolution loops).
+        HarnessBootManager().populate(self)
+
+    def _build_intelligence_tier(self) -> None:
+        """P1.2 — ``_State.__init__`` section: intelligence_tier."""
+
         self.lock = threading.Lock()
         # SCVS source registry — single source of truth for AI
         # providers, market feeds, and every other external source.
@@ -392,6 +362,10 @@ class _State:
             microstructure_plugins=(MicrostructureV1(),),
             meta_controller_hot_path=self.meta_controller_hot_path,
         )
+
+    def _build_execution_tier(self) -> None:
+        """P1.2 — ``_State.__init__`` section: execution_tier."""
+
         # AUDIT-WIRE.1 / P0-2 — close the BEHAVIOR-P3 hazard throttle
         # chain. Until this wiring landed the harness constructed a
         # bare ``ExecutionEngine()`` with ``throttle_adapter=None``,
@@ -476,6 +450,10 @@ class _State:
             feedback_collector=self.feedback_collector,
             intelligence_feedback=self.learning_interface,
         )
+
+    def _build_system_tier(self) -> None:
+        """P1.2 — ``_State.__init__`` section: system_tier."""
+
         # AUDIT-WIRE.4 / P1-3 — bind the 12 frozen HAZ-XX sensors
         # into a single SensorArray and hand it to ``SystemEngine``.
         # Without this wiring the sensor primitives existed but the
@@ -525,7 +503,16 @@ class _State:
         # has explicitly set ``DIXVISION_PERMIT_EPHEMERAL_LEDGER=1``
         # (the test suite sets this at session start in
         # ``tests/conftest.py``).
-        ledger_path = resolve_ledger_path()
+
+    def _build_governance_tier(self) -> None:
+        """P1.2 — ``_State.__init__`` section: governance_tier."""
+
+        # P1.2 — promoted from a local to an attribute so the
+        # dashboard-widgets section (which constructs ``LedgerReader``
+        # over the same SQLite file in read-only mode) can read it
+        # after the governance section runs.
+        self._ledger_path = resolve_ledger_path()
+        ledger_path = self._ledger_path
         ledger = (
             LedgerAuthorityWriter(db_path=ledger_path)
             if ledger_path
@@ -622,8 +609,15 @@ class _State:
             .lower()
             in {"1", "true", "yes", "on"}
         )
+
+    def _build_event_buffers(self) -> None:
+        """P1.2 — ``_State.__init__`` section: event_buffers."""
+
         self.events: deque[dict[str, Any]] = deque(maxlen=500)
         self.event_seq: int = 0
+
+    def _build_dashboard_widgets(self) -> None:
+        """P1.2 — ``_State.__init__`` section: dashboard_widgets."""
 
         # Phase 6 dashboard widgets (DASH-1).
         self.strategy_fsm = StrategyStateMachine()
@@ -635,7 +629,7 @@ class _State:
         # Without ``ledger_path`` (ephemeral mode) the reader keeps
         # its in-memory event buffer and ``authority_entries()``
         # degrades to an empty tuple.
-        self.ledger_reader = LedgerReader(db_path=ledger_path)
+        self.ledger_reader = LedgerReader(db_path=self._ledger_path)
         self.dashboard_router = ControlPlaneRouter(
             bridge=self.governance.operator,
         )
@@ -649,6 +643,9 @@ class _State:
         self.memecoin_widget = MemecoinControlPanel(
             router=self.dashboard_router,
         )
+
+    def _build_cognitive_chat(self) -> None:
+        """P1.2 — ``_State.__init__`` section: cognitive_chat."""
 
         # Wave-03 PR-4 — cognitive chat runtime.
         # Wave-03 PR-6 — the production process now wires the
@@ -692,6 +689,9 @@ class _State:
             ),
         )
 
+    def _build_plugin_registry(self) -> None:
+        """P1.2 — ``_State.__init__`` section: plugin_registry."""
+
         # Plugin manager registry — references the live plugin
         # objects so a lifecycle mutation through the dashboard is
         # observed immediately by the engines on the next tick.
@@ -711,6 +711,9 @@ class _State:
             # four feed entries on the Plugins page.
         )
 
+    def _build_approval_edge(self) -> None:
+        """P1.2 — ``_State.__init__`` section: approval_edge."""
+
         # Wave-03 PR-5 — operator-approval edge. Binds the chat
         # runtime's queue to the live intelligence → execution chain
         # and the audit ledger. Held here (not on the chat runtime
@@ -724,6 +727,9 @@ class _State:
             ledger_append=self._approval_ledger_append,
             ts_ns=self.next_ts,
         )
+
+    def _build_live_feeds(self) -> None:
+        """P1.2 — ``_State.__init__`` section: live_feeds."""
 
         # Live data feeds (SCVS-registered sources). The Binance public
         # WS pump is opt-in via ``POST /api/feeds/binance/start``; the
@@ -794,6 +800,9 @@ class _State:
             "pumpfun_ws": self.pumpfun_feed,
             "raydium_pools": self.raydium_feed,
         }
+
+    def _build_learning_evolution_loops(self) -> None:
+        """P1.2 — ``_State.__init__`` section: learning_evolution_loops."""
 
         # P0-A — activate learning/evolution loops under live HARDEN-04
         # freeze policy. The loop pair is the single freeze-enforcement
