@@ -14,10 +14,12 @@ inline ``__init__`` did. The managers add zero new behaviour — they
 are pure code-organisation.
 """
 
+from ui.harness.background_task_manager import HarnessBackgroundTaskManager
 from ui.harness.boot_manager import HarnessBootManager
 from ui.harness.source_trust_replay import replay_source_trust_promotions
 
 __all__ = (
+    "HarnessBackgroundTaskManager",
     "HarnessBootManager",
     "replay_source_trust_promotions",
 )
