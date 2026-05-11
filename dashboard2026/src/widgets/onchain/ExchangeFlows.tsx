@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { WidgetStatusChip } from "@/components/WidgetStatusChip";
+
 /**
  * Tier-5 on-chain widget — Exchange net-flows.
  *
@@ -93,13 +95,16 @@ export function ExchangeFlows() {
 
   return (
     <section className="flex h-full flex-col rounded border border-border bg-surface">
-      <header className="border-b border-border px-3 py-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-          Exchange net-flows
-        </h3>
-        <p className="mt-0.5 text-[11px] text-slate-500">
-          24h net inflow vs reserves · negative = supply leaving exchange
-        </p>
+      <header className="flex items-baseline justify-between border-b border-border px-3 py-2">
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+            Exchange net-flows
+          </h3>
+          <p className="mt-0.5 text-[11px] text-slate-500">
+            24h net inflow vs reserves · negative = supply leaving exchange
+          </p>
+        </div>
+        <WidgetStatusChip mode="mock" />
       </header>
       <table className="w-full flex-1 overflow-auto text-[11px]">
         <thead className="sticky top-0 bg-surface text-[10px] uppercase tracking-wider text-slate-500">

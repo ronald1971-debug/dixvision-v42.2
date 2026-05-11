@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
+import { WidgetStatusChip } from "@/components/WidgetStatusChip";
+
 /**
  * Tier-5 on-chain widget — Whale watcher.
  *
@@ -92,13 +94,16 @@ export function WhaleWatcher() {
 
   return (
     <section className="flex h-full flex-col rounded border border-border bg-surface">
-      <header className="border-b border-border px-3 py-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-          Whale watcher
-        </h3>
-        <p className="mt-0.5 text-[11px] text-slate-500">
-          ≥ $1M transfers · cex flows · bridges · p2p
-        </p>
+      <header className="flex items-baseline justify-between border-b border-border px-3 py-2">
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+            Whale watcher
+          </h3>
+          <p className="mt-0.5 text-[11px] text-slate-500">
+            ≥ $1M transfers · cex flows · bridges · p2p
+          </p>
+        </div>
+        <WidgetStatusChip mode="mock" />
       </header>
       <ul className="flex-1 divide-y divide-border/40 overflow-auto">
         {feed.map((t) => (

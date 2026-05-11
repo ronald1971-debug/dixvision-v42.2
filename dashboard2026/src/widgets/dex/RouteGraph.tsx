@@ -16,6 +16,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { apiUrl } from "@/api/base";
+import { WidgetStatusChip } from "@/components/WidgetStatusChip";
 
 interface RouteQuote {
   venue: string;
@@ -107,7 +108,7 @@ export function RouteGraph({ symbol = "SOL/USDC" }: { symbol?: string }) {
             Jupiter Juno · 1inch Fusion+ · CowSwap solver auction
           </p>
         </div>
-        <StatusChip live={live} />
+        <WidgetStatusChip mode={live ? "live" : "mock"} />
       </header>
       <div className="flex-1 overflow-auto p-3 text-[12px]">
         <table className="w-full font-mono text-[11px]">
@@ -151,16 +152,4 @@ export function RouteGraph({ symbol = "SOL/USDC" }: { symbol?: string }) {
   );
 }
 
-function StatusChip({ live }: { live: boolean }) {
-  return (
-    <span
-      className={`rounded border px-1.5 py-0.5 font-mono text-[10px] uppercase ${
-        live
-          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
-          : "border-amber-500/40 bg-amber-500/10 text-amber-300"
-      }`}
-    >
-      {live ? "live" : "mock"}
-    </span>
-  );
-}
+

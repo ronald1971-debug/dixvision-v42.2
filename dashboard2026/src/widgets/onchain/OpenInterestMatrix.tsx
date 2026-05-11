@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { WidgetStatusChip } from "@/components/WidgetStatusChip";
+
 /**
  * Tier-5 on-chain widget — Open-interest matrix.
  *
@@ -59,13 +61,16 @@ export function OpenInterestMatrix() {
 
   return (
     <section className="flex h-full flex-col rounded border border-border bg-surface">
-      <header className="border-b border-border px-3 py-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-          Open interest matrix
-        </h3>
-        <p className="mt-0.5 text-[11px] text-slate-500">
-          perp OI by venue × symbol · cell shows OI / 24h Δ
-        </p>
+      <header className="flex items-baseline justify-between border-b border-border px-3 py-2">
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+            Open interest matrix
+          </h3>
+          <p className="mt-0.5 text-[11px] text-slate-500">
+            perp OI by venue × symbol · cell shows OI / 24h Δ
+          </p>
+        </div>
+        <WidgetStatusChip mode="mock" />
       </header>
       <div className="flex-1 overflow-auto p-2">
         <table className="w-full text-[10px]">

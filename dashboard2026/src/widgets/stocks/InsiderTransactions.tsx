@@ -1,3 +1,5 @@
+import { WidgetStatusChip } from "@/components/WidgetStatusChip";
+
 interface InsiderTx {
   ts: string;
   insider: string;
@@ -37,16 +39,19 @@ export function InsiderTransactions({ symbol = "AAPL" }: { symbol?: string }) {
             Form 4 filings · last 30 days · officer + director
           </p>
         </div>
-        <span
-          className={`rounded border px-1.5 py-0.5 font-mono text-[11px] ${
-            net >= 0
-              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
-              : "border-rose-500/40 bg-rose-500/10 text-rose-300"
-          }`}
-        >
-          net {net >= 0 ? "+" : ""}
-          {(net / 1_000_000).toFixed(1)}M
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span
+            className={`rounded border px-1.5 py-0.5 font-mono text-[11px] ${
+              net >= 0
+                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                : "border-rose-500/40 bg-rose-500/10 text-rose-300"
+            }`}
+          >
+            net {net >= 0 ? "+" : ""}
+            {(net / 1_000_000).toFixed(1)}M
+          </span>
+          <WidgetStatusChip mode="mock" />
+        </div>
       </header>
       <div className="flex-1 overflow-auto">
         <table className="w-full text-[11px] font-mono">

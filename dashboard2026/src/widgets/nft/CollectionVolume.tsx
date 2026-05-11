@@ -1,3 +1,5 @@
+import { WidgetStatusChip } from "@/components/WidgetStatusChip";
+
 interface Row {
   collection: string;
   floor: number;
@@ -33,9 +35,12 @@ export function CollectionVolume() {
             top blue-chips · 24h volume · sales · floor delta
           </p>
         </div>
-        <span className="rounded border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[11px] text-emerald-300">
-          Ξ {total24h.toLocaleString()} 24h
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="rounded border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[11px] text-emerald-300">
+            Ξ {total24h.toLocaleString()} 24h
+          </span>
+          <WidgetStatusChip mode="mock" />
+        </div>
       </header>
       <div className="flex-1 overflow-auto">
         <table className="w-full text-[11px] font-mono">
