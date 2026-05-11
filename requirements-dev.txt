@@ -12,3 +12,8 @@
 pytest>=8.0
 ruff>=0.5.0
 httpx>=0.25
+# A-13 — property-based replay-determinism suites use
+# ``pytest.importorskip("hypothesis")``; pin it here so a fresh
+# clone running ``pip install -r requirements-dev.txt`` produces the
+# full test surface instead of silently skipping the property suites.
+hypothesis>=6.0

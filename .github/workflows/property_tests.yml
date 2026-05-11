@@ -25,10 +25,12 @@ jobs:
           cache: pip
 
       - name: Install dependencies
+        # ``hypothesis`` is now pinned inside ``[dev]`` (PR-B / P0-2),
+        # so the ad-hoc ``pip install hypothesis`` step previously
+        # required here is redundant.
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
-          python -m pip install hypothesis
 
       - name: Run property tests
         run: |
