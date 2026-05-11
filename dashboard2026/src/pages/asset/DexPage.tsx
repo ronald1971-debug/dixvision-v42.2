@@ -1,7 +1,9 @@
 import { AssetGrid, type GridItemSpec } from "@/components/AssetGrid";
-import { PlaceholderWidget } from "@/components/PlaceholderWidget";
 import { ChartPanel } from "@/widgets/ChartPanel";
 import { CoherencePanel } from "@/widgets/CoherencePanel";
+import { GasEstimator } from "@/widgets/dex/GasEstimator";
+import { PoolHealth } from "@/widgets/dex/PoolHealth";
+import { RouteGraph } from "@/widgets/dex/RouteGraph";
 import { OrderForm } from "@/widgets/OrderForm";
 import { PositionsPanel } from "@/widgets/PositionsPanel";
 import { SLTPBuilder } from "@/widgets/SLTPBuilder";
@@ -29,14 +31,7 @@ const ITEMS: GridItemSpec[] = [
     h: 5,
     minW: 3,
     minH: 4,
-    render: () => (
-      <PlaceholderWidget
-        title="Route Graph"
-        subtitle="Jupiter Juno · 1inch Fusion+ · CowSwap solver auction"
-        badge="DASH-K"
-        status="stub"
-      />
-    ),
+    render: () => <RouteGraph symbol={SYMBOL} />,
   },
   {
     i: "pool",
@@ -46,14 +41,7 @@ const ITEMS: GridItemSpec[] = [
     h: 5,
     minW: 3,
     minH: 4,
-    render: () => (
-      <PlaceholderWidget
-        title="Pool Health"
-        subtitle="liquidity · 24h volume · LP concentration"
-        badge="DASH-K"
-        status="stub"
-      />
-    ),
+    render: () => <PoolHealth symbol={SYMBOL} />,
   },
   {
     i: "swap",
@@ -103,14 +91,7 @@ const ITEMS: GridItemSpec[] = [
     h: 8,
     minW: 4,
     minH: 5,
-    render: () => (
-      <PlaceholderWidget
-        title="Gas Estimator"
-        subtitle="Helius p50/p75/p90 · base-fee + tip · MEV-protected RPC"
-        badge="DASH-K"
-        status="stub"
-      />
-    ),
+    render: () => <GasEstimator />,
   },
 ];
 
