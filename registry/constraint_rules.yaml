@@ -236,6 +236,51 @@ rules:
     depends_on: [INV-38]
 
   # --------------------------------------------------------------------
+  # GOV-PATCH — patch pipeline promotion gates (P0-B).
+  #
+  # Evaluated by RuleGraphPatchEvaluator on the CANARY → APPROVED edge
+  # of the patch FSM. Facts are produced by
+  # governance_engine.gates.build_patch_facts(...) and never read a
+  # clock, PRNG, or environment variable.
+  # --------------------------------------------------------------------
+
+  - id: GOV-PATCH-SHARPE
+    kind: GOV
+    severity: BLOCK
+    owner: governance
+    action: REJECT
+    description: "Patch quantitative Sharpe ratio below the promotion floor."
+    when: "sharpe_ratio < sharpe_ratio_min"
+    depends_on: [INV-15]
+
+  - id: GOV-PATCH-DRAWDOWN
+    kind: GOV
+    severity: BLOCK
+    owner: governance
+    action: REJECT
+    description: "Patch quantitative max drawdown exceeds the promotion ceiling."
+    when: "max_drawdown > max_drawdown_max"
+    depends_on: [INV-15]
+
+  - id: GOV-PATCH-SAMPLES
+    kind: GOV
+    severity: BLOCK
+    owner: governance
+    action: REJECT
+    description: "Patch quantitative sample count below the promotion floor."
+    when: "samples < samples_min"
+    depends_on: [INV-15]
+
+  - id: GOV-PATCH-IS-OOS-DIVERGENCE
+    kind: GOV
+    severity: BLOCK
+    owner: governance
+    action: REJECT
+    description: "Patch in-sample / out-of-sample divergence exceeds the σ ceiling."
+    when: "is_oos_divergence_sigma > is_oos_divergence_max_sigma"
+    depends_on: [INV-15]
+
+  # --------------------------------------------------------------------
   # PERF — performance constraints (advisory; never gate trading)
   # --------------------------------------------------------------------
 
