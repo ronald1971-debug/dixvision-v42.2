@@ -1,11 +1,13 @@
 # ADAPTED FROM: https://github.com/pydata/bottleneck  (BSD-2-Clause)
 #
 # Fast rolling-window statistics — ``learning_engine/analytics/`` is the
-# **OFFLINE** high-throughput slow-cadence analytics tier. ``bottleneck``
-# is the lazy seam: production never imports it; the numpy backend is
-# default and produces byte-identical floats to bottleneck's
-# ``move_mean`` / ``move_std`` / ``move_sum`` / ``move_min`` /
-# ``move_max`` for the same inputs.
+# **OFFLINE** high-throughput slow-cadence analytics tier. The module
+# body is pure-stdlib so it imports cleanly in environments without
+# numpy or bottleneck. ``bottleneck`` (and ``numpy``) are lazy seams:
+# production never imports them; the pure-Python backend is the default
+# and produces byte-identical floats to bottleneck's ``move_mean`` /
+# ``move_std`` / ``move_sum`` / ``move_min`` / ``move_max`` for the same
+# inputs (within IEEE-754 summation tolerance).
 #
 # NEW_PIP_DEPENDENCIES = ("bottleneck",)
 #
@@ -19,11 +21,11 @@
 #   * **INV-15** — :func:`move_mean`, :func:`move_std`, :func:`move_sum`,
 #     :func:`move_min`, :func:`move_max` are pure functions of their
 #     inputs; three independent calls with identical arguments produce
-#     byte-identical numpy arrays.
+#     byte-identical output tuples.
 #   * **B27 / B28 / INV-71** — no typed-event constructors here.
-#   * No top-level imports of :mod:`bottleneck`, :mod:`time`,
-#     :mod:`datetime`, :mod:`random`, :mod:`asyncio`, :mod:`torch`,
-#     :mod:`polars`, :mod:`requests`.
+#   * No top-level imports of :mod:`bottleneck`, :mod:`numpy`,
+#     :mod:`time`, :mod:`datetime`, :mod:`random`, :mod:`asyncio`,
+#     :mod:`torch`, :mod:`polars`, :mod:`requests`.
 """Bottleneck-shape rolling-window statistics (OFFLINE_ONLY)."""
 
 from __future__ import annotations
@@ -32,8 +34,6 @@ import dataclasses
 import math
 from collections.abc import Callable, Sequence
 from typing import Any
-
-import numpy as np
 
 __all__ = (
     "NEW_PIP_DEPENDENCIES",
@@ -92,22 +92,34 @@ class RollingWindowSpec:
 # ---------------------------------------------------------------------------
 
 
-def _coerce_1d(values: Sequence[float] | np.ndarray) -> np.ndarray:
-    """Coerce input to a contiguous 1-D float64 array."""
+def _is_1d_sequence(values: Sequence[float] | object) -> bool:
+    """Reject obvious 2-D inputs (sequence-of-sequence) without touching numpy."""
 
-    arr = np.ascontiguousarray(np.asarray(values, dtype=np.float64))
-    if arr.ndim != 1:
-        raise RollingStatsError(
-            f"rolling-stats input must be 1-D, got ndim={arr.ndim}"
-        )
-    return arr
+    if isinstance(values, (str, bytes, bytearray)):
+        return False
+    try:
+        iter(values)  # type: ignore[arg-type]
+    except TypeError:
+        return False
+    for item in values:  # type: ignore[union-attr]
+        if isinstance(item, (list, tuple)):
+            return False
+    return True
+
+
+def _coerce_1d(values: Sequence[float] | object) -> tuple[float, ...]:
+    """Coerce input to a 1-D tuple of floats (NaN-preserving)."""
+
+    if not _is_1d_sequence(values):
+        raise RollingStatsError("rolling-stats input must be 1-D")
+    return tuple(float(x) for x in values)  # type: ignore[union-attr]
 
 
 def _normalize(
-    values: Sequence[float] | np.ndarray,
+    values: Sequence[float] | object,
     window: int,
     min_count: int | None,
-) -> tuple[np.ndarray, RollingWindowSpec]:
+) -> tuple[tuple[float, ...], RollingWindowSpec]:
     if min_count is None:
         min_count = window
     spec = RollingWindowSpec(window=window, min_count=min_count)
@@ -116,71 +128,69 @@ def _normalize(
 
 
 # ---------------------------------------------------------------------------
-# Pure-numpy rolling reductions (the production default backend)
+# Pure-stdlib rolling reductions (the production default backend)
 # ---------------------------------------------------------------------------
 
 
 def _move_reduce(
-    arr: np.ndarray,
+    arr: tuple[float, ...],
     spec: RollingWindowSpec,
-    reducer: Callable[[np.ndarray], float],
-) -> np.ndarray:
-    """Generic O(N * window) rolling reduction over a 1-D float64 array.
+    reducer: Callable[[tuple[float, ...]], float],
+) -> tuple[float, ...]:
+    """Generic O(N * window) rolling reduction over a 1-D float tuple.
 
     Emits ``NaN`` whenever the trailing window contains fewer than
-    ``spec.min_count`` non-NaN samples. The output has the same
-    shape as the input.
+    ``spec.min_count`` finite samples. The output has the same
+    length as the input.
     """
 
-    n = arr.shape[0]
-    out = np.empty(n, dtype=np.float64)
-    out[:] = np.nan
+    n = len(arr)
     if n == 0:
-        return out
+        return ()
+    out: list[float] = [math.nan] * n
     for i in range(n):
         start = i + 1 - spec.window
         if start < 0:
             start = 0
         window_slice = arr[start : i + 1]
-        finite_mask = np.isfinite(window_slice)
-        finite_count = int(finite_mask.sum())
-        if finite_count < spec.min_count:
+        finite = tuple(x for x in window_slice if math.isfinite(x))
+        if len(finite) < spec.min_count:
             continue
-        out[i] = reducer(window_slice[finite_mask])
-    return out
+        out[i] = reducer(finite)
+    return tuple(out)
 
 
 def move_sum(
-    values: Sequence[float] | np.ndarray,
+    values: Sequence[float] | object,
     window: int,
     *,
     min_count: int | None = None,
-) -> np.ndarray:
+) -> tuple[float, ...]:
     """Rolling sum — bottleneck ``move_sum`` shape."""
 
     arr, spec = _normalize(values, window, min_count)
-    return _move_reduce(arr, spec, lambda w: float(np.sum(w)))
+    return _move_reduce(arr, spec, lambda w: math.fsum(w))
 
 
 def move_mean(
-    values: Sequence[float] | np.ndarray,
+    values: Sequence[float] | object,
     window: int,
     *,
     min_count: int | None = None,
-) -> np.ndarray:
+) -> tuple[float, ...]:
     """Rolling mean — bottleneck ``move_mean`` shape."""
 
     arr, spec = _normalize(values, window, min_count)
-    return _move_reduce(arr, spec, lambda w: float(np.mean(w)))
+    return _move_reduce(arr, spec, lambda w: math.fsum(w) / len(w))
 
 
 def move_std(
-    values: Sequence[float] | np.ndarray,
+    values: Sequence[float] | object,
     window: int,
     *,
     min_count: int | None = None,
     ddof: int = 0,
-) -> np.ndarray:
+) -> tuple[float, ...]:
     """Rolling standard deviation — bottleneck ``move_std`` shape.
 
     ``ddof`` defaults to 0 (population std) to match bottleneck.
@@ -193,36 +203,39 @@ def move_std(
         )
     arr, spec = _normalize(values, window, min_count)
 
-    def _std(window_values: np.ndarray) -> float:
-        if window_values.size - ddof <= 0:
+    def _std(window_values: tuple[float, ...]) -> float:
+        denom = len(window_values) - ddof
+        if denom <= 0:
             return math.nan
-        return float(np.std(window_values, ddof=ddof))
+        mean = math.fsum(window_values) / len(window_values)
+        var = math.fsum((x - mean) * (x - mean) for x in window_values) / denom
+        return math.sqrt(var)
 
     return _move_reduce(arr, spec, _std)
 
 
 def move_min(
-    values: Sequence[float] | np.ndarray,
+    values: Sequence[float] | object,
     window: int,
     *,
     min_count: int | None = None,
-) -> np.ndarray:
+) -> tuple[float, ...]:
     """Rolling minimum — bottleneck ``move_min`` shape."""
 
     arr, spec = _normalize(values, window, min_count)
-    return _move_reduce(arr, spec, lambda w: float(np.min(w)))
+    return _move_reduce(arr, spec, lambda w: min(w))
 
 
 def move_max(
-    values: Sequence[float] | np.ndarray,
+    values: Sequence[float] | object,
     window: int,
     *,
     min_count: int | None = None,
-) -> np.ndarray:
+) -> tuple[float, ...]:
     """Rolling maximum — bottleneck ``move_max`` shape."""
 
     arr, spec = _normalize(values, window, min_count)
-    return _move_reduce(arr, spec, lambda w: float(np.max(w)))
+    return _move_reduce(arr, spec, lambda w: max(w))
 
 
 # ---------------------------------------------------------------------------
@@ -233,10 +246,11 @@ def move_max(
 def enable_bottleneck_kernel_factory() -> Callable[[str], Callable[..., Any]]:
     """Return a kernel factory backed by ``bottleneck``.
 
-    Importing :mod:`bottleneck` is deferred to factory-call time, so
-    production environments without bottleneck installed import this
-    module cleanly. The numpy backend is the production default and
-    produces byte-identical output for the same inputs.
+    Importing :mod:`bottleneck` (and :mod:`numpy`) is deferred to
+    factory-call time, so production environments without bottleneck
+    installed import this module cleanly. The pure-stdlib backend is
+    the production default and produces output that matches bottleneck
+    element-wise (within IEEE-754 summation tolerance).
 
     The returned callable accepts a kernel name
     (``"sum"`` / ``"mean"`` / ``"std"`` / ``"min"`` / ``"max"``)
