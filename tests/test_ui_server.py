@@ -134,6 +134,31 @@ def test_events_endpoint_records_recent(client):
     assert "EXECUTION_EVENT" in kinds
 
 
+def test_tick_emits_meta_controller_ledger(client):
+    # P1.1 — ``/api/tick`` now drives ``IntelligenceEngine.run_meta_tick``
+    # so the BeliefState / PressureVector / META_AUDIT four-event ledger
+    # flows on the bus on every tick. Pinning the contract here so the
+    # wiring cannot regress to the dead-code state where the meta
+    # controller hot-path was constructed but never invoked.
+    r = client.post(
+        "/api/tick",
+        json={"symbol": "BTCUSDT", "bid": 99.99, "ask": 100.01, "last": 100.10},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    meta_ledger = body.get("meta_ledger")
+    assert isinstance(meta_ledger, list)
+    kinds = [ev.get("sub_kind") for ev in meta_ledger]
+    assert "BELIEF_STATE_SNAPSHOT" in kinds
+    assert "PRESSURE_VECTOR_SNAPSHOT" in kinds
+    assert "META_AUDIT" in kinds
+
+    events = client.get("/api/events?limit=50").json()["events"]
+    seen_sub_kinds = [e.get("sub_kind") for e in events]
+    assert "META_AUDIT" in seen_sub_kinds
+    assert "BELIEF_STATE_SNAPSHOT" in seen_sub_kinds
+
+
 def test_signal_validates_side(client):
     r = client.post(
         "/api/signal",

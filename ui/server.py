@@ -47,6 +47,7 @@ from core.cognitive_router import (
     enabled_ai_providers,
     select_providers,
 )
+from core.coherence.performance_pressure import load_pressure_config
 from core.contracts.api.cognitive_chat import (
     ChatStatusResponse,
     ChatTurnRequest,
@@ -193,6 +194,10 @@ from intelligence_engine.learning.slow_loop import (
 )
 from intelligence_engine.learning_interface import LearningInterface
 from intelligence_engine.mcp import OpenNewsServer
+from intelligence_engine.meta_controller import (
+    MetaControllerHotPath,
+    load_meta_controller_config,
+)
 from intelligence_engine.plugins import MicrostructureV1
 from intelligence_engine.runtime_context import RuntimeContext
 from intelligence_engine.runtime_context_builder import (
@@ -359,8 +364,33 @@ class _State:
         self.source_registry: SourceRegistry = load_source_registry(
             SOURCE_REGISTRY_PATH
         )
+        # P1.1 — close the meta-controller hot-path wiring. PR #48 shipped
+        # :class:`MetaControllerHotPath` and PR #49 added the optional
+        # ``meta_controller_hot_path=`` slot on :class:`IntelligenceEngine`,
+        # but the harness never constructed one. Result:
+        # :meth:`IntelligenceEngine.run_meta_tick` raised at runtime, and
+        # the BeliefState / PressureVector / META_AUDIT / META_DIVERGENCE
+        # ledger (INV-50 / INV-53 / J3) was dead code outside the unit
+        # tests. Building the hot-path here (configs loaded from the
+        # registry YAMLs that already back ``load_meta_controller_config``
+        # + ``load_pressure_config``) makes ``run_meta_tick`` reachable
+        # from ``/api/tick`` and lets META_* SystemEvents flow on the bus.
+        self.meta_controller_config = load_meta_controller_config(
+            regime_path=REGISTRY_DIR / "regime.yaml",
+            confidence_path=REGISTRY_DIR / "confidence.yaml",
+            sizer_path=REGISTRY_DIR / "position_sizer.yaml",
+            latency_budget_ns=DEFAULT_LATENCY_BUDGET_NS,
+        )
+        self.pressure_config = load_pressure_config(
+            REGISTRY_DIR / "pressure.yaml"
+        )
+        self.meta_controller_hot_path = MetaControllerHotPath(
+            meta_config=self.meta_controller_config,
+            pressure_config=self.pressure_config,
+        )
         self.intelligence = IntelligenceEngine(
             microstructure_plugins=(MicrostructureV1(),),
+            meta_controller_hot_path=self.meta_controller_hot_path,
         )
         # AUDIT-WIRE.1 / P0-2 — close the BEHAVIOR-P3 hazard throttle
         # chain. Until this wiring landed the harness constructed a
@@ -2666,6 +2696,7 @@ def post_tick(body: TickIn) -> dict[str, Any]:
     )
     signals_out: list[dict[str, Any]] = []
     executions_out: list[dict[str, Any]] = []
+    meta_ledger_out: list[dict[str, Any]] = []
     with STATE.lock:
         STATE.execution.on_market(tick)
         STATE.events.appendleft(
@@ -2681,9 +2712,23 @@ def post_tick(body: TickIn) -> dict[str, Any]:
             }
         )
         STATE.event_seq += 1
-        # Phase E2: drive intelligence plugins on every tick. Shadow
-        # signals are tagged by the engine; Execution rejects them.
-        for sig in STATE.intelligence.on_market(tick):
+        # P1.1 — drive plugins + meta-controller in one call so the
+        # BeliefState / PressureVector / META_AUDIT / META_DIVERGENCE
+        # ledger emitted by ``MetaControllerHotPath.step`` flows on
+        # the bus. The per-tick :class:`RuntimeContext` is built from
+        # the harness-side authority surfaces; ``elapsed_ns`` is left
+        # at the default (0) because the harness has no runtime
+        # monitor wired in yet (follow-up wave). Shadow signals are
+        # tagged by the engine; Execution rejects them.
+        context = STATE.build_runtime_context_now()
+        emitted_signals, _decision, ledger = STATE.intelligence.run_meta_tick(
+            tick=tick,
+            context=context,
+        )
+        for meta_ev in ledger:
+            STATE.record("intelligence", meta_ev)
+            meta_ledger_out.append(_event_to_dict(meta_ev))
+        for sig in emitted_signals:
             STATE.record("intelligence", sig)
             signals_out.append(_event_to_dict(sig))
             intent = approve_signal_for_execution(
@@ -2701,6 +2746,7 @@ def post_tick(body: TickIn) -> dict[str, Any]:
         "tick": _event_to_dict_tick(tick),
         "signals": signals_out,
         "executions": executions_out,
+        "meta_ledger": meta_ledger_out,
     }
 
 
