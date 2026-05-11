@@ -265,6 +265,7 @@ from ui.cognitive_chat_runtime import (
 from ui.cognitive_chat_runtime import (
     build_runtime as build_cognitive_chat_runtime,
 )
+from ui.dashboard_projection_routes import build_projection_router
 from ui.dashboard_routes import build_dashboard_router
 from ui.execution_routes import build_execution_router
 from ui.feeds.news_runner import CoinDeskRSSFeedRunner
@@ -1438,6 +1439,13 @@ app = FastAPI(
 
 # DASH-1 — read-only widget projections for the operator dashboard.
 app.include_router(build_dashboard_router(lambda: STATE))
+
+# P1.5 — deterministic projection routes for the six PR #351 widgets
+# (RouteGraph / PoolHealth / GasEstimator / FundingTable / OracleSpread
+# / LiquidationMap). Read-only and stateless; widgets flip their per-
+# widget status chip from amber ``mock`` to emerald ``live`` once these
+# routes return 200.
+app.include_router(build_projection_router())
 
 # Plugin manager — operator-toggleable plugin lifecycles. Powers the
 # /dash2 "Plugins" page and writes a PLUGIN_LIFECYCLE row to the

@@ -194,6 +194,13 @@ _DASHBOARD_ROUTES: frozenset[RouteKey] = frozenset(
         ("GET", "/api/dashboard/decisions"),
         ("GET", "/api/dashboard/memecoin"),
         ("GET", "/api/dashboard/summary"),
+        # P1.5 — projection routes for the six PR #351 widgets.
+        ("GET", "/api/dashboard/dex/route"),
+        ("GET", "/api/dashboard/dex/pool_health"),
+        ("GET", "/api/dashboard/dex/gas"),
+        ("GET", "/api/dashboard/perps/funding"),
+        ("GET", "/api/dashboard/perps/oracle"),
+        ("GET", "/api/dashboard/perps/liquidations"),
         ("POST", "/api/dashboard/action/mode"),
         ("POST", "/api/dashboard/action/intent"),
         ("POST", "/api/dashboard/action/kill"),
