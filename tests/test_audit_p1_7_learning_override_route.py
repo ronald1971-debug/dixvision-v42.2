@@ -42,7 +42,16 @@ def client() -> TestClient:
     # AUDIT-P1.5 / P1.7 — sibling test modules replace ``ui_server.STATE``
     # in their fixtures. Re-bind a fresh ``_State()`` here so we read and
     # write the same instance the route handler dispatches against.
+    #
+    # PR-Z1 — ``_State()`` now boots with the override pre-armed (HARDEN-04
+    # conditional relaxation). These tests exercise the *route's*
+    # reset-from-disabled behavior, which is orthogonal to the boot seed,
+    # so we force the flag back to ``False`` after construction. The new
+    # boot-seed contract is pinned in
+    # ``tests/test_pr_z1_harden04_conditional_relax.py``.
     ui_server.STATE = ui_server._State()  # type: ignore[attr-defined]
+    with ui_server.STATE.lock:
+        ui_server.STATE.learning_override_enabled = False
     return TestClient(ui_server.app)
 
 
