@@ -607,11 +607,23 @@ class _State:
         # ``POST /api/operator/learning-override`` route, audited as
         # an ``OPERATOR_LEARNING_OVERRIDE_CHANGED`` ledger row on
         # every flip. The seed honours
-        # ``DIXVISION_LEARNING_OVERRIDE`` (truthy = pre-armed at boot)
-        # so deterministic restarts that already had the override
-        # set do not silently re-freeze the loop.
+        # ``DIXVISION_LEARNING_OVERRIDE`` so deterministic restarts
+        # that already had the override set do not silently re-freeze
+        # the loop.
+        #
+        # PR-Z1 / P0 — HARDEN-04 CONDITIONAL RELAXATION: the seed
+        # default is now ``"true"`` (was ``""`` → False) so a fresh
+        # harness boots pre-armed; adaptive mutations auto-unfreeze
+        # the moment governance promotes mode to ``LIVE``. The contract
+        # surface (``LearningEvolutionFreezePolicy`` requires ``mode is
+        # LIVE AND operator_override`` to unfreeze) is unchanged — the
+        # only delta is the boot seed. Operators retain the documented
+        # re-freeze path: explicit ``DIXVISION_LEARNING_OVERRIDE=false``
+        # at startup, or a ``POST /api/operator/learning-override
+        # {enabled: false}`` at runtime (audited as
+        # ``OPERATOR_LEARNING_OVERRIDE_CHANGED``).
         self.learning_override_enabled: bool = (
-            os.environ.get("DIXVISION_LEARNING_OVERRIDE", "")
+            os.environ.get("DIXVISION_LEARNING_OVERRIDE", "true")
             .strip()
             .lower()
             in {"1", "true", "yes", "on"}
