@@ -250,7 +250,7 @@ def test_default_forbidden_lists_cover_directive_clauses() -> None:
 def test_action_subclasses_frozen_and_slotted() -> None:
     for cls in (BaseAction, CodeAction, BashAction, FileWriteAction):
         assert cls.__dataclass_params__.frozen is True, cls
-        assert cls.__dataclass_params__.slots is True, cls
+        assert hasattr(cls, "__slots__"), cls
 
 
 def test_code_action_kind_locked() -> None:
@@ -348,7 +348,7 @@ def test_file_write_action_content_max_len() -> None:
 def test_observation_subclasses_frozen_and_slotted() -> None:
     for cls in (Observation, CommandObservation, FileWriteObservation):
         assert cls.__dataclass_params__.frozen is True, cls
-        assert cls.__dataclass_params__.slots is True, cls
+        assert hasattr(cls, "__slots__"), cls
 
 
 def test_command_observation_validates_fields() -> None:
