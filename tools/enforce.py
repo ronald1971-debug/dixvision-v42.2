@@ -87,6 +87,15 @@ THRESHOLDS: dict[str, dict[str, Any]] = {
     # 2 legacy cycles (with 0 forbidden cross-domain edges). When
     # the cycles are unwound this flips to True.
     "dependency_graph_valid_required": {"kind": "bool", "value": False},
+    # PR-RT-5: every declared runtime node must be statically wired
+    # in ``ui/server.py`` or on the allowlist. Phase 12 of
+    # ``tools/total_validation.py`` produces this boolean; under the
+    # PR-RT-4 wiring every declared node is wired so this floor is
+    # ``True`` immediately.
+    "topology_drift_valid_required": {"kind": "bool", "value": True},
+    # Phase 12 also exports a numeric drift count. Ceiling is 0 — any
+    # silent runtime topology drift trips CI in strict mode.
+    "topology_drift_count_max": {"kind": "count_ceiling", "value": 0},
 }
 
 # Map summary-json keys to the THRESHOLDS entry that gates them.
@@ -101,6 +110,8 @@ _GATES: tuple[tuple[str, str], ...] = (
     ("ast_validation", "ast_validation_required"),
     ("runtime_validation", "runtime_validation_required"),
     ("dependency_graph_valid", "dependency_graph_valid_required"),
+    ("topology_drift_valid", "topology_drift_valid_required"),
+    ("topology_drift_count", "topology_drift_count_max"),
 )
 
 _PCT_RE = re.compile(r"^(\d+)%$")

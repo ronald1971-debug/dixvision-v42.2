@@ -81,6 +81,25 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 REGISTRAR_VERSION: Final[str] = "v1.0-RT4"
 
 
+# PR-RT-5 — Total Validation invariant allowlist.
+#
+# Every entry in :data:`_DECLARED_NODE_SPECS` must either be backed by a
+# non-None ``_State`` attribute at boot (i.e. STARTED at the activation
+# registry) or be on this allowlist. ``tools/total_validation.py``
+# Phase 12 (``topology_drift``) walks the static declared topology
+# against ``ui/server.py`` AST and against this allowlist; any node
+# that is declared, not statically assigned, and not on this allowlist
+# is a silent-runtime-topology-drift violation and downgrades the
+# pipeline to FAIL in strict mode.
+#
+# Adding an entry to this allowlist is an explicit operator decision
+# — the entry's reason string is the audit row that explains why the
+# declared node is permitted to be dormant. The allowlist starts
+# empty: every declared node is currently STARTED at boot under the
+# PR-RT-4 wiring.
+DECLARED_BUT_DORMANT_ALLOWLIST: Final[frozenset[str]] = frozenset()
+
+
 @dataclass(frozen=True, slots=True)
 class _DeclaredNodeSpec:
     """Static declaration of one canonical runtime node.
@@ -587,6 +606,23 @@ def declared_state_attr_for(node_id: str) -> str | None:
     return None
 
 
+def declared_state_attrs() -> tuple[tuple[str, str], ...]:
+    """Return every (node_id, state_attr) pair, sorted by node_id.
+
+    Used by :mod:`tools.total_validation` to anchor the declared-vs-
+    statically-wired invariant (PR-RT-5). Pure, byte-stable: the
+    returned tuple sorts by ``node_id`` so two independent runs of the
+    same import return the byte-identical sequence.
+    """
+
+    return tuple(
+        sorted(
+            ((spec.node.node_id, spec.state_attr) for spec in _DECLARED_NODE_SPECS),
+            key=lambda pair: pair[0],
+        )
+    )
+
+
 @dataclass
 class HarnessRuntimeRegistrar:
     """The runtime topology authority bound to a running harness.
@@ -792,9 +828,11 @@ class HarnessRuntimeRegistrar:
 
 
 __all__ = (
-    "REGISTRAR_VERSION",
+    "DECLARED_BUT_DORMANT_ALLOWLIST",
     "HarnessRuntimeRegistrar",
+    "REGISTRAR_VERSION",
     "declared_node_ids",
     "declared_state_attr_for",
+    "declared_state_attrs",
     "declared_topology",
 )
