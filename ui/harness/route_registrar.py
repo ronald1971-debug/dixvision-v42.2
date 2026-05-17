@@ -163,6 +163,17 @@ _OPERATOR_ROUTES: frozenset[RouteKey] = frozenset(
         ("POST", "/api/operator/development-mode"),
         ("GET", "/api/operator/trading-allowed"),
         ("POST", "/api/operator/trading-allowed"),
+        # PR-RT-4 — Runtime Topology Authority projection surface.
+        # Read-only routes that expose the declared topology, the
+        # actually-active subgraph, the declared-but-dormant subgraph,
+        # and per-capability provider resolution so an operator (or a
+        # CI smoke test) can answer "what is actually running right
+        # now?" deterministically without inferring it from health
+        # heuristics.
+        ("GET", "/api/operator/runtime/topology"),
+        ("GET", "/api/operator/runtime/active"),
+        ("GET", "/api/operator/runtime/dormant"),
+        ("GET", "/api/operator/runtime/capability/{tag}"),
     }
 )
 

@@ -931,6 +931,24 @@ def test_module_reload_idempotency() -> None:
     # Reload preserves contract identity:
     assert mod.TOPOLOGY_VERSION == "v1.0-RT1"
 
+    # PR-RT-4: reloading ``tools.runtime_topology`` swaps the underlying
+    # class objects (e.g. ``RuntimeNode``), but any downstream module that
+    # imported those classes before the reload still references the
+    # pre-reload objects. Cascade-reload the known downstream modules so
+    # later tests in the same pytest run see a consistent class identity
+    # and ``isinstance`` checks across the topology / activation /
+    # capability / harness-registrar stack keep agreeing.
+    import sys
+
+    for _dep_name in (
+        "tools.runtime_activation",
+        "tools.runtime_capability",
+        "ui.harness.runtime_registrar",
+    ):
+        _dep_mod = sys.modules.get(_dep_name)
+        if _dep_mod is not None:
+            importlib.reload(_dep_mod)
+
 
 # ---------------------------------------------------------------------------
 # AST guards

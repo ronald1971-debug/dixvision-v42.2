@@ -37,6 +37,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ui.harness.runtime_registrar import HarnessRuntimeRegistrar
+
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from ui.server import _State
 
@@ -92,6 +94,17 @@ class HarnessBootManager:
         state._build_approval_edge()
         state._build_live_feeds()
         state._build_learning_evolution_loops()
+        # PR-RT-4 — Runtime Topology Authority. After every
+        # ``_build_*`` section has populated ``_State``, build the
+        # canonical runtime registrar, introspect ``_State`` for
+        # each declared node, and register STARTED / DORMANT so the
+        # ``/api/operator/runtime/*`` routes can project the actually-
+        # active topology vs the declared-but-dormant silent-drift
+        # surface. The registrar is attached as ``state.runtime_registrar``;
+        # downstream PRs can drive STARTED -> HEALTHY transitions
+        # through it without touching the harness god-object.
+        state.runtime_registrar = HarnessRuntimeRegistrar()
+        state.runtime_registrar.register_at_boot(state)
 
 
 __all__ = ("HarnessBootManager",)
