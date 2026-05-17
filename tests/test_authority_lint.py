@@ -1041,6 +1041,158 @@ def test_b_polars_real_repo_passes(fake_repo: Path):
 
 
 # ---------------------------------------------------------------------------
+# B-TORCH — torch containment (I-36, INV-15)
+# ---------------------------------------------------------------------------
+
+
+def test_b_torch_fires_on_execution_engine_top_level_import(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "execution_engine/uses_torch.py",
+        "import torch\n",
+    )
+    assert "B-TORCH" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_torch_fires_on_governance_engine_from_import(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "governance_engine/uses_torch.py",
+        "from torch import nn\n",
+    )
+    assert "B-TORCH" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_torch_fires_on_system_engine_top_level_import(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "system_engine/uses_torch.py",
+        "import torch\n",
+    )
+    assert "B-TORCH" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_torch_fires_on_core_top_level_import(fake_repo: Path):
+    _write(
+        fake_repo,
+        "core/uses_torch.py",
+        "import torch\n",
+    )
+    assert "B-TORCH" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_torch_fires_on_meta_controller_hot_path(fake_repo: Path):
+    _write(
+        fake_repo,
+        "intelligence_engine/meta_controller/__init__.py",
+        "",
+    )
+    _write(
+        fake_repo,
+        "intelligence_engine/meta_controller/hot_path.py",
+        "import torch\n",
+    )
+    assert "B-TORCH" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_torch_fires_on_lazy_function_local_import(fake_repo: Path):
+    _write(
+        fake_repo,
+        "execution_engine/lazy.py",
+        "def go():\n    import torch\n    return torch\n",
+    )
+    # Lazy / function-local imports are caught because ``_iter_imports``
+    # walks the full AST. This is a tighter contract than per-file
+    # top-of-module scanning.
+    assert "B-TORCH" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_torch_fires_on_torch_subpackage_import(fake_repo: Path):
+    _write(
+        fake_repo,
+        "execution_engine/uses_torch.py",
+        "from torch.nn import functional as F\n",
+    )
+    assert "B-TORCH" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_torch_allows_learning_engine_lanes(fake_repo: Path):
+    _write(
+        fake_repo,
+        "learning_engine/lanes/__init__.py",
+        "",
+    )
+    _write(
+        fake_repo,
+        "learning_engine/lanes/uses_torch.py",
+        "def go():\n    import torch\n    return torch\n",
+    )
+    assert "B-TORCH" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_torch_allows_evolution_engine(fake_repo: Path):
+    _write(
+        fake_repo,
+        "evolution_engine/sandbox.py",
+        "import torch\n",
+    )
+    assert "B-TORCH" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_torch_allows_tests_directory(fake_repo: Path):
+    _write(
+        fake_repo,
+        "tests/test_torch_x.py",
+        "import torch\n\ndef test_x():\n    assert torch is not None\n",
+    )
+    assert "B-TORCH" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_torch_allows_intelligence_engine_outside_hot_path(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "intelligence_engine/cognitive/__init__.py",
+        "",
+    )
+    _write(
+        fake_repo,
+        "intelligence_engine/cognitive/uses_torch.py",
+        "import torch\n",
+    )
+    # Only ``intelligence_engine.meta_controller.hot_path`` is locked
+    # down; the cognitive subsystem may load torch lazily for offline
+    # model evaluation.
+    assert "B-TORCH" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_torch_silent_when_no_torch_imported_anywhere(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "execution_engine/clean.py",
+        "from core.contracts.events import SignalEvent\n",
+    )
+    assert "B-TORCH" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_torch_real_repo_passes(fake_repo: Path):
+    """Sanity — the real repo's torch usage must already be compliant."""
+    # Re-runs the top-of-file ``test_real_repo_passes_zero_violations``
+    # narrowed to B-TORCH specifically so a regression here is
+    # immediately attributable to the torch containment rule.
+    assert "B-TORCH" not in _rule_codes(lint_repo(REPO_ROOT))
+
+
+# ---------------------------------------------------------------------------
 # B-DEV-INDIRA — Indira full-potential pin (PR-DEV-B)
 # ---------------------------------------------------------------------------
 #
