@@ -33,14 +33,17 @@ from core.contracts.events import (
     EventKind,
     HazardEvent,
     HazardSeverity,
+    SignalEvent,
     SystemEvent,
     SystemEventKind,
 )
+from core.contracts.external_signal_trust import ExternalSignalTrustRegistry
 from core.contracts.governance import (
     Constraint,
     ModeTransitionRequest,
     SystemMode,
 )
+from core.contracts.signal_trust import SignalTrust, default_cap_for
 from governance_engine.control_plane import (
     ComplianceValidator,
     EventClassifier,
@@ -78,6 +81,7 @@ class GovernanceEngine(RuntimeEngine):
         strategy_registry: StrategyRegistry | None = None,
         ledger: LedgerAuthorityWriter | None = None,
         exposure_store: ExposureStore | None = None,
+        signal_trust_registry: ExternalSignalTrustRegistry | None = None,
     ) -> None:
         self.plugin_slots: Mapping[str, Sequence[Plugin]] = dict(
             plugin_slots or {}
@@ -166,6 +170,19 @@ class GovernanceEngine(RuntimeEngine):
         else:
             self.update_validator = None
             self.update_applier = None
+
+        # Phase-6 P1-1 — defence-in-depth signal-trust cap. The primary
+        # cap is applied at the harness gate
+        # (:func:`governance_engine.harness_approver.apply_signal_trust_cap`)
+        # before an :class:`ExecutionIntent` is built. This engine
+        # nevertheless receives :class:`SignalEvent` rows on the runtime
+        # bus (audit-only path) and stamps a ``cap_value`` /
+        # ``cap_applied`` annotation onto its ``SIGNAL_AUDIT`` row so
+        # the audit ledger has an authoritative governance-side record
+        # of which cap *would* have been applied. The cap is idempotent
+        # (``clamp_confidence`` is monotonic) so this is safe even if a
+        # caller already passed the signal through the harness gate.
+        self.signal_trust_registry = signal_trust_registry
 
     # ------------------------------------------------------------------
     # Engine surface
@@ -273,10 +290,31 @@ class GovernanceEngine(RuntimeEngine):
                 payload={"event": "EXECUTION"},
             )
         elif event.kind is EventKind.SIGNAL:
+            payload: dict[str, object] = {"event": "SIGNAL"}
+            signal_event = event  # type: ignore[assignment]
+            if isinstance(signal_event, SignalEvent):
+                trust = signal_event.signal_trust
+                source = signal_event.signal_source
+                if trust is SignalTrust.INTERNAL:
+                    cap: float | None = None
+                elif self.signal_trust_registry is not None:
+                    cap = self.signal_trust_registry.cap_for(source, trust)
+                else:
+                    cap = default_cap_for(trust)
+                cap_applied = cap is not None and signal_event.confidence > cap
+                payload.update(
+                    {
+                        "signal_trust": trust.value,
+                        "signal_source": source,
+                        "confidence": signal_event.confidence,
+                        "cap_value": cap,
+                        "cap_applied": cap_applied,
+                    }
+                )
             self.ledger.append(
                 ts_ns=event.ts_ns,
                 kind="SIGNAL_AUDIT",
-                payload={"event": "SIGNAL"},
+                payload=payload,
             )
         return ()
 
