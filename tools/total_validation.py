@@ -993,14 +993,36 @@ def _phase_12_topology_drift(advisory: bool) -> tuple[Phase, bool, int]:
         "allowlist": [],
     }
 
-    # Lazy import keeps ``tools.total_validation`` import-clean for
-    # external callers; the registrar module pulls in ``tools.runtime_*``
-    # but no UI side effects.
+    # Load the registrar. Prefer the already-imported
+    # ``ui.harness.runtime_registrar`` module if present so tests can
+    # monkeypatch the allowlist symbol. Fall back to a direct
+    # file-based load to bypass ``ui/harness/__init__.py`` and its
+    # UI-stack imports (fastapi / pydantic) in stdlib-only CI jobs.
     try:
-        from ui.harness.runtime_registrar import (
-            DECLARED_BUT_DORMANT_ALLOWLIST,
-            declared_state_attrs,
+        _registrar_mod = sys.modules.get("ui.harness.runtime_registrar")
+        if _registrar_mod is None:
+            import importlib.util
+
+            _registrar_path = (
+                REPO_ROOT / "ui" / "harness" / "runtime_registrar.py"
+            )
+            _spec = importlib.util.spec_from_file_location(
+                "_dix_registrar_phase12", _registrar_path
+            )
+            if _spec is None or _spec.loader is None:
+                raise ImportError(f"could not load spec for {_registrar_path}")
+            _registrar_mod = importlib.util.module_from_spec(_spec)
+            # Register in sys.modules so dataclasses can resolve the
+            # module by ``cls.__module__`` lookup during class creation.
+            sys.modules[_spec.name] = _registrar_mod
+            try:
+                _spec.loader.exec_module(_registrar_mod)
+            finally:
+                sys.modules.pop(_spec.name, None)
+        DECLARED_BUT_DORMANT_ALLOWLIST = (
+            _registrar_mod.DECLARED_BUT_DORMANT_ALLOWLIST
         )
+        declared_state_attrs = _registrar_mod.declared_state_attrs
     except Exception as exc:  # pragma: no cover - defensive
         payload["status"] = "skipped"
         payload["reason"] = f"registrar import failed: {exc!r}"
