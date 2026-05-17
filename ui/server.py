@@ -3108,6 +3108,67 @@ def admin_route_inventory() -> dict[str, Any]:
     }
 
 
+@app.get("/api/operator/runtime/topology")
+def operator_runtime_topology() -> dict[str, Any]:
+    """PR-RT-4 — declared runtime topology projection.
+
+    Returns the canonical declared topology (nodes + edges + INV-15
+    digest) as registered at boot by
+    :class:`HarnessRuntimeRegistrar`. Read-only; the declared
+    topology is a frozen constant of the harness build and the
+    response is byte-stable across runs for a given build (driven by
+    the same canonical serialization that backs the INV-15 digest).
+    """
+
+    return STATE.runtime_registrar.declared_topology_view()
+
+
+@app.get("/api/operator/runtime/active")
+def operator_runtime_active() -> dict[str, Any]:
+    """PR-RT-4 — actually-active runtime topology projection.
+
+    Returns the subset of declared nodes whose ``_State`` backing
+    attribute resolved to a non-``None`` instance at boot (i.e.
+    nodes that the harness actually wired in). This is the answer
+    to "what is *actually* running right now?" — the inverse of
+    :func:`operator_runtime_dormant`. Read-only.
+    """
+
+    return STATE.runtime_registrar.active_view()
+
+
+@app.get("/api/operator/runtime/dormant")
+def operator_runtime_dormant() -> dict[str, Any]:
+    """PR-RT-4 — declared-but-dormant runtime topology projection.
+
+    Returns the subset of declared nodes whose ``_State`` backing
+    attribute was ``None`` (or missing) at boot. This is the
+    silent-drift surface — every entry here is a node the
+    architecture declares but the harness did not bring online. The
+    PR-RT-5 ``tools/total_validation.py`` invariant pins this set
+    against an explicit ``DECLARED_BUT_DORMANT`` allow-list so new
+    dormant components cannot accumulate without operator awareness.
+    Read-only.
+    """
+
+    return STATE.runtime_registrar.dormant_view()
+
+
+@app.get("/api/operator/runtime/capability/{tag}")
+def operator_runtime_capability(tag: str) -> dict[str, Any]:
+    """PR-RT-4 — capability → provider resolution.
+
+    Given a capability tag (e.g. ``intelligence.signal``,
+    ``execution.dispatch``, ``learning.closed_loop``), returns the
+    declared providers and which are actually active vs dormant.
+    Surfaces "available-but-unwired" optimizers explicitly: a
+    capability with ``declared=[X]`` but ``active=[]`` is the
+    canonical silent-drift signal. Read-only.
+    """
+
+    return STATE.runtime_registrar.capability_view(tag)
+
+
 def _decision_to_dict(decision: Any) -> dict[str, Any]:
     """JSON-friendly conversion for governance decisions.
 
