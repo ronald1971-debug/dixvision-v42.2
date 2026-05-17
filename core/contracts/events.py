@@ -133,6 +133,18 @@ class SystemEventKind(StrEnum):
     # ------------------------------------------------------------------
     SOURCE_FALLBACK_ACTIVATED = "SOURCE_FALLBACK_ACTIVATED"
     # ------------------------------------------------------------------
+    # P0 refinement — canonical projection of a governance-policy
+    # value-object's current state (mode + override + version). Emitted
+    # by ``LearningEvolutionFreezePolicy.to_system_event`` in
+    # ``core.contracts.learning_evolution_freeze``
+    # so the audit-ledger row shape is owned by the policy itself and
+    # not duplicated at every call site. Complements
+    # ``OPERATOR_LEARNING_OVERRIDE_CHANGED`` (which records *the operator
+    # request* — who/why/transition) by recording *the resulting policy
+    # state* — mode/frozen/version — at flip time.
+    # ------------------------------------------------------------------
+    POLICY_STATE = "POLICY_STATE"
+    # ------------------------------------------------------------------
     # Wave-04 PR-1 — Trader-Intelligence first-class structured layer.
     # Carries a :class:`core.contracts.trader_intelligence.TraderObservation`
     # payload so external traders are modeled as data, not imitated.

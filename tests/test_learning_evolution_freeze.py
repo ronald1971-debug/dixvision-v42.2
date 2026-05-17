@@ -1,8 +1,16 @@
 """HARDEN-04 — LearningEvolutionFreeze policy (INV-70).
 
-Locks the contract that adaptive mutations are refused in every mode
-that is not LIVE-with-explicit-operator-override. Pairs with the
+Locks the contract that adaptive mutations are refused unless the
+operator has explicitly armed the override flag. Pairs with the
 HARDEN-01 / 02 / 03 runtime defences of the Triad Lock.
+
+Contract version: ``v42.2-P0-RELAX``. Under direct operator directive
+the ``mode is LIVE`` half of the previous dual gate was dropped —
+the single freeze predicate is now ``operator_override is True``.
+This test module pins the relaxed semantics. The execution-side
+safety chain (kill switch, ``RiskSnapshot.halted``, hazard throttle,
+FSM consent envelopes) is unchanged by this relaxation and is
+pinned in its own dedicated test modules.
 """
 
 from __future__ import annotations
@@ -62,7 +70,7 @@ def _stats_breaching(*, strategy_id: str = "strat-1"):
 
 
 # ---------------------------------------------------------------------------
-# Policy semantics — frozen by default outside LIVE+override
+# Policy semantics — ``v42.2-P0-RELAX`` operator-gated freeze predicate
 # ---------------------------------------------------------------------------
 
 
@@ -76,10 +84,17 @@ def _stats_breaching(*, strategy_id: str = "strat-1"):
         SystemMode.LOCKED,
     ],
 )
-def test_policy_is_frozen_in_every_non_live_mode_with_override(mode: SystemMode) -> None:
+def test_policy_is_unfrozen_in_every_non_live_mode_with_override(mode: SystemMode) -> None:
+    """Relaxed predicate: override=True unfreezes regardless of mode.
+
+    Under ``v42.2-P0-RELAX`` the ``mode is LIVE`` predicate was
+    dropped per direct operator directive; the freeze gate is
+    ``operator_override`` alone.
+    """
+
     policy = LearningEvolutionFreezePolicy(mode=mode, operator_override=True)
-    assert policy.is_frozen() is True
-    assert policy.is_unfrozen() is False
+    assert policy.is_frozen() is False
+    assert policy.is_unfrozen() is True
 
 
 @pytest.mark.parametrize(
@@ -99,7 +114,13 @@ def test_policy_is_frozen_in_every_mode_without_override(mode: SystemMode) -> No
     assert policy.is_unfrozen() is False
 
 
-def test_policy_is_unfrozen_only_in_live_with_explicit_override() -> None:
+def test_policy_is_unfrozen_in_live_with_explicit_override() -> None:
+    """LIVE + override=True is still the canonical unfrozen state.
+
+    The relaxation extends unfreezing to non-LIVE modes; it does not
+    revoke unfreezing in LIVE.
+    """
+
     policy = LearningEvolutionFreezePolicy(
         mode=SystemMode.LIVE, operator_override=True
     )
@@ -203,14 +224,17 @@ def test_update_emitter_with_unfrozen_policy_emits() -> None:
         SystemMode.SAFE,
         SystemMode.PAPER,
         SystemMode.CANARY,
+        SystemMode.LIVE,
         SystemMode.AUTO,
         SystemMode.LOCKED,
     ],
 )
 def test_update_emitter_with_frozen_policy_raises(mode: SystemMode) -> None:
+    """Frozen ⇔ ``operator_override is False`` — every mode raises."""
+
     emitter = UpdateEmitter(
         freeze=LearningEvolutionFreezePolicy(
-            mode=mode, operator_override=True
+            mode=mode, operator_override=False
         )
     )
     with pytest.raises(LearningEvolutionFrozenError) as excinfo:
@@ -254,15 +278,18 @@ def test_mutation_proposer_with_unfrozen_policy_proposes() -> None:
         SystemMode.SAFE,
         SystemMode.PAPER,
         SystemMode.CANARY,
+        SystemMode.LIVE,
         SystemMode.AUTO,
         SystemMode.LOCKED,
     ],
 )
 def test_mutation_proposer_with_frozen_policy_raises(mode: SystemMode) -> None:
+    """Frozen ⇔ ``operator_override is False`` — every mode raises."""
+
     proposer = MutationProposer(
         thresholds=MutationThresholds(min_trades=1, min_win_rate=0.5),
         freeze=LearningEvolutionFreezePolicy(
-            mode=mode, operator_override=True
+            mode=mode, operator_override=False
         ),
     )
     with pytest.raises(LearningEvolutionFrozenError) as excinfo:

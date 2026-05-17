@@ -39,10 +39,23 @@ adaptive engines) must pass a real policy.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from core.contracts.governance import SystemMode
 
+if TYPE_CHECKING:  # pragma: no cover — type-only seam
+    from core.contracts.events import SystemEvent
+
+# P0 refinement — canonical version tag projected into every
+# ``POLICY_STATE`` row this policy emits. Bumping this constant is the
+# audit-anchor for any future change to the freeze-policy contract
+# (frozen-condition predicate, new fields, etc.); the offline
+# replay-validator can pin the version it expects to see and refuse
+# rows from a future contract version it cannot reason about.
+POLICY_VERSION: str = "v42.2-P0-RELAX"
+
 __all__ = [
+    "POLICY_VERSION",
     "LearningEvolutionFreezePolicy",
     "LearningEvolutionFrozenError",
     "assert_unfrozen",
@@ -57,25 +70,42 @@ class LearningEvolutionFrozenError(RuntimeError):
 
 @dataclass(frozen=True, slots=True)
 class LearningEvolutionFreezePolicy:
-    """Mode-gated freeze policy for adaptive engines.
+    """Operator-gated freeze policy for adaptive engines.
 
     Attributes:
-        mode: Current :class:`SystemMode`. The policy is frozen for
-            every mode except ``LIVE``.
-        operator_override: When ``True`` *and* ``mode`` is ``LIVE``,
-            the policy is unfrozen and adaptive mutations are
-            permitted. Defaults to ``False`` so that unfreezing is
-            always an explicit operator act, never a side-effect of a
-            mode change.
+        mode: Current :class:`SystemMode`. Carried for audit and
+            POLICY_STATE projection; the mode is no longer a freeze
+            predicate input under ``v42.2-P0-RELAX``.
+        operator_override: The single freeze gate. When ``True`` the
+            policy is unfrozen and adaptive mutations are permitted in
+            every :class:`SystemMode`; when ``False`` the policy is
+            frozen regardless of mode. Defaults to ``False`` so a
+            zero-arg construction stays fail-closed.
 
-    The policy is frozen (``is_frozen() is True``) when:
+    Contract version history:
 
-    * ``mode`` is anything other than ``LIVE`` (``SAFE``, ``PAPER``,
-      ``SHADOW``, ``CANARY``, ``AUTO``, ``LOCKED``), or
-    * ``mode`` is ``LIVE`` but ``operator_override`` is ``False``.
+    * ``v42.2-P0`` — dual gate: ``mode is LIVE AND operator_override``.
+      Required the FSM to be promoted to LIVE before adaptive
+      mutations could run.
+    * ``v42.2-P0-RELAX`` — single gate: ``operator_override``. The
+      ``mode is LIVE`` predicate was dropped per direct operator
+      directive so the closed learning + structural evolution loops
+      unfreeze on the very first ``/api/tick`` after boot when the
+      override flag is ``True`` (the post-PR #376 boot seed). Mode is
+      still projected into every POLICY_STATE row for audit and
+      offline replay. Re-freeze paths remain:
 
-    The policy is unfrozen iff both conditions hold simultaneously:
-    ``mode is SystemMode.LIVE and operator_override is True``.
+      * ``POST /api/operator/learning-override {enabled: false}``
+        (audited via ``OPERATOR_LEARNING_OVERRIDE_CHANGED`` +
+        ``POLICY_STATE`` row pair under ``STATE.lock``).
+      * ``DIXVISION_LEARNING_OVERRIDE=false`` env at boot (existing
+        operator pin, exercised by
+        ``tests/test_pr_z1_harden04_conditional_relax.py``).
+
+    The kill-switch, ``RiskSnapshot.halted``, the hazard-throttle
+    chain, and the typed consent envelopes on the FSM mode-transition
+    edges all remain in force — the relaxation governs *adaptive
+    mutation only*, not order dispatch.
     """
 
     mode: SystemMode
@@ -86,8 +116,70 @@ class LearningEvolutionFreezePolicy:
         return not self.is_unfrozen()
 
     def is_unfrozen(self) -> bool:
-        """Return ``True`` iff adaptive mutations are permitted."""
-        return self.mode is SystemMode.LIVE and self.operator_override is True
+        """Return ``True`` iff adaptive mutations are permitted.
+
+        Single operator-gated predicate under ``v42.2-P0-RELAX``: the
+        loop is unfrozen iff ``operator_override is True``. The mode
+        is intentionally NOT consulted (compare ``v42.2-P0`` which
+        also required ``mode is SystemMode.LIVE``).
+        """
+        return self.operator_override is True
+
+    def to_system_event(
+        self,
+        ts_ns: int,
+        *,
+        source: str = "governance.policy.freeze",
+    ) -> SystemEvent:
+        """Project the policy's current state into a canonical SystemEvent.
+
+        P0 refinement — the policy itself owns the audit payload shape so
+        every emitter (operator override flip, periodic tick projection,
+        offline replay validator) renders the same five keys in the same
+        order. The :class:`SystemEvent` payload is
+        ``Mapping[str, str]`` by contract; bools are projected as
+        lowercase ``"true"`` / ``"false"`` and the mode as ``mode.name``
+        so the row is plain JSON-safe.
+
+        Args:
+            ts_ns: Wall-time ns for the audit row. Caller-supplied so
+                INV-15 byte-identical replay is preserved (this method
+                MUST NOT read any clock itself).
+            source: Free-form producer label. Defaults to
+                ``"governance.policy.freeze"``; operator-route writers
+                pass ``"operator.api"`` so the offline replay can
+                distinguish a periodic projection from an operator
+                request.
+
+        Returns:
+            :class:`~core.contracts.events.SystemEvent` with
+            :attr:`SystemEventKind.POLICY_STATE`, the supplied source,
+            and a five-key string payload:
+            ``{"policy", "frozen", "mode", "operator_override", "version"}``.
+        """
+
+        # Function-local import keeps the contracts/ package free of a
+        # static cycle (events imports nothing from this module today,
+        # but a top-level import here would close the seam to a future
+        # ``events`` extension that wants ``POLICY_VERSION``).
+        from core.contracts.events import SystemEvent, SystemEventKind
+
+        return SystemEvent(
+            ts_ns=ts_ns,
+            sub_kind=SystemEventKind.POLICY_STATE,
+            source=source,
+            payload={
+                "policy": "LearningEvolutionFreezePolicy",
+                "frozen": "true" if self.is_frozen() else "false",
+                "mode": self.mode.name,
+                "operator_override": (
+                    "true" if self.operator_override else "false"
+                ),
+                "version": POLICY_VERSION,
+            },
+            produced_by_engine="governance",
+            proposed=False,
+        )
 
 
 def assert_unfrozen(

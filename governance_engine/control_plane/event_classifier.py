@@ -109,6 +109,14 @@ _AUDIT_ONLY_SYSTEM_KINDS: Final[frozenset[SystemEventKind]] = frozenset(
         SystemEventKind.PATCH_PROPOSED,
         SystemEventKind.PATCH_STAGE_VERDICT,
         SystemEventKind.PATCH_DECISION,
+        # P0 refinement — canonical projection of governance-policy
+        # value-objects (LearningEvolutionFreezePolicy.to_system_event).
+        # The ledger writer at the operator-route call site appends
+        # the row directly; the classifier therefore only needs to
+        # acknowledge the kind as audit-only so a stray POLICY_STATE
+        # arriving on the bus (offline replay / future emitter) does
+        # not trip the unknown-kind route.
+        SystemEventKind.POLICY_STATE,
     }
 )
 
