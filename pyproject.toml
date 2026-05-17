@@ -126,6 +126,8 @@ include = [
     "immutable_core*",
     "opponent_model*",
     "simulation*",
+    "sensory*",
+    "dashboard_backend*",
 ]
 exclude = ["tests*", "rust*", "docs*"]
 
