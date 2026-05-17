@@ -101,18 +101,21 @@ def test_live_freeze_policy_default_is_frozen() -> None:
 def test_live_freeze_policy_reflects_override_flip() -> None:
     """Toggling the override at runtime is reflected on next supply.
 
-    The harness boots in SAFE, so toggling the override flag alone
-    does NOT unfreeze (mode must also be LIVE). This test pins that
-    the supplier reads live ``_State`` rather than snapshotting at
-    init time.
+    Under the relaxed HARDEN-04 contract (``v42.2-P0-RELAX``) the
+    freeze gate is ``operator_override`` alone — mode is no longer a
+    predicate input. The harness boots in SAFE, and once the override
+    is flipped on the policy unfreezes regardless of mode. This test
+    pins that the supplier reads live ``_State`` rather than
+    snapshotting at init time, AND that mode is mode-agnostic.
     """
 
     with ui_server.STATE.lock:
         ui_server.STATE.learning_override_enabled = True
     policy = ui_server.STATE._live_freeze_policy()
-    # SAFE mode → still frozen even with the override on, because
-    # HARDEN-04 requires LIVE+override.
-    assert policy.is_frozen() is True
+    # SAFE + override=True → unfrozen under v42.2-P0-RELAX (mode
+    # is no longer consulted by the freeze predicate).
+    assert policy.is_frozen() is False
+    assert policy.is_unfrozen() is True
     assert policy.operator_override is True
 
 

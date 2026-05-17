@@ -401,9 +401,11 @@ def test_frozen_loop_still_returns_empty_samples_and_events() -> None:
     emitter = UpdateEmitter(freeze=None)
 
     def _frozen() -> LearningEvolutionFreezePolicy:
-        # PAPER mode is frozen regardless of override flag.
+        # Under v42.2-P0-RELAX the freeze gate is operator_override
+        # alone; mode is no longer consulted. Pass override=False so
+        # the policy is frozen and exercises the loop short-circuit.
         return LearningEvolutionFreezePolicy(
-            mode=SystemMode.PAPER, operator_override=True
+            mode=SystemMode.PAPER, operator_override=False
         )
 
     loop = ClosedLearningLoop(

@@ -3,27 +3,35 @@
 The audit's P1.7 finding was that there was no operator-visible path to
 flip the :class:`LearningEvolutionFreezePolicy` operator-override flag.
 The slow learning loop + evolution patch pipeline are gated by that
-flag in conjunction with ``mode is SystemMode.LIVE``; without an
-endpoint, an operator had to set ``DIXVISION_LEARNING_OVERRIDE=1`` and
-restart the harness to ever unfreeze adaptive mutations. The new
-``/api/operator/learning-override`` route fixes that by storing the
-override on the harness ``_State``, audited to the authority ledger
-on every flip.
+flag; without an endpoint, an operator had to set
+``DIXVISION_LEARNING_OVERRIDE=1`` and restart the harness to ever
+unfreeze adaptive mutations. The new ``/api/operator/learning-override``
+route fixes that by storing the override on the harness ``_State``,
+audited to the authority ledger on every flip.
 
 The tests in this module pin the contract:
 
 * ``GET /api/operator/learning-override`` returns the live flag, the
   current :class:`SystemMode` name, and ``is_freeze_active``.
 * ``POST`` flips the flag, returns the freshly-projected response,
-  and writes an ``OPERATOR_LEARNING_OVERRIDE_CHANGED`` row to the
-  authority ledger with ``previous`` / ``next`` / ``requestor`` /
-  ``reason`` / ``mode`` fields.
-* The freeze policy is computed from the live mode, so toggling the
-  flag in non-LIVE mode (the harness boots in SAFE) flips
-  ``enabled`` to ``True`` while ``is_freeze_active`` remains ``True``
-  — exactly the documented HARDEN-04 / INV-70 invariant.
-* No-op POSTs (toggling to the same value) still write a ledger row
-  so the operator-intent trail is preserved.
+  and writes a **pair** of audit rows on every transition:
+
+  * ``OPERATOR_LEARNING_OVERRIDE_CHANGED`` — the operator-intent row
+    carrying ``previous`` / ``next`` / ``requestor`` / ``reason`` /
+    ``mode`` (P0 refinement; pre-existing).
+  * ``POLICY_STATE`` — the canonical projection emitted by
+    :meth:`LearningEvolutionFreezePolicy.to_system_event` carrying
+    the resulting policy state (``frozen`` / ``mode`` /
+    ``operator_override`` / ``version``). Both rows share the same
+    ``flip_ts_ns`` so an offline replay validator can correlate them.
+
+* Under ``v42.2-P0-RELAX`` the freeze gate is
+  ``operator_override is True`` alone — the ``mode is LIVE`` half of
+  the dual gate was dropped per direct operator directive. Flipping
+  ``operator_override=True`` therefore unfreezes the policy in every
+  mode (including SAFE, where the harness boots).
+* No-op POSTs (toggling to the same value) still write the same pair
+  of audit rows so the operator-intent trail is preserved.
 * The boot-time seed honours ``DIXVISION_LEARNING_OVERRIDE``.
 """
 
@@ -81,8 +89,9 @@ def test_get_returns_default_disabled(client: TestClient) -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["enabled"] is False
-    # Harness boots in SAFE — the freeze must be active without the
-    # override regardless of mode (only LIVE+override unfreezes).
+    # Under ``v42.2-P0-RELAX`` the freeze gate is ``operator_override``
+    # alone. With the override defaulted off in this test (the
+    # autouse fixture resets it), the freeze must still be active.
     assert body["is_freeze_active"] is True
     assert isinstance(body["mode"], str) and body["mode"]
 
@@ -101,25 +110,38 @@ def test_post_flips_flag_and_audits_ledger(client: TestClient) -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["enabled"] is True
-    # The freeze is still active — the harness mode is not LIVE so
-    # ``mode is LIVE and operator_override is True`` does not hold.
-    assert body["is_freeze_active"] is True
+    # Under ``v42.2-P0-RELAX`` ``operator_override is True`` is the
+    # sole unfreeze predicate — mode is no longer consulted. The
+    # harness mode here is non-LIVE but the override flip alone
+    # unfreezes the policy.
+    assert body["is_freeze_active"] is False
 
     # Live state mutated.
     with ui_server.STATE.lock:
         assert ui_server.STATE.learning_override_enabled is True
 
-    # Ledger gained exactly one OPERATOR_LEARNING_OVERRIDE_CHANGED row
-    # with the typed payload.
+    # Ledger gained the canonical pair of audit rows: the
+    # OPERATOR_LEARNING_OVERRIDE_CHANGED operator-intent row plus the
+    # POLICY_STATE projection from
+    # LearningEvolutionFreezePolicy.to_system_event (P0 refinement).
     rows = _ledger_rows()
-    assert len(rows) == before + 1
-    audit = rows[-1]
+    assert len(rows) == before + 2
+    audit = rows[-2]
     assert audit["kind"] == "OPERATOR_LEARNING_OVERRIDE_CHANGED"
     assert audit["requestor"] == "ronald"
     assert audit["reason"] == "manual learning unfreeze"
     assert audit["previous"] == "false"
     assert audit["next"] == "true"
     assert audit["mode"] == body["mode"]
+    # The POLICY_STATE row mirrors the resulting policy state under
+    # the relaxed v42.2-P0-RELAX predicate — override=True → frozen=false.
+    policy_row = rows[-1]
+    assert policy_row["kind"] == "POLICY_STATE"
+    assert policy_row["policy"] == "LearningEvolutionFreezePolicy"
+    assert policy_row["operator_override"] == "true"
+    assert policy_row["frozen"] == "false"
+    assert policy_row["version"] == "v42.2-P0-RELAX"
+    assert policy_row["mode"] == body["mode"]
 
 
 def test_post_noop_still_audits(client: TestClient) -> None:
@@ -138,9 +160,15 @@ def test_post_noop_still_audits(client: TestClient) -> None:
     )
     assert response.status_code == 200
     rows = _ledger_rows()
-    assert len(rows) == before + 1
-    assert rows[-1]["previous"] == "false"
-    assert rows[-1]["next"] == "false"
+    # Same canonical row pair as a real transition — the operator-intent
+    # trail records every deliberate decision, no-op or not.
+    assert len(rows) == before + 2
+    assert rows[-2]["kind"] == "OPERATOR_LEARNING_OVERRIDE_CHANGED"
+    assert rows[-2]["previous"] == "false"
+    assert rows[-2]["next"] == "false"
+    assert rows[-1]["kind"] == "POLICY_STATE"
+    assert rows[-1]["operator_override"] == "false"
+    assert rows[-1]["frozen"] == "true"
 
 
 def test_get_after_post_returns_persisted_value(client: TestClient) -> None:
@@ -170,8 +198,13 @@ def test_post_accepts_minimal_body(client: TestClient) -> None:
     body = response.json()
     assert body["enabled"] is True
     rows = _ledger_rows()
-    assert rows[-1]["requestor"] == "dashboard"
-    assert rows[-1]["reason"] == ""
+    # The most-recent two rows are the operator-intent +
+    # POLICY_STATE pair; the minimal-body defaults live on the
+    # operator-intent row (rows[-2]).
+    assert rows[-1]["kind"] == "POLICY_STATE"
+    assert rows[-2]["kind"] == "OPERATOR_LEARNING_OVERRIDE_CHANGED"
+    assert rows[-2]["requestor"] == "dashboard"
+    assert rows[-2]["reason"] == ""
 
 
 def test_post_holds_lock_across_mutation_audit_and_response() -> None:

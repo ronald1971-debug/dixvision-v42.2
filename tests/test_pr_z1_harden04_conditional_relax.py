@@ -1,14 +1,18 @@
-"""PR-Z1 — HARDEN-04 conditional relaxation pin tests.
+"""PR-Z1 + v42.2-P0-RELAX — HARDEN-04 relaxation pin tests.
 
-The PR-Z1 patch (P0) flips the ``DIXVISION_LEARNING_OVERRIDE`` boot
-seed in ``ui.server._State.__init__`` from ``""`` (→ False) to
-``"true"`` (→ True). The contract surface in
-:class:`LearningEvolutionFreezePolicy` is intentionally unchanged —
-``is_unfrozen`` still requires ``mode is SystemMode.LIVE AND
-operator_override is True``. The only delta is the *boot seed*, so a
-fresh harness boots pre-armed and the closed learning + structural
-evolution loops auto-unfreeze the moment governance promotes mode to
-``LIVE`` (instead of staying silently frozen even in LIVE).
+Two layered changes are pinned here:
+
+1. PR-Z1 boot-seed flip — ``DIXVISION_LEARNING_OVERRIDE`` defaults to
+   ``"true"`` so a fresh harness boots pre-armed.
+2. ``v42.2-P0-RELAX`` contract relaxation — the
+   :class:`LearningEvolutionFreezePolicy.is_unfrozen` predicate was
+   relaxed from ``mode is SystemMode.LIVE AND operator_override`` to
+   ``operator_override is True``. The closed learning + structural
+   evolution loops therefore unfreeze on the very first ``/api/tick``
+   after boot under the pre-armed override seed, regardless of FSM
+   mode (operators retain re-freeze via
+   ``POST /api/operator/learning-override {enabled: false}`` or
+   ``DIXVISION_LEARNING_OVERRIDE=false`` at boot).
 
 These tests pin:
 
@@ -19,11 +23,11 @@ These tests pin:
   retain the documented re-freeze path.
 * Explicit opt-in (``DIXVISION_LEARNING_OVERRIDE=1`` etc.) still →
   ``True`` (regression guard on the existing seed path).
-* The contract surface is unchanged: a freshly-constructed
-  :class:`LearningEvolutionFreezePolicy` with the new default still
-  requires BOTH ``mode is SystemMode.LIVE`` and ``operator_override
-  is True`` to unfreeze. The post-PR-Z1 default flag alone (in any
-  non-LIVE mode) does NOT unfreeze the loop.
+* Relaxed contract surface: a freshly-constructed
+  :class:`LearningEvolutionFreezePolicy` with ``operator_override=
+  True`` is **unfrozen in every mode** (SAFE / PAPER / CANARY / LIVE
+  / AUTO / LOCKED); with ``operator_override=False`` it is **frozen
+  in every mode**.
 
 The tests reload ``ui.server`` under ``monkeypatch`` so a fresh
 ``_State`` is constructed and the seed path is exercised; the module
@@ -113,32 +117,33 @@ def test_explicit_opt_out_returns_false(
     assert _reload_server_with_override(monkeypatch, value) is False
 
 
-def test_policy_contract_still_requires_live_plus_override() -> None:
-    """The contract surface is unchanged by PR-Z1.
+def test_policy_contract_relax_override_alone_unfreezes() -> None:
+    """Relaxed (v42.2-P0-RELAX) HARDEN-04 contract surface.
 
-    PR-Z1 only flips the **boot seed**; the
-    :class:`LearningEvolutionFreezePolicy` contract still requires
-    BOTH ``mode is SystemMode.LIVE`` and ``operator_override is True``
-    to unfreeze. The flag alone in any non-LIVE mode must not
-    unfreeze the loops.
+    Direct operator directive dropped the ``mode is SystemMode.LIVE``
+    half of the predicate. The new contract is a single operator-
+    gated freeze:
+
+    * ``operator_override=True``  → unfrozen in *every* mode
+      (SAFE / PAPER / CANARY / LIVE / AUTO / LOCKED).
+    * ``operator_override=False`` → frozen in *every* mode
+      (re-freeze path remains intact for the operator route + the
+      ``DIXVISION_LEARNING_OVERRIDE=false`` boot pin).
+
+    The execution-side safety chain (kill switch / RiskSnapshot.halted
+    / hazard throttle / FSM consent envelopes) is *unchanged* by this
+    relaxation — only adaptive mutation is gated by this policy.
     """
 
     for mode in SystemMode:
-        policy = LearningEvolutionFreezePolicy(
+        unfrozen = LearningEvolutionFreezePolicy(
             mode=mode, operator_override=True
         )
-        if mode is SystemMode.LIVE:
-            assert policy.is_unfrozen() is True
-            assert policy.is_frozen() is False
-        else:
-            assert policy.is_unfrozen() is False
-            assert policy.is_frozen() is True
+        assert unfrozen.is_unfrozen() is True, mode
+        assert unfrozen.is_frozen() is False, mode
 
-    # And operator_override=False keeps the loop frozen in *every*
-    # mode, including LIVE — re-freeze path remains intact.
-    for mode in SystemMode:
-        policy = LearningEvolutionFreezePolicy(
+        frozen = LearningEvolutionFreezePolicy(
             mode=mode, operator_override=False
         )
-        assert policy.is_frozen() is True
-        assert policy.is_unfrozen() is False
+        assert frozen.is_frozen() is True, mode
+        assert frozen.is_unfrozen() is False, mode

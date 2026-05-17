@@ -607,27 +607,33 @@ class _State:
         self.evolution = EvolutionEngine()
         # AUDIT-P1.7 — operator override for the
         # :class:`LearningEvolutionFreezePolicy` (HARDEN-04 / INV-70).
-        # Adaptive mutations only fire when ``mode is LIVE`` *and*
-        # this flag is True. The flag is server-side mutable state
-        # (a single atomic bool) toggled by the typed
-        # ``POST /api/operator/learning-override`` route, audited as
-        # an ``OPERATOR_LEARNING_OVERRIDE_CHANGED`` ledger row on
-        # every flip. The seed honours
+        # The flag is server-side mutable state (a single atomic bool)
+        # toggled by the typed ``POST /api/operator/learning-override``
+        # route, audited as an ``OPERATOR_LEARNING_OVERRIDE_CHANGED``
+        # ledger row on every flip. The seed honours
         # ``DIXVISION_LEARNING_OVERRIDE`` so deterministic restarts
         # that already had the override set do not silently re-freeze
         # the loop.
         #
         # PR-Z1 / P0 — HARDEN-04 CONDITIONAL RELAXATION: the seed
         # default is now ``"true"`` (was ``""`` → False) so a fresh
-        # harness boots pre-armed; adaptive mutations auto-unfreeze
-        # the moment governance promotes mode to ``LIVE``. The contract
-        # surface (``LearningEvolutionFreezePolicy`` requires ``mode is
-        # LIVE AND operator_override`` to unfreeze) is unchanged — the
-        # only delta is the boot seed. Operators retain the documented
-        # re-freeze path: explicit ``DIXVISION_LEARNING_OVERRIDE=false``
-        # at startup, or a ``POST /api/operator/learning-override
+        # harness boots pre-armed.
+        #
+        # ``v42.2-P0-RELAX`` (direct operator directive): the freeze
+        # gate is now a single predicate — ``operator_override is
+        # True`` — applied uniformly across every :class:`SystemMode`.
+        # The previous ``mode is LIVE AND operator_override`` dual
+        # gate has been relaxed; adaptive mutations unfreeze on the
+        # very first ``/api/tick`` after boot under the override
+        # seed above. Operators retain the documented re-freeze
+        # paths: explicit ``DIXVISION_LEARNING_OVERRIDE=false`` at
+        # startup, or ``POST /api/operator/learning-override
         # {enabled: false}`` at runtime (audited as
-        # ``OPERATOR_LEARNING_OVERRIDE_CHANGED``).
+        # ``OPERATOR_LEARNING_OVERRIDE_CHANGED`` + ``POLICY_STATE``).
+        # The kill switch, ``RiskSnapshot.halted``, the hazard
+        # throttle chain, and the FSM consent envelopes remain in
+        # force — this relaxation governs adaptive mutation only,
+        # not order dispatch.
         self.learning_override_enabled: bool = (
             os.environ.get("DIXVISION_LEARNING_OVERRIDE", "true")
             .strip()
@@ -2508,8 +2514,9 @@ def operator_learning_override_post(
         # acquires the lock between this block and a post-lock
         # projection would otherwise leak the wrong value back to
         # the first caller).
+        flip_ts_ns = wall_ns()
         STATE.governance.ledger.append(
-            ts_ns=wall_ns(),
+            ts_ns=flip_ts_ns,
             kind="OPERATOR_LEARNING_OVERRIDE_CHANGED",
             payload={
                 "requestor": body.requestor,
@@ -2518,6 +2525,24 @@ def operator_learning_override_post(
                 "next": "true" if new_enabled else "false",
                 "mode": mode.name,
             },
+        )
+        # P0 refinement — pair the operator-intent row above with a
+        # canonical ``POLICY_STATE`` row whose payload shape is owned
+        # by :meth:`LearningEvolutionFreezePolicy.to_system_event`.
+        # The two rows are written atomically under ``STATE.lock`` and
+        # carry the *same* ``flip_ts_ns`` so the offline replay-validator
+        # can correlate "who flipped what" (operator row) with "the
+        # resulting policy state at that ns" (POLICY_STATE row).
+        policy_after = LearningEvolutionFreezePolicy(
+            mode=mode, operator_override=new_enabled
+        )
+        policy_event = policy_after.to_system_event(
+            ts_ns=flip_ts_ns, source="operator.api"
+        )
+        STATE.governance.ledger.append(
+            ts_ns=policy_event.ts_ns,
+            kind=policy_event.sub_kind.value,
+            payload=dict(policy_event.payload),
         )
     return _project_learning_override(enabled=new_enabled, mode=mode)
 
