@@ -130,6 +130,14 @@ enum SystemEventKind {
   PATCH_PROPOSED = 17;
   PATCH_STAGE_VERDICT = 18;
   PATCH_DECISION = 19;
+  // P0 refinement (PR #392) — canonical projection of a governance-
+  // policy value-object's current state (mode + override + version).
+  // Emitted by core.contracts.learning_evolution_freeze
+  // .LearningEvolutionFreezePolicy.to_system_event so the audit-ledger
+  // row shape is owned by the policy and not duplicated at every call
+  // site (operator override flip, harness boot, lifecycle transition).
+  // Field number 21 (next available after TRADER_OBSERVED = 20).
+  POLICY_STATE = 21;
 }
 
 // EVT-01

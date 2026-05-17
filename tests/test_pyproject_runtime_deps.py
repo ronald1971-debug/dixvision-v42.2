@@ -61,3 +61,46 @@ def test_no_runtime_dep_lives_only_under_dev_extra() -> None:
         "AUDIT-P0.1 regression: runtime deps must be in [project.dependencies] "
         f"or both base and dev. These are dev-only: {sorted(leaked)}"
     )
+
+
+# Phase-6 P0-1 guard — packages.find must cover every top-level Python
+# package that ``ui.server`` imports at module load. A non-editable
+# ``pip install dixvision`` resolves package contents through this
+# include list; missing entries produce ``ModuleNotFoundError`` at
+# import time. ``sensory*`` and ``dashboard_backend*`` were silently
+# missing across multiple releases.
+REQUIRED_INCLUDE_PATTERNS = frozenset(
+    {
+        "core*",
+        "intelligence_engine*",
+        "execution_engine*",
+        "system_engine*",
+        "governance_engine*",
+        "learning_engine*",
+        "evolution_engine*",
+        "state*",
+        "tools*",
+        "ui*",
+        "system*",
+        "enforcement*",
+        "immutable_core*",
+        "opponent_model*",
+        "simulation*",
+        "sensory*",
+        "dashboard_backend*",
+    }
+)
+
+
+def test_packages_find_covers_runtime_imports() -> None:
+    pyproject = _load_pyproject()
+    include = frozenset(
+        pyproject["tool"]["setuptools"]["packages"]["find"]["include"]
+    )
+    missing = REQUIRED_INCLUDE_PATTERNS - include
+    assert not missing, (
+        "Phase-6 P0-1 regression: the following top-level packages are "
+        "imported by ui.server at module load but are missing from "
+        "[tool.setuptools.packages.find].include. A non-editable "
+        f"`pip install` will ModuleNotFoundError on them: {sorted(missing)}"
+    )
