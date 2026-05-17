@@ -197,6 +197,7 @@ from intelligence_engine.learning.slow_loop import (
     ParameterBounds,
     SlowLoopLearner,
 )
+from intelligence_engine.learning_gate import LearningGate
 from intelligence_engine.learning_interface import LearningInterface
 from intelligence_engine.mcp import OpenNewsServer
 from intelligence_engine.meta_controller import (
@@ -723,6 +724,23 @@ class _State:
         )
         self.execution.set_development_mode_policy(
             self.development_mode_policy
+        )
+        # PR-DEV-B — wire a live :class:`LearningGate` into the
+        # IntelligenceEngine constructed in ``_build_intelligence_tier``.
+        # The supplier closes over ``self`` so every consultation
+        # re-reads the current :attr:`development_mode_policy`. An
+        # operator flip via ``POST /api/operator/development-mode``
+        # mutates the policy under ``STATE.lock``; the next
+        # ``on_market`` consults the supplier and short-circuits when
+        # ``development_enabled=False``. The migration sentinel
+        # (``None`` policy) resolves fail-open per the contract on
+        # :func:`core.contracts.development_mode.is_learning_unblocked`,
+        # which keeps offline tests that build a bare IntelligenceEngine
+        # working unchanged.
+        self.intelligence.set_learning_gate(
+            LearningGate(
+                policy_supplier=lambda: self.development_mode_policy
+            )
         )
 
     def _build_event_buffers(self) -> None:

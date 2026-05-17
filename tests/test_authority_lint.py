@@ -1038,3 +1038,95 @@ def test_b_polars_real_repo_passes(fake_repo: Path):
     # narrowed to B-POLARS specifically so a regression here is
     # immediately attributable to the polars containment rule.
     assert "B-POLARS" not in _rule_codes(lint_repo(REPO_ROOT))
+
+
+# ---------------------------------------------------------------------------
+# B-DEV-INDIRA — Indira full-potential pin (PR-DEV-B)
+# ---------------------------------------------------------------------------
+#
+# PR-DEV-A inverted the default safety stance: Indira (and Dyon) run
+# full-bore at boot regardless of :class:`SystemMode`. The mode-effect
+# table (``core.contracts.mode_effects.effect_for``) is the
+# governance-tier oracle for mode-conditional execution-side
+# behaviour; Indira must never gate its own signal-emission surface
+# on it. B-DEV-INDIRA pins this by rejecting ``effect_for(...)`` calls
+# anywhere under ``intelligence_engine.*`` — the
+# :class:`LearningGate` is the single sanctioned consultation point.
+
+
+def test_b_dev_indira_fires_on_intelligence_engine_effect_for_call(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "intelligence_engine/some_module.py",
+        "from core.contracts.mode_effects import effect_for\n"
+        "def gated(mode):\n"
+        "    return effect_for(mode).signals_emit\n",
+    )
+    assert "B-DEV-INDIRA" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_dev_indira_fires_on_nested_intelligence_engine_subpackage(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "intelligence_engine/meta_controller/__init__.py",
+        "",
+    )
+    _write(
+        fake_repo,
+        "intelligence_engine/meta_controller/gate.py",
+        "from core.contracts.mode_effects import effect_for\n"
+        "def gated(mode):\n"
+        "    return effect_for(mode).signals_emit\n",
+    )
+    assert "B-DEV-INDIRA" in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_dev_indira_silent_for_execution_engine(fake_repo: Path):
+    """Execution-side code is the legitimate consumer of the
+    mode-effect table (e.g. CANARY size-cap clamp). The rule only
+    fires inside ``intelligence_engine.*``."""
+
+    _write(
+        fake_repo,
+        "execution_engine/uses_effect_for.py",
+        "from core.contracts.mode_effects import effect_for\n"
+        "def gated(mode):\n"
+        "    return effect_for(mode).execute_orders\n",
+    )
+    assert "B-DEV-INDIRA" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_dev_indira_silent_for_governance_engine(fake_repo: Path):
+    _write(
+        fake_repo,
+        "governance_engine/uses_effect_for.py",
+        "from core.contracts.mode_effects import effect_for\n"
+        "def gated(mode):\n"
+        "    return effect_for(mode).signals_emit\n",
+    )
+    assert "B-DEV-INDIRA" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_dev_indira_silent_when_intelligence_engine_skips_effect_for(
+    fake_repo: Path,
+):
+    _write(
+        fake_repo,
+        "intelligence_engine/clean.py",
+        "from intelligence_engine.learning_gate import LearningGate\n"
+        "def go(gate: LearningGate) -> bool:\n"
+        "    return gate.is_open()\n",
+    )
+    assert "B-DEV-INDIRA" not in _rule_codes(lint_repo(fake_repo))
+
+
+def test_b_dev_indira_real_repo_passes():
+    """Sanity — the real repo's intelligence_engine.* tier already
+    avoids ``effect_for`` calls; a regression here is immediately
+    attributable to a new mode-gating leak into Indira."""
+
+    assert "B-DEV-INDIRA" not in _rule_codes(lint_repo(REPO_ROOT))
