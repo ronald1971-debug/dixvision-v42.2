@@ -845,6 +845,71 @@ def _check_b_polars(
     )
 
 
+# ---------------------------------------------------------------------------
+# B-TORCH — torch containment (I-36, INV-15).
+# ---------------------------------------------------------------------------
+#
+# torch (PyTorch) is an OFFLINE-only training / RL dependency adapted
+# under the A-01 / A-02 / B-13 / B-14 / B-15 / B-17 / B-19 / C-28
+# specs. It pulls in a large C++/CUDA runtime, non-deterministic
+# kernels (cuDNN auto-tuner, BLAS heuristics) and a global PRNG state
+# — all incompatible with the runtime tiers' INV-15 replay determinism
+# and the Python-pure hot path.
+#
+# This rule bans ``import torch`` (top-level *or* lazy / function-local
+# — ``_iter_imports`` walks the full AST so deferred imports are
+# caught too) from every runtime tier:
+#
+#   * ``execution_engine`` — hot-path order routing.
+#   * ``governance_engine`` — Mode FSM + authority ledger writers.
+#   * ``system_engine``     — hazard sensors + system-state engine.
+#   * ``core``              — deterministic typed-event core + coherence.
+#   * ``intelligence_engine.meta_controller.hot_path`` — fast-tick
+#     meta-controller used by ``execution_engine.hot_path``.
+#
+# Allowed importers (offline / tooling):
+#
+#   * ``learning_engine.lanes``     — OFFLINE policy-distillation /
+#     RL trainer entrypoints (e.g. ``policy_distillation.py``,
+#     ``policy_distillation_torchrl.py``).
+#   * ``evolution_engine``          — offline evolution sandboxes
+#     (e.g. ``sandbox_elegant.py``).
+#   * ``tools`` / ``scripts``       — operator-side utilities.
+#   * ``tests``                     — pytest exercise of the OFFLINE
+#     lanes / sandboxes / adapters.
+
+B_TORCH_FORBIDDEN_RUNTIME_PREFIXES: tuple[str, ...] = (
+    "execution_engine",
+    "governance_engine",
+    "system_engine",
+    "core",
+    "intelligence_engine.meta_controller.hot_path",
+)
+
+
+def _check_b_torch(
+    importer: str, target: str, file: Path, line: int
+) -> Violation | None:
+    """B-TORCH — torch import containment (I-36 / INV-15)."""
+
+    if not _starts_with_any(target, ("torch",)):
+        return None
+    if not _starts_with_any(importer, B_TORCH_FORBIDDEN_RUNTIME_PREFIXES):
+        return None
+    return Violation(
+        "B-TORCH",
+        file,
+        line,
+        importer,
+        target,
+        "torch imports are quarantined to OFFLINE tiers"
+        " (learning_engine.lanes / evolution_engine / tools / tests) —"
+        " runtime engines (execution / governance / system / core /"
+        " intelligence_engine.meta_controller.hot_path) must stay"
+        " torch-free for INV-15 replay determinism + Python-pure hot path.",
+    )
+
+
 RULE_CHECKS = (
     _check_t1,
     _check_c2,
@@ -861,6 +926,7 @@ RULE_CHECKS = (
     _check_b24,
     _check_b33,
     _check_b_polars,
+    _check_b_torch,
 )
 
 
