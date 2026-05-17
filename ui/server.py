@@ -83,6 +83,12 @@ from core.contracts.api.source_trust import (
     SourceTrustPromotionResponse,
     SourceTrustRow,
 )
+from core.contracts.development_mode import (
+    POLICY_VERSION as DEVELOPMENT_MODE_POLICY_VERSION,
+)
+from core.contracts.development_mode import (
+    DevelopmentModePolicy,
+)
 from core.contracts.events import (
     Event,
     EventKind,
@@ -456,12 +462,73 @@ class _State:
         # observes zero trade outcomes.
         self.feedback_collector = FeedbackCollector()
         self.learning_interface = LearningInterface()
+        # PR-DEV-A — Operator Master Development Mode flags. Two
+        # independent boot-time toggles:
+        #
+        # * ``DIXVISION_DEVELOPMENT_MODE`` (default ``"true"``) — the
+        #   learning + research surface is unblocked at boot so Indira
+        #   (full trader discovery + 5,000+ profile modeling) and Dyon
+        #   (heavy learning + structural evolution + slow-loop
+        #   critique + patch pipeline) run at full potential before
+        #   any trading.
+        # * ``DIXVISION_TRADING_ALLOWED`` (default ``"false"``) — the
+        #   Execution Gate refuses to dispatch to any broker until
+        #   the operator explicitly flips the flag. This is the
+        #   *only* switch that opens trading; the AuthorityGuard,
+        #   hazard throttle, kill-switch, mode-effect table, FSM
+        #   consent envelopes, HARDEN-04 freeze policy, INV-15
+        #   replay anchor, and HARDEN-03 receiver assertions all
+        #   remain in force as defense-in-depth.
+        #
+        # Both flags are mutated atomically under ``STATE.lock`` by
+        # the operator routes ``POST /api/operator/development-mode``
+        # and ``POST /api/operator/trading-allowed``. Every flip is
+        # audited as an ``OPERATOR_<flag>_CHANGED`` row paired with a
+        # canonical ``POLICY_STATE`` row whose payload shape is owned
+        # by :meth:`DevelopmentModePolicy.to_system_event`. The
+        # engine receives a fresh snapshot here and on every operator
+        # flip via ``set_development_mode_policy`` so the next
+        # ``execute`` call observes the new gate atomically.
+        #
+        # The :class:`SystemMode` carried on the policy here is the
+        # boot-default ``SystemMode.SAFE`` (the FSM is constructed in
+        # ``_build_governance_tier`` which runs *after* this section,
+        # but no production caller has flipped it yet, so the boot
+        # value is invariant). Subsequent operator flips re-read the
+        # mode under ``STATE.lock`` from the live
+        # ``state_transitions``.
+        self.development_mode_enabled: bool = (
+            os.environ.get("DIXVISION_DEVELOPMENT_MODE", "true")
+            .strip()
+            .lower()
+            in {"1", "true", "yes", "on"}
+        )
+        self.trading_allowed: bool = (
+            os.environ.get("DIXVISION_TRADING_ALLOWED", "false")
+            .strip()
+            .lower()
+            in {"1", "true", "yes", "on"}
+        )
+        # ``mode=None`` here is intentional: the FSM is constructed in
+        # ``_build_governance_tier`` which runs *after* this section,
+        # so naming the mode literally would violate B31 (mode-effect
+        # table is the single mode-conditional oracle). The mode is
+        # carried on the policy strictly for audit shape — neither
+        # ``is_learning_unblocked`` nor ``is_trading_unblocked``
+        # inspects it. The policy is rebuilt with the live mode in
+        # ``_build_governance_tier`` before any tick can run.
+        self.development_mode_policy = DevelopmentModePolicy(
+            development_enabled=self.development_mode_enabled,
+            trading_allowed=self.trading_allowed,
+            mode=None,
+        )
         self.execution = ExecutionEngine(
             guard=self.authority_guard,
             throttle_adapter=self.hazard_throttle,
             risk_baseline=self.risk_baseline,
             feedback_collector=self.feedback_collector,
             intelligence_feedback=self.learning_interface,
+            development_mode_policy=self.development_mode_policy,
         )
 
     def _build_system_tier(self) -> None:
@@ -639,6 +706,23 @@ class _State:
             .strip()
             .lower()
             in {"1", "true", "yes", "on"}
+        )
+
+        # PR-DEV-A — rebuild the DevelopmentModePolicy with the live
+        # FSM mode now that ``state_transitions`` exists. The policy
+        # constructed in ``_build_execution_tier`` carried ``mode=None``
+        # to avoid naming a SystemMode literal in this module (B31).
+        # Predicates are mode-independent so the swap is purely audit
+        # cosmetic; the engine reference is replaced via
+        # ``set_development_mode_policy`` so every subsequent
+        # ``execute`` call observes the mode-anchored snapshot.
+        self.development_mode_policy = DevelopmentModePolicy(
+            development_enabled=self.development_mode_enabled,
+            trading_allowed=self.trading_allowed,
+            mode=self.governance.state_transitions.current_mode(),
+        )
+        self.execution.set_development_mode_policy(
+            self.development_mode_policy
         )
 
     def _build_event_buffers(self) -> None:
@@ -1332,6 +1416,100 @@ def _read_yaml(path: Path) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Pydantic request models
 # ---------------------------------------------------------------------------
+
+
+class DevelopmentModeRequest(BaseModel):
+    """Body for ``POST /api/operator/development-mode`` (PR-DEV-A).
+
+    The operator-toggled flag that determines whether Indira and Dyon
+    run at full potential (trader discovery, profiling, modeling,
+    heavy learning, structural evolution, slow-loop critique, patch
+    pipeline). Defaults to ``True`` at boot via
+    ``DIXVISION_DEVELOPMENT_MODE``; flipping to ``False`` pauses the
+    learning + research surface while leaving every safety gate in
+    place. Independent of :class:`TradingAllowedRequest` — the two
+    flags compose into one :class:`DevelopmentModePolicy`.
+    """
+
+    enabled: bool = Field(
+        ...,
+        description=(
+            "Target value of the development-mode flag. When True "
+            "(the boot default), Indira and Dyon are unblocked."
+        ),
+    )
+    requestor: str = Field(
+        default="dashboard",
+        min_length=1,
+        max_length=64,
+        description=(
+            "Caller identity recorded on the audit row; defaults "
+            "to the dashboard origin."
+        ),
+    )
+    reason: str = Field(
+        default="",
+        max_length=256,
+        description=(
+            "Free-form rationale; included verbatim in the audit "
+            "ledger payload."
+        ),
+    )
+
+
+class TradingAllowedRequest(BaseModel):
+    """Body for ``POST /api/operator/trading-allowed`` (PR-DEV-A).
+
+    The single operator-toggled switch that opens the Execution Gate.
+    Defaults to ``False`` at boot via ``DIXVISION_TRADING_ALLOWED``;
+    while False the gate emits a synthetic ``REJECTED`` ExecutionEvent
+    with ``meta.reason='development_mode_trading_blocked'`` for every
+    intent. The AuthorityGuard, hazard throttle, kill-switch,
+    mode-effect table, FSM consent envelopes, and HARDEN-04 remain in
+    force as defense-in-depth.
+    """
+
+    enabled: bool = Field(
+        ...,
+        description=(
+            "Target value of the trading-allowed flag. When True "
+            "the Execution Gate dispatches normally; when False "
+            "(the boot default) the gate refuses all dispatch."
+        ),
+    )
+    requestor: str = Field(
+        default="dashboard",
+        min_length=1,
+        max_length=64,
+        description=(
+            "Caller identity recorded on the audit row; defaults "
+            "to the dashboard origin."
+        ),
+    )
+    reason: str = Field(
+        default="",
+        max_length=256,
+        description=(
+            "Free-form rationale; included verbatim in the audit "
+            "ledger payload."
+        ),
+    )
+
+
+class DevelopmentModeResponse(BaseModel):
+    """Response shape for GET / POST development-mode + trading-allowed.
+
+    Carries the full :class:`DevelopmentModePolicy` projection so the
+    cockpit can render both flags + the live :class:`SystemMode` from
+    a single round-trip.
+    """
+
+    development_enabled: bool
+    trading_allowed: bool
+    mode: str
+    learning_unblocked: bool
+    trading_unblocked: bool
+    policy_version: str
 
 
 class LearningOverrideRequest(BaseModel):
@@ -2545,6 +2723,195 @@ def operator_learning_override_post(
             payload=dict(policy_event.payload),
         )
     return _project_learning_override(enabled=new_enabled, mode=mode)
+
+
+# ---------------------------------------------------------------------------
+# PR-DEV-A — Operator Master Development Mode routes
+# ---------------------------------------------------------------------------
+
+
+def _project_development_mode_policy(
+    policy: DevelopmentModePolicy,
+) -> DevelopmentModeResponse:
+    """Project a :class:`DevelopmentModePolicy` snapshot to the wire.
+
+    The cockpit (GET) and operator routes (POST) both render through
+    this projection so the response shape is identical regardless of
+    which surface fetched the snapshot.
+    """
+
+    return DevelopmentModeResponse(
+        development_enabled=policy.development_enabled,
+        trading_allowed=policy.trading_allowed,
+        mode=policy.mode.name if policy.mode is not None else "",
+        learning_unblocked=policy.is_learning_unblocked(),
+        trading_unblocked=policy.is_trading_unblocked(),
+        policy_version=DEVELOPMENT_MODE_POLICY_VERSION,
+    )
+
+
+def _development_mode_snapshot() -> DevelopmentModeResponse:
+    """Snapshot the live :class:`DevelopmentModePolicy` from ``_State``.
+
+    Takes ``STATE.lock``, copies out the three live flags, composes a
+    fresh :class:`DevelopmentModePolicy`, and projects it through
+    :func:`_project_development_mode_policy`. The lock is held only
+    for the read so concurrent POSTs are not blocked on the
+    projection work.
+    """
+
+    with STATE.lock:
+        policy = DevelopmentModePolicy(
+            development_enabled=STATE.development_mode_enabled,
+            trading_allowed=STATE.trading_allowed,
+            mode=STATE.governance.state_transitions.current_mode(),
+        )
+    return _project_development_mode_policy(policy)
+
+
+@app.get(
+    "/api/operator/development-mode",
+    response_model=DevelopmentModeResponse,
+)
+def operator_development_mode_get() -> DevelopmentModeResponse:
+    """PR-DEV-A — typed read of the operator development-mode policy.
+
+    Read-only; never writes the ledger. The cockpit polls this on
+    every page load so the toggle reflects the live server-side
+    state (the flags are server-authoritative — there is no
+    client-side override cache).
+    """
+
+    return _development_mode_snapshot()
+
+
+@app.post(
+    "/api/operator/development-mode",
+    response_model=DevelopmentModeResponse,
+)
+def operator_development_mode_post(
+    body: DevelopmentModeRequest,
+) -> DevelopmentModeResponse:
+    """PR-DEV-A — flip the development-mode flag with audit.
+
+    Writes an ``OPERATOR_DEVELOPMENT_MODE_CHANGED`` row paired with a
+    canonical ``POLICY_STATE`` row to the authority ledger on every
+    transition (including no-ops, so the full operator-intent trail
+    is preserved). The two rows are written atomically under
+    ``STATE.lock`` and carry the same ``flip_ts_ns``. The engine's
+    :class:`DevelopmentModePolicy` is replaced via
+    ``set_development_mode_policy`` under the same lock so the next
+    ``ExecutionEngine.execute`` call observes the new gate.
+    """
+
+    new_enabled = bool(body.enabled)
+    with STATE.lock:
+        previous = STATE.development_mode_enabled
+        STATE.development_mode_enabled = new_enabled
+        mode = STATE.governance.state_transitions.current_mode()
+        flip_ts_ns = wall_ns()
+        STATE.governance.ledger.append(
+            ts_ns=flip_ts_ns,
+            kind="OPERATOR_DEVELOPMENT_MODE_CHANGED",
+            payload={
+                "requestor": body.requestor,
+                "reason": body.reason,
+                "previous": "true" if previous else "false",
+                "next": "true" if new_enabled else "false",
+                "mode": mode.name,
+            },
+        )
+        policy_after = DevelopmentModePolicy(
+            development_enabled=new_enabled,
+            trading_allowed=STATE.trading_allowed,
+            mode=mode,
+        )
+        policy_event = policy_after.to_system_event(
+            ts_ns=flip_ts_ns, source="operator.api"
+        )
+        STATE.governance.ledger.append(
+            ts_ns=policy_event.ts_ns,
+            kind=policy_event.sub_kind.value,
+            payload=dict(policy_event.payload),
+        )
+        STATE.development_mode_policy = policy_after
+        STATE.execution.set_development_mode_policy(policy_after)
+    return _project_development_mode_policy(policy_after)
+
+
+@app.get(
+    "/api/operator/trading-allowed",
+    response_model=DevelopmentModeResponse,
+)
+def operator_trading_allowed_get() -> DevelopmentModeResponse:
+    """PR-DEV-A — typed read of the trading-allowed gate.
+
+    Read-only; renders the same :class:`DevelopmentModeResponse` shape
+    as the development-mode GET so the cockpit can fetch a single
+    canonical projection.
+    """
+
+    return _development_mode_snapshot()
+
+
+@app.post(
+    "/api/operator/trading-allowed",
+    response_model=DevelopmentModeResponse,
+)
+def operator_trading_allowed_post(
+    body: TradingAllowedRequest,
+) -> DevelopmentModeResponse:
+    """PR-DEV-A — flip the trading-allowed flag with audit.
+
+    This is the *single switch* that opens the Execution Gate. While
+    the flag is ``False`` (the boot default), the gate emits a
+    synthetic ``REJECTED`` ExecutionEvent with
+    ``meta.reason='development_mode_trading_blocked'`` for every
+    intent. Defense-in-depth: the AuthorityGuard, hazard throttle,
+    kill-switch, mode-effect table, FSM consent envelopes, and
+    HARDEN-04 freeze policy remain in force regardless of this flag.
+
+    Writes an ``OPERATOR_TRADING_ALLOWED_CHANGED`` row paired with a
+    canonical ``POLICY_STATE`` row to the authority ledger on every
+    transition. Both rows are written atomically under
+    ``STATE.lock`` and carry the same ``flip_ts_ns``. The engine's
+    :class:`DevelopmentModePolicy` is replaced under the same lock so
+    the next ``ExecutionEngine.execute`` call observes the new gate.
+    """
+
+    new_enabled = bool(body.enabled)
+    with STATE.lock:
+        previous = STATE.trading_allowed
+        STATE.trading_allowed = new_enabled
+        mode = STATE.governance.state_transitions.current_mode()
+        flip_ts_ns = wall_ns()
+        STATE.governance.ledger.append(
+            ts_ns=flip_ts_ns,
+            kind="OPERATOR_TRADING_ALLOWED_CHANGED",
+            payload={
+                "requestor": body.requestor,
+                "reason": body.reason,
+                "previous": "true" if previous else "false",
+                "next": "true" if new_enabled else "false",
+                "mode": mode.name,
+            },
+        )
+        policy_after = DevelopmentModePolicy(
+            development_enabled=STATE.development_mode_enabled,
+            trading_allowed=new_enabled,
+            mode=mode,
+        )
+        policy_event = policy_after.to_system_event(
+            ts_ns=flip_ts_ns, source="operator.api"
+        )
+        STATE.governance.ledger.append(
+            ts_ns=policy_event.ts_ns,
+            kind=policy_event.sub_kind.value,
+            payload=dict(policy_event.payload),
+        )
+        STATE.development_mode_policy = policy_after
+        STATE.execution.set_development_mode_policy(policy_after)
+    return _project_development_mode_policy(policy_after)
 
 
 #: Env var that opts the harness into the P0-A admin debug-tick route.

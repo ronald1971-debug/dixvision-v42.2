@@ -20,6 +20,26 @@ ui_server = importlib.import_module("ui.server")
 def client():
     # Reset shared state between tests so order doesn't matter.
     ui_server.STATE = ui_server._State()  # type: ignore[attr-defined]
+    # PR-DEV-A — boot defaults block trading at the Execution Gate. The
+    # Phase E1 harness tests in this module pre-date that gate and pin
+    # the legacy dispatch contract (REJECTED ↔ trading blocked is a
+    # separate regression suite in ``test_pr_dev_a_development_mode``).
+    # Flip the gate open for this fixture so the legacy assertions
+    # continue to exercise the broker dispatch path.
+    from core.contracts.development_mode import DevelopmentModePolicy
+
+    with ui_server.STATE.lock:
+        ui_server.STATE.trading_allowed = True
+        ui_server.STATE.development_mode_policy = DevelopmentModePolicy(
+            development_enabled=ui_server.STATE.development_mode_enabled,
+            trading_allowed=True,
+            mode=(
+                ui_server.STATE.governance.state_transitions.current_mode()
+            ),
+        )
+        ui_server.STATE.execution.set_development_mode_policy(
+            ui_server.STATE.development_mode_policy
+        )
     return TestClient(ui_server.app)
 
 

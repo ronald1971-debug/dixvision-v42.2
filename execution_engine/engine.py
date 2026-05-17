@@ -21,6 +21,11 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 
+from core.contracts.development_mode import (
+    DEVELOPMENT_MODE_TRADING_BLOCKED,
+    DevelopmentModePolicy,
+    is_trading_unblocked,
+)
 from core.contracts.engine import (
     EngineTier,
     HealthState,
@@ -75,6 +80,7 @@ class ExecutionEngine(RuntimeEngine):
         intelligence_feedback: IntelligenceFeedbackSink | None = None,
         throttle_adapter: HazardThrottleAdapter | None = None,
         risk_baseline: RiskSnapshot | None = None,
+        development_mode_policy: DevelopmentModePolicy | None = None,
     ) -> None:
         self._adapter: BrokerAdapter = adapter or PaperBroker()
         self._marks: dict[str, float] = {}
@@ -108,10 +114,41 @@ class ExecutionEngine(RuntimeEngine):
         # hazard bus retain their pre-P0-2 behaviour.
         self._throttle_adapter: HazardThrottleAdapter | None = throttle_adapter
         self._risk_baseline: RiskSnapshot | None = risk_baseline
+        # PR-DEV-A: Operator Master Development Mode outer gate. The
+        # policy is held as an optional mutable reference so the
+        # operator route (POST /api/operator/trading-allowed) can
+        # replace it atomically under STATE.lock without reconstructing
+        # the engine. ``None`` means "no policy wired here" and resolves
+        # to the fail-closed-for-trading default via
+        # ``is_trading_unblocked(None)``. The cockpit injects a real
+        # policy at boot so production never relies on the migration
+        # sentinel.
+        self._development_mode_policy: DevelopmentModePolicy | None = (
+            development_mode_policy
+        )
 
     @property
     def adapter(self) -> BrokerAdapter:
         return self._adapter
+
+    @property
+    def development_mode_policy(self) -> DevelopmentModePolicy | None:
+        return self._development_mode_policy
+
+    def set_development_mode_policy(
+        self,
+        policy: DevelopmentModePolicy | None,
+    ) -> None:
+        """Replace the active :class:`DevelopmentModePolicy`.
+
+        Called by the operator route
+        (``POST /api/operator/trading-allowed`` /
+        ``POST /api/operator/development-mode``) under ``STATE.lock``
+        so the next :meth:`execute` call observes the new gate without
+        engine reconstruction.
+        """
+
+        self._development_mode_policy = policy
 
     @property
     def guard(self) -> AuthorityGuard:
@@ -201,6 +238,34 @@ class ExecutionEngine(RuntimeEngine):
         """
 
         self.guard.assert_can_execute(intent, caller=caller, ts_ns=intent.ts_ns)
+
+        # PR-DEV-A: Operator Master Development Mode — outer gate.
+        # When ``trading_allowed`` is False (the boot default), the
+        # Execution Gate refuses to dispatch to any broker. The intent
+        # has already cleared the AuthorityGuard, so we emit a typed
+        # ``REJECTED`` ExecutionEvent (matching the hazard-throttled
+        # and mode-effect-suppressed shapes) so the learning loop
+        # still observes the refusal. Defense-in-depth: this gate is
+        # additive to HARDEN-04, the hazard throttle, the mode-effect
+        # table, the kill-switch, and ``RiskSnapshot.halted``.
+        if not is_trading_unblocked(self._development_mode_policy):
+            signal = intent.signal
+            dev_blocked_events: tuple[ExecutionEvent, ...] = (
+                ExecutionEvent(
+                    ts_ns=signal.ts_ns,
+                    symbol=signal.symbol,
+                    side=signal.side,
+                    qty=0.0,
+                    price=0.0,
+                    status=ExecutionStatus.REJECTED,
+                    venue=self._adapter.name,
+                    order_id="",
+                    meta={"reason": DEVELOPMENT_MODE_TRADING_BLOCKED},
+                    produced_by_engine="execution_engine",
+                ),
+            )
+            self._feed_learning_loop(intent.signal, dev_blocked_events)
+            return dev_blocked_events
 
         # P0-2: consult the throttle adapter (if configured) before
         # any side effect. ``halted=True`` short-circuits to a
