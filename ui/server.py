@@ -1022,21 +1022,45 @@ class _State:
     def _live_freeze_policy(self) -> LearningEvolutionFreezePolicy:
         """Snapshot the live HARDEN-04 freeze policy.
 
-        Constructed from the current :class:`SystemMode` and the
-        operator ``learning_override_enabled`` flag on every call.
-        Held under ``STATE.lock`` so the snapshot is consistent with
-        any concurrent ``POST /api/operator/learning-override`` or
-        mode transition. The policy is the **only** source of truth
-        for whether the closed learning loop and the structural
-        evolution loop may invoke their inner components (INV-70 /
-        HARDEN-04).
+        Constructed from the current :class:`SystemMode`, the
+        operator ``learning_override_enabled`` flag, and the
+        ``development_enabled`` flag on every call. Held under
+        ``STATE.lock`` so the snapshot is consistent with any
+        concurrent ``POST /api/operator/learning-override``,
+        ``POST /api/operator/development-mode``, or mode transition.
+        The policy is the **only** source of truth for whether the
+        closed learning loop and the structural evolution loop may
+        invoke their inner components (INV-70 / HARDEN-04).
+
+        PR-DEV-C unifies the Dyon-side freeze with the Operator
+        Master Development Mode (PR-DEV-A). The effective override
+        is ``learning_override_enabled AND development_enabled`` so a
+        single operator flip via
+        ``POST /api/operator/development-mode {enabled: false}``
+        pauses **both** the Indira signal-emission surface (via
+        :class:`~intelligence_engine.learning_gate.LearningGate`,
+        PR-DEV-B) **and** the Dyon adaptive-mutation surface (via
+        :class:`LearningEvolutionFreezePolicy`). The existing
+        ``POST /api/operator/learning-override`` route remains the
+        Dyon-only switch (operator may pause Dyon while leaving
+        Indira running). The migration sentinel
+        (``development_mode_policy is None``) resolves fail-open so
+        offline tests that build a bare ``_State`` retain their
+        previous unconditional-unfreeze behaviour when
+        ``learning_override_enabled=True``.
         """
 
         with self.lock:
-            enabled = self.learning_override_enabled
+            learning_enabled = self.learning_override_enabled
+            development_enabled = (
+                self.development_mode_policy.development_enabled
+                if self.development_mode_policy is not None
+                else True
+            )
             mode = self.governance.state_transitions.current_mode()
+        effective_override = learning_enabled and development_enabled
         return LearningEvolutionFreezePolicy(
-            mode=mode, operator_override=enabled
+            mode=mode, operator_override=effective_override
         )
 
     def _structural_stats_supplier(self) -> tuple[StrategyStats, ...]:
