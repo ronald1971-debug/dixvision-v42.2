@@ -972,6 +972,79 @@ B36_ALLOWED_PREFIXES: tuple[str, ...] = (
 )
 
 
+# ---------------------------------------------------------------------------
+# B-DEV-INDIRA — Indira full-potential pin (PR-DEV-B)
+# ---------------------------------------------------------------------------
+#
+# Operator Master Development Mode (PR-DEV-A / PR-DEV-B) inverts the
+# default safety stance: Indira's signal-emission surface runs full-
+# bore at boot regardless of :class:`SystemMode`. The only switch
+# that may pause it is
+# ``DevelopmentModePolicy.development_enabled=False`` (operator
+# action, audited under ``OPERATOR_DEVELOPMENT_MODE_CHANGED``).
+#
+# B-DEV-INDIRA pins this architectural invariant by prohibiting calls
+# to :func:`core.contracts.mode_effects.effect_for` from anywhere
+# under ``intelligence_engine.*``. The mode-effect table is the
+# governance-tier oracle for mode-conditional execution-side behaviour;
+# Indira must never gate its own signal emission on it. The
+# :class:`~intelligence_engine.learning_gate.LearningGate` is the
+# single sanctioned consultation point for "should Indira emit?".
+#
+# B31 already prohibits naming :class:`SystemMode` members in
+# ``intelligence_engine.*``. B-DEV-INDIRA closes the only remaining
+# back-door: calling ``effect_for(mode).<flag>`` to read the mode
+# table indirectly.
+
+B_DEV_INDIRA_FORBIDDEN_PREFIXES: tuple[str, ...] = ("intelligence_engine",)
+
+
+def _check_b_dev_indira(
+    importer: str, file: Path, repo_root: Path, tree: ast.AST
+) -> list[Violation]:
+    """B-DEV-INDIRA — Indira may not consult the mode-effect table.
+
+    PR-DEV-B pins that the Indira signal-emission surface runs
+    independent of :class:`SystemMode`; the only sanctioned gate is
+    :class:`intelligence_engine.learning_gate.LearningGate`. Calls
+    to :func:`core.contracts.mode_effects.effect_for` (whether named
+    directly or aliased on import) are rejected.
+    """
+
+    if _is_triad_constructor_test_exempt(file, repo_root):
+        return []
+    if not _starts_with_any(importer, B_DEV_INDIRA_FORBIDDEN_PREFIXES):
+        return []
+    out: list[Violation] = []
+    for node in ast.walk(tree):
+        if not (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "effect_for"
+        ):
+            continue
+        out.append(
+            Violation(
+                "B-DEV-INDIRA",
+                file,
+                node.lineno,
+                importer,
+                "effect_for(...)",
+                "Indira full-potential pin (PR-DEV-B): "
+                "intelligence_engine.* must not consult the "
+                "mode-effect table. Indira's signal-emission surface "
+                "runs full-bore at boot regardless of SystemMode; "
+                "the only sanctioned gate is "
+                "intelligence_engine.learning_gate.LearningGate "
+                "(operator-driven via "
+                "POST /api/operator/development-mode). Re-route "
+                "mode-conditional behaviour out of Indira's tier or "
+                "consult the LearningGate.",
+            )
+        )
+    return out
+
+
 def _check_b36(
     importer: str, file: Path, repo_root: Path, tree: ast.AST
 ) -> list[Violation]:
@@ -1901,6 +1974,10 @@ def lint_repo(repo_root: Path) -> list[Violation]:
         violations.extend(_check_b35(importer, path, repo_root, tree))
         # B36 — DecisionSigner construction restriction (Hardening-S1 item 2).
         violations.extend(_check_b36(importer, path, repo_root, tree))
+        # B-DEV-INDIRA — Indira full-potential pin (PR-DEV-B).
+        violations.extend(
+            _check_b_dev_indira(importer, path, repo_root, tree)
+        )
     # B23 — chat widget static files (HTML / JS).
     violations.extend(_check_b23_static(repo_root))
     return violations

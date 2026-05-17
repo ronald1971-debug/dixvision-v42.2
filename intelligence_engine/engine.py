@@ -47,6 +47,7 @@ from core.contracts.engine import (
 )
 from core.contracts.events import Event, SignalEvent, SystemEvent
 from core.contracts.market import MarketTick
+from intelligence_engine.learning_gate import LearningGate
 from intelligence_engine.meta_controller import MetaControllerHotPath
 from intelligence_engine.meta_controller.policy import ExecutionDecision
 from intelligence_engine.runtime_context import RuntimeContext
@@ -65,6 +66,7 @@ class IntelligenceEngine(RuntimeEngine):
         *,
         meta_controller_hot_path: MetaControllerHotPath | None = None,
         signal_window_size: int = DEFAULT_SIGNAL_WINDOW_SIZE,
+        learning_gate: LearningGate | None = None,
     ) -> None:
         if signal_window_size <= 0:
             raise ValueError("signal_window_size must be > 0")
@@ -81,6 +83,16 @@ class IntelligenceEngine(RuntimeEngine):
         self._signal_window: deque[SignalEvent] = deque(
             maxlen=signal_window_size
         )
+        # PR-DEV-B — Operator Master Development Mode learning gate.
+        # ``None`` is the migration sentinel (fail-open) so pre-PR-DEV-B
+        # offline tests that construct an engine without a governance
+        # runtime in scope retain their previous unconditional-emit
+        # behaviour. Production wiring at ``ui.server._State`` injects
+        # a :class:`LearningGate` whose ``policy_supplier`` reads the
+        # live ``DevelopmentModePolicy`` so an operator flip via
+        # ``POST /api/operator/development-mode {enabled: false}``
+        # short-circuits the next ``on_market`` / ``run_meta_tick``.
+        self._learning_gate = learning_gate
 
     @property
     def microstructure_plugins(self) -> tuple[MicrostructurePlugin, ...]:
@@ -95,6 +107,25 @@ class IntelligenceEngine(RuntimeEngine):
         """Snapshot of the rolling signal window. Read-only."""
         return tuple(self._signal_window)
 
+    @property
+    def learning_gate(self) -> LearningGate | None:
+        """PR-DEV-B — the operator-controlled learning gate, or
+        ``None`` if the engine was constructed without one (migration
+        sentinel; fail-open)."""
+        return self._learning_gate
+
+    def set_learning_gate(self, gate: LearningGate | None) -> None:
+        """PR-DEV-B — replace the active :class:`LearningGate`.
+
+        Mirrors :meth:`ExecutionEngine.set_development_mode_policy`:
+        production wiring uses this from the boot-time governance
+        builder so the gate is installed *after* the engine has been
+        constructed (the engine itself lives under the runtime tier,
+        but the policy supplier must close over governance state
+        without violating L1/L2/L3 import direction).
+        """
+        self._learning_gate = gate
+
     def on_market(self, tick: MarketTick) -> tuple[SignalEvent, ...]:
         """Run all enabled microstructure plugins against ``tick``.
 
@@ -103,7 +134,22 @@ class IntelligenceEngine(RuntimeEngine):
         Wave 1: the engine also appends the emitted signals to its
         rolling window so a subsequent :meth:`run_meta_tick` sees a
         coherent recent-signal context.
+
+        PR-DEV-B: when the operator has flipped
+        :attr:`DevelopmentModePolicy.development_enabled` to
+        ``False`` (via ``POST /api/operator/development-mode`` or the
+        boot-time ``DIXVISION_DEVELOPMENT_MODE=false`` pin), the
+        configured :class:`LearningGate` closes and this method
+        returns an empty tuple. No plugins are invoked, no signals
+        are appended to the rolling window, and no audit row is
+        emitted from this method (the audit row is emitted by the
+        operator route at flip time, not on every silent tick).
         """
+        if (
+            self._learning_gate is not None
+            and self._learning_gate.is_closed()
+        ):
+            return ()
         out: list[SignalEvent] = []
         for plugin in self._microstructure:
             if plugin.lifecycle is PluginLifecycle.DISABLED:
