@@ -1,6 +1,6 @@
-"""TOTAL VALIDATION — DIX VISION v42.2 12-phase CI-enforced system check.
+"""TOTAL VALIDATION — DIX VISION v42.2 13-phase CI-enforced system check.
 
-Implements the 12 phases of the TOTAL VALIDATION SPEC (see
+Implements the 13 phases of the TOTAL VALIDATION SPEC (see
 ``docs/TOTAL_VALIDATION_SPEC.md``):
 
     Phase 0   source ingestion         -> analysis/source_index.csv
@@ -15,7 +15,8 @@ Implements the 12 phases of the TOTAL VALIDATION SPEC (see
     Phase 9   dependency graph         -> analysis/dependency_graph.json
     Phase 10  AST validation           -> analysis/ast_validation.json
     Phase 11  runtime telemetry        -> analysis/runtime_validation.json
-    Phase 12  final summary            -> analysis/coverage_summary.json
+    Phase 12  topology drift           -> analysis/topology_drift.json
+    Phase 13  final summary            -> analysis/coverage_summary.json
 
 Modes::
 
@@ -47,6 +48,14 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ANALYSIS_DIR = REPO_ROOT / "analysis"
+
+# When invoked as ``python tools/total_validation.py``, Python inserts
+# the ``tools/`` directory at ``sys.path[0]`` but not the repo root.
+# Phase 12 imports ``ui.harness.runtime_registrar`` (a pure data
+# module) for the canonical declared topology, so we make the repo
+# root importable here.
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 # ---------------------------------------------------------------------------
 # constants
@@ -151,6 +160,8 @@ class ValidationReport:
     dependency_graph_valid: bool = True
     ast_validation: bool = True
     runtime_validation: bool = True
+    topology_drift_valid: bool = True
+    topology_drift_count: int = 0
     advisory: bool = True
 
     def coverage_pct(self, num: int, denom: int) -> str:
@@ -901,11 +912,173 @@ def _phase_11_runtime_telemetry(advisory: bool) -> tuple[Phase, bool]:
 
 
 # ---------------------------------------------------------------------------
-# Phase 12 — final summary
+# Phase 12 — runtime topology drift (PR-RT-5)
 # ---------------------------------------------------------------------------
 
 
-def _phase_12_summary(report: ValidationReport) -> dict[str, Any]:
+# Files inspected for ``self.<attr> = ...`` and ``state.<attr> = ...``
+# assignments. ``ui/server.py`` carries the historic ``_build_*``
+# section bodies (where every declared ``state_attr`` is set); the
+# manager file is included for completeness because it is the
+# canonical orchestrator that calls those builders.
+_TOPOLOGY_BOOT_SOURCES: tuple[str, ...] = (
+    "ui/server.py",
+    "ui/harness/boot_manager.py",
+)
+
+
+def _collect_attr_assignments(path: Path) -> set[str]:
+    """Return every attribute name that is assigned on ``self`` or
+    ``state`` anywhere in ``path``.
+
+    Pure static scan — never imports the file. Walks every
+    :class:`ast.Assign` / :class:`ast.AnnAssign` / :class:`ast.AugAssign`
+    target and records the attribute name when the value chain is
+    ``self.X`` or ``state.X``.
+    """
+
+    out: set[str] = set()
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+        tree = ast.parse(text, filename=str(path))
+    except (SyntaxError, OSError):
+        return out
+
+    def _record_target(target: ast.expr) -> None:
+        if isinstance(target, ast.Attribute):
+            if isinstance(target.value, ast.Name) and target.value.id in (
+                "self",
+                "state",
+            ):
+                out.add(target.attr)
+        elif isinstance(target, ast.Tuple | ast.List):
+            for elt in target.elts:
+                _record_target(elt)
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            for tgt in node.targets:
+                _record_target(tgt)
+        elif isinstance(node, ast.AnnAssign | ast.AugAssign):
+            _record_target(node.target)
+    return out
+
+
+def _phase_12_topology_drift(advisory: bool) -> tuple[Phase, bool, int]:
+    """Pin the declared-vs-statically-wired runtime topology invariant.
+
+    Invariant::
+
+        declared_topology == active_topology ∪ DECLARED_BUT_DORMANT_ALLOWLIST
+
+    Every declared node in :mod:`ui.harness.runtime_registrar` must
+    either have its ``state_attr`` assigned somewhere in the canonical
+    boot sources (:data:`_TOPOLOGY_BOOT_SOURCES`) or be on
+    :data:`ui.harness.runtime_registrar.DECLARED_BUT_DORMANT_ALLOWLIST`.
+
+    Any node that is declared, not statically wired, and not on the
+    allowlist is a silent-runtime-topology-drift violation. The
+    phase returns ``status="ok"`` when ``drift_count == 0``, ``warn``
+    in advisory mode otherwise, and ``fail`` in strict mode.
+    """
+
+    payload: dict[str, Any] = {
+        "status": "ok",
+        "declared_node_count": 0,
+        "wired_node_count": 0,
+        "allowlisted_node_count": 0,
+        "drift_count": 0,
+        "drift_nodes": [],
+        "boot_sources": list(_TOPOLOGY_BOOT_SOURCES),
+        "allowlist": [],
+    }
+
+    # Lazy import keeps ``tools.total_validation`` import-clean for
+    # external callers; the registrar module pulls in ``tools.runtime_*``
+    # but no UI side effects.
+    try:
+        from ui.harness.runtime_registrar import (
+            DECLARED_BUT_DORMANT_ALLOWLIST,
+            declared_state_attrs,
+        )
+    except Exception as exc:  # pragma: no cover - defensive
+        payload["status"] = "skipped"
+        payload["reason"] = f"registrar import failed: {exc!r}"
+        _write_json("topology_drift.json", payload)
+        return (
+            Phase(
+                phase_id=12,
+                name="topology_drift",
+                artifact="topology_drift.json",
+                status="skip" if advisory else "warn",
+                details=payload,
+            ),
+            False,
+            0,
+        )
+
+    declared_pairs = declared_state_attrs()
+    allowlist = frozenset(DECLARED_BUT_DORMANT_ALLOWLIST)
+    payload["declared_node_count"] = len(declared_pairs)
+    payload["allowlist"] = sorted(allowlist)
+
+    assigned: set[str] = set()
+    for rel in _TOPOLOGY_BOOT_SOURCES:
+        assigned |= _collect_attr_assignments(REPO_ROOT / rel)
+
+    wired: list[str] = []
+    allowlisted: list[str] = []
+    drift: list[dict[str, str]] = []
+    for node_id, state_attr in declared_pairs:
+        if state_attr in assigned:
+            wired.append(node_id)
+        elif node_id in allowlist:
+            allowlisted.append(node_id)
+        else:
+            drift.append(
+                {
+                    "node_id": node_id,
+                    "state_attr": state_attr,
+                    "reason": (
+                        "declared but not statically wired and not on "
+                        "DECLARED_BUT_DORMANT_ALLOWLIST"
+                    ),
+                }
+            )
+
+    payload["wired_node_count"] = len(wired)
+    payload["allowlisted_node_count"] = len(allowlisted)
+    payload["drift_count"] = len(drift)
+    payload["drift_nodes"] = sorted(drift, key=lambda d: d["node_id"])
+    payload["wired_node_ids"] = sorted(wired)
+    payload["allowlisted_node_ids"] = sorted(allowlisted)
+
+    if drift:
+        payload["status"] = "drift"
+        status = "warn" if advisory else "fail"
+    else:
+        status = "ok"
+
+    _write_json("topology_drift.json", payload)
+    return (
+        Phase(
+            phase_id=12,
+            name="topology_drift",
+            artifact="topology_drift.json",
+            status=status,
+            details=payload,
+        ),
+        len(drift) == 0,
+        len(drift),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 13 — final summary
+# ---------------------------------------------------------------------------
+
+
+def _phase_13_summary(report: ValidationReport) -> dict[str, Any]:
     file_cov = report.coverage_pct(report.file_count, report.file_count)
     feat_cov = report.coverage_pct(
         report.implemented_feature_count, report.declared_feature_count
@@ -921,6 +1094,7 @@ def _phase_12_summary(report: ValidationReport) -> dict[str, Any]:
         and report.dependency_graph_valid
         and report.ast_validation
         and report.runtime_validation
+        and report.topology_drift_valid
         and report.dead_files == 0
         and report.unmapped_declarations == 0
         and report.ambiguity == 0
@@ -939,6 +1113,8 @@ def _phase_12_summary(report: ValidationReport) -> dict[str, Any]:
         "dependency_graph_valid": report.dependency_graph_valid,
         "ast_validation": report.ast_validation,
         "runtime_validation": report.runtime_validation,
+        "topology_drift_valid": report.topology_drift_valid,
+        "topology_drift_count": report.topology_drift_count,
         "dead_files": report.dead_files,
         "unmapped_declarations": report.unmapped_declarations,
         "ambiguity": report.ambiguity,
@@ -965,7 +1141,7 @@ def _phase_12_summary(report: ValidationReport) -> dict[str, Any]:
 
 
 def run(advisory: bool = True) -> dict[str, Any]:
-    """Execute all 12 phases, return the summary payload."""
+    """Execute all 13 phases, return the summary payload."""
     _ensure_analysis_dir()
     report = ValidationReport(advisory=advisory)
 
@@ -1022,7 +1198,12 @@ def run(advisory: bool = True) -> dict[str, Any]:
     report.phases.append(p11)
     report.runtime_validation = runtime_ok
 
-    return _phase_12_summary(report)
+    p12, topology_ok, drift_count = _phase_12_topology_drift(advisory)
+    report.phases.append(p12)
+    report.topology_drift_valid = topology_ok
+    report.topology_drift_count = drift_count
+
+    return _phase_13_summary(report)
 
 
 def _print_human_summary(summary: dict[str, Any]) -> None:
@@ -1037,6 +1218,8 @@ def _print_human_summary(summary: dict[str, Any]) -> None:
     print(f"  dep_graph_valid    : {summary['dependency_graph_valid']}")
     print(f"  ast_validation     : {summary['ast_validation']}")
     print(f"  runtime_validation : {summary['runtime_validation']}")
+    print(f"  topology_drift_ok  : {summary['topology_drift_valid']}")
+    print(f"  topology_drift_n   : {summary['topology_drift_count']}")
     print()
     for phase in summary["phases"]:
         print(
