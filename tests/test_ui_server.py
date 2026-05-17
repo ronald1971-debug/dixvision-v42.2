@@ -164,9 +164,8 @@ def test_tick_drives_closed_learning_and_structural_evolution(client):
     # ``ClosedLearningLoop.tick`` and ``StructuralEvolutionLoop.tick`` on
     # the production hot path so the loops actually run, not only via
     # the env-gated ``/api/admin/learning/tick`` debug route. Both loops
-    # snapshot the live ``LearningEvolutionFreezePolicy`` so the default
-    # boot state must short-circuit to ``frozen=True``. Pinning the
-    # contract here so the wiring cannot regress.
+    # snapshot the live ``LearningEvolutionFreezePolicy`` so the wiring
+    # is observable in the response shape.
     r = client.post(
         "/api/tick",
         json={"symbol": "BTCUSDT", "bid": 99.99, "ask": 100.01, "last": 100.10},
@@ -191,10 +190,16 @@ def test_tick_drives_closed_learning_and_structural_evolution(client):
         assert key in closed, key
         assert key in structural, key
 
-    # Default boot is below LIVE + operator_override, so HARDEN-04 /
-    # INV-70 must short-circuit both loops.
-    assert closed["frozen"] is True
-    assert structural["frozen"] is True
+    # Under ``v42.2-P0-RELAX`` the freeze gate is
+    # ``operator_override is True`` alone (mode no longer consulted).
+    # PR #376 flipped the boot seed so ``operator_override`` defaults
+    # to ``True``; the loops therefore unfreeze on the very first
+    # /api/tick. ``frozen`` must mirror ``operator_override`` —
+    # ``frozen == not operator_override``.
+    assert closed["operator_override"] is True
+    assert structural["operator_override"] is True
+    assert closed["frozen"] is False
+    assert structural["frozen"] is False
 
 
 def test_signal_validates_side(client):
