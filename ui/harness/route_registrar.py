@@ -156,6 +156,13 @@ _OPERATOR_ROUTES: frozenset[RouteKey] = frozenset(
         ("POST", "/api/operator/source-trust/demote"),
         ("GET", "/api/operator/learning-override"),
         ("POST", "/api/operator/learning-override"),
+        # PR-DEV-A — Operator Master Development Mode (dual-flag policy:
+        # learning + research unblocked by default, trading blocked by
+        # default until operator explicitly flips it).
+        ("GET", "/api/operator/development-mode"),
+        ("POST", "/api/operator/development-mode"),
+        ("GET", "/api/operator/trading-allowed"),
+        ("POST", "/api/operator/trading-allowed"),
     }
 )
 
