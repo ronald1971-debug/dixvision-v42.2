@@ -107,6 +107,26 @@ neuromorphic = [
     # NEW_PIP_DEPENDENCIES = ("spyketorch",).
     "spyketorch>=0.2",
 ]
+# Phase-6 P1-2 — observability extras. ``tools/hydra_config.py`` and
+# ``tools/jaeger_tracer.py`` each declare a ``NEW_PIP_DEPENDENCIES``
+# tuple naming an optional dependency they lazy-import inside the
+# factory once an operator opts into the real backend (Hydra config
+# composition, Jaeger distributed tracing). Up to this point the
+# tuples were documentary-only — there was no ``pip install
+# dixvision[observability]`` that resolved both. This extras row
+# closes the gap; the source files keep their existing
+# ``try: import … except ImportError`` guards so a bare install of
+# ``dixvision`` still imports clean.
+observability = [
+    # tools/hydra_config.py lazy-imports ``hydra.compose`` +
+    # ``omegaconf`` when ``DIXVISION_HYDRA_BACKEND`` is enabled
+    # (canonical I-29 configuration composer, OFFLINE_ONLY).
+    "hydra-core>=1.3",
+    # tools/jaeger_tracer.py lazy-imports ``jaeger_client.Config``
+    # when ``DIXVISION_JAEGER_BACKEND`` is enabled (canonical I-30
+    # distributed tracer, OFFLINE_ONLY).
+    "jaeger-client>=4.8",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]
