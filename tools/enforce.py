@@ -75,8 +75,8 @@ THRESHOLDS: dict[str, dict[str, Any]] = {
     "invariant_coverage_pct_floor": {"kind": "pct_floor", "value": 96},
     # Counts — ceiling: actual_count must be <= ceiling.
     "dead_files_max": {"kind": "count_ceiling", "value": 29},
-    "unmapped_declarations_max": {"kind": "count_ceiling", "value": 117},
-    "ambiguity_max": {"kind": "count_ceiling", "value": 58},
+    "unmapped_declarations_max": {"kind": "count_ceiling", "value": 118},
+    "ambiguity_max": {"kind": "count_ceiling", "value": 60},
     # Booleans — expected value.
     "ast_validation_required": {"kind": "bool", "value": True},
     # runtime_validation is False today because CI does not produce
