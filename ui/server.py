@@ -658,6 +658,7 @@ class _State:
             ledger=ledger,
             strategy_registry=self.strategy_registry,
             exposure_store=self.exposure_store,
+            signal_trust_registry=self.signal_trust_registry,
         )
         # Hardening-S1 item 4-ext -- bind the SHA-256 of every
         # canonical policy YAML to the authority ledger at boot. The
