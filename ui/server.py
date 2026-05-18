@@ -653,8 +653,14 @@ class _State:
         # audited chain every other hazard takes (B32 / GOV-CP-03).
         self.policy_hash_anchor = PolicyHashAnchor(ledger=ledger)
         self.policy_hash_anchor.bind_session(ts_ns=wall_ns(), requestor="ui_harness_boot")
-        self.learning = LearningEngine()
-        self.evolution = EvolutionEngine()
+        # Phase-6 P1-3 — the engine shells default to DEGRADED unless
+        # an ``is_active_fn`` reports the wired loop is currently
+        # unfrozen. The two suppliers below close over
+        # ``_live_freeze_policy`` so ``/api/health`` reflects the same
+        # gate as ``/api/operator/runtime/dormant`` (no two-sources-of-
+        # truth health reporting).
+        self.learning = LearningEngine(is_active_fn=self._learning_loop_is_active)
+        self.evolution = EvolutionEngine(is_active_fn=self._evolution_loop_is_active)
         # AUDIT-P1.7 — operator override for the
         # :class:`LearningEvolutionFreezePolicy` (HARDEN-04 / INV-70).
         # The flag is server-side mutable state (a single atomic bool)
@@ -1021,6 +1027,32 @@ class _State:
             mode = self.governance.state_transitions.current_mode()
         effective_override = learning_enabled and development_enabled
         return LearningEvolutionFreezePolicy(mode=mode, operator_override=effective_override)
+
+    def _learning_loop_is_active(self) -> bool:
+        """Phase-6 P1-3 — ``True`` iff the live freeze policy is unfrozen.
+
+        Closure handed to :class:`LearningEngine` so its
+        ``check_self()`` returns :data:`HealthState.OK` only when the
+        wired :class:`ClosedLearningLoop` would actually tick under
+        the current HARDEN-04 freeze state, and
+        :data:`HealthState.DEGRADED` otherwise. Routed through the
+        same :meth:`_live_freeze_policy` snapshot as the loop tick so
+        ``/api/health`` cannot disagree with the loop's own gate.
+        """
+
+        return self._live_freeze_policy().is_unfrozen()
+
+    def _evolution_loop_is_active(self) -> bool:
+        """Phase-6 P1-3 — ``True`` iff the live freeze policy is unfrozen.
+
+        Closure handed to :class:`EvolutionEngine` so its
+        ``check_self()`` returns :data:`HealthState.OK` only when the
+        wired :class:`StructuralEvolutionLoop` would actually tick
+        under the current HARDEN-04 freeze state, and
+        :data:`HealthState.DEGRADED` otherwise.
+        """
+
+        return self._live_freeze_policy().is_unfrozen()
 
     def _structural_stats_supplier(self) -> tuple[StrategyStats, ...]:
         """Drain the live structural-evolution stats source.
