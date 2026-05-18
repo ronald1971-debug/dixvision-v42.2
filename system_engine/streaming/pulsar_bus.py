@@ -190,19 +190,13 @@ def parse_qualified_topic(name: str) -> tuple[str, str, str, str]:
         raise ValueError("topic name must be non-empty")
     scheme_marker = "://"
     if scheme_marker not in name:
-        raise ValueError(
-            f"topic {name!r} missing scheme marker {scheme_marker!r}"
-        )
+        raise ValueError(f"topic {name!r} missing scheme marker {scheme_marker!r}")
     scheme, body = name.split(scheme_marker, 1)
     if scheme != "persistent":
-        raise ValueError(
-            f"topic {name!r} scheme must be 'persistent', got {scheme!r}"
-        )
+        raise ValueError(f"topic {name!r} scheme must be 'persistent', got {scheme!r}")
     parts = body.split("/")
     if len(parts) != 3:
-        raise ValueError(
-            f"topic {name!r} must be persistent://tenant/namespace/topic"
-        )
+        raise ValueError(f"topic {name!r} must be persistent://tenant/namespace/topic")
     tenant, namespace, topic = parts
     for component, label in (
         (tenant, "tenant"),
@@ -212,13 +206,9 @@ def parse_qualified_topic(name: str) -> tuple[str, str, str, str]:
         if not component:
             raise ValueError(f"topic {name!r} {label} must be non-empty")
         if any(ch.isspace() for ch in component):
-            raise ValueError(
-                f"topic {name!r} {label} must not contain whitespace"
-            )
+            raise ValueError(f"topic {name!r} {label} must not contain whitespace")
         if "/" in component:
-            raise ValueError(
-                f"topic {name!r} {label} must not contain '/'"
-            )
+            raise ValueError(f"topic {name!r} {label} must not contain '/'")
     return ("persistent", tenant, namespace, topic)
 
 
@@ -263,9 +253,7 @@ class Topic:
         # parse_qualified_topic raises with a precise message on any
         # malformed form.
         parse_qualified_topic(self.name)
-        if not isinstance(self.num_partitions, int) or isinstance(
-            self.num_partitions, bool
-        ):
+        if not isinstance(self.num_partitions, int) or isinstance(self.num_partitions, bool):
             raise TypeError("Topic.num_partitions must be int")
         if self.num_partitions <= 0:
             raise ValueError("Topic.num_partitions must be > 0")
@@ -410,9 +398,7 @@ class ProducerRecord:
                 or not isinstance(entry[0], str)
                 or not isinstance(entry[1], str)
             ):
-                raise TypeError(
-                    "ProducerRecord.properties entries must be (str, str) tuples"
-                )
+                raise TypeError("ProducerRecord.properties entries must be (str, str) tuples")
 
 
 @dataclass(frozen=True, slots=True)
@@ -527,9 +513,7 @@ def serialize_record(payload: Mapping[str, Any]) -> bytes:
     """
     if not isinstance(payload, Mapping):
         raise TypeError("payload must be Mapping")
-    return json.dumps(
-        dict(payload), sort_keys=True, separators=(",", ":")
-    ).encode("utf-8")
+    return json.dumps(dict(payload), sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
 def deserialize_record(blob: bytes) -> dict[str, Any]:
@@ -596,9 +580,7 @@ class InMemoryPulsarBroker:
     topics: tuple[Topic, ...]
     _logs: dict[tuple[str, int], list[Message]] = field(default_factory=dict)
     _topic_index: dict[str, Topic] = field(default_factory=dict)
-    _subscriptions: dict[tuple[str, str], _SubscriptionState] = field(
-        default_factory=dict
-    )
+    _subscriptions: dict[tuple[str, str], _SubscriptionState] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not isinstance(self.topics, tuple):
@@ -608,13 +590,9 @@ class InMemoryPulsarBroker:
         names: set[str] = set()
         for topic in self.topics:
             if not isinstance(topic, Topic):
-                raise TypeError(
-                    "InMemoryPulsarBroker.topics entries must be Topic"
-                )
+                raise TypeError("InMemoryPulsarBroker.topics entries must be Topic")
             if topic.name in names:
-                raise ValueError(
-                    f"InMemoryPulsarBroker.topics duplicate name {topic.name!r}"
-                )
+                raise ValueError(f"InMemoryPulsarBroker.topics duplicate name {topic.name!r}")
             names.add(topic.name)
             self._topic_index[topic.name] = topic
             for idx in range(topic.num_partitions):
@@ -700,9 +678,7 @@ class InMemoryPulsarBroker:
     def stream_length(self, topic_name: str, partition_idx: int) -> int:
         log = self._logs.get((topic_name, partition_idx))
         if log is None:
-            raise KeyError(
-                f"unknown partition ({topic_name!r}, {partition_idx})"
-            )
+            raise KeyError(f"unknown partition ({topic_name!r}, {partition_idx})")
         return len(log)
 
     def attach_subscription(
@@ -737,12 +713,8 @@ class InMemoryPulsarBroker:
             state = _SubscriptionState(
                 subscription=subscription,
                 cursor=initial_cursor,
-                pending_acks={
-                    idx: set() for idx in range(topic.num_partitions)
-                },
-                acked={
-                    idx: set() for idx in range(topic.num_partitions)
-                },
+                pending_acks={idx: set() for idx in range(topic.num_partitions)},
+                acked={idx: set() for idx in range(topic.num_partitions)},
                 redelivery_counts={},
                 consumers=(consumer_name,),
             )
@@ -756,10 +728,7 @@ class InMemoryPulsarBroker:
                 f"{state.subscription.type.value!r}; cannot re-attach "
                 f"with {subscription.type.value!r}"
             )
-        if (
-            state.subscription.type == SubscriptionType.EXCLUSIVE
-            and state.consumers
-        ):
+        if state.subscription.type == SubscriptionType.EXCLUSIVE and state.consumers:
             raise ValueError(
                 f"exclusive subscription {subscription.name!r} on "
                 f"{subscription.topic_name!r} already has a consumer "
@@ -855,9 +824,7 @@ class InMemoryPulsarBroker:
         key = (topic_name, subscription_name)
         state = self._subscriptions.get(key)
         if state is None:
-            raise KeyError(
-                f"no subscription {subscription_name!r} on {topic_name!r}"
-            )
+            raise KeyError(f"no subscription {subscription_name!r} on {topic_name!r}")
         topic = self._topic_index.get(topic_name)
         if topic is None:
             raise KeyError(f"unknown topic {topic_name!r}")
@@ -914,16 +881,13 @@ class InMemoryPulsarBroker:
         key = (topic_name, subscription_name)
         state = self._subscriptions.get(key)
         if state is None:
-            raise KeyError(
-                f"no subscription {subscription_name!r} on {topic_name!r}"
-            )
+            raise KeyError(f"no subscription {subscription_name!r} on {topic_name!r}")
         if cumulative and state.subscription.type in (
             SubscriptionType.SHARED,
             SubscriptionType.KEY_SHARED,
         ):
             raise ValueError(
-                f"cumulative ack rejected for {state.subscription.type.value!r}"
-                " subscription"
+                f"cumulative ack rejected for {state.subscription.type.value!r} subscription"
             )
         partition_idx = message_id.partition
         if partition_idx not in state.cursor:
@@ -932,18 +896,12 @@ class InMemoryPulsarBroker:
             # Floor advances to next entry; drop everything below the
             # new floor (in-flight, acked-but-uncollapsed, redelivery).
             new_floor = message_id.entry_id + 1
-            state.cursor[partition_idx] = max(
-                state.cursor[partition_idx], new_floor
-            )
+            state.cursor[partition_idx] = max(state.cursor[partition_idx], new_floor)
             state.pending_acks[partition_idx] = {
-                eid
-                for eid in state.pending_acks[partition_idx]
-                if eid >= new_floor
+                eid for eid in state.pending_acks[partition_idx] if eid >= new_floor
             }
             state.acked[partition_idx] = {
-                eid
-                for eid in state.acked[partition_idx]
-                if eid >= new_floor
+                eid for eid in state.acked[partition_idx] if eid >= new_floor
             }
             state.redelivery_counts = {
                 (p, e): c
@@ -985,9 +943,7 @@ class InMemoryPulsarBroker:
         key = (topic_name, subscription_name)
         state = self._subscriptions.get(key)
         if state is None:
-            raise KeyError(
-                f"no subscription {subscription_name!r} on {topic_name!r}"
-            )
+            raise KeyError(f"no subscription {subscription_name!r} on {topic_name!r}")
         partition_idx = message_id.partition
         if partition_idx not in state.cursor:
             raise KeyError(f"unknown partition {partition_idx}")
@@ -998,19 +954,13 @@ class InMemoryPulsarBroker:
         state.pending_acks[partition_idx].discard(eid)
         state.acked[partition_idx].discard(eid)
         rc_key = (partition_idx, eid)
-        state.redelivery_counts[rc_key] = (
-            state.redelivery_counts.get(rc_key, 0) + 1
-        )
+        state.redelivery_counts[rc_key] = state.redelivery_counts.get(rc_key, 0) + 1
 
-    def subscription_state(
-        self, topic_name: str, subscription_name: str
-    ) -> _SubscriptionState:
+    def subscription_state(self, topic_name: str, subscription_name: str) -> _SubscriptionState:
         key = (topic_name, subscription_name)
         state = self._subscriptions.get(key)
         if state is None:
-            raise KeyError(
-                f"no subscription {subscription_name!r} on {topic_name!r}"
-            )
+            raise KeyError(f"no subscription {subscription_name!r} on {topic_name!r}")
         return state
 
 
@@ -1233,8 +1183,7 @@ class App:
                 and existing.topic_name == subscription.topic_name
             ):
                 raise ValueError(
-                    f"duplicate subscription {subscription.name!r} on "
-                    f"{subscription.topic_name!r}"
+                    f"duplicate subscription {subscription.name!r} on {subscription.topic_name!r}"
                 )
         return replace(
             self,
@@ -1342,9 +1291,7 @@ def run_app(
             raise TypeError("inbound records must be ProducerRecord")
         broker.append(record)
         for sub in app.subscriptions:
-            batch = broker.fetch_for(
-                sub.topic_name, sub.name, "run_app", max_records=1024
-            )
+            batch = broker.fetch_for(sub.topic_name, sub.name, "run_app", max_records=1024)
             for msg in batch:
                 delivered.append(
                     DeliveredRecord(
@@ -1422,18 +1369,12 @@ def _pulsar_worker_loop(
             out_q.put(item)
             return
         if not isinstance(item, ProducerRecord):
-            out_q.put(
-                ValueError(
-                    f"worker received non-ProducerRecord: {type(item).__name__}"
-                )
-            )
+            out_q.put(ValueError(f"worker received non-ProducerRecord: {type(item).__name__}"))
             return
         msg = broker.append(item)
         out_q.put(msg)
         for sub in app.subscriptions:
-            batch = broker.fetch_for(
-                sub.topic_name, sub.name, "worker", max_records=1024
-            )
+            batch = broker.fetch_for(sub.topic_name, sub.name, "worker", max_records=1024)
             for delivery in batch:
                 out_q.put(
                     DeliveredRecord(

@@ -225,9 +225,7 @@ def test_signature_payload_is_canonical_json() -> None:
         "market_condition": project(base.market_condition),
     }
     expected = hashlib.sha256(
-        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-            "utf-8"
-        )
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
     assert sig == expected
 
@@ -267,14 +265,8 @@ def test_microstructure_v1_canonical_decomp_matches_plugin_fields() -> None:
 
     assert decomp.decomposition_id == plugin.name
     assert decomp.entry.style is EntryStyle.MICROSTRUCTURE
-    assert (
-        decomp.entry.parameters["tolerance_bps"]
-        == f"{plugin.tolerance_bps:.1f}"
-    )
-    assert (
-        decomp.entry.parameters["confidence_scale_bps"]
-        == f"{plugin.confidence_scale_bps:.1f}"
-    )
+    assert decomp.entry.parameters["tolerance_bps"] == f"{plugin.tolerance_bps:.1f}"
+    assert decomp.entry.parameters["confidence_scale_bps"] == f"{plugin.confidence_scale_bps:.1f}"
     # MicrostructureV1 maps to a zero-size, no-stop risk model
     # (plugin-level SHADOW was demolished by SHADOW-DEMOLITION-01).
     assert decomp.risk.max_position_size_pct == "0.0"

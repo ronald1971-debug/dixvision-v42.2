@@ -166,37 +166,23 @@ class BacktestScore:
             if not isinstance(value, float):
                 raise TypeError(f"{name} must be float; got {type(value)!r}")
             if not (math.isfinite(value) or (name == "profit_factor")):
-                raise BacktestScorerError(
-                    f"{name} must be finite; got {value!r}"
-                )
+                raise BacktestScorerError(f"{name} must be finite; got {value!r}")
         if not isinstance(self.profit_factor, float):
-            raise TypeError(
-                f"profit_factor must be float; got {type(self.profit_factor)!r}"
-            )
+            raise TypeError(f"profit_factor must be float; got {type(self.profit_factor)!r}")
         if math.isnan(self.profit_factor):
             raise BacktestScorerError("profit_factor must not be NaN")
         if self.profit_factor < 0.0:
-            raise BacktestScorerError(
-                f"profit_factor must be >= 0; got {self.profit_factor}"
-            )
+            raise BacktestScorerError(f"profit_factor must be >= 0; got {self.profit_factor}")
         if not isinstance(self.n_trades, int) or isinstance(self.n_trades, bool):
             raise TypeError(f"n_trades must be int; got {type(self.n_trades)!r}")
         if self.n_trades < 0:
-            raise BacktestScorerError(
-                f"n_trades must be >= 0; got {self.n_trades}"
-            )
+            raise BacktestScorerError(f"n_trades must be >= 0; got {self.n_trades}")
         if not (0.0 <= self.win_rate <= 1.0):
-            raise BacktestScorerError(
-                f"win_rate must be in [0, 1]; got {self.win_rate}"
-            )
+            raise BacktestScorerError(f"win_rate must be in [0, 1]; got {self.win_rate}")
         if not (0.0 <= self.max_drawdown <= 1.0):
-            raise BacktestScorerError(
-                f"max_drawdown must be in [0, 1]; got {self.max_drawdown}"
-            )
+            raise BacktestScorerError(f"max_drawdown must be in [0, 1]; got {self.max_drawdown}")
         if self.volatility < 0.0:
-            raise BacktestScorerError(
-                f"volatility must be >= 0; got {self.volatility}"
-            )
+            raise BacktestScorerError(f"volatility must be >= 0; got {self.volatility}")
 
 
 def _equity_returns(equity: tuple[float, ...]) -> tuple[float, ...]:
@@ -211,14 +197,10 @@ def _equity_returns(equity: tuple[float, ...]) -> tuple[float, ...]:
     out: list[float] = []
     prev = equity[0]
     if prev <= 0.0:
-        raise BacktestScorerError(
-            f"equity_curve must be strictly positive; got {prev}"
-        )
+        raise BacktestScorerError(f"equity_curve must be strictly positive; got {prev}")
     for value in equity[1:]:
         if value <= 0.0:
-            raise BacktestScorerError(
-                f"equity_curve must be strictly positive; got {value}"
-            )
+            raise BacktestScorerError(f"equity_curve must be strictly positive; got {value}")
         out.append(value / prev - 1.0)
         prev = value
     return tuple(out)
@@ -269,9 +251,7 @@ def _max_drawdown(equity: tuple[float, ...]) -> float:
         return 0.0
     peak = equity[0]
     if peak <= 0.0:
-        raise BacktestScorerError(
-            f"equity_curve must be strictly positive; got {peak}"
-        )
+        raise BacktestScorerError(f"equity_curve must be strictly positive; got {peak}")
     worst = 0.0
     for value in equity[1:]:
         if value > peak:
@@ -301,9 +281,7 @@ def _cagr(
     if n_periods <= 0:
         return 0.0
     if initial_equity <= 0.0:
-        raise BacktestScorerError(
-            f"initial_equity must be > 0; got {initial_equity}"
-        )
+        raise BacktestScorerError(f"initial_equity must be > 0; got {initial_equity}")
     if final_equity <= 0.0:
         return -1.0
     growth = final_equity / initial_equity
@@ -367,37 +345,24 @@ def score_backtest(
     """
 
     if not isinstance(result, BacktestResult):
-        raise TypeError(
-            f"result must be BacktestResult; got {type(result)!r}"
-        )
-    if not isinstance(periods_per_year, int) or isinstance(
-        periods_per_year, bool
-    ):
-        raise TypeError(
-            f"periods_per_year must be int; got {type(periods_per_year)!r}"
-        )
+        raise TypeError(f"result must be BacktestResult; got {type(result)!r}")
+    if not isinstance(periods_per_year, int) or isinstance(periods_per_year, bool):
+        raise TypeError(f"periods_per_year must be int; got {type(periods_per_year)!r}")
     if periods_per_year <= 0:
-        raise BacktestScorerError(
-            f"periods_per_year must be > 0; got {periods_per_year}"
-        )
+        raise BacktestScorerError(f"periods_per_year must be > 0; got {periods_per_year}")
     if not isinstance(risk_free_rate_per_period, float):
         raise TypeError(
-            "risk_free_rate_per_period must be float; got "
-            f"{type(risk_free_rate_per_period)!r}"
+            f"risk_free_rate_per_period must be float; got {type(risk_free_rate_per_period)!r}"
         )
     if not math.isfinite(risk_free_rate_per_period):
         raise BacktestScorerError(
-            "risk_free_rate_per_period must be finite; got "
-            f"{risk_free_rate_per_period}"
+            f"risk_free_rate_per_period must be finite; got {risk_free_rate_per_period}"
         )
     if len(result.trades) > MAX_TRADES_PER_BATCH:
-        raise BacktestScorerError(
-            f"too many trades: {len(result.trades)} > {MAX_TRADES_PER_BATCH}"
-        )
+        raise BacktestScorerError(f"too many trades: {len(result.trades)} > {MAX_TRADES_PER_BATCH}")
     if len(result.equity_curve) > MAX_EQUITY_POINTS_PER_BATCH:
         raise BacktestScorerError(
-            "too many equity points: "
-            f"{len(result.equity_curve)} > {MAX_EQUITY_POINTS_PER_BATCH}"
+            f"too many equity points: {len(result.equity_curve)} > {MAX_EQUITY_POINTS_PER_BATCH}"
         )
 
     equity = _equity_curve_tuple(result)
@@ -412,16 +377,8 @@ def score_backtest(
         sigma_excess = _stddev(excess, mean=mu_excess)
         downside = _downside_stddev(excess, target=0.0)
         ann_factor = math.sqrt(periods_per_year)
-        sharpe = (
-            (mu_excess / sigma_excess) * ann_factor
-            if sigma_excess > _STDDEV_EPSILON
-            else 0.0
-        )
-        sortino = (
-            (mu_excess / downside) * ann_factor
-            if downside > _STDDEV_EPSILON
-            else 0.0
-        )
+        sharpe = (mu_excess / sigma_excess) * ann_factor if sigma_excess > _STDDEV_EPSILON else 0.0
+        sortino = (mu_excess / downside) * ann_factor if downside > _STDDEV_EPSILON else 0.0
         raw_vol = _stddev(returns) * ann_factor
         volatility = raw_vol if raw_vol > _STDDEV_EPSILON else 0.0
         max_dd = _max_drawdown(equity)

@@ -33,10 +33,7 @@ from governance_engine.services.opa_policy import (
 )
 
 MODULE_PATH = (
-    Path(__file__).resolve().parent.parent
-    / "governance_engine"
-    / "services"
-    / "opa_policy.py"
+    Path(__file__).resolve().parent.parent / "governance_engine" / "services" / "opa_policy.py"
 )
 MODULE_SOURCE = MODULE_PATH.read_text()
 MODULE_AST = ast.parse(MODULE_SOURCE)
@@ -69,10 +66,8 @@ def test_module_has_no_top_level_opa_import() -> None:
                     "top-level opa_client import forbidden: " + alias.name
                 )
         elif isinstance(node, ast.ImportFrom):
-            assert node.module is None or not node.module.startswith(
-                "opa_client"
-            ), "top-level opa_client import forbidden: " + (
-                node.module or ""
+            assert node.module is None or not node.module.startswith("opa_client"), (
+                "top-level opa_client import forbidden: " + (node.module or "")
             )
 
 
@@ -94,15 +89,11 @@ def test_module_has_no_forbidden_runtime_imports() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 root = alias.name.split(".", 1)[0]
-                assert root not in forbidden, (
-                    f"forbidden import: {alias.name}"
-                )
+                assert root not in forbidden, f"forbidden import: {alias.name}"
         elif isinstance(node, ast.ImportFrom):
             if node.module:
                 root = node.module.split(".", 1)[0]
-                assert root not in forbidden, (
-                    f"forbidden import: {node.module}"
-                )
+                assert root not in forbidden, f"forbidden import: {node.module}"
 
 
 def test_module_has_no_os_top_level_import() -> None:
@@ -129,9 +120,7 @@ def test_module_has_no_disallowed_engine_imports() -> None:
     for node in ast.walk(MODULE_AST):
         if isinstance(node, ast.ImportFrom) and node.module:
             root = node.module.split(".", 1)[0]
-            assert root not in disallowed_roots, (
-                f"disallowed engine import: {node.module}"
-            )
+            assert root not in disallowed_roots, f"disallowed engine import: {node.module}"
 
 
 def test_module_does_not_construct_forbidden_typed_events() -> None:
@@ -146,13 +135,9 @@ def test_module_does_not_construct_forbidden_typed_events() -> None:
         if isinstance(node, ast.Call):
             func = node.func
             if isinstance(func, ast.Name) and func.id in forbidden:
-                pytest.fail(
-                    f"forbidden constructor call: {func.id}"
-                )
+                pytest.fail(f"forbidden constructor call: {func.id}")
             if isinstance(func, ast.Attribute) and func.attr in forbidden:
-                pytest.fail(
-                    f"forbidden constructor call: {func.attr}"
-                )
+                pytest.fail(f"forbidden constructor call: {func.attr}")
 
 
 def test_predictor_protocol_runtime_checkable() -> None:
@@ -164,10 +149,7 @@ def test_lazy_factory_does_not_import_opa_at_module_load() -> None:
 
     factory_src = ""
     for node in MODULE_AST.body:
-        if (
-            isinstance(node, ast.FunctionDef)
-            and node.name == "opa_http_transport_factory"
-        ):
+        if isinstance(node, ast.FunctionDef) and node.name == "opa_http_transport_factory":
             factory_src = ast.unparse(node)
             break
     assert factory_src, "factory not found"
@@ -219,23 +201,17 @@ def test_policy_input_payload_sorted() -> None:
 
 def test_policy_input_rejects_empty_action() -> None:
     with pytest.raises(ValueError):
-        PolicyInput.from_mapping(
-            action="", mode="LIVE", subject="s"
-        )
+        PolicyInput.from_mapping(action="", mode="LIVE", subject="s")
 
 
 def test_policy_input_rejects_empty_mode() -> None:
     with pytest.raises(ValueError):
-        PolicyInput.from_mapping(
-            action="X", mode="", subject="s"
-        )
+        PolicyInput.from_mapping(action="X", mode="", subject="s")
 
 
 def test_policy_input_rejects_empty_subject() -> None:
     with pytest.raises(ValueError):
-        PolicyInput.from_mapping(
-            action="X", mode="LIVE", subject=""
-        )
+        PolicyInput.from_mapping(action="X", mode="LIVE", subject="")
 
 
 def test_policy_input_rejects_non_str_action() -> None:
@@ -249,9 +225,7 @@ def test_policy_input_rejects_non_str_action() -> None:
 
 def test_policy_input_rejects_oversize_action() -> None:
     with pytest.raises(ValueError):
-        PolicyInput.from_mapping(
-            action="x" * 200, mode="LIVE", subject="s"
-        )
+        PolicyInput.from_mapping(action="x" * 200, mode="LIVE", subject="s")
 
 
 def test_policy_input_rejects_oversize_payload_value() -> None:
@@ -267,9 +241,7 @@ def test_policy_input_rejects_oversize_payload_value() -> None:
 def test_policy_input_rejects_too_many_keys() -> None:
     payload = {f"k{i}": i for i in range(MAX_PAYLOAD_KEYS + 1)}
     with pytest.raises(ValueError):
-        PolicyInput.from_mapping(
-            action="X", mode="LIVE", subject="s", payload=payload
-        )
+        PolicyInput.from_mapping(action="X", mode="LIVE", subject="s", payload=payload)
 
 
 def test_policy_input_rejects_unsupported_value_type() -> None:
@@ -739,9 +711,7 @@ def test_evaluator_three_run_replay_equality() -> None:
 
     digests: list[str] = []
     for _ in range(3):
-        ev = OpaPolicyEvaluator(
-            transport=InProcessPolicyTransport(rules=build_baseline_rules())
-        )
+        ev = OpaPolicyEvaluator(transport=InProcessPolicyTransport(rules=build_baseline_rules()))
         pi = PolicyInput.from_mapping(
             action="EXECUTE_ORDER",
             mode="SAFE",
@@ -847,26 +817,20 @@ def _escalated_decision() -> PolicyDecision:
 
 
 def test_to_governance_decision_approve() -> None:
-    gd = to_governance_decision(
-        _approved_decision(), ts_ns=1_000, kind=DecisionKind.NOOP
-    )
+    gd = to_governance_decision(_approved_decision(), ts_ns=1_000, kind=DecisionKind.NOOP)
     assert isinstance(gd, GovernanceDecision)
     assert gd.approved is True
     assert gd.rejection_code == ""
 
 
 def test_to_governance_decision_reject() -> None:
-    gd = to_governance_decision(
-        _rejected_decision(), ts_ns=1_000, kind=DecisionKind.REJECTED
-    )
+    gd = to_governance_decision(_rejected_decision(), ts_ns=1_000, kind=DecisionKind.REJECTED)
     assert gd.approved is False
     assert gd.rejection_code == "POLICY_X"
 
 
 def test_to_governance_decision_escalate_is_not_approved() -> None:
-    gd = to_governance_decision(
-        _escalated_decision(), ts_ns=1_000, kind=DecisionKind.REJECTED
-    )
+    gd = to_governance_decision(_escalated_decision(), ts_ns=1_000, kind=DecisionKind.REJECTED)
     assert gd.approved is False
     assert gd.rejection_code == "POLICY_ESC"
 
@@ -874,15 +838,15 @@ def test_to_governance_decision_escalate_is_not_approved() -> None:
 def test_to_governance_decision_rejects_bad_kind() -> None:
     with pytest.raises(TypeError):
         to_governance_decision(
-            _approved_decision(), ts_ns=1, kind="NOOP"  # type: ignore[arg-type]
+            _approved_decision(),
+            ts_ns=1,
+            kind="NOOP",  # type: ignore[arg-type]
         )
 
 
 def test_to_governance_decision_rejects_negative_ts() -> None:
     with pytest.raises(ValueError):
-        to_governance_decision(
-            _approved_decision(), ts_ns=-1, kind=DecisionKind.NOOP
-        )
+        to_governance_decision(_approved_decision(), ts_ns=-1, kind=DecisionKind.NOOP)
 
 
 def test_to_governance_decision_rejects_bool_ts() -> None:
@@ -925,9 +889,7 @@ def test_http_factory_requires_client() -> None:
 
 def test_http_factory_rejects_bad_policy_package() -> None:
     with pytest.raises(ValueError):
-        opa_policy.opa_http_transport_factory(
-            client=object(), policy_package=""
-        )
+        opa_policy.opa_http_transport_factory(client=object(), policy_package="")
 
 
 # ---------------------------------------------------------------------------
@@ -967,9 +929,7 @@ def test_rego_packages_match_python_policy_ids() -> None:
 
 
 def test_e2e_baseline_pipeline_emits_governance_decision() -> None:
-    ev = OpaPolicyEvaluator(
-        transport=InProcessPolicyTransport(rules=build_baseline_rules())
-    )
+    ev = OpaPolicyEvaluator(transport=InProcessPolicyTransport(rules=build_baseline_rules()))
     pi = PolicyInput.from_mapping(
         action="EXECUTE_ORDER",
         mode="SAFE",
@@ -980,9 +940,7 @@ def test_e2e_baseline_pipeline_emits_governance_decision() -> None:
         },
     )
     decision = ev.evaluate(pi)
-    gd = to_governance_decision(
-        decision, ts_ns=12345, kind=DecisionKind.REJECTED
-    )
+    gd = to_governance_decision(decision, ts_ns=12345, kind=DecisionKind.REJECTED)
     assert gd.approved is False
     assert gd.rejection_code == "POLICY_EXECUTION_GATE"
     assert gd.ts_ns == 12345

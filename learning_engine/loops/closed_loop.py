@@ -81,10 +81,9 @@ class SlowLoopLearner(Protocol):
 
     def tick(self) -> Any: ...
 
+
 #: Type alias: maps drained outcomes → feedback samples. Pure function.
-SampleBuilder = Callable[
-    [tuple[TradeOutcome, ...]], tuple[FeedbackSample, ...]
-]
+SampleBuilder = Callable[[tuple[TradeOutcome, ...]], tuple[FeedbackSample, ...]]
 
 #: Type alias: maps (previous snapshot, current snapshot, ts_ns) → updates.
 #: Pure function. ``previous`` is ``None`` on the first tick.
@@ -245,9 +244,7 @@ class ClosedLearningLoop:
         for s in samples:
             self._learner.submit(s)
         snapshot = self._learner.tick()
-        updates = tuple(
-            self._update_builder(self._previous_snapshot, snapshot, ts_ns)
-        )
+        updates = tuple(self._update_builder(self._previous_snapshot, snapshot, ts_ns))
         events = self._emitter.emit_many(updates)
         self._previous_snapshot = snapshot
         return LoopTickResult(

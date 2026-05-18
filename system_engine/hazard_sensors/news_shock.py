@@ -183,9 +183,7 @@ class NewsShockSensor:
         medium_score_threshold: int = 1,
     ) -> None:
         if high_score_threshold < medium_score_threshold:
-            raise ValueError(
-                "high_score_threshold must be >= medium_score_threshold"
-            )
+            raise ValueError("high_score_threshold must be >= medium_score_threshold")
         if medium_score_threshold < 1:
             raise ValueError("medium_score_threshold must be >= 1")
         self._high_score_threshold = high_score_threshold
@@ -221,10 +219,7 @@ class NewsShockSensor:
         if symbol:
             meta["symbol"] = symbol
 
-        detail = (
-            f"news_shock score={score} reason={reason} "
-            f"source={news.source} guid={news.guid}"
-        )
+        detail = f"news_shock score={score} reason={reason} source={news.source} guid={news.guid}"
 
         return (
             HazardEvent(

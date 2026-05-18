@@ -85,30 +85,18 @@ def test_max_data_digest_len_bound() -> None:
 
 
 def test_estimator_kind_values_match_dowhy_methods() -> None:
-    assert CausalEstimatorKind.LINEAR_REGRESSION.value == (
-        "backdoor.linear_regression"
-    )
+    assert CausalEstimatorKind.LINEAR_REGRESSION.value == ("backdoor.linear_regression")
     assert CausalEstimatorKind.PROPENSITY_SCORE_STRATIFICATION.value == (
         "backdoor.propensity_score_stratification"
     )
-    assert CausalEstimatorKind.INSTRUMENTAL_VARIABLE.value == (
-        "iv.instrumental_variable"
-    )
-    assert CausalEstimatorKind.REGRESSION_DISCONTINUITY.value == (
-        "iv.regression_discontinuity"
-    )
+    assert CausalEstimatorKind.INSTRUMENTAL_VARIABLE.value == ("iv.instrumental_variable")
+    assert CausalEstimatorKind.REGRESSION_DISCONTINUITY.value == ("iv.regression_discontinuity")
 
 
 def test_refuter_kind_values_match_dowhy_refuters() -> None:
-    assert CausalRefuterKind.RANDOM_COMMON_CAUSE.value == (
-        "random_common_cause"
-    )
-    assert CausalRefuterKind.PLACEBO_TREATMENT_REFUTER.value == (
-        "placebo_treatment_refuter"
-    )
-    assert CausalRefuterKind.DATA_SUBSET_REFUTER.value == (
-        "data_subset_refuter"
-    )
+    assert CausalRefuterKind.RANDOM_COMMON_CAUSE.value == ("random_common_cause")
+    assert CausalRefuterKind.PLACEBO_TREATMENT_REFUTER.value == ("placebo_treatment_refuter")
+    assert CausalRefuterKind.DATA_SUBSET_REFUTER.value == ("data_subset_refuter")
     assert CausalRefuterKind.BOOTSTRAP_REFUTER.value == "bootstrap_refuter"
 
 
@@ -477,9 +465,7 @@ class _FakeEstimator:
         ts_ns: int,
         callback: CausalAnalysisCallback,
     ) -> CausalEstimateResult:
-        callback.on_analysis_start(
-            ts_ns=ts_ns, estimand=estimand, arguments=arguments
-        )
+        callback.on_analysis_start(ts_ns=ts_ns, estimand=estimand, arguments=arguments)
         callback.on_estimate_ready(
             ts_ns=ts_ns,
             point_estimate=self._estimate.point_estimate,
@@ -495,9 +481,7 @@ class _FakeEstimator:
 # ---------------------------------------------------------------------------
 
 
-def _reasoner_inputs() -> tuple[
-    CausalEstimand, CausalArguments, _FakeEstimator
-]:
+def _reasoner_inputs() -> tuple[CausalEstimand, CausalArguments, _FakeEstimator]:
     return (
         _valid_estimand(),
         _valid_arguments(),
@@ -772,19 +756,9 @@ def test_null_callback_methods_return_none() -> None:
     estimand = _valid_estimand()
     args = _valid_arguments()
     estimate = _valid_estimate()
-    assert (
-        cb.on_analysis_start(
-            ts_ns=0, estimand=estimand, arguments=args
-        )
-        is None
-    )
-    assert (
-        cb.on_estimate_ready(ts_ns=0, point_estimate=0.0, std_error=0.0)
-        is None
-    )
-    assert (
-        cb.on_refutation(ts_ns=0, refutation=_valid_refutation()) is None
-    )
+    assert cb.on_analysis_start(ts_ns=0, estimand=estimand, arguments=args) is None
+    assert cb.on_estimate_ready(ts_ns=0, point_estimate=0.0, std_error=0.0) is None
+    assert cb.on_refutation(ts_ns=0, refutation=_valid_refutation()) is None
     assert cb.on_analysis_end(ts_ns=0, estimate=estimate) is None
 
 
@@ -808,11 +782,7 @@ def test_dowhy_estimator_factory_raises_when_dep_missing() -> None:
 # ---------------------------------------------------------------------------
 
 
-_MODULE_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "intelligence_engine"
-    / "causal_dowhy.py"
-)
+_MODULE_PATH = Path(__file__).resolve().parents[1] / "intelligence_engine" / "causal_dowhy.py"
 
 
 def _module_ast() -> ast.Module:
@@ -832,31 +802,19 @@ def _top_level_imports(tree: ast.Module) -> list[str]:
 
 
 def test_no_top_level_dowhy_import() -> None:
-    assert all(
-        not name.startswith("dowhy")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("dowhy") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_pandas_import() -> None:
-    assert all(
-        not name.startswith("pandas")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("pandas") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_numpy_import() -> None:
-    assert all(
-        not name.startswith("numpy")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("numpy") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_scipy_import() -> None:
-    assert all(
-        not name.startswith("scipy")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("scipy") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_io_imports() -> None:
@@ -898,11 +856,7 @@ def test_dowhy_import_only_inside_factory() -> None:
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             mod = node.module if isinstance(node, ast.ImportFrom) else None
-            names = (
-                [a.name for a in node.names]
-                if isinstance(node, ast.Import)
-                else [mod or ""]
-            )
+            names = [a.name for a in node.names] if isinstance(node, ast.Import) else [mod or ""]
             for name in names:
                 if name.startswith(("dowhy", "pandas", "numpy", "scipy")):
                     parent = _find_enclosing_function(tree, node)
@@ -916,9 +870,7 @@ def test_dowhy_import_only_inside_factory() -> None:
                     )
 
 
-def _find_enclosing_function(
-    tree: ast.Module, target: ast.AST
-) -> ast.FunctionDef | None:
+def _find_enclosing_function(tree: ast.Module, target: ast.AST) -> ast.FunctionDef | None:
     for func in ast.walk(tree):
         if isinstance(func, ast.FunctionDef):
             for descendant in ast.walk(func):
@@ -940,7 +892,4 @@ def test_module_reload_is_idempotent() -> None:
 
     assert mod1.ANALYSIS_SOURCE == mod2.ANALYSIS_SOURCE
     assert mod1.MAX_N_SAMPLES == mod2.MAX_N_SAMPLES
-    assert (
-        mod1.CausalEstimatorKind.LINEAR_REGRESSION
-        is mod2.CausalEstimatorKind.LINEAR_REGRESSION
-    )
+    assert mod1.CausalEstimatorKind.LINEAR_REGRESSION is mod2.CausalEstimatorKind.LINEAR_REGRESSION

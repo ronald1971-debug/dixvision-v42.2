@@ -63,6 +63,7 @@ env inputs the resulting ``DIXConfig.entries`` tuple is byte-identical
 across runs (INV-15).  No secrets are read here; the canonical rule routes
 API keys via ``system_engine.credentials.*``.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -142,13 +143,9 @@ class ConfigEntry:
 
     def __post_init__(self) -> None:
         if not isinstance(self.key, str) or not self.key:
-            raise ValueError(
-                f"ConfigEntry: key must be non-empty str, got {self.key!r}"
-            )
+            raise ValueError(f"ConfigEntry: key must be non-empty str, got {self.key!r}")
         if any(c.isspace() for c in self.key):
-            raise ValueError(
-                f"ConfigEntry: key must not contain whitespace, got {self.key!r}"
-            )
+            raise ValueError(f"ConfigEntry: key must not contain whitespace, got {self.key!r}")
         if not isinstance(self.source, ConfigSource):
             raise TypeError(
                 f"ConfigEntry: source must be ConfigSource, got {type(self.source).__name__}"
@@ -175,9 +172,7 @@ class DIXConfig:
 
     def __post_init__(self) -> None:
         if not isinstance(self.entries, tuple):
-            raise TypeError(
-                f"DIXConfig: entries must be tuple, got {type(self.entries).__name__}"
-            )
+            raise TypeError(f"DIXConfig: entries must be tuple, got {type(self.entries).__name__}")
         seen: set[str] = set()
         prev_key: str | None = None
         for e in self.entries:
@@ -190,8 +185,7 @@ class DIXConfig:
             seen.add(e.key)
             if prev_key is not None and e.key < prev_key:
                 raise ValueError(
-                    f"DIXConfig: entries must be sorted by key; "
-                    f"{e.key!r} comes after {prev_key!r}"
+                    f"DIXConfig: entries must be sorted by key; {e.key!r} comes after {prev_key!r}"
                 )
             prev_key = e.key
 
@@ -237,9 +231,7 @@ def coerce_value(
         return str(raw)
     if target is int:
         if isinstance(raw, bool):  # bool is subclass of int — reject
-            raise ValueError(
-                f"coerce_value[{key}]: cannot coerce bool to int (use bool target)"
-            )
+            raise ValueError(f"coerce_value[{key}]: cannot coerce bool to int (use bool target)")
         if isinstance(raw, int):
             return raw
         if isinstance(raw, float):
@@ -251,9 +243,7 @@ def coerce_value(
         return int(str(raw).strip())
     if target is float:
         if isinstance(raw, bool):
-            raise ValueError(
-                f"coerce_value[{key}]: cannot coerce bool to float"
-            )
+            raise ValueError(f"coerce_value[{key}]: cannot coerce bool to float")
         return float(raw) if isinstance(raw, (int, float)) else float(str(raw).strip())
     if target is bool:
         if isinstance(raw, bool):
@@ -265,12 +255,8 @@ def coerce_value(
             return True
         if s in ("false", "0", "no", "off"):
             return False
-        raise ValueError(
-            f"coerce_value[{key}]: cannot parse {raw!r} as bool"
-        )
-    raise TypeError(
-        f"coerce_value[{key}]: unsupported target type {target!r}"
-    )
+        raise ValueError(f"coerce_value[{key}]: cannot parse {raw!r} as bool")
+    raise TypeError(f"coerce_value[{key}]: unsupported target type {target!r}")
 
 
 # ---------------------------------------------------------------------------
@@ -291,20 +277,14 @@ def parse_dotenv(text: str) -> dict[str, str]:
         if not line or line.startswith("#"):
             continue
         if "=" not in line:
-            raise ValueError(
-                f"parse_dotenv: line {lineno} has no '=' separator: {raw!r}"
-            )
+            raise ValueError(f"parse_dotenv: line {lineno} has no '=' separator: {raw!r}")
         key, _, value = line.partition("=")
         key = key.strip()
         value = value.strip()
         if not key:
-            raise ValueError(
-                f"parse_dotenv: line {lineno} has empty key: {raw!r}"
-            )
+            raise ValueError(f"parse_dotenv: line {lineno} has empty key: {raw!r}")
         if any(c.isspace() for c in key):
-            raise ValueError(
-                f"parse_dotenv: line {lineno} key {key!r} contains whitespace"
-            )
+            raise ValueError(f"parse_dotenv: line {lineno} key {key!r} contains whitespace")
         # Strip surrounding quotes if both sides match.
         if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
             value = value[1:-1]
@@ -359,9 +339,7 @@ def parse_yaml_config(text: str) -> dict[str, Any]:
     return _flatten_mapping(parsed)
 
 
-def _flatten_mapping(
-    obj: Mapping[str, Any], prefix: str = ""
-) -> dict[str, Any]:
+def _flatten_mapping(obj: Mapping[str, Any], prefix: str = "") -> dict[str, Any]:
     out: dict[str, Any] = {}
     for key, value in obj.items():
         if not isinstance(key, str):
@@ -444,10 +422,7 @@ def load_config_stdlib(
         filtered = parse_env_map(env, allowed_prefixes=allowed_env_prefixes)
         _apply(ConfigSource.ENV, filtered)
 
-    entries = tuple(
-        ConfigEntry(key=k, value=v, source=s)
-        for k, (v, s) in sorted(merged.items())
-    )
+    entries = tuple(ConfigEntry(key=k, value=v, source=s) for k, (v, s) in sorted(merged.items()))
     return DIXConfig(entries=entries)
 
 

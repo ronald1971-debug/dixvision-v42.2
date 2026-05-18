@@ -106,9 +106,7 @@ def _sig_qa() -> Signature:
 
 
 def _ex(question: str, answer: str) -> Example:
-    return Example.from_dicts(
-        inputs={"question": question}, outputs={"answer": answer}
-    )
+    return Example.from_dicts(inputs={"question": question}, outputs={"answer": answer})
 
 
 class _StubPredictor:
@@ -161,9 +159,7 @@ def test_module_has_no_top_level_dspy_import() -> None:
     for node in tree.body:
         if isinstance(node, ast.Import):
             for n in node.names:
-                assert not n.name.startswith("dspy"), (
-                    f"top-level import {n.name} forbidden"
-                )
+                assert not n.name.startswith("dspy"), f"top-level import {n.name} forbidden"
         if isinstance(node, ast.ImportFrom):
             assert node.module is None or not node.module.startswith("dspy"), (
                 f"top-level from-import {node.module} forbidden"
@@ -189,14 +185,10 @@ def test_module_has_no_forbidden_runtime_imports() -> None:
         if isinstance(node, ast.Import):
             for n in node.names:
                 top = n.name.split(".")[0]
-                assert top not in forbidden_modules, (
-                    f"forbidden import: {n.name}"
-                )
+                assert top not in forbidden_modules, f"forbidden import: {n.name}"
         if isinstance(node, ast.ImportFrom):
             top = (node.module or "").split(".")[0]
-            assert top not in forbidden_modules, (
-                f"forbidden from-import: {node.module}"
-            )
+            assert top not in forbidden_modules, f"forbidden from-import: {node.module}"
 
 
 def test_module_has_no_engine_cross_imports() -> None:
@@ -212,9 +204,7 @@ def test_module_has_no_engine_cross_imports() -> None:
         if isinstance(node, ast.ImportFrom):
             mod = node.module or ""
             for p in forbidden_prefixes:
-                assert not mod.startswith(p), (
-                    f"forbidden cross-engine import: {mod}"
-                )
+                assert not mod.startswith(p), f"forbidden cross-engine import: {mod}"
 
 
 def test_module_does_not_construct_typed_bus_events() -> None:
@@ -339,27 +329,19 @@ def test_signature_rejects_oversize_instruction() -> None:
 
 
 def test_signature_rejects_too_many_input_fields() -> None:
-    inputs = tuple(
-        Field(f"i{i}", "d", str, FieldKind.INPUT)
-        for i in range(MAX_INPUT_FIELDS + 1)
-    )
+    inputs = tuple(Field(f"i{i}", "d", str, FieldKind.INPUT) for i in range(MAX_INPUT_FIELDS + 1))
     out = Field("o", "d", str, FieldKind.OUTPUT)
     with pytest.raises(ValueError, match="MAX_INPUT_FIELDS"):
-        Signature(
-            name="x", instruction="i", input_fields=inputs, output_fields=(out,)
-        )
+        Signature(name="x", instruction="i", input_fields=inputs, output_fields=(out,))
 
 
 def test_signature_rejects_too_many_output_fields() -> None:
     inp = Field("i", "d", str, FieldKind.INPUT)
     outputs = tuple(
-        Field(f"o{i}", "d", str, FieldKind.OUTPUT)
-        for i in range(MAX_OUTPUT_FIELDS + 1)
+        Field(f"o{i}", "d", str, FieldKind.OUTPUT) for i in range(MAX_OUTPUT_FIELDS + 1)
     )
     with pytest.raises(ValueError, match="MAX_OUTPUT_FIELDS"):
-        Signature(
-            name="x", instruction="i", input_fields=(inp,), output_fields=outputs
-        )
+        Signature(name="x", instruction="i", input_fields=(inp,), output_fields=outputs)
 
 
 def test_signature_field_for() -> None:
@@ -388,9 +370,7 @@ def dataclasses_FrozenInstanceError() -> type:
 
 
 def test_example_from_dicts_sorts_keys() -> None:
-    ex = Example.from_dicts(
-        inputs={"b": 1, "a": 2}, outputs={"y": 3, "x": 4}
-    )
+    ex = Example.from_dicts(inputs={"b": 1, "a": 2}, outputs={"y": 3, "x": 4})
     assert ex.inputs == (("a", 2), ("b", 1))
     assert ex.outputs == (("x", 4), ("y", 3))
 
@@ -454,12 +434,8 @@ def test_render_prompt_basic() -> None:
 def test_render_prompt_includes_demos() -> None:
     sig = _sig_qa()
     demos = (
-        Demonstration(
-            inputs=(("question", "q1"),), outputs=(("answer", "a1"),)
-        ),
-        Demonstration(
-            inputs=(("question", "q2"),), outputs=(("answer", "a2"),)
-        ),
+        Demonstration(inputs=(("question", "q1"),), outputs=(("answer", "a1"),)),
+        Demonstration(inputs=(("question", "q2"),), outputs=(("answer", "a2"),)),
     )
     text = render_prompt(sig, {"question": "q3"}, demos)
     assert text.count("Example ") == 2
@@ -488,11 +464,7 @@ def test_render_prompt_is_dict_order_independent() -> None:
 
 def test_render_prompt_three_run_byte_identical() -> None:
     sig = _sig_qa()
-    demos = (
-        Demonstration(
-            inputs=(("question", "q1"),), outputs=(("answer", "a1"),)
-        ),
-    )
+    demos = (Demonstration(inputs=(("question", "q1"),), outputs=(("answer", "a1"),)),)
     runs = [render_prompt(sig, {"question": "what?"}, demos) for _ in range(3)]
     assert runs[0] == runs[1] == runs[2]
 
@@ -580,10 +552,7 @@ def test_render_prompt_rejects_overlong_render() -> None:
     # Build a demo chain that overflows MAX_PROMPT_LEN.
     big_value = "a" * (MAX_VALUE_LEN - 100)
     demos = tuple(
-        Demonstration(
-            inputs=(("a", big_value),), outputs=(("o", big_value),)
-        )
-        for _ in range(20)
+        Demonstration(inputs=(("a", big_value),), outputs=(("o", big_value),)) for _ in range(20)
     )
     with pytest.raises(ValueError, match="MAX_PROMPT_LEN"):
         render_prompt(sig, {"a": "q"}, demos)
@@ -690,9 +659,7 @@ def test_bootstrap_skips_predictions_missing_output() -> None:
             return Prediction(outputs=(("answer", "a2"),))
 
     bs = BootstrapFewShot(max_bootstrapped_demos=2)
-    prog = bs.compile(
-        sig, [_ex("q1", "a1"), _ex("q2", "a2")], _always_pass, MissingPredictor()
-    )
+    prog = bs.compile(sig, [_ex("q1", "a1"), _ex("q2", "a2")], _always_pass, MissingPredictor())
     assert len(prog.demonstrations) == 1
     assert dict(prog.demonstrations[0].inputs)["question"] == "q2"
 
@@ -704,8 +671,7 @@ def test_bootstrap_metric_filters_examples() -> None:
     prog = bs.compile(
         sig,
         [_ex("q1", "right"), _ex("q2", "right")],
-        lambda ex, p: dict(p.outputs).get("answer")
-        == dict(ex.outputs).get("answer"),
+        lambda ex, p: dict(p.outputs).get("answer") == dict(ex.outputs).get("answer"),
         pred,
     )
     assert len(prog.demonstrations) == 1
@@ -780,11 +746,7 @@ def test_bootstrap_three_run_replay_equality() -> None:
 
 def test_program_predict_runtime_path() -> None:
     sig = _sig_qa()
-    demos = (
-        Demonstration(
-            inputs=(("question", "q1"),), outputs=(("answer", "a1"),)
-        ),
-    )
+    demos = (Demonstration(inputs=(("question", "q1"),), outputs=(("answer", "a1"),)),)
     prog = OptimizedProgram(signature=sig, demonstrations=demos)
     pred = _StubPredictor({"qX": "aX"})
     out = prog.predict({"question": "qX"}, pred)
@@ -832,9 +794,7 @@ def test_program_predict_rejects_non_prediction() -> None:
 def test_program_rejects_too_many_demos() -> None:
     sig = _sig_qa()
     too_many = tuple(
-        Demonstration(
-            inputs=(("question", f"q{i}"),), outputs=(("answer", f"a{i}"),)
-        )
+        Demonstration(inputs=(("question", f"q{i}"),), outputs=(("answer", f"a{i}"),))
         for i in range(MAX_DEMONSTRATIONS + 1)
     )
     with pytest.raises(ValueError, match="MAX_DEMONSTRATIONS"):
@@ -843,11 +803,7 @@ def test_program_rejects_too_many_demos() -> None:
 
 def test_program_fingerprint_stable() -> None:
     sig = _sig_qa()
-    demos = (
-        Demonstration(
-            inputs=(("question", "q1"),), outputs=(("answer", "a1"),)
-        ),
-    )
+    demos = (Demonstration(inputs=(("question", "q1"),), outputs=(("answer", "a1"),)),)
     prog = OptimizedProgram(signature=sig, demonstrations=demos)
     assert prog.fingerprint() == prog.fingerprint()
 
@@ -856,19 +812,11 @@ def test_program_fingerprint_changes_on_demo_change() -> None:
     sig = _sig_qa()
     p1 = OptimizedProgram(
         signature=sig,
-        demonstrations=(
-            Demonstration(
-                inputs=(("question", "q1"),), outputs=(("answer", "a1"),)
-            ),
-        ),
+        demonstrations=(Demonstration(inputs=(("question", "q1"),), outputs=(("answer", "a1"),)),),
     )
     p2 = OptimizedProgram(
         signature=sig,
-        demonstrations=(
-            Demonstration(
-                inputs=(("question", "q2"),), outputs=(("answer", "a2"),)
-            ),
-        ),
+        demonstrations=(Demonstration(inputs=(("question", "q2"),), outputs=(("answer", "a2"),)),),
     )
     assert p1.fingerprint() != p2.fingerprint()
 
@@ -889,11 +837,7 @@ def test_program_is_frozen() -> None:
 
 def test_serialize_roundtrip_basic() -> None:
     sig = _sig_qa()
-    demos = (
-        Demonstration(
-            inputs=(("question", "q1"),), outputs=(("answer", "a1"),)
-        ),
-    )
+    demos = (Demonstration(inputs=(("question", "q1"),), outputs=(("answer", "a1"),)),)
     prog = OptimizedProgram(signature=sig, demonstrations=demos)
     payload = serialize_program(prog)
     restored = deserialize_program(payload)
@@ -918,11 +862,7 @@ def test_serialize_preserves_bool_type_tag() -> None:
         input_fields=(Field("flag", "d", bool, FieldKind.INPUT),),
         output_fields=(Field("ok", "d", bool, FieldKind.OUTPUT),),
     )
-    demos = (
-        Demonstration(
-            inputs=(("flag", True),), outputs=(("ok", False),)
-        ),
-    )
+    demos = (Demonstration(inputs=(("flag", True),), outputs=(("ok", False),)),)
     prog = OptimizedProgram(signature=sig, demonstrations=demos)
     payload = serialize_program(prog)
     restored = deserialize_program(payload)
@@ -940,11 +880,7 @@ def test_serialize_preserves_numeric_types() -> None:
         ),
         output_fields=(Field("o", "d", str, FieldKind.OUTPUT),),
     )
-    demos = (
-        Demonstration(
-            inputs=(("f", 1.5), ("i", 3)), outputs=(("o", "z"),)
-        ),
-    )
+    demos = (Demonstration(inputs=(("f", 1.5), ("i", 3)), outputs=(("o", "z"),)),)
     prog = OptimizedProgram(signature=sig, demonstrations=demos)
     restored = deserialize_program(serialize_program(prog))
     d = dict(restored.demonstrations[0].inputs)
@@ -954,21 +890,13 @@ def test_serialize_preserves_numeric_types() -> None:
 
 def test_serialize_rejects_unsupported_value_type() -> None:
     sig = _sig_qa()
-    demos = (
-        Demonstration(
-            inputs=(("question", "q"),), outputs=(("answer", "a"),)
-        ),
-    )
+    demos = (Demonstration(inputs=(("question", "q"),), outputs=(("answer", "a"),)),)
     prog = OptimizedProgram(signature=sig, demonstrations=demos)
     # Forcefully build a program with an unsupported value (bypass
     # field validation by constructing the Demonstration directly).
     bad = OptimizedProgram(
         signature=sig,
-        demonstrations=(
-            Demonstration(
-                inputs=(("question", [1, 2]),), outputs=(("answer", "a"),)
-            ),
-        ),
+        demonstrations=(Demonstration(inputs=(("question", [1, 2]),), outputs=(("answer", "a"),)),),
     )
     with pytest.raises(TypeError, match="unsupported value type"):
         serialize_program(bad)

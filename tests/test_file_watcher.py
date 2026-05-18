@@ -430,10 +430,7 @@ def test_lazy_seam_uses_function_local_import() -> None:
     src = _module_source()
     tree = ast.parse(src)
     for node in ast.walk(tree):
-        if (
-            isinstance(node, ast.FunctionDef)
-            and node.name == "enable_watchdog_observer_factory"
-        ):
+        if isinstance(node, ast.FunctionDef) and node.name == "enable_watchdog_observer_factory":
             imports = [n for n in ast.walk(node) if isinstance(n, ast.Import)]
             modules = {alias.name for imp in imports for alias in imp.names}
             assert any(m.startswith("watchdog") for m in modules)

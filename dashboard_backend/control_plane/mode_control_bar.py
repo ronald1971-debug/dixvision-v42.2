@@ -111,9 +111,7 @@ class ModeControlBar:
             )
         )
 
-    def request_kill(
-        self, *, ts_ns: int, requestor: str, reason: str
-    ) -> RouteOutcome:
+    def request_kill(self, *, ts_ns: int, requestor: str, reason: str) -> RouteOutcome:
         return self._router.submit(
             OperatorRequest(
                 ts_ns=ts_ns,
@@ -123,9 +121,7 @@ class ModeControlBar:
             )
         )
 
-    def request_unlock(
-        self, *, ts_ns: int, requestor: str, reason: str
-    ) -> RouteOutcome:
+    def request_unlock(self, *, ts_ns: int, requestor: str, reason: str) -> RouteOutcome:
         return self._router.submit(
             OperatorRequest(
                 ts_ns=ts_ns,

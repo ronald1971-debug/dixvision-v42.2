@@ -6,6 +6,7 @@ Authority pins:
     B1      No cross-runtime-tier imports.
     B27/28/INV-71  No typed-event constructors.
 """
+
 from __future__ import annotations
 
 import ast
@@ -213,12 +214,10 @@ def test_evaluate_rss_warn_then_crit() -> None:
 def test_evaluate_fd_thresholds() -> None:
     p = ProcessHealthPolicy()
     assert (
-        evaluate_metrics(_mk_metrics(num_fds=p.fd_warn_count), p).level
-        == ProcessHealthLevel.WARN
+        evaluate_metrics(_mk_metrics(num_fds=p.fd_warn_count), p).level == ProcessHealthLevel.WARN
     )
     assert (
-        evaluate_metrics(_mk_metrics(num_fds=p.fd_crit_count), p).level
-        == ProcessHealthLevel.CRIT
+        evaluate_metrics(_mk_metrics(num_fds=p.fd_crit_count), p).level == ProcessHealthLevel.CRIT
     )
 
 
@@ -279,9 +278,7 @@ def test_evaluate_rejects_bad_args() -> None:
 
 
 def test_process_health_frozen_and_typed() -> None:
-    h = ProcessHealth(
-        ts_ns=1, pid=1, level=ProcessHealthLevel.OK, breaches=()
-    )
+    h = ProcessHealth(ts_ns=1, pid=1, level=ProcessHealthLevel.OK, breaches=())
     with pytest.raises(dataclasses.FrozenInstanceError):
         h.level = ProcessHealthLevel.CRIT  # type: ignore[misc]
 
@@ -295,7 +292,10 @@ def test_process_health_validation() -> None:
         ProcessHealth(ts_ns=1, pid=1, level="ok", breaches=())  # type: ignore[arg-type]
     with pytest.raises(TypeError):
         ProcessHealth(
-            ts_ns=1, pid=1, level=ProcessHealthLevel.OK, breaches=["x"]  # type: ignore[arg-type]
+            ts_ns=1,
+            pid=1,
+            level=ProcessHealthLevel.OK,
+            breaches=["x"],  # type: ignore[arg-type]
         )
 
 
@@ -551,9 +551,7 @@ def test_no_wall_clock_reads() -> None:
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
             if isinstance(node.func.value, ast.Name):
                 key = (node.func.value.id, node.func.attr)
-                assert key not in forbidden_attrs, (
-                    f"wall-clock read at line {node.lineno}: {key}"
-                )
+                assert key not in forbidden_attrs, f"wall-clock read at line {node.lineno}: {key}"
 
 
 def test_module_importable_without_psutil() -> None:

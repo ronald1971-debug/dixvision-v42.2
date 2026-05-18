@@ -27,15 +27,11 @@ from governance_engine.control_plane.policy_engine import (
 )
 
 
-def _request(
-    action: OperatorAction, *, target_status: str = ""
-) -> OperatorRequest:
+def _request(action: OperatorAction, *, target_status: str = "") -> OperatorRequest:
     payload: dict[str, str] = {}
     if target_status:
         payload["target_status"] = target_status
-    return OperatorRequest(
-        ts_ns=1, requestor="op", action=action, payload=payload
-    )
+    return OperatorRequest(ts_ns=1, requestor="op", action=action, payload=payload)
 
 
 # ---------------------------------------------------------------------------
@@ -72,9 +68,7 @@ _LIFECYCLE_PROBES = ("ACTIVE", "SHADOW", "DISABLED", "")
 
 @pytest.mark.parametrize("mode", list(SystemMode))
 @pytest.mark.parametrize("action", list(OperatorAction))
-def test_table_matches_legacy_verdict_wildcard(
-    mode: SystemMode, action: OperatorAction
-) -> None:
+def test_table_matches_legacy_verdict_wildcard(mode: SystemMode, action: OperatorAction) -> None:
     """For every (action, mode) the table agrees with the legacy gate."""
 
     policy = PolicyEngine()
@@ -98,9 +92,7 @@ def test_table_matches_legacy_verdict_lifecycle_payload(
         ),
         mode,
     )
-    expected = _legacy_verdict(
-        OperatorAction.REQUEST_PLUGIN_LIFECYCLE, mode, target_status
-    )
+    expected = _legacy_verdict(OperatorAction.REQUEST_PLUGIN_LIFECYCLE, mode, target_status)
     assert got == expected, (mode, target_status, got, expected)
 
 

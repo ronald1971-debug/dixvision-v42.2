@@ -395,11 +395,7 @@ def test_shadow_policy_does_not_import_governance_engine() -> None:
     import ast
 
     src = (
-        REPO_ROOT
-        / "intelligence_engine"
-        / "meta_controller"
-        / "policy"
-        / "shadow_policy.py"
+        REPO_ROOT / "intelligence_engine" / "meta_controller" / "policy" / "shadow_policy.py"
     ).read_text()
     tree = ast.parse(src)
     for node in ast.walk(tree):

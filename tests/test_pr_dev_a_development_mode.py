@@ -205,9 +205,7 @@ def client() -> TestClient:
         ui_server.STATE.development_mode_policy = DevelopmentModePolicy(
             development_enabled=True,
             trading_allowed=False,
-            mode=(
-                ui_server.STATE.governance.state_transitions.current_mode()
-            ),
+            mode=(ui_server.STATE.governance.state_transitions.current_mode()),
         )
         ui_server.STATE.execution.set_development_mode_policy(
             ui_server.STATE.development_mode_policy
@@ -225,9 +223,7 @@ def reset_dev_flags() -> None:
         ui_server.STATE.development_mode_policy = DevelopmentModePolicy(
             development_enabled=True,
             trading_allowed=False,
-            mode=(
-                ui_server.STATE.governance.state_transitions.current_mode()
-            ),
+            mode=(ui_server.STATE.governance.state_transitions.current_mode()),
         )
         ui_server.STATE.execution.set_development_mode_policy(
             ui_server.STATE.development_mode_policy
@@ -238,8 +234,7 @@ def _ledger_rows() -> list[dict[str, object]]:
     """Snapshot of the in-memory ledger chain."""
 
     return [
-        dict(entry.payload, kind=entry.kind)
-        for entry in ui_server.STATE.governance.ledger.read()
+        dict(entry.payload, kind=entry.kind) for entry in ui_server.STATE.governance.ledger.read()
     ]
 
 
@@ -285,10 +280,7 @@ def test_post_trading_allowed_true_audits_pair(client: TestClient) -> None:
 
     with ui_server.STATE.lock:
         assert ui_server.STATE.trading_allowed is True
-        assert (
-            ui_server.STATE.execution.development_mode_policy.is_trading_unblocked()
-            is True
-        )
+        assert ui_server.STATE.execution.development_mode_policy.is_trading_unblocked() is True
 
     rows = _ledger_rows()
     assert len(rows) == before + 2
@@ -371,15 +363,9 @@ def test_engine_policy_swapped_atomically(client: TestClient) -> None:
         "/api/operator/trading-allowed",
         json={"enabled": True},
     )
-    assert (
-        ui_server.STATE.execution.development_mode_policy.trading_allowed
-        is True
-    )
+    assert ui_server.STATE.execution.development_mode_policy.trading_allowed is True
     client.post(
         "/api/operator/trading-allowed",
         json={"enabled": False},
     )
-    assert (
-        ui_server.STATE.execution.development_mode_policy.trading_allowed
-        is False
-    )
+    assert ui_server.STATE.execution.development_mode_policy.trading_allowed is False

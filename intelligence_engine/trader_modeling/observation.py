@@ -95,9 +95,7 @@ def _model_to_body(m: TraderModel) -> dict[str, Any]:
         "behavioral_bias": _sorted_float_map(m.behavioral_bias),
         "meta": _sorted_str_map(m.meta),
     }
-    body["philosophy"] = (
-        _philosophy_to_body(m.philosophy) if m.philosophy is not None else None
-    )
+    body["philosophy"] = _philosophy_to_body(m.philosophy) if m.philosophy is not None else None
     return body
 
 
@@ -108,9 +106,7 @@ def _philosophy_from_body(body: Mapping[str, Any]) -> PhilosophyProfile:
         belief_system=dict(body.get("belief_system", {})),
         risk_attitude=RiskAttitude(body.get("risk_attitude", "UNKNOWN")),
         time_horizon=TimeHorizon(body.get("time_horizon", "UNKNOWN")),
-        conviction_style=ConvictionStyle(
-            body.get("conviction_style", "UNKNOWN")
-        ),
+        conviction_style=ConvictionStyle(body.get("conviction_style", "UNKNOWN")),
         market_view=dict(body.get("market_view", {})),
         decision_biases=dict(body.get("decision_biases", {})),
     )
@@ -128,9 +124,7 @@ def _model_from_body(body: Mapping[str, Any]) -> TraderModel:
         regime_performance=dict(body.get("regime_performance", {})),
         behavioral_bias=dict(body.get("behavioral_bias", {})),
         philosophy=(
-            _philosophy_from_body(raw_philosophy)
-            if isinstance(raw_philosophy, Mapping)
-            else None
+            _philosophy_from_body(raw_philosophy) if isinstance(raw_philosophy, Mapping) else None
         ),
         meta=dict(body.get("meta", {})),
     )
@@ -152,18 +146,11 @@ def observation_as_system_event(
     without mutating the inner observation timestamp.
     """
     if not source:
-        raise ValueError(
-            "observation_as_system_event: source must be non-empty"
-        )
+        raise ValueError("observation_as_system_event: source must be non-empty")
     if not observation.trader_id:
-        raise ValueError(
-            "observation_as_system_event: observation.trader_id must be "
-            "non-empty"
-        )
+        raise ValueError("observation_as_system_event: observation.trader_id must be non-empty")
     if ts_ns_override is not None and ts_ns_override < 0:
-        raise ValueError(
-            "observation_as_system_event: ts_ns_override must be non-negative"
-        )
+        raise ValueError("observation_as_system_event: ts_ns_override must be non-negative")
     body = {
         "version": OBSERVATION_EVENT_VERSION,
         "ts_ns": observation.ts_ns,
@@ -173,16 +160,10 @@ def observation_as_system_event(
         "meta": _sorted_str_map(observation.meta),
     }
     payload = {
-        "observation": json.dumps(
-            body, sort_keys=True, separators=(",", ":")
-        ),
+        "observation": json.dumps(body, sort_keys=True, separators=(",", ":")),
     }
     return SystemEvent(
-        ts_ns=(
-            ts_ns_override
-            if ts_ns_override is not None
-            else observation.ts_ns
-        ),
+        ts_ns=(ts_ns_override if ts_ns_override is not None else observation.ts_ns),
         sub_kind=SystemEventKind.TRADER_OBSERVED,
         source=source,
         payload=payload,
@@ -200,15 +181,11 @@ def observation_from_system_event(event: SystemEvent) -> TraderObservation:
     """
     if event.sub_kind is not SystemEventKind.TRADER_OBSERVED:
         raise ValueError(
-            "observation_from_system_event: event must be TRADER_OBSERVED; "
-            f"got {event.sub_kind}"
+            f"observation_from_system_event: event must be TRADER_OBSERVED; got {event.sub_kind}"
         )
     raw = event.payload.get("observation")
     if not isinstance(raw, str) or not raw:
-        raise ValueError(
-            "observation_from_system_event: payload missing 'observation' "
-            "string"
-        )
+        raise ValueError("observation_from_system_event: payload missing 'observation' string")
     body = json.loads(raw)
     model = _model_from_body(body["model"])
     return make_trader_observation(

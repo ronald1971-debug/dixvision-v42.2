@@ -22,12 +22,8 @@ def governance_stack():
 
     ledger = LedgerAuthorityWriter()
     policy = PolicyEngine()
-    state = StateTransitionManager(
-        policy=policy, ledger=ledger, initial_mode=SystemMode.SAFE
-    )
-    bridge = OperatorInterfaceBridge(
-        policy=policy, state_transitions=state, ledger=ledger
-    )
+    state = StateTransitionManager(policy=policy, ledger=ledger, initial_mode=SystemMode.SAFE)
+    bridge = OperatorInterfaceBridge(policy=policy, state_transitions=state, ledger=ledger)
     return ledger, policy, state, bridge
 
 

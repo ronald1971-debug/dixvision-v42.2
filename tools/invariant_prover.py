@@ -215,9 +215,7 @@ class ProofTask:
             raise ProverError("ProofTask.postconditions must be non-empty")
         for pre in self.preconditions:
             if not isinstance(pre, Invariant):
-                raise ProverError(
-                    "ProofTask.preconditions must contain Invariant instances"
-                )
+                raise ProverError("ProofTask.preconditions must contain Invariant instances")
             if pre.arity != self.arity:
                 raise ProverError(
                     f"ProofTask {self.name!r}: precondition {pre.name!r} arity "
@@ -225,22 +223,13 @@ class ProofTask:
                 )
         for post in self.postconditions:
             if not isinstance(post, PostCondition):
-                raise ProverError(
-                    "ProofTask.postconditions must contain PostCondition instances"
-                )
-        if (
-            not isinstance(self.max_samples, int)
-            or isinstance(self.max_samples, bool)
-        ):
+                raise ProverError("ProofTask.postconditions must contain PostCondition instances")
+        if not isinstance(self.max_samples, int) or isinstance(self.max_samples, bool):
             raise ProverError("ProofTask.max_samples must be a non-bool int")
         if self.max_samples < MIN_SAMPLES:
-            raise ProverError(
-                f"ProofTask.max_samples must be >= {MIN_SAMPLES}"
-            )
+            raise ProverError(f"ProofTask.max_samples must be >= {MIN_SAMPLES}")
         if self.max_samples > MAX_SAMPLES:
-            raise ProverError(
-                f"ProofTask.max_samples must be <= {MAX_SAMPLES}"
-            )
+            raise ProverError(f"ProofTask.max_samples must be <= {MAX_SAMPLES}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -256,17 +245,9 @@ class Counterexample:
             raise ProverError("Counterexample.inputs must be a tuple")
         for value in self.inputs:
             if not isinstance(value, int) or isinstance(value, bool):
-                raise ProverError(
-                    "Counterexample.inputs must contain non-bool ints"
-                )
-        if (
-            not isinstance(self.violated_postcondition, str)
-            or not self.violated_postcondition
-        ):
-            raise ProverError(
-                "Counterexample.violated_postcondition must be a non-empty "
-                "string"
-            )
+                raise ProverError("Counterexample.inputs must contain non-bool ints")
+        if not isinstance(self.violated_postcondition, str) or not self.violated_postcondition:
+            raise ProverError("Counterexample.violated_postcondition must be a non-empty string")
 
 
 @dataclass(frozen=True, slots=True)
@@ -285,41 +266,29 @@ class ProofResult:
             raise ProverError("ProofResult.task_name must be a non-empty string")
         if not isinstance(self.verdict, ProofVerdict):
             raise ProverError("ProofResult.verdict must be a ProofVerdict")
-        if (
-            not isinstance(self.samples_drawn, int)
-            or isinstance(self.samples_drawn, bool)
-        ):
+        if not isinstance(self.samples_drawn, int) or isinstance(self.samples_drawn, bool):
             raise ProverError("ProofResult.samples_drawn must be a non-bool int")
         if self.samples_drawn < 0:
             raise ProverError("ProofResult.samples_drawn must be >= 0")
-        if (
-            not isinstance(self.samples_satisfying_preconditions, int)
-            or isinstance(self.samples_satisfying_preconditions, bool)
+        if not isinstance(self.samples_satisfying_preconditions, int) or isinstance(
+            self.samples_satisfying_preconditions, bool
         ):
-            raise ProverError(
-                "ProofResult.samples_satisfying_preconditions must be a "
-                "non-bool int"
-            )
+            raise ProverError("ProofResult.samples_satisfying_preconditions must be a non-bool int")
         if self.samples_satisfying_preconditions < 0:
-            raise ProverError(
-                "ProofResult.samples_satisfying_preconditions must be >= 0"
-            )
+            raise ProverError("ProofResult.samples_satisfying_preconditions must be >= 0")
         if self.samples_satisfying_preconditions > self.samples_drawn:
             raise ProverError(
-                "ProofResult.samples_satisfying_preconditions cannot exceed "
-                "samples_drawn"
+                "ProofResult.samples_satisfying_preconditions cannot exceed samples_drawn"
             )
         if self.verdict is ProofVerdict.COUNTEREXAMPLE:
             if self.counterexample is None:
                 raise ProverError(
-                    "ProofResult.counterexample is required when verdict is "
-                    "COUNTEREXAMPLE"
+                    "ProofResult.counterexample is required when verdict is COUNTEREXAMPLE"
                 )
         else:
             if self.counterexample is not None:
                 raise ProverError(
-                    "ProofResult.counterexample must be None unless verdict "
-                    "is COUNTEREXAMPLE"
+                    "ProofResult.counterexample must be None unless verdict is COUNTEREXAMPLE"
                 )
         if not isinstance(self.backend, str) or not self.backend:
             raise ProverError("ProofResult.backend must be a non-empty string")
@@ -350,8 +319,7 @@ def prove(task: ProofTask, *, seed: int) -> ProofResult:
     pre_count = 0
     for index in range(task.max_samples):
         inputs = tuple(
-            _draw_int(seed ^ (slot * 0x9E3779B97F4A7C15), index)
-            for slot in range(task.arity)
+            _draw_int(seed ^ (slot * 0x9E3779B97F4A7C15), index) for slot in range(task.arity)
         )
         try:
             pre_ok = all(pre.predicate(*inputs) for pre in task.preconditions)
@@ -433,13 +401,9 @@ class ProofSuite:
         seen: set[str] = set()
         for task in self.tasks:
             if not isinstance(task, ProofTask):
-                raise ProverError(
-                    "ProofSuite.tasks must contain ProofTask instances"
-                )
+                raise ProverError("ProofSuite.tasks must contain ProofTask instances")
             if task.name in seen:
-                raise ProverError(
-                    f"ProofSuite {self.name!r}: duplicate task {task.name!r}"
-                )
+                raise ProverError(f"ProofSuite {self.name!r}: duplicate task {task.name!r}")
             seen.add(task.name)
 
 
@@ -458,24 +422,18 @@ class SuiteReport:
             raise ProverError("SuiteReport.results must be a tuple")
         for result in self.results:
             if not isinstance(result, ProofResult):
-                raise ProverError(
-                    "SuiteReport.results must contain ProofResult instances"
-                )
+                raise ProverError("SuiteReport.results must contain ProofResult instances")
 
     def all_clear(self) -> bool:
         """``True`` iff every result is :attr:`ProofVerdict.PROVED` or
         :attr:`ProofVerdict.PROVED_SOFT`."""
 
         return all(
-            r.verdict in (ProofVerdict.PROVED, ProofVerdict.PROVED_SOFT)
-            for r in self.results
+            r.verdict in (ProofVerdict.PROVED, ProofVerdict.PROVED_SOFT) for r in self.results
         )
 
     def counterexamples(self) -> tuple[ProofResult, ...]:
-        return tuple(
-            r for r in self.results
-            if r.verdict is ProofVerdict.COUNTEREXAMPLE
-        )
+        return tuple(r for r in self.results if r.verdict is ProofVerdict.COUNTEREXAMPLE)
 
 
 def prove_suite(suite: ProofSuite, *, seed: int) -> SuiteReport:
@@ -488,9 +446,7 @@ def prove_suite(suite: ProofSuite, *, seed: int) -> SuiteReport:
     """
 
     if not isinstance(suite, ProofSuite):
-        raise TypeError(
-            f"prove_suite() requires ProofSuite, got {type(suite).__name__}"
-        )
+        raise TypeError(f"prove_suite() requires ProofSuite, got {type(suite).__name__}")
     if not isinstance(seed, int) or isinstance(seed, bool):
         raise TypeError("prove_suite() requires non-bool int seed")
     if seed < 0:
@@ -549,9 +505,7 @@ def enable_crosshair_factory(
     if overrides is not None:
         unknown = set(overrides) - allowed_keys
         if unknown:
-            raise ProverError(
-                f"enable_crosshair_factory: unknown override keys {sorted(unknown)}"
-            )
+            raise ProverError(f"enable_crosshair_factory: unknown override keys {sorted(unknown)}")
     _ = StateSpace  # keep the import alive for static-analysis seam
 
     def _prover(task: ProofTask, seed: int) -> ProofResult:
@@ -564,18 +518,14 @@ def enable_crosshair_factory(
                 task_name=stdlib_result.task_name,
                 verdict=ProofVerdict.PROVED,
                 samples_drawn=stdlib_result.samples_drawn,
-                samples_satisfying_preconditions=(
-                    stdlib_result.samples_satisfying_preconditions
-                ),
+                samples_satisfying_preconditions=(stdlib_result.samples_satisfying_preconditions),
                 backend="crosshair",
             )
         return ProofResult(
             task_name=stdlib_result.task_name,
             verdict=stdlib_result.verdict,
             samples_drawn=stdlib_result.samples_drawn,
-            samples_satisfying_preconditions=(
-                stdlib_result.samples_satisfying_preconditions
-            ),
+            samples_satisfying_preconditions=(stdlib_result.samples_satisfying_preconditions),
             counterexample=stdlib_result.counterexample,
             backend="crosshair",
         )
@@ -597,9 +547,7 @@ def positive_int(name: str = "positive_int") -> Invariant:
     return Invariant(
         name=name,
         arity=1,
-        predicate=lambda x: isinstance(x, int)
-        and not isinstance(x, bool)
-        and x > 0,
+        predicate=lambda x: isinstance(x, int) and not isinstance(x, bool) and x > 0,
     )
 
 
@@ -609,9 +557,7 @@ def nonneg_int(name: str = "nonneg_int") -> Invariant:
     return Invariant(
         name=name,
         arity=1,
-        predicate=lambda x: isinstance(x, int)
-        and not isinstance(x, bool)
-        and x >= 0,
+        predicate=lambda x: isinstance(x, int) and not isinstance(x, bool) and x >= 0,
     )
 
 
@@ -630,9 +576,7 @@ def bounded_int(low: int, high: int, name: str | None = None) -> Invariant:
         name=label,
         arity=1,
         predicate=lambda x, _low=low, _high=high: (
-            isinstance(x, int)
-            and not isinstance(x, bool)
-            and _low <= x <= _high
+            isinstance(x, int) and not isinstance(x, bool) and _low <= x <= _high
         ),
     )
 

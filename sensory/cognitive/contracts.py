@@ -71,17 +71,8 @@ class AIResponse:
         if not self.model:
             raise ValueError("AIResponse.model must be non-empty")
         if self.prompt_tokens is not None and self.prompt_tokens < 0:
-            raise ValueError(
-                "AIResponse.prompt_tokens must be >= 0 or None"
-            )
-        if (
-            self.completion_tokens is not None
-            and self.completion_tokens < 0
-        ):
-            raise ValueError(
-                "AIResponse.completion_tokens must be >= 0 or None"
-            )
+            raise ValueError("AIResponse.prompt_tokens must be >= 0 or None")
+        if self.completion_tokens is not None and self.completion_tokens < 0:
+            raise ValueError("AIResponse.completion_tokens must be >= 0 or None")
         if self.latency_ms is not None and self.latency_ms < 0:
-            raise ValueError(
-                "AIResponse.latency_ms must be >= 0 or None"
-            )
+            raise ValueError("AIResponse.latency_ms must be >= 0 or None")

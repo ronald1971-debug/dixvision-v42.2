@@ -132,10 +132,7 @@ def test_rule_fired_categories_present_across_seeds() -> None:
 
 def test_distribution_over_seeds_varies() -> None:
     sim = RegimeSwitchSim()
-    pnls = {
-        sim.step(seed=s, scenario=_scenario()).pnl_usd
-        for s in range(50)
-    }
+    pnls = {sim.step(seed=s, scenario=_scenario()).pnl_usd for s in range(50)}
     assert len(pnls) >= 5
 
 

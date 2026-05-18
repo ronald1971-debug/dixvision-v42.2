@@ -198,19 +198,16 @@ def test_jetstream_config_rejects_empty_subjects() -> None:
 
 def test_jetstream_config_rejects_negative_retention() -> None:
     with pytest.raises(ValueError):
-        JetStreamConfig(
-            name="X", subjects=("a",), max_messages=-1
-        )
+        JetStreamConfig(name="X", subjects=("a",), max_messages=-1)
     with pytest.raises(ValueError):
-        JetStreamConfig(
-            name="X", subjects=("a",), max_age_ns=-1
-        )
+        JetStreamConfig(name="X", subjects=("a",), max_age_ns=-1)
 
 
 def test_jetstream_config_rejects_non_tuple_subjects() -> None:
     with pytest.raises(TypeError):
         JetStreamConfig(
-            name="X", subjects=["a"]  # type: ignore[arg-type]
+            name="X",
+            subjects=["a"],  # type: ignore[arg-type]
         )
 
 
@@ -221,9 +218,7 @@ def test_jetstream_config_rejects_empty_name() -> None:
 
 def test_durable_consumer_rejects_empty_name() -> None:
     with pytest.raises(ValueError):
-        DurableConsumerConfig(
-            durable_name="", filter_pattern="a"
-        )
+        DurableConsumerConfig(durable_name="", filter_pattern="a")
 
 
 def test_durable_consumer_rejects_negative_ack_wait() -> None:
@@ -271,9 +266,7 @@ def test_publish_record_rejects_non_bytes_value() -> None:
 
 def test_publish_record_rejects_negative_ts_ns() -> None:
     with pytest.raises(ValueError):
-        PublishRecord(
-            subject_name="a", value=b"x", ts_ns=-1
-        )
+        PublishRecord(subject_name="a", value=b"x", ts_ns=-1)
 
 
 def test_publish_record_rejects_bad_headers() -> None:
@@ -390,9 +383,7 @@ def test_deserialize_record_rejects_non_bytes() -> None:
 
 
 def _record(subject: str, value: bytes, ts_ns: int = 0) -> PublishRecord:
-    return PublishRecord(
-        subject_name=subject, value=value, ts_ns=ts_ns
-    )
+    return PublishRecord(subject_name=subject, value=value, ts_ns=ts_ns)
 
 
 def test_publish_no_subscribers_returns_zero() -> None:
@@ -404,9 +395,7 @@ def test_publish_no_subscribers_returns_zero() -> None:
 def test_publish_dispatches_to_exact_subscriber() -> None:
     client = InMemoryNATSClient()
     seen: list[PublishRecord] = []
-    client.subscribe(
-        "intel.signals.btc", lambda r: seen.append(r)
-    )
+    client.subscribe("intel.signals.btc", lambda r: seen.append(r))
     n = client.publish(_record("intel.signals.btc", b"x"))
     assert n == 1
     assert len(seen) == 1
@@ -416,9 +405,7 @@ def test_publish_dispatches_to_exact_subscriber() -> None:
 def test_publish_skips_non_matching_subscribers() -> None:
     client = InMemoryNATSClient()
     seen: list[PublishRecord] = []
-    client.subscribe(
-        "intel.signals.eth", lambda r: seen.append(r)
-    )
+    client.subscribe("intel.signals.eth", lambda r: seen.append(r))
     n = client.publish(_record("intel.signals.btc", b"x"))
     assert n == 0
     assert seen == []
@@ -427,9 +414,7 @@ def test_publish_skips_non_matching_subscribers() -> None:
 def test_publish_wildcard_subscriber() -> None:
     client = InMemoryNATSClient()
     seen: list[PublishRecord] = []
-    client.subscribe(
-        "intel.*.btc", lambda r: seen.append(r)
-    )
+    client.subscribe("intel.*.btc", lambda r: seen.append(r))
     client.publish(_record("intel.signals.btc", b"a"))
     client.publish(_record("intel.fills.btc", b"b"))
     client.publish(_record("intel.signals.eth", b"c"))
@@ -465,16 +450,15 @@ def test_unsubscribe_removes_callback() -> None:
 def test_subscribe_rejects_non_callable() -> None:
     client = InMemoryNATSClient()
     with pytest.raises(TypeError):
-        client.subscribe(
-            "intel.signals.btc", "not-callable"
-        )
+        client.subscribe("intel.signals.btc", "not-callable")
 
 
 def test_subscribe_rejects_bad_pattern() -> None:
     client = InMemoryNATSClient()
     with pytest.raises(TypeError):
         client.subscribe(
-            7, lambda r: None  # type: ignore[arg-type]
+            7,
+            lambda r: None,  # type: ignore[arg-type]
         )
 
 
@@ -519,22 +503,16 @@ def _make_app() -> App:
 
 def test_add_stream_registers_log() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("a.>",)))
     assert "A" in js.stream_names()
     assert js.stream_length("A") == 0
 
 
 def test_add_stream_rejects_duplicate_name() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("a.>",)))
     with pytest.raises(ValueError):
-        js.add_stream(
-            JetStreamConfig(name="A", subjects=("b.>",))
-        )
+        js.add_stream(JetStreamConfig(name="A", subjects=("b.>",)))
 
 
 def test_add_stream_rejects_non_config() -> None:
@@ -545,12 +523,8 @@ def test_add_stream_rejects_non_config() -> None:
 
 def test_publish_appends_to_matching_streams() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
-    )
-    js.add_stream(
-        JetStreamConfig(name="B", subjects=("b.>",))
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("a.>",)))
+    js.add_stream(JetStreamConfig(name="B", subjects=("b.>",)))
     accepted = js.publish(_record("a.x", b"1"))
     assert accepted == 1
     assert js.stream_length("A") == 1
@@ -559,14 +533,8 @@ def test_publish_appends_to_matching_streams() -> None:
 
 def test_publish_appends_to_multiple_matching_streams() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("intel.>",))
-    )
-    js.add_stream(
-        JetStreamConfig(
-            name="ALL", subjects=("intel.signals.btc",)
-        )
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("intel.>",)))
+    js.add_stream(JetStreamConfig(name="ALL", subjects=("intel.signals.btc",)))
     accepted = js.publish(_record("intel.signals.btc", b"1"))
     assert accepted == 2
     assert js.stream_length("A") == 1
@@ -575,9 +543,7 @@ def test_publish_appends_to_multiple_matching_streams() -> None:
 
 def test_publish_no_matching_streams_is_zero() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("a.>",)))
     accepted = js.publish(_record("b.x", b"1"))
     assert accepted == 0
 
@@ -626,20 +592,14 @@ def test_add_consumer_requires_known_stream() -> None:
     with pytest.raises(KeyError):
         js.add_consumer(
             "MISSING",
-            DurableConsumerConfig(
-                durable_name="d", filter_pattern="a"
-            ),
+            DurableConsumerConfig(durable_name="d", filter_pattern="a"),
         )
 
 
 def test_add_consumer_rejects_duplicate() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
-    )
-    cfg = DurableConsumerConfig(
-        durable_name="d", filter_pattern="a.>"
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("a.>",)))
+    cfg = DurableConsumerConfig(durable_name="d", filter_pattern="a.>")
     js.add_consumer("A", cfg)
     with pytest.raises(ValueError):
         js.add_consumer("A", cfg)
@@ -647,18 +607,14 @@ def test_add_consumer_rejects_duplicate() -> None:
 
 def test_add_consumer_rejects_non_config() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("a.>",)))
     with pytest.raises(TypeError):
         js.add_consumer("A", "nope")  # type: ignore[arg-type]
 
 
 def test_fetch_returns_filtered_records() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("intel.>",))
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("intel.>",)))
     js.add_consumer(
         "A",
         DurableConsumerConfig(
@@ -677,14 +633,10 @@ def test_fetch_returns_filtered_records() -> None:
 
 def test_fetch_advances_delivered_seq() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("a.>",)))
     js.add_consumer(
         "A",
-        DurableConsumerConfig(
-            durable_name="d", filter_pattern="a.>"
-        ),
+        DurableConsumerConfig(durable_name="d", filter_pattern="a.>"),
     )
     js.publish(_record("a.x", b"1", ts_ns=1))
     js.publish(_record("a.x", b"2", ts_ns=2))
@@ -698,14 +650,10 @@ def test_fetch_advances_delivered_seq() -> None:
 
 def test_fetch_batch_caps_results() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("a.>",)))
     js.add_consumer(
         "A",
-        DurableConsumerConfig(
-            durable_name="d", filter_pattern="a.>"
-        ),
+        DurableConsumerConfig(durable_name="d", filter_pattern="a.>"),
     )
     for i in range(5):
         js.publish(_record("a.x", str(i).encode(), ts_ns=i))
@@ -715,14 +663,10 @@ def test_fetch_batch_caps_results() -> None:
 
 def test_fetch_rejects_nonpositive_batch() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("a.>",)))
     js.add_consumer(
         "A",
-        DurableConsumerConfig(
-            durable_name="d", filter_pattern="a.>"
-        ),
+        DurableConsumerConfig(durable_name="d", filter_pattern="a.>"),
     )
     with pytest.raises(ValueError):
         js.fetch("A", "d", batch=0)
@@ -732,23 +676,17 @@ def test_fetch_rejects_nonpositive_batch() -> None:
 
 def test_fetch_rejects_unknown_consumer() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("a.>",)))
     with pytest.raises(KeyError):
         js.fetch("A", "missing", batch=1)
 
 
 def test_ack_clears_pending() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("a.>",)))
     js.add_consumer(
         "A",
-        DurableConsumerConfig(
-            durable_name="d", filter_pattern="a.>"
-        ),
+        DurableConsumerConfig(durable_name="d", filter_pattern="a.>"),
     )
     js.publish(_record("a.x", b"1", ts_ns=1))
     out = js.fetch("A", "d", batch=1)
@@ -760,14 +698,10 @@ def test_ack_clears_pending() -> None:
 
 def test_ack_advances_floor_only_when_contiguous() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("a.>",)))
     js.add_consumer(
         "A",
-        DurableConsumerConfig(
-            durable_name="d", filter_pattern="a.>"
-        ),
+        DurableConsumerConfig(durable_name="d", filter_pattern="a.>"),
     )
     js.publish(_record("a.x", b"1", ts_ns=1))
     js.publish(_record("a.x", b"2", ts_ns=2))
@@ -784,14 +718,10 @@ def test_ack_advances_floor_only_when_contiguous() -> None:
 
 def test_nak_redelivers_on_next_fetch() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("a.>",)))
     js.add_consumer(
         "A",
-        DurableConsumerConfig(
-            durable_name="d", filter_pattern="a.>"
-        ),
+        DurableConsumerConfig(durable_name="d", filter_pattern="a.>"),
     )
     js.publish(_record("a.x", b"1", ts_ns=1))
     js.publish(_record("a.x", b"2", ts_ns=2))
@@ -807,28 +737,20 @@ def test_nak_redelivers_on_next_fetch() -> None:
 
 def test_nak_unknown_seq_returns_false() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("a.>",)))
     js.add_consumer(
         "A",
-        DurableConsumerConfig(
-            durable_name="d", filter_pattern="a.>"
-        ),
+        DurableConsumerConfig(durable_name="d", filter_pattern="a.>"),
     )
     assert js.nak("A", "d", 99) is False
 
 
 def test_term_drops_pending_permanently() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("a.>",)))
     js.add_consumer(
         "A",
-        DurableConsumerConfig(
-            durable_name="d", filter_pattern="a.>"
-        ),
+        DurableConsumerConfig(durable_name="d", filter_pattern="a.>"),
     )
     js.publish(_record("a.x", b"1", ts_ns=1))
     js.publish(_record("a.x", b"2", ts_ns=2))
@@ -841,34 +763,24 @@ def test_term_drops_pending_permanently() -> None:
 
 def test_term_unknown_seq_returns_false() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
-    )
+    js.add_stream(JetStreamConfig(name="A", subjects=("a.>",)))
     js.add_consumer(
         "A",
-        DurableConsumerConfig(
-            durable_name="d", filter_pattern="a.>"
-        ),
+        DurableConsumerConfig(durable_name="d", filter_pattern="a.>"),
     )
     assert js.term("A", "d", 7) is False
 
 
 def test_consumer_names_sorted() -> None:
     js = InMemoryJetStream()
-    js.add_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
+    js.add_stream(JetStreamConfig(name="A", subjects=("a.>",)))
+    js.add_consumer(
+        "A",
+        DurableConsumerConfig(durable_name="zeta", filter_pattern="a.>"),
     )
     js.add_consumer(
         "A",
-        DurableConsumerConfig(
-            durable_name="zeta", filter_pattern="a.>"
-        ),
-    )
-    js.add_consumer(
-        "A",
-        DurableConsumerConfig(
-            durable_name="alpha", filter_pattern="a.>"
-        ),
+        DurableConsumerConfig(durable_name="alpha", filter_pattern="a.>"),
     )
     assert js.consumer_names("A") == ("alpha", "zeta")
 
@@ -884,44 +796,32 @@ def test_app_with_stream_requires_jetstream_config() -> None:
 
 
 def test_app_with_stream_rejects_duplicate() -> None:
-    app = App().with_stream(
-        JetStreamConfig(name="A", subjects=("a.>",))
-    )
+    app = App().with_stream(JetStreamConfig(name="A", subjects=("a.>",)))
     with pytest.raises(ValueError):
-        app.with_stream(
-            JetStreamConfig(name="A", subjects=("b.>",))
-        )
+        app.with_stream(JetStreamConfig(name="A", subjects=("b.>",)))
 
 
 def test_app_with_consumer_requires_known_stream() -> None:
     with pytest.raises(ValueError):
         App().with_consumer(
             "MISSING",
-            DurableConsumerConfig(
-                durable_name="d", filter_pattern="a"
-            ),
+            DurableConsumerConfig(durable_name="d", filter_pattern="a"),
         )
 
 
 def test_app_with_consumer_rejects_duplicate() -> None:
     app = (
         App()
-        .with_stream(
-            JetStreamConfig(name="A", subjects=("a.>",))
-        )
+        .with_stream(JetStreamConfig(name="A", subjects=("a.>",)))
         .with_consumer(
             "A",
-            DurableConsumerConfig(
-                durable_name="d", filter_pattern="a.>"
-            ),
+            DurableConsumerConfig(durable_name="d", filter_pattern="a.>"),
         )
     )
     with pytest.raises(ValueError):
         app.with_consumer(
             "A",
-            DurableConsumerConfig(
-                durable_name="d", filter_pattern="a.>"
-            ),
+            DurableConsumerConfig(durable_name="d", filter_pattern="a.>"),
         )
 
 
@@ -939,10 +839,7 @@ def test_run_app_round_trip_filters_by_consumer() -> None:
     assert isinstance(result, AppResult)
     assert [r.value for r in result.records] == [b"a", b"c"]
     assert all(r.consumer_name == "alpha" for r in result.records)
-    assert all(
-        r.subject_name == "intel.signals.btc"
-        for r in result.records
-    )
+    assert all(r.subject_name == "intel.signals.btc" for r in result.records)
 
 
 def test_run_app_digest_byte_stable_3_run() -> None:
@@ -980,11 +877,7 @@ def test_run_app_rejects_bad_batch() -> None:
 def test_run_app_two_consumers_filter_independently() -> None:
     app = (
         App()
-        .with_stream(
-            JetStreamConfig(
-                name="INTEL", subjects=("intel.signals.>",)
-            )
-        )
+        .with_stream(JetStreamConfig(name="INTEL", subjects=("intel.signals.>",)))
         .with_consumer(
             "INTEL",
             DurableConsumerConfig(
@@ -1001,12 +894,8 @@ def test_run_app_two_consumers_filter_independently() -> None:
         )
     )
     result = run_app(app, _inbound())
-    btc = [
-        r for r in result.records if r.consumer_name == "btc-only"
-    ]
-    allc = [
-        r for r in result.records if r.consumer_name == "all"
-    ]
+    btc = [r for r in result.records if r.consumer_name == "btc-only"]
+    allc = [r for r in result.records if r.consumer_name == "all"]
     assert [r.value for r in btc] == [b"a", b"c"]
     assert [r.value for r in allc] == [b"a", b"b", b"c"]
 
@@ -1118,10 +1007,7 @@ def test_jetstream_factory_rejects_bad_config() -> None:
 
 
 _MODULE_PATH = (
-    pathlib.Path(__file__).resolve().parents[1]
-    / "system_engine"
-    / "streaming"
-    / "nats_bus.py"
+    pathlib.Path(__file__).resolve().parents[1] / "system_engine" / "streaming" / "nats_bus.py"
 )
 
 _FORBIDDEN_TOP_LEVEL = frozenset(
@@ -1176,9 +1062,7 @@ def test_no_forbidden_top_level_imports() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 root = alias.name.split(".")[0]
-                assert root not in _FORBIDDEN_TOP_LEVEL, (
-                    f"forbidden top-level import {alias.name}"
-                )
+                assert root not in _FORBIDDEN_TOP_LEVEL, f"forbidden top-level import {alias.name}"
         elif isinstance(node, ast.ImportFrom):
             if node.module is None:
                 continue
@@ -1194,15 +1078,13 @@ def test_no_runtime_tier_imports() -> None:
         if isinstance(node, ast.ImportFrom) and node.module:
             root = node.module.split(".")[0]
             assert root not in _FORBIDDEN_RUNTIME_ROOTS, (
-                f"B1 violation: forbidden runtime-tier import "
-                f"from {node.module}"
+                f"B1 violation: forbidden runtime-tier import from {node.module}"
             )
         elif isinstance(node, ast.Import):
             for alias in node.names:
                 root = alias.name.split(".")[0]
                 assert root not in _FORBIDDEN_RUNTIME_ROOTS, (
-                    f"B1 violation: forbidden runtime-tier "
-                    f"import {alias.name}"
+                    f"B1 violation: forbidden runtime-tier import {alias.name}"
                 )
 
 
@@ -1218,8 +1100,7 @@ def test_no_typed_event_constructors() -> None:
                 name = func.attr
             if name in _FORBIDDEN_TYPED_EVENTS:
                 raise AssertionError(
-                    f"B27/B28/INV-71 violation: typed-event "
-                    f"constructor call {name}"
+                    f"B27/B28/INV-71 violation: typed-event constructor call {name}"
                 )
 
 

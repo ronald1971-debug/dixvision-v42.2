@@ -33,9 +33,7 @@ def test_start_bat_auto_installs_desktop_shortcut() -> None:
         "start_dixvision.bat must call install_desktop_shortcut.ps1 so the "
         "shortcut lands on the desktop on first run"
     )
-    assert "-ExecutionPolicy Bypass" in body, (
-        "PowerShell invocation must bypass execution policy"
-    )
+    assert "-ExecutionPolicy Bypass" in body, "PowerShell invocation must bypass execution policy"
     assert "-Quiet" in body, (
         "auto-install path must run the PS script in -Quiet mode to avoid "
         "polluting the launcher console"

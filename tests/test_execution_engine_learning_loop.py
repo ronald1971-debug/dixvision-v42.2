@@ -69,9 +69,7 @@ def _tick(symbol: str = "BTCUSDT", last: float = 50_000.0) -> MarketTick:
 
 
 def _guard() -> AuthorityGuard:
-    return AuthorityGuard(
-        caller_allowlist=frozenset({"execution_engine", "tests.fixtures"})
-    )
+    return AuthorityGuard(caller_allowlist=frozenset({"execution_engine", "tests.fixtures"}))
 
 
 # ---------------------------------------------------------------------------

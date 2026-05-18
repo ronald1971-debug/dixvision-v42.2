@@ -223,24 +223,16 @@ class FeatureImportanceReport:
         for item in self.by_feature:
             if not isinstance(item, FeatureImportance):
                 raise TypeError(
-                    "by_feature entries must be FeatureImportance; "
-                    f"got {type(item).__name__}"
+                    f"by_feature entries must be FeatureImportance; got {type(item).__name__}"
                 )
             names.append(item.feature_name)
         if len(set(names)) != len(names):
             raise ValueError("by_feature feature_names must be unique")
         for prev, curr in zip(self.by_feature, self.by_feature[1:], strict=False):
             if curr.abs_score > prev.abs_score:
-                raise ValueError(
-                    "by_feature must be sorted descending by abs_score"
-                )
-            if (
-                curr.abs_score == prev.abs_score
-                and curr.feature_name < prev.feature_name
-            ):
-                raise ValueError(
-                    "ties in abs_score must break by feature_name ascending"
-                )
+                raise ValueError("by_feature must be sorted descending by abs_score")
+            if curr.abs_score == prev.abs_score and curr.feature_name < prev.feature_name:
+                raise ValueError("ties in abs_score must break by feature_name ascending")
         if isinstance(self.total_n_obs, bool) or not isinstance(self.total_n_obs, int):
             raise TypeError("total_n_obs must be int")
         if self.total_n_obs < 0:
@@ -287,8 +279,7 @@ def compute_feature_importance(
     for obs in observations:
         if not isinstance(obs, FeatureObservation):
             raise TypeError(
-                "observations entries must be FeatureObservation; "
-                f"got {type(obs).__name__}"
+                f"observations entries must be FeatureObservation; got {type(obs).__name__}"
             )
 
     try:
@@ -366,9 +357,7 @@ def compute_feature_importance(
 
     total_n_obs = sum(fi.n_obs for fi in by_feature)
     if by_feature:
-        mean_abs_score = math.fsum(fi.abs_score for fi in by_feature) / len(
-            by_feature
-        )
+        mean_abs_score = math.fsum(fi.abs_score for fi in by_feature) / len(by_feature)
         if mean_abs_score < 0.0:
             mean_abs_score = 0.0
         if mean_abs_score > 1.0:

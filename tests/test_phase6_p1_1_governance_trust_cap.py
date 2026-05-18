@@ -34,9 +34,7 @@ from core.contracts.signal_trust import SignalTrust
 from governance_engine.control_plane import LedgerAuthorityWriter
 from governance_engine.engine import GovernanceEngine
 
-REGISTRY_YAML = (
-    Path(__file__).resolve().parents[1] / "registry" / "external_signal_trust.yaml"
-)
+REGISTRY_YAML = Path(__file__).resolve().parents[1] / "registry" / "external_signal_trust.yaml"
 
 
 def _signal_audit_rows(eng: GovernanceEngine) -> list[dict[str, object]]:
@@ -71,11 +69,7 @@ def test_signal_audit_internal_signal_skips_cap() -> None:
         ledger=LedgerAuthorityWriter(),
         signal_trust_registry=registry,
     )
-    eng.process(
-        _build_signal(
-            confidence=0.9, trust=SignalTrust.INTERNAL, source=""
-        )
-    )
+    eng.process(_build_signal(confidence=0.9, trust=SignalTrust.INTERNAL, source=""))
     rows = _signal_audit_rows(eng)
     assert len(rows) == 1
     payload = rows[0]["payload"]

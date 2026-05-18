@@ -56,11 +56,7 @@ _VALID_ORIGINS = sorted(AUTHORISED_INTENT_ORIGINS | TEST_INTENT_ORIGINS)
 def _signal_events(draw: st.DrawFn) -> SignalEvent:
     return SignalEvent(
         ts_ns=draw(st.integers(min_value=1, max_value=2**63 - 1)),
-        symbol=draw(
-            st.sampled_from(
-                ["BTCUSDT", "EURUSD", "ETHUSDT", "AAPL", "SOLUSDT"]
-            )
-        ),
+        symbol=draw(st.sampled_from(["BTCUSDT", "EURUSD", "ETHUSDT", "AAPL", "SOLUSDT"])),
         side=draw(st.sampled_from([Side.BUY, Side.SELL, Side.HOLD])),
         confidence=draw(
             st.floats(

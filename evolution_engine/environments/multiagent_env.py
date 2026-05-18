@@ -180,10 +180,7 @@ class MultiAgentScenario:
                 f"{MAX_AGENTS!r} elements, got {len(self.agent_ids)!r}"
             )
         if len(set(self.agent_ids)) != len(self.agent_ids):
-            raise ValueError(
-                "MultiAgentScenario.agent_ids must be unique, got "
-                f"{self.agent_ids!r}"
-            )
+            raise ValueError(f"MultiAgentScenario.agent_ids must be unique, got {self.agent_ids!r}")
         for idx, agent_id in enumerate(self.agent_ids):
             if not isinstance(agent_id, str):
                 raise TypeError(
@@ -191,31 +188,23 @@ class MultiAgentScenario:
                     f"{type(agent_id).__name__}"
                 )
             if not agent_id:
-                raise ValueError(
-                    f"MultiAgentScenario.agent_ids[{idx}] must be non-empty"
-                )
+                raise ValueError(f"MultiAgentScenario.agent_ids[{idx}] must be non-empty")
         if not self.prices:
             raise ValueError("MultiAgentScenario.prices must be non-empty")
         for idx, price in enumerate(self.prices):
             if not isinstance(price, (int, float)):
                 raise TypeError(
-                    f"MultiAgentScenario.prices[{idx}] must be float, got "
-                    f"{type(price).__name__}"
+                    f"MultiAgentScenario.prices[{idx}] must be float, got {type(price).__name__}"
                 )
             if not math.isfinite(float(price)):
-                raise ValueError(
-                    f"MultiAgentScenario.prices[{idx}] must be finite, got "
-                    f"{price!r}"
-                )
+                raise ValueError(f"MultiAgentScenario.prices[{idx}] must be finite, got {price!r}")
             if float(price) <= 0.0:
                 raise ValueError(
-                    f"MultiAgentScenario.prices[{idx}] must be positive, got "
-                    f"{price!r}"
+                    f"MultiAgentScenario.prices[{idx}] must be positive, got {price!r}"
                 )
         if self.max_steps <= 0:
             raise ValueError(
-                "MultiAgentScenario.max_steps must be positive, got "
-                f"{self.max_steps!r}"
+                f"MultiAgentScenario.max_steps must be positive, got {self.max_steps!r}"
             )
         if self.max_steps > MAX_EPISODE_STEPS:
             raise ValueError(
@@ -252,23 +241,16 @@ class MultiAgentObservation:
 
     def __post_init__(self) -> None:
         if not isinstance(self.agent_id, str) or not self.agent_id:
-            raise ValueError(
-                "MultiAgentObservation.agent_id must be non-empty str"
-            )
+            raise ValueError("MultiAgentObservation.agent_id must be non-empty str")
         if self.step_idx < 0:
-            raise ValueError(
-                "MultiAgentObservation.step_idx must be >= 0, got "
-                f"{self.step_idx!r}"
-            )
+            raise ValueError(f"MultiAgentObservation.step_idx must be >= 0, got {self.step_idx!r}")
         if not math.isfinite(self.mid_price):
             raise ValueError(
-                "MultiAgentObservation.mid_price must be finite, got "
-                f"{self.mid_price!r}"
+                f"MultiAgentObservation.mid_price must be finite, got {self.mid_price!r}"
             )
         if self.mid_price <= 0.0:
             raise ValueError(
-                "MultiAgentObservation.mid_price must be positive, got "
-                f"{self.mid_price!r}"
+                f"MultiAgentObservation.mid_price must be positive, got {self.mid_price!r}"
             )
         if self.inventory_signed not in (-1, 0, 1):
             raise ValueError(
@@ -282,8 +264,7 @@ class MultiAgentObservation:
             )
         if len(self.state_hash) != 16:
             raise ValueError(
-                "MultiAgentObservation.state_hash must be 16 hex chars, got "
-                f"{self.state_hash!r}"
+                f"MultiAgentObservation.state_hash must be 16 hex chars, got {self.state_hash!r}"
             )
 
 
@@ -305,14 +286,11 @@ class MultiAgentStepResult:
     def __post_init__(self) -> None:
         agent_ids = tuple(o.agent_id for o in self.observations)
         if len(set(agent_ids)) != len(agent_ids):
-            raise ValueError(
-                "MultiAgentStepResult.observations must have unique agent_ids"
-            )
+            raise ValueError("MultiAgentStepResult.observations must have unique agent_ids")
         reward_agents = tuple(a for a, _ in self.rewards)
         if set(reward_agents) != set(agent_ids):
             raise ValueError(
-                "MultiAgentStepResult.rewards must cover exactly the same "
-                "agents as observations"
+                "MultiAgentStepResult.rewards must cover exactly the same agents as observations"
             )
 
     def rewards_dict(self) -> dict[str, float]:
@@ -338,8 +316,7 @@ class AgentSelector:
     def __init__(self, agents: tuple[str, ...]) -> None:
         if len(agents) < MIN_AGENTS:
             raise ValueError(
-                f"AgentSelector requires >= {MIN_AGENTS!r} agents, got "
-                f"{len(agents)!r}"
+                f"AgentSelector requires >= {MIN_AGENTS!r} agents, got {len(agents)!r}"
             )
         self._agents: tuple[str, ...] = agents
         self._idx: int = 0
@@ -408,12 +385,8 @@ class DIXMultiAgentEnv:
         self._scenario: MultiAgentScenario = scenario
         self._seed: int = 0
         self._step_idx: int = 0
-        self._inventory: dict[str, int] = {
-            agent_id: 0 for agent_id in scenario.agent_ids
-        }
-        self._pnl: dict[str, float] = {
-            agent_id: 0.0 for agent_id in scenario.agent_ids
-        }
+        self._inventory: dict[str, int] = {agent_id: 0 for agent_id in scenario.agent_ids}
+        self._pnl: dict[str, float] = {agent_id: 0.0 for agent_id in scenario.agent_ids}
         self._step_call_count: int = 0
         self._terminated: bool = False
         self._selector: AgentSelector = AgentSelector(scenario.agent_ids)
@@ -453,27 +426,21 @@ class DIXMultiAgentEnv:
     def _build_agent_observation(self, agent_id: str) -> MultiAgentObservation:
         if agent_id not in self._inventory:
             raise UnknownAgentError(agent_id)
-        mid_price = self._scenario.prices[
-            min(self._step_idx, len(self._scenario.prices) - 1)
-        ]
+        mid_price = self._scenario.prices[min(self._step_idx, len(self._scenario.prices) - 1)]
         inventory = self._inventory[agent_id]
         pnl = self._pnl[agent_id]
         return MultiAgentObservation(
             agent_id=agent_id,
             step_idx=self._step_idx,
             mid_price=mid_price,
-            inventory_signed=(
-                0 if inventory == 0 else (1 if inventory > 0 else -1)
-            ),
+            inventory_signed=(0 if inventory == 0 else (1 if inventory > 0 else -1)),
             cumulative_pnl_usd=pnl,
             state_hash=_agent_obs_hash(
                 seed=self._seed,
                 agent_id=agent_id,
                 step_idx=self._step_idx,
                 mid_price=mid_price,
-                inventory_signed=(
-                    0 if inventory == 0 else (1 if inventory > 0 else -1)
-                ),
+                inventory_signed=(0 if inventory == 0 else (1 if inventory > 0 else -1)),
                 cumulative_pnl_usd=pnl,
             ),
         )
@@ -483,8 +450,7 @@ class DIXMultiAgentEnv:
     ) -> tuple[tuple[MultiAgentObservation, ...], dict[str, dict[str, Any]]]:
         if not isinstance(seed, int):
             raise TypeError(
-                "DIXMultiAgentEnv.reset(seed=...) must be int, got "
-                f"{type(seed).__name__}"
+                f"DIXMultiAgentEnv.reset(seed=...) must be int, got {type(seed).__name__}"
             )
         self._seed = seed
         self._step_idx = 0
@@ -494,8 +460,7 @@ class DIXMultiAgentEnv:
         self._terminated = False
         self._selector.reset()
         observations = tuple(
-            self._build_agent_observation(agent_id)
-            for agent_id in self._scenario.agent_ids
+            self._build_agent_observation(agent_id) for agent_id in self._scenario.agent_ids
         )
         infos: dict[str, dict[str, Any]] = {
             agent_id: {
@@ -512,28 +477,18 @@ class DIXMultiAgentEnv:
             raise UnknownAgentError(sorted(unknown)[0])
         missing = set(self._scenario.agent_ids) - set(actions)
         if missing:
-            raise ValueError(
-                f"PARALLEL step actions missing agents: {sorted(missing)!r}"
-            )
+            raise ValueError(f"PARALLEL step actions missing agents: {sorted(missing)!r}")
         for agent_id, action in actions.items():
             if not isinstance(action, int):
-                raise TypeError(
-                    f"actions[{agent_id!r}] must be int, got "
-                    f"{type(action).__name__}"
-                )
+                raise TypeError(f"actions[{agent_id!r}] must be int, got {type(action).__name__}")
             if action not in (
                 MultiAgentAction.HOLD.value,
                 MultiAgentAction.BUY.value,
                 MultiAgentAction.SELL.value,
             ):
-                raise ValueError(
-                    f"actions[{agent_id!r}] must be in {{0,1,2}}, got "
-                    f"{action!r}"
-                )
+                raise ValueError(f"actions[{agent_id!r}] must be in {{0,1,2}}, got {action!r}")
 
-    def _apply_action(
-        self, agent_id: str, action: int, current_price: float
-    ) -> float:
+    def _apply_action(self, agent_id: str, action: int, current_price: float) -> float:
         prev_inventory = self._inventory[agent_id]
         if action == MultiAgentAction.BUY.value:
             new_inventory = prev_inventory + 1
@@ -564,8 +519,7 @@ class DIXMultiAgentEnv:
             )
         if not isinstance(actions, dict):
             raise TypeError(
-                "DIXMultiAgentEnv.step(actions) must be dict, got "
-                f"{type(actions).__name__}"
+                f"DIXMultiAgentEnv.step(actions) must be dict, got {type(actions).__name__}"
             )
         self._validate_actions_dict(actions)
         self._step_call_count += 1
@@ -574,14 +528,10 @@ class DIXMultiAgentEnv:
                 f"exceeded MAX_EPISODE_STEPS={MAX_EPISODE_STEPS!r} without reset"
             )
 
-        current_price = self._scenario.prices[
-            min(self._step_idx, len(self._scenario.prices) - 1)
-        ]
+        current_price = self._scenario.prices[min(self._step_idx, len(self._scenario.prices) - 1)]
         rewards_map: dict[str, float] = {}
         for agent_id in self._scenario.agent_ids:
-            rewards_map[agent_id] = self._apply_action(
-                agent_id, actions[agent_id], current_price
-            )
+            rewards_map[agent_id] = self._apply_action(agent_id, actions[agent_id], current_price)
 
         self._step_idx += 1
         terminated = (
@@ -591,21 +541,15 @@ class DIXMultiAgentEnv:
         self._terminated = terminated
 
         observations = tuple(
-            self._build_agent_observation(agent_id)
-            for agent_id in self._scenario.agent_ids
+            self._build_agent_observation(agent_id) for agent_id in self._scenario.agent_ids
         )
         return MultiAgentStepResult(
             observations=observations,
             rewards=tuple(
-                (agent_id, rewards_map[agent_id])
-                for agent_id in self._scenario.agent_ids
+                (agent_id, rewards_map[agent_id]) for agent_id in self._scenario.agent_ids
             ),
-            terminations=tuple(
-                (agent_id, terminated) for agent_id in self._scenario.agent_ids
-            ),
-            truncations=tuple(
-                (agent_id, False) for agent_id in self._scenario.agent_ids
-            ),
+            terminations=tuple((agent_id, terminated) for agent_id in self._scenario.agent_ids),
+            truncations=tuple((agent_id, False) for agent_id in self._scenario.agent_ids),
             infos=tuple(
                 (
                     agent_id,
@@ -641,9 +585,7 @@ class DIXMultiAgentEnv:
                 f"{self._selector.current!r}, got {agent_id!r}"
             )
         if not isinstance(action, int):
-            raise TypeError(
-                f"action must be int, got {type(action).__name__}"
-            )
+            raise TypeError(f"action must be int, got {type(action).__name__}")
         if action not in (
             MultiAgentAction.HOLD.value,
             MultiAgentAction.BUY.value,
@@ -658,9 +600,7 @@ class DIXMultiAgentEnv:
             )
 
         was_last = self._selector.is_last()
-        current_price = self._scenario.prices[
-            min(self._step_idx, len(self._scenario.prices) - 1)
-        ]
+        current_price = self._scenario.prices[min(self._step_idx, len(self._scenario.prices) - 1)]
         reward = self._apply_action(agent_id, action, current_price)
 
         if was_last:
@@ -715,8 +655,7 @@ def pettingzoo_multiagent_env_factory(*, scenario: MultiAgentScenario) -> Any:
         from gymnasium import spaces  # noqa: PLC0415
     except ImportError as exc:
         raise RuntimeError(
-            "pettingzoo_multiagent_env_factory requires `pip install "
-            "pettingzoo gymnasium`"
+            "pettingzoo_multiagent_env_factory requires `pip install pettingzoo gymnasium`"
         ) from exc
 
     base_env = DIXMultiAgentEnv(scenario=scenario)

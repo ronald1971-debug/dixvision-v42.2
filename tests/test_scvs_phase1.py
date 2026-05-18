@@ -224,16 +224,12 @@ def test_load_consumption_declaration_minimal(tmp_path: Path) -> None:
         p,
         {
             "module": "intelligence_engine.signal_pipeline",
-            "inputs": [
-                {"source_id": "SRC-MARKET-BINANCE-001", "required": True}
-            ],
+            "inputs": [{"source_id": "SRC-MARKET-BINANCE-001", "required": True}],
         },
     )
     decl = load_consumption_declaration(p)
     assert decl.module == "intelligence_engine.signal_pipeline"
-    assert decl.inputs == (
-        ConsumptionInput(source_id="SRC-MARKET-BINANCE-001", required=True),
-    )
+    assert decl.inputs == (ConsumptionInput(source_id="SRC-MARKET-BINANCE-001", required=True),)
 
 
 def test_load_consumption_rejects_bad_source_id(tmp_path: Path) -> None:
@@ -355,9 +351,7 @@ def _registry(*sources: tuple[str, bool]) -> SourceRegistry:
 def _decl(module: str, *source_ids: str) -> ConsumptionDeclaration:
     return ConsumptionDeclaration(
         module=module,
-        inputs=tuple(
-            ConsumptionInput(source_id=sid, required=True) for sid in source_ids
-        ),
+        inputs=tuple(ConsumptionInput(source_id=sid, required=True) for sid in source_ids),
         path=Path(f"/fake/{module}/consumes.yaml"),
     )
 

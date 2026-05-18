@@ -56,9 +56,7 @@ class _SeedRule:
         if not self.topic:
             raise ValueError("seed rule topic must be non-empty")
         if not 0.0 <= self.min_score <= 1.0:
-            raise ValueError(
-                "seed rule min_score must be in [0.0, 1.0]"
-            )
+            raise ValueError("seed rule min_score must be in [0.0, 1.0]")
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,24 +92,16 @@ class CuratorRules:
         out: dict[str, _SeedRule] = {}
         for seed_id, body in raw.items():
             if not isinstance(body, Mapping):
-                raise ValueError(
-                    f"seed {seed_id!r} body must be a mapping"
-                )
+                raise ValueError(f"seed {seed_id!r} body must be a mapping")
             topic_raw = body.get("topic", "")
             if not isinstance(topic_raw, str):
-                raise ValueError(
-                    f"seed {seed_id!r} topic must be a string"
-                )
+                raise ValueError(f"seed {seed_id!r} topic must be a string")
             min_score_raw = body.get("min_score", 0.0)
             # ``bool`` is a subclass of ``int`` in Python, and YAML parses
             # ``yes``/``true``/``on`` as ``True`` — reject explicitly so a
             # ``min_score: yes`` line cannot silently become ``1.0``.
-            if isinstance(min_score_raw, bool) or not isinstance(
-                min_score_raw, (int, float)
-            ):
-                raise ValueError(
-                    f"seed {seed_id!r} min_score must be a number"
-                )
+            if isinstance(min_score_raw, bool) or not isinstance(min_score_raw, (int, float)):
+                raise ValueError(f"seed {seed_id!r} min_score must be a number")
             allow_raw = body.get("allow", ()) or ()
             deny_raw = body.get("deny", ()) or ()
             tags_raw = body.get("tags", ()) or ()
@@ -123,17 +113,11 @@ class CuratorRules:
             # virtually every document. The user almost certainly meant a
             # list (``deny: [sponsored]``); fail loudly.
             if isinstance(allow_raw, str):
-                raise ValueError(
-                    f"seed {seed_id!r} allow must be a list, not a string"
-                )
+                raise ValueError(f"seed {seed_id!r} allow must be a list, not a string")
             if isinstance(deny_raw, str):
-                raise ValueError(
-                    f"seed {seed_id!r} deny must be a list, not a string"
-                )
+                raise ValueError(f"seed {seed_id!r} deny must be a list, not a string")
             if isinstance(tags_raw, str):
-                raise ValueError(
-                    f"seed {seed_id!r} tags must be a list, not a string"
-                )
+                raise ValueError(f"seed {seed_id!r} tags must be a list, not a string")
             allow_tuple = tuple(str(s) for s in allow_raw)
             deny_tuple = tuple(str(s) for s in deny_raw)
             tags_tuple = tuple(str(s) for s in tags_raw)
@@ -185,22 +169,12 @@ class Curator:
             if item.score < rule.min_score:
                 continue
             haystack = f"{item.title} {item.body}".lower()
-            if any(
-                d.lower() in haystack
-                for d in rule.deny_substrings
-                if d
-            ):
+            if any(d.lower() in haystack for d in rule.deny_substrings if d):
                 continue
             if rule.allow_substrings:
-                if not any(
-                    a.lower() in haystack
-                    for a in rule.allow_substrings
-                    if a
-                ):
+                if not any(a.lower() in haystack for a in rule.allow_substrings if a):
                     continue
-            tags = tuple(
-                sorted({t for t in rule.tags if t})
-            )
+            tags = tuple(sorted({t for t in rule.tags if t}))
             out.append(
                 CuratedItem(
                     ts_ns=item.ts_ns,

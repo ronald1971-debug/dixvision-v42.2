@@ -32,8 +32,7 @@ def _parse_proto_enum_names() -> frozenset[str]:
         flags=re.DOTALL,
     )
     assert block_match is not None, (
-        f"events.proto does not contain `enum SystemEventKind`"
-        f" — looked under {PROTO_PATH}"
+        f"events.proto does not contain `enum SystemEventKind` — looked under {PROTO_PATH}"
     )
     body = block_match.group("body")
     # Strip line comments first so commented-out assignments don't match.
@@ -64,9 +63,7 @@ def test_python_system_event_kinds_have_proto_counterparts() -> None:
 # Proto-3 requires a zero-valued ``_UNSPECIFIED`` sentinel on every
 # enum; Python's :class:`StrEnum` has no such concept. Exclude that
 # specific value from the symmetric-parity check.
-_PROTO_ONLY_SENTINELS: frozenset[str] = frozenset(
-    {"SYSTEM_EVENT_KIND_UNSPECIFIED"}
-)
+_PROTO_ONLY_SENTINELS: frozenset[str] = frozenset({"SYSTEM_EVENT_KIND_UNSPECIFIED"})
 
 
 def test_proto_system_event_kinds_have_python_counterparts() -> None:

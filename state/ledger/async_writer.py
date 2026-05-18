@@ -124,8 +124,7 @@ class AsyncWriterPolicy:
             )
         if self.batch_size_max <= 0:
             raise ValueError(
-                "AsyncWriterPolicy.batch_size_max must be > 0, "
-                f"got {self.batch_size_max}"
+                f"AsyncWriterPolicy.batch_size_max must be > 0, got {self.batch_size_max}"
             )
         if type(self.flush_interval_ns) is not int:
             raise TypeError(
@@ -134,8 +133,7 @@ class AsyncWriterPolicy:
             )
         if self.flush_interval_ns <= 0:
             raise ValueError(
-                "AsyncWriterPolicy.flush_interval_ns must be > 0, "
-                f"got {self.flush_interval_ns}"
+                f"AsyncWriterPolicy.flush_interval_ns must be > 0, got {self.flush_interval_ns}"
             )
         if type(self.fsync_on_flush) is not bool:
             raise TypeError(
@@ -182,32 +180,24 @@ class WriteRecord:
 
     def __post_init__(self) -> None:
         if type(self.seq) is not int:
-            raise TypeError(
-                f"WriteRecord.seq must be int, got {type(self.seq).__name__}"
-            )
+            raise TypeError(f"WriteRecord.seq must be int, got {type(self.seq).__name__}")
         if self.seq < 0:
             raise ValueError(f"WriteRecord.seq must be >= 0, got {self.seq}")
         if type(self.ts_ns) is not int:
-            raise TypeError(
-                f"WriteRecord.ts_ns must be int, got {type(self.ts_ns).__name__}"
-            )
+            raise TypeError(f"WriteRecord.ts_ns must be int, got {type(self.ts_ns).__name__}")
         if self.ts_ns < 0:
             raise ValueError(f"WriteRecord.ts_ns must be >= 0, got {self.ts_ns}")
         if not isinstance(self.kind, str):
-            raise TypeError(
-                f"WriteRecord.kind must be str, got {type(self.kind).__name__}"
-            )
+            raise TypeError(f"WriteRecord.kind must be str, got {type(self.kind).__name__}")
         if not self.kind:
             raise ValueError("WriteRecord.kind must be non-empty")
         if not isinstance(self.payload, Mapping):
             raise TypeError(
-                "WriteRecord.payload must be Mapping[str, str], "
-                f"got {type(self.payload).__name__}"
+                f"WriteRecord.payload must be Mapping[str, str], got {type(self.payload).__name__}"
             )
         if not isinstance(self.prev_hash, str):
             raise TypeError(
-                "WriteRecord.prev_hash must be str, "
-                f"got {type(self.prev_hash).__name__}"
+                f"WriteRecord.prev_hash must be str, got {type(self.prev_hash).__name__}"
             )
         if not is_valid_hash_hex(self.prev_hash):
             raise ValueError(
@@ -216,8 +206,7 @@ class WriteRecord:
             )
         if not isinstance(self.hash_chain, str):
             raise TypeError(
-                "WriteRecord.hash_chain must be str, "
-                f"got {type(self.hash_chain).__name__}"
+                f"WriteRecord.hash_chain must be str, got {type(self.hash_chain).__name__}"
             )
         if not is_valid_hash_hex(self.hash_chain):
             raise ValueError(
@@ -289,9 +278,7 @@ def parse_record(line: bytes) -> WriteRecord:
         raise ValueError(f"parse_record: line is not valid UTF-8: {exc!s}") from exc
     parts = text.split(ROW_FIELD_SEPARATOR)
     if len(parts) != 6:
-        raise ValueError(
-            f"parse_record: expected 6 fields separated by RS, got {len(parts)}"
-        )
+        raise ValueError(f"parse_record: expected 6 fields separated by RS, got {len(parts)}")
     seq_s, ts_ns_s, kind, payload_s, prev_hash, hash_chain = parts
     try:
         seq = int(seq_s)
@@ -345,13 +332,10 @@ class AsyncLedgerWriter:
 
     def __init__(self, path: Path, policy: AsyncWriterPolicy) -> None:
         if not isinstance(path, Path):
-            raise TypeError(
-                f"AsyncLedgerWriter.path must be Path, got {type(path).__name__}"
-            )
+            raise TypeError(f"AsyncLedgerWriter.path must be Path, got {type(path).__name__}")
         if not isinstance(policy, AsyncWriterPolicy):
             raise TypeError(
-                "AsyncLedgerWriter.policy must be AsyncWriterPolicy, "
-                f"got {type(policy).__name__}"
+                f"AsyncLedgerWriter.policy must be AsyncWriterPolicy, got {type(policy).__name__}"
             )
         self._path = path
         self._policy = policy
@@ -411,17 +395,13 @@ class AsyncLedgerWriter:
         """
         if type(ts_ns) is not int:
             raise TypeError(
-                f"AsyncLedgerWriter.append: ts_ns must be int, "
-                f"got {type(ts_ns).__name__}"
+                f"AsyncLedgerWriter.append: ts_ns must be int, got {type(ts_ns).__name__}"
             )
         if ts_ns < 0:
-            raise ValueError(
-                f"AsyncLedgerWriter.append: ts_ns must be >= 0, got {ts_ns}"
-            )
+            raise ValueError(f"AsyncLedgerWriter.append: ts_ns must be >= 0, got {ts_ns}")
         if not isinstance(record, WriteRecord):
             raise TypeError(
-                "AsyncLedgerWriter.append: record must be WriteRecord, "
-                f"got {type(record).__name__}"
+                f"AsyncLedgerWriter.append: record must be WriteRecord, got {type(record).__name__}"
             )
         with self._lock:
             if self._closed:
@@ -521,8 +501,7 @@ def stdlib_async_writer_factory(
     """
     if not isinstance(path, Path):
         raise TypeError(
-            "stdlib_async_writer_factory: path must be Path, "
-            f"got {type(path).__name__}"
+            f"stdlib_async_writer_factory: path must be Path, got {type(path).__name__}"
         )
     if policy is None:
         policy = AsyncWriterPolicy()
@@ -551,9 +530,7 @@ def enable_aiofiles_factory(
     import aiofiles  # noqa: F401, PLC0415  — lazy seam, function-local only
 
     if not isinstance(path, Path):
-        raise TypeError(
-            f"enable_aiofiles_factory: path must be Path, got {type(path).__name__}"
-        )
+        raise TypeError(f"enable_aiofiles_factory: path must be Path, got {type(path).__name__}")
     if policy is None:
         policy = AsyncWriterPolicy()
     return AsyncLedgerWriter(path=path, policy=policy)
@@ -588,9 +565,7 @@ def link_record(
     bytes are byte-identical to the SQLite writer's bytes (PR #164 /
     C-08).
     """
-    row = canonical_row_bytes(
-        seq=seq, ts_ns=ts_ns, kind=kind, payload=payload, prev_hash=prev_hash
-    )
+    row = canonical_row_bytes(seq=seq, ts_ns=ts_ns, kind=kind, payload=payload, prev_hash=prev_hash)
     chain = compute_chain_hash(prev_hash, row)
     return WriteRecord(
         seq=seq,

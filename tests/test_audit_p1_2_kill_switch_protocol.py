@@ -50,9 +50,7 @@ class _FakeStateTransitions:
     def current_mode(self) -> SystemMode:
         return self._mode
 
-    def propose(
-        self, request: ModeTransitionRequest
-    ) -> ModeTransitionDecision:
+    def propose(self, request: ModeTransitionRequest) -> ModeTransitionDecision:
         self.calls.append(request)
         return ModeTransitionDecision(
             ts_ns=request.ts_ns,
@@ -144,9 +142,7 @@ def test_protocol_rejects_partial_fake_missing_current_mode() -> None:
     """The other half: missing ``current_mode`` is also rejected."""
 
     class _MissingCurrentMode:
-        def propose(
-            self, request: ModeTransitionRequest
-        ) -> ModeTransitionDecision:
+        def propose(self, request: ModeTransitionRequest) -> ModeTransitionDecision:
             raise AssertionError("unreachable")
 
     assert not isinstance(_MissingCurrentMode(), StateTransitionProtocol)

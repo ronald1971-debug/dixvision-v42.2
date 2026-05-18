@@ -67,14 +67,10 @@ def test_authority_no_top_level_research_imports() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 head = alias.name.split(".", 1)[0]
-                assert head not in forbidden, (
-                    f"top-level import of {alias.name!r} is forbidden"
-                )
+                assert head not in forbidden, f"top-level import of {alias.name!r} is forbidden"
         if isinstance(node, ast.ImportFrom):
             module = (node.module or "").split(".", 1)[0]
-            assert module not in forbidden, (
-                f"top-level from-import of {node.module!r} is forbidden"
-            )
+            assert module not in forbidden, f"top-level from-import of {node.module!r} is forbidden"
 
 
 def test_authority_no_clock_random_or_io() -> None:
@@ -99,14 +95,10 @@ def test_authority_no_clock_random_or_io() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 head = alias.name.split(".", 1)[0]
-                assert head not in forbidden, (
-                    f"top-level import of {alias.name!r} is forbidden"
-                )
+                assert head not in forbidden, f"top-level import of {alias.name!r} is forbidden"
         if isinstance(node, ast.ImportFrom):
             module = (node.module or "").split(".", 1)[0]
-            assert module not in forbidden, (
-                f"top-level from-import of {node.module!r} is forbidden"
-            )
+            assert module not in forbidden, f"top-level from-import of {node.module!r} is forbidden"
 
 
 def test_authority_no_engine_cross_imports() -> None:
@@ -122,9 +114,7 @@ def test_authority_no_engine_cross_imports() -> None:
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom):
             module = node.module or ""
-            assert not module.startswith(forbidden_prefixes), (
-                f"forbidden cross-import: {module!r}"
-            )
+            assert not module.startswith(forbidden_prefixes), f"forbidden cross-import: {module!r}"
         if isinstance(node, ast.Import):
             for alias in node.names:
                 assert not alias.name.startswith(forbidden_prefixes), (
@@ -150,9 +140,7 @@ def test_authority_no_typed_event_construction() -> None:
             if isinstance(func, ast.Name) and func.id in forbidden:
                 pytest.fail(f"forbidden typed-event construction: {func.id}")
             if isinstance(func, ast.Attribute) and func.attr in forbidden:
-                pytest.fail(
-                    f"forbidden typed-event construction: {func.attr}"
-                )
+                pytest.fail(f"forbidden typed-event construction: {func.attr}")
 
 
 def test_authority_advisory_only_documented() -> None:
@@ -251,13 +239,9 @@ def test_weights_validates_dims_and_finiteness() -> None:
     with pytest.raises(SNNTorchDetectorError):
         LeakyWeights(weight=(), bias=(), input_dim=0, hidden_dim=1)
     with pytest.raises(SNNTorchDetectorError):
-        LeakyWeights(
-            weight=((float("nan"),),), bias=(0.0,), input_dim=1, hidden_dim=1
-        )
+        LeakyWeights(weight=((float("nan"),),), bias=(0.0,), input_dim=1, hidden_dim=1)
     with pytest.raises(SNNTorchDetectorError):
-        LeakyWeights(
-            weight=((1.0,),), bias=(0.0, 0.0), input_dim=1, hidden_dim=1
-        )
+        LeakyWeights(weight=((1.0,),), bias=(0.0, 0.0), input_dim=1, hidden_dim=1)
 
 
 def test_identity_weights_is_diagonal() -> None:
@@ -445,9 +429,7 @@ def test_detector_rejects_empty_source_symbol() -> None:
 def test_detector_rejects_invalid_polarity_sign() -> None:
     det = _make_detector()
     with pytest.raises(SNNTorchDetectorError):
-        det.detect(
-            ts_ns=1, source="s", symbol="X", window=[(0.0, 0.0)], polarity_sign=2
-        )
+        det.detect(ts_ns=1, source="s", symbol="X", window=[(0.0, 0.0)], polarity_sign=2)
 
 
 def test_spike_polarity_threshold_must_be_open_to_closed() -> None:
@@ -501,12 +483,8 @@ def test_benchmark_digest_differs_on_input_change() -> None:
 
 def test_benchmark_digest_differs_on_reset_mechanism() -> None:
     trace = (2.0,) * 10
-    a = benchmark_against_norse(
-        input_current=trace, reset_mechanism=RESET_SUBTRACT
-    ).digest
-    b = benchmark_against_norse(
-        input_current=trace, reset_mechanism=RESET_ZERO
-    ).digest
+    a = benchmark_against_norse(input_current=trace, reset_mechanism=RESET_SUBTRACT).digest
+    b = benchmark_against_norse(input_current=trace, reset_mechanism=RESET_ZERO).digest
     assert a != b
 
 
@@ -518,9 +496,7 @@ def test_benchmark_is_precision_match_count_tolerance() -> None:
     # gating works.
     assert b.is_precision_match(
         count_tolerance=delta,
-        first_spike_step_tolerance=abs(
-            b.first_spike_step_norse - b.first_spike_step_snntorch
-        ),
+        first_spike_step_tolerance=abs(b.first_spike_step_norse - b.first_spike_step_snntorch),
     )
     if delta > 0:
         assert not b.is_precision_match(count_tolerance=delta - 1)
@@ -567,10 +543,7 @@ def test_benchmark_pure_silent_match() -> None:
 def test_detector_three_run_pulse_equality() -> None:
     det = _make_detector(dim=2, threshold=1.0)
     window = [(2.0, 2.0)] * 4
-    runs = [
-        det.detect(ts_ns=42, source="snn", symbol="BTC", window=window)
-        for _ in range(3)
-    ]
+    runs = [det.detect(ts_ns=42, source="snn", symbol="BTC", window=window) for _ in range(3)]
     assert runs[0] == runs[1] == runs[2]
 
 

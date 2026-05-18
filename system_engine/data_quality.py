@@ -96,7 +96,11 @@ class ExpectationKind(StrEnum):
 
 # Frozen typed mapping for expectation parameters.
 _ALLOWED_PARAM_TYPES: Final[tuple[type, ...]] = (
-    str, int, float, bool, type(None),
+    str,
+    int,
+    float,
+    bool,
+    type(None),
 )
 
 
@@ -125,13 +129,10 @@ class Expectation:
     def __post_init__(self) -> None:
         if not isinstance(self.kind, ExpectationKind):
             raise DataQualityError(
-                f"Expectation.kind must be ExpectationKind, "
-                f"got {type(self.kind).__name__}"
+                f"Expectation.kind must be ExpectationKind, got {type(self.kind).__name__}"
             )
         if not isinstance(self.column, str) or not self.column:
-            raise DataQualityError(
-                "Expectation.column must be a non-empty str"
-            )
+            raise DataQualityError("Expectation.column must be a non-empty str")
         if not isinstance(self.params, tuple):
             raise DataQualityError(
                 f"Expectation.params must be a tuple of (key, value) "
@@ -186,9 +187,8 @@ class SuiteValidationReport:
 # Per-row validation
 # ---------------------------------------------------------------------------
 
-def validate_row(
-    expectation: Expectation, row: Mapping[str, Any]
-) -> ExpectationResult:
+
+def validate_row(expectation: Expectation, row: Mapping[str, Any]) -> ExpectationResult:
     """Check one expectation against one row.
 
     Pure function — no I/O, no side effects, deterministic output
@@ -197,14 +197,10 @@ def validate_row(
 
     if not isinstance(expectation, Expectation):
         raise DataQualityError(
-            f"validate_row expects Expectation, got "
-            f"{type(expectation).__name__}"
+            f"validate_row expects Expectation, got {type(expectation).__name__}"
         )
     if not isinstance(row, Mapping):
-        raise DataQualityError(
-            f"validate_row expects Mapping row, got "
-            f"{type(row).__name__}"
-        )
+        raise DataQualityError(f"validate_row expects Mapping row, got {type(row).__name__}")
 
     col = expectation.column
     params = expectation.params_dict()
@@ -244,10 +240,7 @@ def validate_row(
             expectation=expectation,
             passed=ok,
             observed=value,
-            message="" if ok else (
-                f"column {col!r} value {value!r} not in "
-                f"allowed set"
-            ),
+            message="" if ok else (f"column {col!r} value {value!r} not in allowed set"),
         )
 
     if expectation.kind == ExpectationKind.NOT_IN_SET:
@@ -257,19 +250,14 @@ def validate_row(
             expectation=expectation,
             passed=ok,
             observed=value,
-            message="" if ok else (
-                f"column {col!r} value {value!r} is in "
-                f"forbidden set"
-            ),
+            message="" if ok else (f"column {col!r} value {value!r} is in forbidden set"),
         )
 
     if expectation.kind == ExpectationKind.BETWEEN:
         lo = params.get("min")
         hi = params.get("max")
         if lo is None or hi is None:
-            raise DataQualityError(
-                "BETWEEN expectation requires 'min' and 'max' params"
-            )
+            raise DataQualityError("BETWEEN expectation requires 'min' and 'max' params")
         try:
             ok = lo <= value <= hi
         except TypeError:
@@ -278,18 +266,13 @@ def validate_row(
             expectation=expectation,
             passed=ok,
             observed=value,
-            message="" if ok else (
-                f"column {col!r} value {value!r} not in "
-                f"[{lo}, {hi}]"
-            ),
+            message="" if ok else (f"column {col!r} value {value!r} not in [{lo}, {hi}]"),
         )
 
     if expectation.kind == ExpectationKind.MAX_LENGTH:
         max_len = params.get("max")
         if max_len is None:
-            raise DataQualityError(
-                "MAX_LENGTH expectation requires 'max' param"
-            )
+            raise DataQualityError("MAX_LENGTH expectation requires 'max' param")
         try:
             actual_len = len(value)
         except TypeError:
@@ -299,18 +282,13 @@ def validate_row(
             expectation=expectation,
             passed=ok,
             observed=value,
-            message="" if ok else (
-                f"column {col!r} length {actual_len} exceeds "
-                f"max {max_len}"
-            ),
+            message="" if ok else (f"column {col!r} length {actual_len} exceeds max {max_len}"),
         )
 
     if expectation.kind == ExpectationKind.MIN_LENGTH:
         min_len = params.get("min")
         if min_len is None:
-            raise DataQualityError(
-                "MIN_LENGTH expectation requires 'min' param"
-            )
+            raise DataQualityError("MIN_LENGTH expectation requires 'min' param")
         try:
             actual_len = len(value)
         except TypeError:
@@ -320,44 +298,35 @@ def validate_row(
             expectation=expectation,
             passed=ok,
             observed=value,
-            message="" if ok else (
-                f"column {col!r} length {actual_len} below "
-                f"min {min_len}"
-            ),
+            message="" if ok else (f"column {col!r} length {actual_len} below min {min_len}"),
         )
 
     if expectation.kind == ExpectationKind.REGEX_MATCH:
         pattern = params.get("pattern")
         if pattern is None:
-            raise DataQualityError(
-                "REGEX_MATCH expectation requires 'pattern' param"
-            )
+            raise DataQualityError("REGEX_MATCH expectation requires 'pattern' param")
         ok = bool(_re.search(pattern, str(value)))
         return ExpectationResult(
             expectation=expectation,
             passed=ok,
             observed=value,
-            message="" if ok else (
-                f"column {col!r} value {value!r} does not match "
-                f"pattern {pattern!r}"
-            ),
+            message=""
+            if ok
+            else (f"column {col!r} value {value!r} does not match pattern {pattern!r}"),
         )
 
     if expectation.kind == ExpectationKind.TYPE_CHECK:
         type_name = params.get("type_name")
         if type_name is None:
-            raise DataQualityError(
-                "TYPE_CHECK expectation requires 'type_name' param"
-            )
+            raise DataQualityError("TYPE_CHECK expectation requires 'type_name' param")
         ok = type(value).__name__ == type_name
         return ExpectationResult(
             expectation=expectation,
             passed=ok,
             observed=value,
-            message="" if ok else (
-                f"column {col!r} expected type {type_name!r}, "
-                f"got {type(value).__name__!r}"
-            ),
+            message=""
+            if ok
+            else (f"column {col!r} expected type {type_name!r}, got {type(value).__name__!r}"),
         )
 
     raise DataQualityError(f"unknown expectation kind: {expectation.kind!r}")
@@ -396,15 +365,9 @@ def validate_suite(
     """
 
     if not isinstance(suite, tuple):
-        raise DataQualityError(
-            f"validate_suite suite must be a tuple, got "
-            f"{type(suite).__name__}"
-        )
+        raise DataQualityError(f"validate_suite suite must be a tuple, got {type(suite).__name__}")
     if not isinstance(rows, Sequence):
-        raise DataQualityError(
-            f"validate_suite rows must be a Sequence, got "
-            f"{type(rows).__name__}"
-        )
+        raise DataQualityError(f"validate_suite rows must be a Sequence, got {type(rows).__name__}")
 
     all_results: list[ExpectationResult] = []
     for row in rows:
@@ -420,9 +383,7 @@ def validate_suite(
         separators=(",", ":"),
         ensure_ascii=True,
     )
-    digest = hashlib.blake2b(
-        canonical.encode("utf-8"), digest_size=16
-    ).hexdigest()
+    digest = hashlib.blake2b(canonical.encode("utf-8"), digest_size=16).hexdigest()
 
     return SuiteValidationReport(
         results=tuple(all_results),
@@ -439,12 +400,10 @@ def validate_suite(
 # ---------------------------------------------------------------------------
 
 
-def enable_great_expectations_factory() -> (
-    Callable[
-        [tuple[Expectation, ...], Sequence[Mapping[str, Any]]],
-        SuiteValidationReport,
-    ]
-):
+def enable_great_expectations_factory() -> Callable[
+    [tuple[Expectation, ...], Sequence[Mapping[str, Any]]],
+    SuiteValidationReport,
+]:
     """Return a callable that delegates to ``great_expectations``.
 
     Importing :mod:`great_expectations` is deferred to factory-call

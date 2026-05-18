@@ -95,25 +95,20 @@ class SchemaField:
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, str) or not self.name:
-            raise InstructorError(
-                f"SchemaField.name must be a non-empty str, got {self.name!r}"
-            )
+            raise InstructorError(f"SchemaField.name must be a non-empty str, got {self.name!r}")
         if self.type_ not in _PRIMITIVES:
             raise InstructorError(
-                "SchemaField.type_ must be one of "
-                f"{_PRIMITIVES}, got {self.type_!r}"
+                f"SchemaField.type_ must be one of {_PRIMITIVES}, got {self.type_!r}"
             )
         if self.choices is not None:
             if not isinstance(self.choices, tuple) or len(self.choices) == 0:
                 raise InstructorError(
-                    "SchemaField.choices must be a non-empty tuple or None, "
-                    f"got {self.choices!r}"
+                    f"SchemaField.choices must be a non-empty tuple or None, got {self.choices!r}"
                 )
             for c in self.choices:
                 if type(c) is not self.type_:
                     raise InstructorError(
-                        f"SchemaField.choices element {c!r} is not of type "
-                        f"{self.type_.__name__}"
+                        f"SchemaField.choices element {c!r} is not of type {self.type_.__name__}"
                     )
 
 
@@ -131,24 +126,18 @@ class InstructorSchema:
     def __post_init__(self) -> None:
         if not isinstance(self.fields, tuple):
             raise InstructorError(
-                "InstructorSchema.fields must be a tuple, "
-                f"got {type(self.fields).__name__}"
+                f"InstructorSchema.fields must be a tuple, got {type(self.fields).__name__}"
             )
         if len(self.fields) == 0:
-            raise InstructorError(
-                "InstructorSchema.fields must not be empty"
-            )
+            raise InstructorError("InstructorSchema.fields must not be empty")
         seen: set[str] = set()
         for f in self.fields:
             if not isinstance(f, SchemaField):
                 raise InstructorError(
-                    "InstructorSchema.fields elements must be SchemaField, "
-                    f"got {type(f).__name__}"
+                    f"InstructorSchema.fields elements must be SchemaField, got {type(f).__name__}"
                 )
             if f.name in seen:
-                raise InstructorError(
-                    f"InstructorSchema duplicate field name: {f.name!r}"
-                )
+                raise InstructorError(f"InstructorSchema duplicate field name: {f.name!r}")
             seen.add(f.name)
 
     def field_names(self) -> tuple[str, ...]:
@@ -164,35 +153,29 @@ def _coerce_value(field: SchemaField, raw: Any) -> Any:
     if field.type_ is bool:
         if not isinstance(raw, bool):
             raise InstructorSchemaError(
-                f"field {field.name!r}: expected bool, got "
-                f"{type(raw).__name__}"
+                f"field {field.name!r}: expected bool, got {type(raw).__name__}"
             )
         return raw
     if field.type_ is int:
         if isinstance(raw, bool) or not isinstance(raw, int):
             raise InstructorSchemaError(
-                f"field {field.name!r}: expected int, got "
-                f"{type(raw).__name__}"
+                f"field {field.name!r}: expected int, got {type(raw).__name__}"
             )
         return raw
     if field.type_ is float:
         if isinstance(raw, bool):
-            raise InstructorSchemaError(
-                f"field {field.name!r}: expected float, got bool"
-            )
+            raise InstructorSchemaError(f"field {field.name!r}: expected float, got bool")
         if isinstance(raw, int):
             return float(raw)
         if isinstance(raw, float):
             return raw
         raise InstructorSchemaError(
-            f"field {field.name!r}: expected float, got "
-            f"{type(raw).__name__}"
+            f"field {field.name!r}: expected float, got {type(raw).__name__}"
         )
     if field.type_ is str:
         if not isinstance(raw, str):
             raise InstructorSchemaError(
-                f"field {field.name!r}: expected str, got "
-                f"{type(raw).__name__}"
+                f"field {field.name!r}: expected str, got {type(raw).__name__}"
             )
         return raw
     raise InstructorSchemaError(  # pragma: no cover - guarded by __post_init__
@@ -212,33 +195,26 @@ def validate_instance(
 
     if not isinstance(payload, Mapping):
         raise InstructorSchemaError(
-            f"validate_instance payload must be a mapping, got "
-            f"{type(payload).__name__}"
+            f"validate_instance payload must be a mapping, got {type(payload).__name__}"
         )
     if not isinstance(schema, InstructorSchema):
         raise InstructorError(
-            "validate_instance schema must be an InstructorSchema, "
-            f"got {type(schema).__name__}"
+            f"validate_instance schema must be an InstructorSchema, got {type(schema).__name__}"
         )
     declared = schema.field_names()
     extras = tuple(sorted(k for k in payload.keys() if k not in declared))
     if extras:
-        raise InstructorSchemaError(
-            f"payload has extra fields not in schema: {extras!r}"
-        )
+        raise InstructorSchemaError(f"payload has extra fields not in schema: {extras!r}")
     out: dict[str, Any] = {}
     for field in schema.fields:
         if field.name not in payload:
             if field.required:
-                raise InstructorSchemaError(
-                    f"required field missing: {field.name!r}"
-                )
+                raise InstructorSchemaError(f"required field missing: {field.name!r}")
             continue
         value = _coerce_value(field, payload[field.name])
         if field.choices is not None and value not in field.choices:
             raise InstructorSchemaError(
-                f"field {field.name!r}: value {value!r} not in choices "
-                f"{field.choices!r}"
+                f"field {field.name!r}: value {value!r} not in choices {field.choices!r}"
             )
         out[field.name] = value
     return out
@@ -284,13 +260,10 @@ def extract_typed_payload(
     try:
         raw = json.loads(body)
     except json.JSONDecodeError as exc:
-        raise InstructorSchemaError(
-            f"extract_typed_payload: invalid JSON: {exc.msg}"
-        ) from exc
+        raise InstructorSchemaError(f"extract_typed_payload: invalid JSON: {exc.msg}") from exc
     if not isinstance(raw, dict):
         raise InstructorSchemaError(
-            f"extract_typed_payload: top-level must be a JSON object, "
-            f"got {type(raw).__name__}"
+            f"extract_typed_payload: top-level must be a JSON object, got {type(raw).__name__}"
         )
     return validate_instance(raw, schema)
 
@@ -328,13 +301,9 @@ def enable_instructor_factory(
         schema: InstructorSchema,
     ) -> dict[str, Any]:
         if not isinstance(model, str) or not model:
-            raise InstructorError(
-                f"instructor model must be a non-empty str, got {model!r}"
-            )
+            raise InstructorError(f"instructor model must be a non-empty str, got {model!r}")
         if not isinstance(prompt, str):
-            raise InstructorError(
-                f"instructor prompt must be str, got {type(prompt).__name__}"
-            )
+            raise InstructorError(f"instructor prompt must be str, got {type(prompt).__name__}")
         # Instructor will round-trip through pydantic; we deliberately
         # round-trip through validate_instance so the audit shape stays
         # canonical regardless of backend.

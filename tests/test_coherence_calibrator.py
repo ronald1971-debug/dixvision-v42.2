@@ -246,9 +246,7 @@ def test_audit_match_buy_correct_when_pnl_positive():
         _audit(ts_ns=10, decision_side=Side.BUY),
     )
     fills = (_fill(ts_ns=12, side=Side.BUY, realised_pnl=1.5),)
-    report = calibrate_coherence_window(
-        ts_ns=100, events=events, fills=fills
-    )
+    report = calibrate_coherence_window(ts_ns=100, events=events, fills=fills)
     assert report.audit_match_known is True
     assert report.audit_directional_match_rate == 1.0
     # belief avg 0.8, match rate 1.0 → gap = -0.2 (underconfident).
@@ -258,9 +256,7 @@ def test_audit_match_buy_correct_when_pnl_positive():
 def test_audit_match_sell_correct_when_pnl_negative():
     events = (_audit(ts_ns=10, decision_side=Side.SELL),)
     fills = (_fill(ts_ns=15, side=Side.SELL, realised_pnl=-0.5),)
-    report = calibrate_coherence_window(
-        ts_ns=100, events=events, fills=fills
-    )
+    report = calibrate_coherence_window(ts_ns=100, events=events, fills=fills)
     assert report.audit_match_known is True
     assert report.audit_directional_match_rate == 1.0
 
@@ -274,9 +270,7 @@ def test_audit_hold_is_skipped_in_match_rate():
         _fill(ts_ns=11, side=Side.BUY, realised_pnl=0.0),
         _fill(ts_ns=21, side=Side.BUY, realised_pnl=2.0),
     )
-    report = calibrate_coherence_window(
-        ts_ns=100, events=events, fills=fills
-    )
+    report = calibrate_coherence_window(ts_ns=100, events=events, fills=fills)
     # Only the second audit/fill pair contributes; PnL>0, side=BUY → 1/1.
     assert report.audit_match_known is True
     assert report.audit_directional_match_rate == 1.0
@@ -289,13 +283,11 @@ def test_audit_match_mixed_directional_accuracy():
         _audit(ts_ns=30, decision_side=Side.BUY),
     )
     fills = (
-        _fill(ts_ns=11, side=Side.BUY, realised_pnl=1.0),    # correct
-        _fill(ts_ns=21, side=Side.SELL, realised_pnl=1.0),   # WRONG (pos)
-        _fill(ts_ns=31, side=Side.BUY, realised_pnl=2.0),    # correct
+        _fill(ts_ns=11, side=Side.BUY, realised_pnl=1.0),  # correct
+        _fill(ts_ns=21, side=Side.SELL, realised_pnl=1.0),  # WRONG (pos)
+        _fill(ts_ns=31, side=Side.BUY, realised_pnl=2.0),  # correct
     )
-    report = calibrate_coherence_window(
-        ts_ns=100, events=events, fills=fills
-    )
+    report = calibrate_coherence_window(ts_ns=100, events=events, fills=fills)
     assert report.audit_match_known is True
     assert abs(report.audit_directional_match_rate - (2 / 3)) < 1e-9
 
@@ -303,9 +295,7 @@ def test_audit_match_mixed_directional_accuracy():
 def test_audit_zero_pnl_is_skipped():
     events = (_audit(ts_ns=10, decision_side=Side.BUY),)
     fills = (_fill(ts_ns=11, side=Side.BUY, realised_pnl=0.0),)
-    report = calibrate_coherence_window(
-        ts_ns=100, events=events, fills=fills
-    )
+    report = calibrate_coherence_window(ts_ns=100, events=events, fills=fills)
     assert report.audit_match_known is False
     assert report.audit_directional_match_rate == 0.0
 
@@ -333,9 +323,7 @@ def test_reward_aggregates_components_and_preserves_raw_pnl():
     assert abs(components["strength"] - 0.25) < 1e-9
     assert abs(components["kelly_penalty"] - (-0.1)) < 1e-9
     # Sorted by name for replay-determinism.
-    assert [name for name, _ in report.reward_components] == sorted(
-        components.keys()
-    )
+    assert [name for name, _ in report.reward_components] == sorted(components.keys())
 
 
 def test_window_bounds_filter_events():
@@ -382,9 +370,7 @@ def test_partially_filled_counts_as_realised():
             status=ExecutionStatus.PARTIALLY_FILLED,
         ),
     )
-    report = calibrate_coherence_window(
-        ts_ns=100, events=events, fills=fills
-    )
+    report = calibrate_coherence_window(ts_ns=100, events=events, fills=fills)
     assert report.audit_match_known is True
     assert report.audit_directional_match_rate == 1.0
 
@@ -399,9 +385,7 @@ def test_non_terminal_fill_is_ignored():
             status=ExecutionStatus.PROPOSED,
         ),
     )
-    report = calibrate_coherence_window(
-        ts_ns=100, events=events, fills=fills
-    )
+    report = calibrate_coherence_window(ts_ns=100, events=events, fills=fills)
     assert report.audit_match_known is False
 
 
@@ -434,9 +418,7 @@ def test_to_event_round_trip():
         ),
     )
     fills = (_fill(ts_ns=12, side=Side.BUY, realised_pnl=1.0),)
-    report = calibrate_coherence_window(
-        ts_ns=200, events=events, fills=fills
-    )
+    report = calibrate_coherence_window(ts_ns=200, events=events, fills=fills)
     ev = report.to_event()
     assert ev.kind is EventKind.SYSTEM
     assert ev.sub_kind is SystemEventKind.CALIBRATION_REPORT
@@ -461,8 +443,6 @@ def test_resolved_window_uses_event_bounds_when_unspecified():
         _pressure(ts_ns=80),
     )
     fills = (_fill(ts_ns=120, side=Side.BUY, realised_pnl=1.0),)
-    report = calibrate_coherence_window(
-        ts_ns=999, events=events, fills=fills
-    )
+    report = calibrate_coherence_window(ts_ns=999, events=events, fills=fills)
     assert report.window_start_ns == 50
     assert report.window_end_ns == 120

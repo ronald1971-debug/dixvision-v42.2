@@ -165,8 +165,7 @@ def test_distribution_over_seeds_has_expected_fingerprint() -> None:
     triggers = sum(
         1
         for seed in range(50)
-        if runner.step(seed=seed, scenario=s).rule_fired
-        == "stop_hunt_triggered"
+        if runner.step(seed=seed, scenario=s).rule_fired == "stop_hunt_triggered"
     )
     # intensity 0.4 with thickness 200k -> normalised_thickness 0.2 plus
     # jitter in [-0.2, 0.2] gives cluster_pull in [0, 0.4], so triggered

@@ -105,8 +105,7 @@ def test_classifier_known_audit_only_kind_is_noop():
         s = SystemEvent(ts_ns=1, sub_kind=kind, source="dyon")
         route = ec.classify(s)
         assert route.stages == (PipelineStage.NOOP,), (
-            f"audit-only kind {kind} must classify to NOOP, "
-            f"got {route.stages}"
+            f"audit-only kind {kind} must classify to NOOP, got {route.stages}"
         )
 
 
@@ -310,9 +309,7 @@ def test_proposed_false_from_non_operator_source_rejected():
     # Critically, the original handler must NOT have run — no
     # UPDATE_REJECTED / UPDATE_RATIFIED rows.
     handler_rows = [
-        r
-        for r in rows
-        if r.kind in ("UPDATE_REJECTED", "UPDATE_RATIFIED", "UPDATE_AUDIT")
+        r for r in rows if r.kind in ("UPDATE_REJECTED", "UPDATE_RATIFIED", "UPDATE_AUDIT")
     ]
     assert handler_rows == []
 

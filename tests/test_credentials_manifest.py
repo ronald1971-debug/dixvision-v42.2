@@ -78,12 +78,8 @@ def test_blueprint_env_vars_are_unique_and_well_formed() -> None:
     for provider, bp in CREDENTIAL_BLUEPRINTS.items():
         assert bp.env_vars, f"{provider}: blueprint has no env_vars"
         for name in bp.env_vars:
-            assert name == name.upper(), (
-                f"{provider}: env var {name!r} should be UPPER_SNAKE_CASE"
-            )
-            assert " " not in name, (
-                f"{provider}: env var {name!r} contains whitespace"
-            )
+            assert name == name.upper(), f"{provider}: env var {name!r} should be UPPER_SNAKE_CASE"
+            assert " " not in name, f"{provider}: env var {name!r} contains whitespace"
             seen.add(name)
     # Sanity: no two providers should advertise the same env var.
     flat: list[tuple[str, str]] = []
@@ -164,9 +160,7 @@ def test_unknown_provider_raises_keyerror() -> None:
     except KeyError as exc:
         assert "some-future-llm" in str(exc)
     else:
-        raise AssertionError(
-            "expected KeyError for unknown provider"
-        )
+        raise AssertionError("expected KeyError for unknown provider")
 
 
 # --------------------------------------------------------------------
@@ -177,9 +171,7 @@ def test_unknown_provider_raises_keyerror() -> None:
 def _single_blueprint_registry() -> SourceRegistry:
     return SourceRegistry(
         version="v0.1.0",
-        sources=(
-            _decl(sid="SRC-AI-OPENAI-001", provider="openai", auth="required"),
-        ),
+        sources=(_decl(sid="SRC-AI-OPENAI-001", provider="openai", auth="required"),),
     )
 
 
@@ -220,6 +212,7 @@ def test_presence_partial_for_multi_var_blueprints() -> None:
     # output. We construct CredentialRequirement directly to avoid
     # mutating the public CREDENTIAL_BLUEPRINTS table.
     from system_engine.credentials.manifest import CredentialRequirement
+
     req = CredentialRequirement(
         source_id="SRC-FAKE-001",
         source_name="fake two-var",

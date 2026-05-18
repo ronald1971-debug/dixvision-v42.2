@@ -67,9 +67,7 @@ def compute_trace_id(
     if not symbol:
         raise ValueError("compute_trace_id: symbol must be non-empty")
     if ts_ns < 0:
-        raise ValueError(
-            f"compute_trace_id: ts_ns must be non-negative; got {ts_ns}"
-        )
+        raise ValueError(f"compute_trace_id: ts_ns must be non-negative; got {ts_ns}")
     # Use ASCII control bytes as separators so plugin names containing
     # any printable character (including '|' or ':') cannot collide with
     # the field delimiter:
@@ -79,9 +77,7 @@ def compute_trace_id(
     # () and ("",) hash to distinct ids (the latter contains an explicit
     # empty entry).
     chain = "\x00".join(plugin_chain)
-    payload = (
-        f"{symbol}\x1f{ts_ns}\x1f{len(plugin_chain)}\x1f{chain}"
-    ).encode()
+    payload = (f"{symbol}\x1f{ts_ns}\x1f{len(plugin_chain)}\x1f{chain}").encode()
     return hashlib.sha256(payload).hexdigest()[:_TRACE_ID_LEN]
 
 
@@ -182,16 +178,12 @@ def as_system_event(
         "regime": trace.regime,
         "safety_modifier": trace.safety_modifier,
         "pressure_summary": _pressure_to_json(trace.pressure_summary),
-        "confidence_breakdown": [
-            _contribution_to_json(c) for c in trace.confidence_breakdown
-        ],
+        "confidence_breakdown": [_contribution_to_json(c) for c in trace.confidence_breakdown],
         "active_hazards": [_hazard_to_json(h) for h in trace.active_hazards],
         "throttle_applied": _throttle_to_json(trace.throttle_applied),
         "execution_outcome": _execution_to_json(trace.execution_outcome),
         "why": _why_to_json(trace.why),
-        "signal_trust": (
-            trace.signal_trust.value if trace.signal_trust is not None else None
-        ),
+        "signal_trust": (trace.signal_trust.value if trace.signal_trust is not None else None),
         "signal_source": trace.signal_source,
         "validation_score": trace.validation_score,
         "original_confidence": trace.original_confidence,
@@ -223,9 +215,7 @@ def trace_from_system_event(event: SystemEvent) -> DecisionTrace:
         )
     raw = event.payload.get("trace")
     if not isinstance(raw, str) or not raw:
-        raise ValueError(
-            "trace_from_system_event: payload must contain a 'trace' string"
-        )
+        raise ValueError("trace_from_system_event: payload must contain a 'trace' string")
     body = json.loads(raw)
     return DecisionTrace(
         version=int(body["version"]),
@@ -241,16 +231,12 @@ def trace_from_system_event(event: SystemEvent) -> DecisionTrace:
         confidence_breakdown=tuple(
             _contribution_from_json(c) for c in body["confidence_breakdown"]
         ),
-        active_hazards=tuple(
-            _hazard_from_json(h) for h in body["active_hazards"]
-        ),
+        active_hazards=tuple(_hazard_from_json(h) for h in body["active_hazards"]),
         throttle_applied=_throttle_from_json(body["throttle_applied"]),
         execution_outcome=_execution_from_json(body["execution_outcome"]),
         why=_why_from_json(body.get("why")),
         signal_trust=(
-            SignalTrust(body["signal_trust"])
-            if body.get("signal_trust") is not None
-            else None
+            SignalTrust(body["signal_trust"]) if body.get("signal_trust") is not None else None
         ),
         signal_source=body.get("signal_source"),
         validation_score=body.get("validation_score"),
@@ -414,13 +400,8 @@ def _why_from_json(body: object) -> WhyLayer | None:
     beliefs_list: list[BeliefReference] = []
     for b in raw_beliefs:
         if not isinstance(b, dict):
-            raise ValueError(
-                "why.beliefs entries must be JSON objects with "
-                "'name' and 'strength'"
-            )
-        beliefs_list.append(
-            BeliefReference(name=str(b["name"]), strength=float(b["strength"]))
-        )
+            raise ValueError("why.beliefs entries must be JSON objects with 'name' and 'strength'")
+        beliefs_list.append(BeliefReference(name=str(b["name"]), strength=float(b["strength"])))
     beliefs = tuple(beliefs_list)
     raw_notes = body.get("notes", [])
     if not isinstance(raw_notes, list):
@@ -428,10 +409,7 @@ def _why_from_json(body: object) -> WhyLayer | None:
     notes_list: list[tuple[str, str]] = []
     for n in raw_notes:
         if not isinstance(n, list) or len(n) != 2:
-            raise ValueError(
-                "why.notes entries must be 2-element JSON arrays "
-                "[key, text]"
-            )
+            raise ValueError("why.notes entries must be 2-element JSON arrays [key, text]")
         notes_list.append((str(n[0]), str(n[1])))
     notes = tuple(notes_list)
     return WhyLayer(

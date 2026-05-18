@@ -74,13 +74,11 @@ _EMPTY_ROUTE = PipelineRoute(stages=(PipelineStage.NOOP,), note="default")
 
 #: Kinds that drive a governance state change (UPDATE_PROPOSED,
 #: PLUGIN_LIFECYCLE). The engine has dedicated handlers for these.
-_GOVERNANCE_HANDLED_SYSTEM_KINDS: Final[frozenset[SystemEventKind]] = (
-    frozenset(
-        {
-            SystemEventKind.UPDATE_PROPOSED,
-            SystemEventKind.PLUGIN_LIFECYCLE,
-        }
-    )
+_GOVERNANCE_HANDLED_SYSTEM_KINDS: Final[frozenset[SystemEventKind]] = frozenset(
+    {
+        SystemEventKind.UPDATE_PROPOSED,
+        SystemEventKind.PLUGIN_LIFECYCLE,
+    }
 )
 
 #: Kinds that are intentionally NOOP for Governance — heartbeats,
@@ -140,9 +138,7 @@ def _unknown_kind_route(kind: object) -> PipelineRoute:
 # Sanity invariant — the two sets must be disjoint and together cover
 # every SystemEventKind the codebase knows about. Tested in
 # tests/test_event_classifier_fail_closed.py.
-_assert_disjoint = (
-    _GOVERNANCE_HANDLED_SYSTEM_KINDS & _AUDIT_ONLY_SYSTEM_KINDS == frozenset()
-)
+_assert_disjoint = _GOVERNANCE_HANDLED_SYSTEM_KINDS & _AUDIT_ONLY_SYSTEM_KINDS == frozenset()
 assert _assert_disjoint, (
     "Hardening-S1 item 4: "
     "_GOVERNANCE_HANDLED_SYSTEM_KINDS and _AUDIT_ONLY_SYSTEM_KINDS "

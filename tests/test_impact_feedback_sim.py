@@ -84,12 +84,8 @@ def test_thicker_depth_means_smaller_cost_under_clean_config() -> None:
 
 
 def test_max_ratio_caps_slippage() -> None:
-    cfg = ImpactFeedbackConfig(
-        impact_jitter=0.0, impact_coef=0.5, max_ratio=4.0
-    )
-    s = _scenario(
-        order_size_usd=100_000_000.0, liquidity_depth_usd=1_000_000.0
-    )
+    cfg = ImpactFeedbackConfig(impact_jitter=0.0, impact_coef=0.5, max_ratio=4.0)
+    s = _scenario(order_size_usd=100_000_000.0, liquidity_depth_usd=1_000_000.0)
     out = ImpactFeedback(cfg).step(seed=0, scenario=s)
     # ratio capped at 4.0; slippage = 0.5 * sqrt(4) = 1.0; cost = size * 1.0
     assert out.terminal_drawdown_usd == pytest.approx(100_000_000.0)
@@ -128,9 +124,7 @@ def test_zero_or_negative_inputs_rejected() -> None:
     with pytest.raises(ValueError):
         ImpactFeedback().step(seed=0, scenario=_scenario(order_size_usd=0.0))
     with pytest.raises(ValueError):
-        ImpactFeedback().step(
-            seed=0, scenario=_scenario(liquidity_depth_usd=-1.0)
-        )
+        ImpactFeedback().step(seed=0, scenario=_scenario(liquidity_depth_usd=-1.0))
     with pytest.raises(ValueError):
         ImpactFeedback().step(seed=0, scenario=_scenario(reference_price=0.0))
 
@@ -161,10 +155,7 @@ def test_seed_independence_from_meta() -> None:
 def test_distribution_over_seeds_varies() -> None:
     s = _scenario()
     runner = ImpactFeedback()
-    costs = {
-        runner.step(seed=seed, scenario=s).terminal_drawdown_usd
-        for seed in range(50)
-    }
+    costs = {runner.step(seed=seed, scenario=s).terminal_drawdown_usd for seed in range(50)}
     # With non-zero impact_jitter, costs vary across seeds.
     assert len(costs) > 1
 
@@ -174,10 +165,7 @@ def test_buy_and_sell_have_same_cost_magnitude() -> None:
     out_buy = ImpactFeedback(cfg).step(seed=0, scenario=_scenario(side="buy"))
     out_sell = ImpactFeedback(cfg).step(seed=0, scenario=_scenario(side="sell"))
     assert out_buy.pnl_usd == pytest.approx(out_sell.pnl_usd)
-    assert (
-        out_buy.terminal_drawdown_usd
-        == pytest.approx(out_sell.terminal_drawdown_usd)
-    )
+    assert out_buy.terminal_drawdown_usd == pytest.approx(out_sell.terminal_drawdown_usd)
 
 
 def test_sell_with_slippage_clamped_to_one_does_not_crash() -> None:
@@ -189,9 +177,7 @@ def test_sell_with_slippage_clamped_to_one_does_not_crash() -> None:
     price went to zero, which is catastrophic but valid — only a
     strictly negative avg_fill would indicate a logic bug.
     """
-    cfg = ImpactFeedbackConfig(
-        impact_coef=0.5, max_ratio=4.0, impact_jitter=0.0
-    )
+    cfg = ImpactFeedbackConfig(impact_coef=0.5, max_ratio=4.0, impact_jitter=0.0)
     s = _scenario(
         order_size_usd=100_000_000.0,
         liquidity_depth_usd=1_000_000.0,

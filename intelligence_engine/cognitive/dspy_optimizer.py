@@ -209,9 +209,7 @@ class FieldKind:
     OUTPUT: str = "output"
 
 
-_VALID_FIELD_KINDS: frozenset[str] = frozenset(
-    {FieldKind.INPUT, FieldKind.OUTPUT}
-)
+_VALID_FIELD_KINDS: frozenset[str] = frozenset({FieldKind.INPUT, FieldKind.OUTPUT})
 
 ALLOWED_FIELD_TYPES: tuple[type, ...] = (str, int, float, bool)
 """The four JSON-shape primitives allowed for
@@ -239,38 +237,27 @@ def _ensure_value_matches_type(name: str, value: Any, field_type: type) -> None:
 
     if field_type is bool:
         if not isinstance(value, bool):
-            raise TypeError(
-                f"field {name!r}: expected bool, got {type(value).__name__}"
-            )
+            raise TypeError(f"field {name!r}: expected bool, got {type(value).__name__}")
         return
     # Reject bool when caller asked for int/float/str — Python treats
     # bool as a subclass of int, but that is rarely what the operator
     # actually wants in a typed signature.
     if isinstance(value, bool):
-        raise TypeError(
-            f"field {name!r}: expected {field_type.__name__}, got bool"
-        )
+        raise TypeError(f"field {name!r}: expected {field_type.__name__}, got bool")
     if field_type is int:
         if not isinstance(value, int):
-            raise TypeError(
-                f"field {name!r}: expected int, got {type(value).__name__}"
-            )
+            raise TypeError(f"field {name!r}: expected int, got {type(value).__name__}")
         return
     if field_type is float:
         if not isinstance(value, (int, float)):
-            raise TypeError(
-                f"field {name!r}: expected float, got {type(value).__name__}"
-            )
+            raise TypeError(f"field {name!r}: expected float, got {type(value).__name__}")
         return
     if field_type is str:
         if not isinstance(value, str):
-            raise TypeError(
-                f"field {name!r}: expected str, got {type(value).__name__}"
-            )
+            raise TypeError(f"field {name!r}: expected str, got {type(value).__name__}")
         if len(value) > MAX_VALUE_LEN:
             raise ValueError(
-                f"field {name!r}: str length {len(value)} exceeds"
-                f" MAX_VALUE_LEN={MAX_VALUE_LEN}"
+                f"field {name!r}: str length {len(value)} exceeds MAX_VALUE_LEN={MAX_VALUE_LEN}"
             )
         return
     raise TypeError(  # pragma: no cover — defensive
@@ -314,15 +301,11 @@ class Field:
             )
         if not (self.name[0].isalpha() or self.name[0] == "_"):
             raise ValueError(
-                "Field.name must start with a letter or underscore;"
-                f" got {self.name!r}"
+                f"Field.name must start with a letter or underscore; got {self.name!r}"
             )
         for ch in self.name:
             if not (ch.isalnum() or ch == "_"):
-                raise ValueError(
-                    "Field.name must be alphanumeric+underscore;"
-                    f" got {self.name!r}"
-                )
+                raise ValueError(f"Field.name must be alphanumeric+underscore; got {self.name!r}")
         if not isinstance(self.description, str):
             raise TypeError("Field.description must be str")
         if len(self.description) > MAX_DESCRIPTION_LEN:
@@ -340,8 +323,7 @@ class Field:
             raise TypeError("Field.kind must be str")
         if self.kind not in _VALID_FIELD_KINDS:
             raise ValueError(
-                f"Field.kind must be one of {sorted(_VALID_FIELD_KINDS)!r};"
-                f" got {self.kind!r}"
+                f"Field.kind must be one of {sorted(_VALID_FIELD_KINDS)!r}; got {self.kind!r}"
             )
 
 
@@ -401,8 +383,7 @@ class Signature:
             raise TypeError("Signature.output_fields must be a tuple")
         if len(self.output_fields) < MIN_OUTPUT_FIELDS:
             raise ValueError(
-                "Signature.output_fields must have at least"
-                f" {MIN_OUTPUT_FIELDS} entry"
+                f"Signature.output_fields must have at least {MIN_OUTPUT_FIELDS} entry"
             )
         if len(self.output_fields) > MAX_OUTPUT_FIELDS:
             raise ValueError(
@@ -412,33 +393,21 @@ class Signature:
         seen: set[str] = set()
         for i, f in enumerate(self.input_fields):
             if not isinstance(f, Field):
-                raise TypeError(
-                    f"Signature.input_fields[{i}] must be a Field"
-                )
+                raise TypeError(f"Signature.input_fields[{i}] must be a Field")
             if f.kind != FieldKind.INPUT:
-                raise ValueError(
-                    f"Signature.input_fields[{i}].kind must be INPUT;"
-                    f" got {f.kind!r}"
-                )
+                raise ValueError(f"Signature.input_fields[{i}].kind must be INPUT; got {f.kind!r}")
             if f.name in seen:
-                raise ValueError(
-                    f"Signature: duplicate field name {f.name!r}"
-                )
+                raise ValueError(f"Signature: duplicate field name {f.name!r}")
             seen.add(f.name)
         for i, f in enumerate(self.output_fields):
             if not isinstance(f, Field):
-                raise TypeError(
-                    f"Signature.output_fields[{i}] must be a Field"
-                )
+                raise TypeError(f"Signature.output_fields[{i}] must be a Field")
             if f.kind != FieldKind.OUTPUT:
                 raise ValueError(
-                    f"Signature.output_fields[{i}].kind must be OUTPUT;"
-                    f" got {f.kind!r}"
+                    f"Signature.output_fields[{i}].kind must be OUTPUT; got {f.kind!r}"
                 )
             if f.name in seen:
-                raise ValueError(
-                    f"Signature: duplicate field name {f.name!r}"
-                )
+                raise ValueError(f"Signature: duplicate field name {f.name!r}")
             seen.add(f.name)
 
     def input_names(self) -> tuple[str, ...]:
@@ -494,24 +463,16 @@ class Example:
             seen: set[str] = set()
             for i, entry in enumerate(v):
                 if not isinstance(entry, tuple) or len(entry) != 2:
-                    raise TypeError(
-                        f"Example.{fname}[{i}] must be a (name, value) tuple"
-                    )
+                    raise TypeError(f"Example.{fname}[{i}] must be a (name, value) tuple")
                 key, _ = entry
                 if not isinstance(key, str) or not key:
-                    raise ValueError(
-                        f"Example.{fname}[{i}] key must be non-empty str"
-                    )
+                    raise ValueError(f"Example.{fname}[{i}] key must be non-empty str")
                 if key in seen:
-                    raise ValueError(
-                        f"Example.{fname}: duplicate key {key!r}"
-                    )
+                    raise ValueError(f"Example.{fname}: duplicate key {key!r}")
                 seen.add(key)
 
     @staticmethod
-    def from_dicts(
-        inputs: Mapping[str, Any], outputs: Mapping[str, Any]
-    ) -> Example:
+    def from_dicts(inputs: Mapping[str, Any], outputs: Mapping[str, Any]) -> Example:
         """Build a frozen :class:`Example` from plain dict views.
 
         Keys are sorted ascending so the resulting tuple is
@@ -557,18 +518,12 @@ class Prediction:
         seen: set[str] = set()
         for i, entry in enumerate(self.outputs):
             if not isinstance(entry, tuple) or len(entry) != 2:
-                raise TypeError(
-                    f"Prediction.outputs[{i}] must be a (name, value) tuple"
-                )
+                raise TypeError(f"Prediction.outputs[{i}] must be a (name, value) tuple")
             key, _ = entry
             if not isinstance(key, str) or not key:
-                raise ValueError(
-                    f"Prediction.outputs[{i}] key must be non-empty str"
-                )
+                raise ValueError(f"Prediction.outputs[{i}] key must be non-empty str")
             if key in seen:
-                raise ValueError(
-                    f"Prediction.outputs: duplicate key {key!r}"
-                )
+                raise ValueError(f"Prediction.outputs: duplicate key {key!r}")
             seen.add(key)
         if not isinstance(self.provider_id, str):
             raise TypeError("Prediction.provider_id must be str")
@@ -602,18 +557,12 @@ class Demonstration:
             seen: set[str] = set()
             for i, entry in enumerate(v):
                 if not isinstance(entry, tuple) or len(entry) != 2:
-                    raise TypeError(
-                        f"Demonstration.{fname}[{i}] must be a (name, value) tuple"
-                    )
+                    raise TypeError(f"Demonstration.{fname}[{i}] must be a (name, value) tuple")
                 key, _ = entry
                 if not isinstance(key, str) or not key:
-                    raise ValueError(
-                        f"Demonstration.{fname}[{i}] key must be non-empty str"
-                    )
+                    raise ValueError(f"Demonstration.{fname}[{i}] key must be non-empty str")
                 if key in seen:
-                    raise ValueError(
-                        f"Demonstration.{fname}: duplicate key {key!r}"
-                    )
+                    raise ValueError(f"Demonstration.{fname}: duplicate key {key!r}")
                 seen.add(key)
 
 
@@ -704,25 +653,17 @@ def render_prompt(
         raise TypeError("render_prompt: signature must be a Signature")
     if not isinstance(inputs, Mapping):
         raise TypeError("render_prompt: inputs must be a Mapping")
-    if not isinstance(demonstrations, Sequence) or isinstance(
-        demonstrations, (str, bytes)
-    ):
-        raise TypeError(
-            "render_prompt: demonstrations must be a Sequence"
-        )
+    if not isinstance(demonstrations, Sequence) or isinstance(demonstrations, (str, bytes)):
+        raise TypeError("render_prompt: demonstrations must be a Sequence")
 
     expected_inputs = signature.input_names()
     inputs_set = set(inputs.keys())
     missing = set(expected_inputs) - inputs_set
     if missing:
-        raise ValueError(
-            f"render_prompt: missing input fields: {sorted(missing)!r}"
-        )
+        raise ValueError(f"render_prompt: missing input fields: {sorted(missing)!r}")
     extra = inputs_set - set(expected_inputs)
     if extra:
-        raise ValueError(
-            f"render_prompt: unknown input fields: {sorted(extra)!r}"
-        )
+        raise ValueError(f"render_prompt: unknown input fields: {sorted(extra)!r}")
     for f in signature.input_fields:
         _ensure_value_matches_type(f.name, inputs[f.name], f.field_type)
 
@@ -733,22 +674,16 @@ def render_prompt(
 
     parts.append("Input fields:")
     for f in signature.input_fields:
-        parts.append(
-            f"- {f.name} ({_TYPE_NAMES[f.field_type]}): {f.description}"
-        )
+        parts.append(f"- {f.name} ({_TYPE_NAMES[f.field_type]}): {f.description}")
     parts.append("")
     parts.append("Output fields:")
     for f in signature.output_fields:
-        parts.append(
-            f"- {f.name} ({_TYPE_NAMES[f.field_type]}): {f.description}"
-        )
+        parts.append(f"- {f.name} ({_TYPE_NAMES[f.field_type]}): {f.description}")
     parts.append("")
 
     for i, demo in enumerate(demonstrations):
         if not isinstance(demo, Demonstration):
-            raise TypeError(
-                f"render_prompt: demonstrations[{i}] must be a Demonstration"
-            )
+            raise TypeError(f"render_prompt: demonstrations[{i}] must be a Demonstration")
         parts.append("---")
         parts.append(f"Example {i + 1}:")
         demo_inputs = dict(demo.inputs)
@@ -756,16 +691,14 @@ def render_prompt(
         for f in signature.input_fields:
             if f.name not in demo_inputs:
                 raise ValueError(
-                    f"render_prompt: demonstrations[{i}] missing input"
-                    f" field {f.name!r}"
+                    f"render_prompt: demonstrations[{i}] missing input field {f.name!r}"
                 )
             parts.append(f"{f.name}: {demo_inputs[f.name]}")
         parts.append("===")
         for f in signature.output_fields:
             if f.name not in demo_outputs:
                 raise ValueError(
-                    f"render_prompt: demonstrations[{i}] missing output"
-                    f" field {f.name!r}"
+                    f"render_prompt: demonstrations[{i}] missing output field {f.name!r}"
                 )
             parts.append(f"{f.name}: {demo_outputs[f.name]}")
 
@@ -830,13 +763,9 @@ class BootstrapFewShot:
         if isinstance(self.max_bootstrapped_demos, bool) or not isinstance(
             self.max_bootstrapped_demos, int
         ):
-            raise TypeError(
-                "BootstrapFewShot.max_bootstrapped_demos must be int"
-            )
+            raise TypeError("BootstrapFewShot.max_bootstrapped_demos must be int")
         if self.max_bootstrapped_demos < 1:
-            raise ValueError(
-                "BootstrapFewShot.max_bootstrapped_demos must be >= 1"
-            )
+            raise ValueError("BootstrapFewShot.max_bootstrapped_demos must be >= 1")
         if self.max_bootstrapped_demos > MAX_BOOTSTRAPPED_DEMOS:
             raise ValueError(
                 "BootstrapFewShot.max_bootstrapped_demos must be <="
@@ -872,14 +801,10 @@ class BootstrapFewShot:
 
         if not isinstance(signature, Signature):
             raise TypeError("compile: signature must be a Signature")
-        if not isinstance(trainset, Sequence) or isinstance(
-            trainset, (str, bytes)
-        ):
+        if not isinstance(trainset, Sequence) or isinstance(trainset, (str, bytes)):
             raise TypeError("compile: trainset must be a Sequence")
         if not trainset:
-            raise EmptyTrainsetError(
-                "BootstrapFewShot.compile: trainset must be non-empty"
-            )
+            raise EmptyTrainsetError("BootstrapFewShot.compile: trainset must be non-empty")
         if len(trainset) > MAX_TRAINSET_LEN:
             raise ValueError(
                 f"BootstrapFewShot.compile: trainset length {len(trainset)}"
@@ -888,23 +813,18 @@ class BootstrapFewShot:
         if not callable(metric):
             raise TypeError("compile: metric must be callable")
         if not isinstance(predictor, Predictor):
-            raise TypeError(
-                "compile: predictor must implement the Predictor Protocol"
-            )
+            raise TypeError("compile: predictor must implement the Predictor Protocol")
 
         expected_outputs = set(signature.output_names())
         demos: list[Demonstration] = []
         for i, example in enumerate(trainset):
             if not isinstance(example, Example):
-                raise TypeError(
-                    f"compile: trainset[{i}] must be an Example"
-                )
+                raise TypeError(f"compile: trainset[{i}] must be an Example")
             inputs_view = example.as_inputs()
             prediction = predictor.predict(signature, inputs_view, ())
             if not isinstance(prediction, Prediction):
                 raise TypeError(
-                    f"compile: predictor returned {type(prediction).__name__};"
-                    " expected Prediction"
+                    f"compile: predictor returned {type(prediction).__name__}; expected Prediction"
                 )
             pred_outputs = dict(prediction.outputs)
             # Skip examples that miss any required output field.
@@ -913,9 +833,7 @@ class BootstrapFewShot:
             try:
                 ok = bool(metric(example, prediction))
             except Exception as exc:  # noqa: BLE001 — propagate as TypeError
-                raise TypeError(
-                    f"compile: metric raised on trainset[{i}]: {exc!r}"
-                ) from exc
+                raise TypeError(f"compile: metric raised on trainset[{i}]: {exc!r}") from exc
             if not ok:
                 continue
             demos.append(
@@ -966,9 +884,7 @@ class OptimizedProgram:
         if not isinstance(self.signature, Signature):
             raise TypeError("OptimizedProgram.signature must be a Signature")
         if not isinstance(self.demonstrations, tuple):
-            raise TypeError(
-                "OptimizedProgram.demonstrations must be a tuple"
-            )
+            raise TypeError("OptimizedProgram.demonstrations must be a tuple")
         if len(self.demonstrations) > MAX_DEMONSTRATIONS:
             raise ValueError(
                 "OptimizedProgram.demonstrations count"
@@ -977,14 +893,9 @@ class OptimizedProgram:
             )
         for i, d in enumerate(self.demonstrations):
             if not isinstance(d, Demonstration):
-                raise TypeError(
-                    f"OptimizedProgram.demonstrations[{i}] must be a"
-                    " Demonstration"
-                )
+                raise TypeError(f"OptimizedProgram.demonstrations[{i}] must be a Demonstration")
 
-    def predict(
-        self, inputs: Mapping[str, Any], predictor: Predictor
-    ) -> Prediction:
+    def predict(self, inputs: Mapping[str, Any], predictor: Predictor) -> Prediction:
         """Run runtime inference using the optimized prompt.
 
         The frozen :class:`Signature` + :attr:`demonstrations` are
@@ -1001,16 +912,11 @@ class OptimizedProgram:
         if not isinstance(inputs, Mapping):
             raise TypeError("predict: inputs must be a Mapping")
         if not isinstance(predictor, Predictor):
-            raise TypeError(
-                "predict: predictor must implement the Predictor Protocol"
-            )
-        prediction = predictor.predict(
-            self.signature, inputs, self.demonstrations
-        )
+            raise TypeError("predict: predictor must implement the Predictor Protocol")
+        prediction = predictor.predict(self.signature, inputs, self.demonstrations)
         if not isinstance(prediction, Prediction):
             raise TypeError(
-                f"predict: predictor returned {type(prediction).__name__};"
-                " expected Prediction"
+                f"predict: predictor returned {type(prediction).__name__}; expected Prediction"
             )
         expected = set(self.signature.output_names())
         actual = {k for k, _ in prediction.outputs}
@@ -1054,9 +960,7 @@ def _field_from_json(blob: Mapping[str, Any]) -> Field:
         raise TypeError("field blob must be a Mapping")
     type_name = blob.get("field_type")
     if not isinstance(type_name, str) or type_name not in _NAME_TO_TYPE:
-        raise ValueError(
-            f"field blob: unknown field_type {type_name!r}"
-        )
+        raise ValueError(f"field blob: unknown field_type {type_name!r}")
     return Field(
         name=str(blob["name"]),
         description=str(blob["description"]),
@@ -1080,8 +984,7 @@ def _items_to_json(
             out.append({"name": key, "type": "str", "value": str(value)})
         else:
             raise TypeError(
-                f"serialize_program: unsupported value type for key {key!r}:"
-                f" {type(value).__name__}"
+                f"serialize_program: unsupported value type for key {key!r}: {type(value).__name__}"
             )
     return out
 
@@ -1100,32 +1003,22 @@ def _items_from_json(
             raise ValueError(f"item blob {i}: name must be non-empty str")
         if type_name == "bool":
             if not isinstance(value, bool):
-                raise TypeError(
-                    f"item blob {i}: bool field with non-bool value"
-                )
+                raise TypeError(f"item blob {i}: bool field with non-bool value")
             out.append((name, bool(value)))
         elif type_name == "int":
             if isinstance(value, bool) or not isinstance(value, int):
-                raise TypeError(
-                    f"item blob {i}: int field with non-int value"
-                )
+                raise TypeError(f"item blob {i}: int field with non-int value")
             out.append((name, int(value)))
         elif type_name == "float":
             if isinstance(value, bool) or not isinstance(value, (int, float)):
-                raise TypeError(
-                    f"item blob {i}: float field with non-numeric value"
-                )
+                raise TypeError(f"item blob {i}: float field with non-numeric value")
             out.append((name, float(value)))
         elif type_name == "str":
             if not isinstance(value, str):
-                raise TypeError(
-                    f"item blob {i}: str field with non-str value"
-                )
+                raise TypeError(f"item blob {i}: str field with non-str value")
             out.append((name, str(value)))
         else:
-            raise ValueError(
-                f"item blob {i}: unknown type {type_name!r}"
-            )
+            raise ValueError(f"item blob {i}: unknown type {type_name!r}")
     return tuple(out)
 
 
@@ -1147,12 +1040,8 @@ def serialize_program(program: OptimizedProgram) -> str:
         "signature": {
             "name": program.signature.name,
             "instruction": program.signature.instruction,
-            "input_fields": [
-                _field_to_json(f) for f in program.signature.input_fields
-            ],
-            "output_fields": [
-                _field_to_json(f) for f in program.signature.output_fields
-            ],
+            "input_fields": [_field_to_json(f) for f in program.signature.input_fields],
+            "output_fields": [_field_to_json(f) for f in program.signature.output_fields],
         },
         "demonstrations": [
             {
@@ -1181,13 +1070,9 @@ def deserialize_program(payload: str) -> OptimizedProgram:
     try:
         blob = json.loads(payload)
     except json.JSONDecodeError as exc:
-        raise ValueError(
-            f"deserialize_program: payload is not valid JSON: {exc.msg}"
-        ) from exc
+        raise ValueError(f"deserialize_program: payload is not valid JSON: {exc.msg}") from exc
     if not isinstance(blob, Mapping):
-        raise ValueError(
-            "deserialize_program: payload must decode to a JSON object"
-        )
+        raise ValueError("deserialize_program: payload must decode to a JSON object")
     version = blob.get("version")
     if version != DSPY_OPTIMIZER_VERSION:
         raise ValueError(
@@ -1196,19 +1081,13 @@ def deserialize_program(payload: str) -> OptimizedProgram:
         )
     sig_blob = blob.get("signature")
     if not isinstance(sig_blob, Mapping):
-        raise ValueError(
-            "deserialize_program: signature must be a JSON object"
-        )
+        raise ValueError("deserialize_program: signature must be a JSON object")
     input_fields_blob = sig_blob.get("input_fields") or []
     output_fields_blob = sig_blob.get("output_fields") or []
     if not isinstance(input_fields_blob, list):
-        raise ValueError(
-            "deserialize_program: input_fields must be a JSON array"
-        )
+        raise ValueError("deserialize_program: input_fields must be a JSON array")
     if not isinstance(output_fields_blob, list):
-        raise ValueError(
-            "deserialize_program: output_fields must be a JSON array"
-        )
+        raise ValueError("deserialize_program: output_fields must be a JSON array")
     sig = Signature(
         name=str(sig_blob.get("name", "")),
         instruction=str(sig_blob.get("instruction", "")),
@@ -1217,23 +1096,16 @@ def deserialize_program(payload: str) -> OptimizedProgram:
     )
     demos_blob = blob.get("demonstrations") or []
     if not isinstance(demos_blob, list):
-        raise ValueError(
-            "deserialize_program: demonstrations must be a JSON array"
-        )
+        raise ValueError("deserialize_program: demonstrations must be a JSON array")
     demos: list[Demonstration] = []
     for i, d in enumerate(demos_blob):
         if not isinstance(d, Mapping):
-            raise ValueError(
-                f"deserialize_program: demonstrations[{i}] must be an object"
-            )
+            raise ValueError(f"deserialize_program: demonstrations[{i}] must be an object")
         inputs_blob = d.get("inputs") or []
         outputs_blob = d.get("outputs") or []
-        if not isinstance(inputs_blob, list) or not isinstance(
-            outputs_blob, list
-        ):
+        if not isinstance(inputs_blob, list) or not isinstance(outputs_blob, list):
             raise ValueError(
-                f"deserialize_program: demonstrations[{i}] inputs/outputs"
-                " must be JSON arrays"
+                f"deserialize_program: demonstrations[{i}] inputs/outputs must be JSON arrays"
             )
         demos.append(
             Demonstration(
@@ -1261,9 +1133,7 @@ def build_chain_of_thought_signature(base: Signature) -> Signature:
     """
 
     if not isinstance(base, Signature):
-        raise TypeError(
-            "build_chain_of_thought_signature: base must be a Signature"
-        )
+        raise TypeError("build_chain_of_thought_signature: base must be a Signature")
     for f in base.output_fields:
         if f.name == _RATIONALE_FIELD_NAME:
             raise ValueError(
@@ -1319,9 +1189,7 @@ def build_governance_proposal_signature() -> Signature:
             ),
             Field(
                 name="operator_intent",
-                description=(
-                    "Operator's stated intent — e.g. 'promote to CANARY'."
-                ),
+                description=("Operator's stated intent — e.g. 'promote to CANARY'."),
                 field_type=str,
                 kind=FieldKind.INPUT,
             ),
@@ -1345,10 +1213,7 @@ def build_governance_proposal_signature() -> Signature:
             ),
             Field(
                 name="approved",
-                description=(
-                    "Whether the proposal recommends approving the"
-                    " operator's intent."
-                ),
+                description=("Whether the proposal recommends approving the operator's intent."),
                 field_type=bool,
                 kind=FieldKind.OUTPUT,
             ),
@@ -1360,9 +1225,7 @@ def build_governance_proposal_signature() -> Signature:
             ),
             Field(
                 name="rejection_code",
-                description=(
-                    "Empty when approved is true; otherwise a short code."
-                ),
+                description=("Empty when approved is true; otherwise a short code."),
                 field_type=str,
                 kind=FieldKind.OUTPUT,
             ),
@@ -1408,9 +1271,7 @@ def dspy_predictor_factory(
     return _ClosurePredictor(completion=completion, parser=use_parser)
 
 
-def _default_response_parser(
-    signature: Signature, text: str
-) -> Mapping[str, Any]:
+def _default_response_parser(signature: Signature, text: str) -> Mapping[str, Any]:
     """Parse ``"<name>: <value>"`` lines into a typed dict."""
 
     if not isinstance(text, str):
@@ -1474,20 +1335,15 @@ class _ClosurePredictor:
         prompt = render_prompt(signature, inputs, demonstrations)
         text, provider_id = self.completion(prompt)
         if not isinstance(text, str):
-            raise TypeError(
-                "completion: returned text must be str;"
-                f" got {type(text).__name__}"
-            )
+            raise TypeError(f"completion: returned text must be str; got {type(text).__name__}")
         if not isinstance(provider_id, str):
             raise TypeError(
-                "completion: returned provider_id must be str;"
-                f" got {type(provider_id).__name__}"
+                f"completion: returned provider_id must be str; got {type(provider_id).__name__}"
             )
         parsed = self.parser(signature, text)
         if not isinstance(parsed, Mapping):
             raise TypeError(
-                "parser: returned object must be a Mapping;"
-                f" got {type(parsed).__name__}"
+                f"parser: returned object must be a Mapping; got {type(parsed).__name__}"
             )
         return Prediction(
             outputs=tuple(sorted(parsed.items())),

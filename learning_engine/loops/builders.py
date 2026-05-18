@@ -85,23 +85,18 @@ def make_pnl_sample_builder(
 
     if not parameters:
         raise ValueError(
-            "make_pnl_sample_builder requires at least one parameter "
-            "name; got an empty tuple"
+            "make_pnl_sample_builder requires at least one parameter name; got an empty tuple"
         )
     if len(set(parameters)) != len(parameters):
         raise ValueError(
-            f"make_pnl_sample_builder requires unique parameter names; "
-            f"got {parameters!r}"
+            f"make_pnl_sample_builder requires unique parameter names; got {parameters!r}"
         )
     if not callable(sample_factory):
         raise TypeError(
-            "make_pnl_sample_builder requires a callable sample_factory; "
-            f"got {sample_factory!r}"
+            f"make_pnl_sample_builder requires a callable sample_factory; got {sample_factory!r}"
         )
     if not (weight > 0.0):
-        raise ValueError(
-            f"make_pnl_sample_builder weight must be > 0, got {weight!r}"
-        )
+        raise ValueError(f"make_pnl_sample_builder weight must be > 0, got {weight!r}")
 
     params_tuple = tuple(parameters)
     sample_weight = float(weight)
@@ -162,13 +157,9 @@ def make_diff_update_builder(
     """
 
     if not strategy_id:
-        raise ValueError(
-            "make_diff_update_builder requires a non-empty strategy_id"
-        )
+        raise ValueError("make_diff_update_builder requires a non-empty strategy_id")
     if not reason:
-        raise ValueError(
-            "make_diff_update_builder requires a non-empty reason"
-        )
+        raise ValueError("make_diff_update_builder requires a non-empty reason")
 
     bound_strategy_id = str(strategy_id)
     bound_reason = str(reason)

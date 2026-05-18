@@ -37,9 +37,7 @@ def test_canonical_precedence_governance_above_engines():
 def test_canonical_overrides_route_through_governance():
     m = load_authority_matrix(CANONICAL)
     for ovr in m.overrides:
-        assert ovr.via == "governance", (
-            f"override {ovr.id} must route through governance"
-        )
+        assert ovr.via == "governance", f"override {ovr.id} must route through governance"
 
 
 def test_canonical_resolve_picks_higher_precedence():
@@ -134,9 +132,7 @@ def test_load_rejects_precedence_unknown_actor(tmp_path):
 
 def test_load_rejects_duplicate_actor_ids(tmp_path):
     body = _good_body()
-    body["actors"].append(
-        {"id": "governance", "role": "x", "module": "governance_engine"}
-    )
+    body["actors"].append({"id": "governance", "role": "x", "module": "governance_engine"})
     body["precedence"] = ["governance", "intelligence"]
     p = _write(tmp_path, body)
     with pytest.raises(ValueError, match="duplicate actor ids"):

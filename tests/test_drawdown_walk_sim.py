@@ -121,15 +121,11 @@ def test_rule_fired_diversity_across_seeds() -> None:
 def test_higher_volatility_increases_drawdown_depth() -> None:
     sim = DrawdownWalk()
     low_vol_dds = [
-        sim.step(
-            seed=s, scenario=_scenario(per_step_std=0.001)
-        ).terminal_drawdown_usd
+        sim.step(seed=s, scenario=_scenario(per_step_std=0.001)).terminal_drawdown_usd
         for s in range(40)
     ]
     high_vol_dds = [
-        sim.step(
-            seed=s, scenario=_scenario(per_step_std=0.05)
-        ).terminal_drawdown_usd
+        sim.step(seed=s, scenario=_scenario(per_step_std=0.05)).terminal_drawdown_usd
         for s in range(40)
     ]
     assert max(high_vol_dds) > max(low_vol_dds) * 5.0

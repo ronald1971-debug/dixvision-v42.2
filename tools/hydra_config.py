@@ -64,9 +64,7 @@ MAX_OPTIONS_PER_GROUP: Final[int] = 256
 MAX_OVERRIDES: Final[int] = 1024
 MAX_OVERRIDE_PATH_LEN: Final[int] = 256
 MAX_OVERRIDE_VALUE_LEN: Final[int] = 1024
-NAME_PATTERN: Final[re.Pattern[str]] = re.compile(
-    r"^[A-Za-z][A-Za-z0-9_-]*$"
-)
+NAME_PATTERN: Final[re.Pattern[str]] = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
 PATH_PATTERN: Final[re.Pattern[str]] = re.compile(
     r"^[A-Za-z][A-Za-z0-9_-]*(?:\.[A-Za-z][A-Za-z0-9_-]*)*$"
 )
@@ -103,13 +101,9 @@ class ConfigOption:
         if not self.name:
             raise ConfigError("ConfigOption.name must be non-empty")
         if len(self.name) > MAX_NAME_LEN:
-            raise ConfigError(
-                f"ConfigOption.name exceeds {MAX_NAME_LEN}"
-            )
+            raise ConfigError(f"ConfigOption.name exceeds {MAX_NAME_LEN}")
         if not NAME_PATTERN.fullmatch(self.name):
-            raise ConfigError(
-                f"ConfigOption.name {self.name!r} fails {NAME_PATTERN.pattern}"
-            )
+            raise ConfigError(f"ConfigOption.name {self.name!r} fails {NAME_PATTERN.pattern}")
         if not isinstance(self.values, Mapping):
             raise ConfigError("ConfigOption.values must be Mapping")
         _validate_value_tree(self.values, depth=0)
@@ -133,40 +127,28 @@ class ConfigGroup:
         if not self.name:
             raise ConfigError("ConfigGroup.name must be non-empty")
         if len(self.name) > MAX_NAME_LEN:
-            raise ConfigError(
-                f"ConfigGroup.name exceeds {MAX_NAME_LEN}"
-            )
+            raise ConfigError(f"ConfigGroup.name exceeds {MAX_NAME_LEN}")
         if not NAME_PATTERN.fullmatch(self.name):
-            raise ConfigError(
-                f"ConfigGroup.name {self.name!r} fails {NAME_PATTERN.pattern}"
-            )
+            raise ConfigError(f"ConfigGroup.name {self.name!r} fails {NAME_PATTERN.pattern}")
         if not isinstance(self.options, tuple):
             raise ConfigError("ConfigGroup.options must be tuple")
         if not self.options:
             raise ConfigError("ConfigGroup.options must be non-empty")
         if len(self.options) > MAX_OPTIONS_PER_GROUP:
-            raise ConfigError(
-                f"ConfigGroup.options exceeds {MAX_OPTIONS_PER_GROUP}"
-            )
+            raise ConfigError(f"ConfigGroup.options exceeds {MAX_OPTIONS_PER_GROUP}")
         seen: set[str] = set()
         for opt in self.options:
             if not isinstance(opt, ConfigOption):
-                raise ConfigError(
-                    "ConfigGroup.options entries must be ConfigOption"
-                )
+                raise ConfigError("ConfigGroup.options entries must be ConfigOption")
             if opt.name in seen:
-                raise ConfigError(
-                    f"ConfigGroup duplicate option name {opt.name!r}"
-                )
+                raise ConfigError(f"ConfigGroup duplicate option name {opt.name!r}")
             seen.add(opt.name)
 
     def option(self, name: str) -> ConfigOption:
         for opt in self.options:
             if opt.name == name:
                 return opt
-        raise ConfigError(
-            f"ConfigGroup {self.name!r} has no option {name!r}"
-        )
+        raise ConfigError(f"ConfigGroup {self.name!r} has no option {name!r}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -187,13 +169,9 @@ class ConfigSchema:
         if not self.name:
             raise ConfigError("ConfigSchema.name must be non-empty")
         if len(self.name) > MAX_NAME_LEN:
-            raise ConfigError(
-                f"ConfigSchema.name exceeds {MAX_NAME_LEN}"
-            )
+            raise ConfigError(f"ConfigSchema.name exceeds {MAX_NAME_LEN}")
         if not NAME_PATTERN.fullmatch(self.name):
-            raise ConfigError(
-                f"ConfigSchema.name {self.name!r} fails {NAME_PATTERN.pattern}"
-            )
+            raise ConfigError(f"ConfigSchema.name {self.name!r} fails {NAME_PATTERN.pattern}")
         if not isinstance(self.base, Mapping):
             raise ConfigError("ConfigSchema.base must be Mapping")
         _validate_value_tree(self.base, depth=0)
@@ -202,22 +180,16 @@ class ConfigSchema:
         seen: set[str] = set()
         for grp in self.groups:
             if not isinstance(grp, ConfigGroup):
-                raise ConfigError(
-                    "ConfigSchema.groups entries must be ConfigGroup"
-                )
+                raise ConfigError("ConfigSchema.groups entries must be ConfigGroup")
             if grp.name in seen:
-                raise ConfigError(
-                    f"ConfigSchema duplicate group name {grp.name!r}"
-                )
+                raise ConfigError(f"ConfigSchema duplicate group name {grp.name!r}")
             seen.add(grp.name)
 
     def group(self, name: str) -> ConfigGroup:
         for grp in self.groups:
             if grp.name == name:
                 return grp
-        raise ConfigError(
-            f"ConfigSchema {self.name!r} has no group {name!r}"
-        )
+        raise ConfigError(f"ConfigSchema {self.name!r} has no group {name!r}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -237,25 +209,15 @@ class Override:
         if not self.path:
             raise ConfigError("Override.path must be non-empty")
         if len(self.path) > MAX_OVERRIDE_PATH_LEN:
-            raise ConfigError(
-                f"Override.path exceeds {MAX_OVERRIDE_PATH_LEN}"
-            )
+            raise ConfigError(f"Override.path exceeds {MAX_OVERRIDE_PATH_LEN}")
         if not PATH_PATTERN.fullmatch(self.path):
-            raise ConfigError(
-                f"Override.path {self.path!r} fails {PATH_PATTERN.pattern}"
-            )
+            raise ConfigError(f"Override.path {self.path!r} fails {PATH_PATTERN.pattern}")
         if self.path.count(".") > MAX_GROUP_DEPTH:
-            raise ConfigError(
-                f"Override.path depth exceeds {MAX_GROUP_DEPTH}"
-            )
+            raise ConfigError(f"Override.path depth exceeds {MAX_GROUP_DEPTH}")
         if isinstance(self.value, str) and len(self.value) > MAX_OVERRIDE_VALUE_LEN:
-            raise ConfigError(
-                f"Override.value exceeds {MAX_OVERRIDE_VALUE_LEN}"
-            )
+            raise ConfigError(f"Override.value exceeds {MAX_OVERRIDE_VALUE_LEN}")
         if not isinstance(self.value, (str, int, float, bool, type(None))):
-            raise ConfigError(
-                f"Override.value must be scalar; got {type(self.value).__name__}"
-            )
+            raise ConfigError(f"Override.value must be scalar; got {type(self.value).__name__}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -277,17 +239,13 @@ class ComposedConfig:
         if not isinstance(self.schema_name, str) or not self.schema_name:
             raise ConfigError("ComposedConfig.schema_name must be non-empty str")
         if self.backend not in ("stdlib", "hydra"):
-            raise ConfigError(
-                f"ComposedConfig.backend invalid: {self.backend!r}"
-            )
+            raise ConfigError(f"ComposedConfig.backend invalid: {self.backend!r}")
         if not isinstance(self.defaults, Mapping):
             raise ConfigError("ComposedConfig.defaults must be Mapping")
         if not isinstance(self.values, Mapping):
             raise ConfigError("ComposedConfig.values must be Mapping")
         if self.override_count < 0:
-            raise ConfigError(
-                "ComposedConfig.override_count must be >= 0"
-            )
+            raise ConfigError("ComposedConfig.override_count must be >= 0")
 
     def get(self, path: str, default: Any = None) -> Any:
         """Resolve a dotted path against :attr:`values`; return
@@ -309,9 +267,7 @@ class ComposedConfig:
 
 def _validate_value_tree(node: Any, depth: int) -> None:
     if depth > MAX_GROUP_DEPTH:
-        raise ConfigError(
-            f"config value tree depth exceeds {MAX_GROUP_DEPTH}"
-        )
+        raise ConfigError(f"config value tree depth exceeds {MAX_GROUP_DEPTH}")
     if isinstance(node, Mapping):
         for key, val in node.items():
             if not isinstance(key, str):
@@ -319,16 +275,12 @@ def _validate_value_tree(node: Any, depth: int) -> None:
             if not key:
                 raise ConfigError("config keys must be non-empty")
             if len(key) > MAX_OVERRIDE_PATH_LEN:
-                raise ConfigError(
-                    f"config key exceeds {MAX_OVERRIDE_PATH_LEN}"
-                )
+                raise ConfigError(f"config key exceeds {MAX_OVERRIDE_PATH_LEN}")
             _validate_value_tree(val, depth + 1)
         return
     if isinstance(node, (str, int, float, bool, type(None))):
         return
-    raise ConfigError(
-        f"config value must be scalar or Mapping; got {type(node).__name__}"
-    )
+    raise ConfigError(f"config value must be scalar or Mapping; got {type(node).__name__}")
 
 
 def _deep_merge(
@@ -343,11 +295,7 @@ def _deep_merge(
     for key, val in base.items():
         out[key] = _clone_value(val)
     for key, val in overlay.items():
-        if (
-            key in out
-            and isinstance(out[key], Mapping)
-            and isinstance(val, Mapping)
-        ):
+        if key in out and isinstance(out[key], Mapping) and isinstance(val, Mapping):
             out[key] = _deep_merge(out[key], val)  # type: ignore[arg-type]
         else:
             out[key] = _clone_value(val)
@@ -382,10 +330,7 @@ def _apply_override(
 
 def _canonicalize(node: _ConfigValue) -> _ConfigValue:
     if isinstance(node, Mapping):
-        return {
-            key: _canonicalize(node[key])
-            for key in sorted(node.keys())
-        }
+        return {key: _canonicalize(node[key]) for key in sorted(node.keys())}
     return node
 
 
@@ -398,9 +343,7 @@ def _digest(
     payload = {
         "schema_name": schema_name,
         "defaults": {key: defaults[key] for key in sorted(defaults)},
-        "overrides": [
-            {"path": ov.path, "value": ov.value} for ov in overrides
-        ],
+        "overrides": [{"path": ov.path, "value": ov.value} for ov in overrides],
         "values": _canonicalize(values),
         "version": CONFIG_VERSION,
     }
@@ -432,14 +375,10 @@ def parse_override(raw: str) -> Override:
     if not isinstance(raw, str):
         raise ConfigError("parse_override expects str")
     if "=" not in raw:
-        raise ConfigError(
-            f"parse_override missing '=' in {raw!r}"
-        )
+        raise ConfigError(f"parse_override missing '=' in {raw!r}")
     path, sep, raw_value = raw.partition("=")
     if not sep:
-        raise ConfigError(
-            f"parse_override missing '=' in {raw!r}"
-        )
+        raise ConfigError(f"parse_override missing '=' in {raw!r}")
     path = path.strip()
     raw_value = raw_value.strip()
     if not path:
@@ -487,30 +426,22 @@ def compose(
     if not isinstance(overrides, Sequence):
         raise ConfigError("compose() overrides must be Sequence")
     if len(overrides) > MAX_OVERRIDES:
-        raise ConfigError(
-            f"compose() overrides exceed {MAX_OVERRIDES}"
-        )
+        raise ConfigError(f"compose() overrides exceed {MAX_OVERRIDES}")
 
     group_names = {grp.name for grp in schema.groups}
     for key, val in defaults.items():
         if not isinstance(key, str):
             raise ConfigError("defaults keys must be str")
         if key not in group_names:
-            raise ConfigError(
-                f"defaults references unknown group {key!r}"
-            )
+            raise ConfigError(f"defaults references unknown group {key!r}")
         if not isinstance(val, str):
-            raise ConfigError(
-                f"defaults[{key!r}] must be str option name"
-            )
+            raise ConfigError(f"defaults[{key!r}] must be str option name")
         # Resolve to raise if missing
         schema.group(key).option(val)
 
     for ov in overrides:
         if not isinstance(ov, Override):
-            raise ConfigError(
-                "compose() overrides entries must be Override"
-            )
+            raise ConfigError("compose() overrides entries must be Override")
 
     merged: dict[str, _ConfigValue] = _deep_merge({}, schema.base)
     for grp in schema.groups:
@@ -587,10 +518,7 @@ def enable_hydra_factory(
     if overrides is not None:
         unknown = set(overrides) - allowed_keys
         if unknown:
-            raise ConfigError(
-                f"enable_hydra_factory: unknown override keys "
-                f"{sorted(unknown)}"
-            )
+            raise ConfigError(f"enable_hydra_factory: unknown override keys {sorted(unknown)}")
 
     def _composer(
         schema: ConfigSchema,

@@ -145,29 +145,17 @@ class PlaywrightCrawlerConfig:
 
     def __post_init__(self) -> None:
         if not isinstance(self.timeout_ms, int):
-            raise TypeError(
-                "PlaywrightCrawlerConfig.timeout_ms must be int"
-            )
+            raise TypeError("PlaywrightCrawlerConfig.timeout_ms must be int")
         if self.timeout_ms <= 0:
-            raise ValueError(
-                "PlaywrightCrawlerConfig.timeout_ms must be positive"
-            )
+            raise ValueError("PlaywrightCrawlerConfig.timeout_ms must be positive")
         if not isinstance(self.user_agent, str):
-            raise TypeError(
-                "PlaywrightCrawlerConfig.user_agent must be str"
-            )
+            raise TypeError("PlaywrightCrawlerConfig.user_agent must be str")
         if not self.user_agent:
-            raise ValueError(
-                "PlaywrightCrawlerConfig.user_agent must be non-empty"
-            )
+            raise ValueError("PlaywrightCrawlerConfig.user_agent must be non-empty")
         if not isinstance(self.locale, str):
-            raise TypeError(
-                "PlaywrightCrawlerConfig.locale must be str"
-            )
+            raise TypeError("PlaywrightCrawlerConfig.locale must be str")
         if not isinstance(self.headless, bool):
-            raise TypeError(
-                "PlaywrightCrawlerConfig.headless must be bool"
-            )
+            raise TypeError("PlaywrightCrawlerConfig.headless must be bool")
 
 
 # --------------------------------------------------------------------
@@ -305,9 +293,7 @@ class PlaywrightCrawler:
 
     _seed_urls: Mapping[str, str]
     _config: PlaywrightCrawlerConfig
-    _runtime_factory: (
-        Callable[[PlaywrightCrawlerConfig], _PlaywrightRuntime] | None
-    )
+    _runtime_factory: Callable[[PlaywrightCrawlerConfig], _PlaywrightRuntime] | None
     _runtime: _PlaywrightRuntime | None
     _status: CrawlerStatus
 
@@ -316,28 +302,17 @@ class PlaywrightCrawler:
         seed_urls: Mapping[str, str],
         *,
         config: PlaywrightCrawlerConfig | None = None,
-        runtime_factory: (
-            Callable[[PlaywrightCrawlerConfig], _PlaywrightRuntime]
-            | None
-        ) = None,
+        runtime_factory: (Callable[[PlaywrightCrawlerConfig], _PlaywrightRuntime] | None) = None,
     ) -> None:
         if not seed_urls:
-            raise ValueError(
-                "PlaywrightCrawler.seed_urls must be non-empty"
-            )
+            raise ValueError("PlaywrightCrawler.seed_urls must be non-empty")
 
         validated: dict[str, str] = {}
         for seed_id, url in seed_urls.items():
             if not isinstance(seed_id, str) or not seed_id:
-                raise ValueError(
-                    "PlaywrightCrawler.seed_urls keys must be"
-                    " non-empty str"
-                )
+                raise ValueError("PlaywrightCrawler.seed_urls keys must be non-empty str")
             if not isinstance(url, str) or not url:
-                raise ValueError(
-                    f"PlaywrightCrawler.seed_urls[{seed_id!r}]"
-                    " must be non-empty str"
-                )
+                raise ValueError(f"PlaywrightCrawler.seed_urls[{seed_id!r}] must be non-empty str")
             validated[seed_id] = url
 
         self._seed_urls = MappingProxyType(validated)
@@ -364,10 +339,7 @@ class PlaywrightCrawler:
 
     @property
     def is_ready(self) -> bool:
-        return (
-            self._status is CrawlerStatus.CONNECTED
-            and self._runtime is not None
-        )
+        return self._status is CrawlerStatus.CONNECTED and self._runtime is not None
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -431,13 +403,9 @@ class PlaywrightCrawler:
         """
 
         if ts_ns <= 0:
-            raise ValueError(
-                "PlaywrightCrawler.fetch ts_ns must be positive"
-            )
+            raise ValueError("PlaywrightCrawler.fetch ts_ns must be positive")
         if not self.is_ready:
-            raise RuntimeError(
-                "PlaywrightCrawler.fetch: adapter_not_ready"
-            )
+            raise RuntimeError("PlaywrightCrawler.fetch: adapter_not_ready")
 
         runtime = self._runtime
         assert runtime is not None  # narrowed by is_ready
@@ -514,9 +482,7 @@ def _build_default_runtime(
             sync_playwright,
         )
     except ImportError as exc:
-        raise RuntimeError(
-            "PlaywrightCrawler.connect: playwright not installed"
-        ) from exc
+        raise RuntimeError("PlaywrightCrawler.connect: playwright not installed") from exc
 
     return _DefaultPlaywrightRuntime(
         config=config,
@@ -564,9 +530,7 @@ class _DefaultPlaywrightRuntime(_PlaywrightRuntime):
             page.set_default_timeout(timeout_ms)
             response = page.goto(url, wait_until="domcontentloaded")
             page.wait_for_load_state("domcontentloaded")
-            status_code = (
-                int(response.status) if response is not None else None
-            )
+            status_code = int(response.status) if response is not None else None
             title = _coerce_text(page.title())
             body = _coerce_text(page.content())
             return _FetchResult(

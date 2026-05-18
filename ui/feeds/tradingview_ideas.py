@@ -155,9 +155,7 @@ def _parse_philosophy(raw: Any) -> PhilosophyProfile | None:
     try:
         risk_attitude = RiskAttitude(raw.get("risk_attitude", "UNKNOWN"))
         time_horizon = TimeHorizon(raw.get("time_horizon", "UNKNOWN"))
-        conviction_style = ConvictionStyle(
-            raw.get("conviction_style", "UNKNOWN")
-        )
+        conviction_style = ConvictionStyle(raw.get("conviction_style", "UNKNOWN"))
     except ValueError:
         return None
     return PhilosophyProfile(
@@ -221,9 +219,7 @@ def parse_tradingview_idea_payload(
     if not isinstance(trader_id, str) or not trader_id:
         return None
 
-    observation_kind = payload.get(
-        "observation_kind", TRADER_OBSERVATION_PROFILE_UPDATE
-    )
+    observation_kind = payload.get("observation_kind", TRADER_OBSERVATION_PROFILE_UPDATE)
     if observation_kind not in _LEGAL_OBSERVATION_KINDS:
         return None
 
@@ -235,13 +231,9 @@ def parse_tradingview_idea_payload(
     if signatures is None:
         return None
 
-    performance_metrics = _safe_float_map(
-        payload.get("performance_metrics", {})
-    )
+    performance_metrics = _safe_float_map(payload.get("performance_metrics", {}))
     risk_profile = _safe_float_map(payload.get("risk_profile", {}))
-    regime_performance = _safe_float_map(
-        payload.get("regime_performance", {})
-    )
+    regime_performance = _safe_float_map(payload.get("regime_performance", {}))
     behavioral_bias = _safe_float_map(payload.get("behavioral_bias", {}))
     if (
         performance_metrics is None
@@ -272,7 +264,7 @@ def parse_tradingview_idea_payload(
         behavioral_bias=behavioral_bias,
         philosophy=philosophy,
         meta={},  # model.meta is reserved for offline-extractor tags;
-                  # adapter-side meta lives on the TraderObservation.
+        # adapter-side meta lives on the TraderObservation.
     )
     return model, observation_kind, meta
 

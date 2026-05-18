@@ -165,8 +165,7 @@ def test_store_effective_trust_passes_internal_through() -> None:
     # intelligence path is canonical and operator decisions cannot
     # affect it.
     assert (
-        store.effective_trust("intelligence.in_proc", SignalTrust.INTERNAL)
-        is SignalTrust.INTERNAL
+        store.effective_trust("intelligence.in_proc", SignalTrust.INTERNAL) is SignalTrust.INTERNAL
     )
 
 
@@ -195,14 +194,8 @@ def test_store_effective_trust_promotes_external_low_only() -> None:
 def test_store_effective_trust_no_overlay_returns_declared() -> None:
     store = SourceTrustPromotionStore()
 
-    assert (
-        store.effective_trust("anyone", SignalTrust.EXTERNAL_LOW)
-        is SignalTrust.EXTERNAL_LOW
-    )
-    assert (
-        store.effective_trust("anyone", SignalTrust.INTERNAL)
-        is SignalTrust.INTERNAL
-    )
+    assert store.effective_trust("anyone", SignalTrust.EXTERNAL_LOW) is SignalTrust.EXTERNAL_LOW
+    assert store.effective_trust("anyone", SignalTrust.INTERNAL) is SignalTrust.INTERNAL
 
 
 def test_is_promotable_target_only_accepts_external_med() -> None:
@@ -284,9 +277,7 @@ def test_apply_cap_promotion_respects_more_restrictive_yaml_pin() -> None:
         source="tradingview.public",
     )
 
-    clamped = apply_signal_trust_cap(
-        sig, registry=registry, promotion_store=store
-    )
+    clamped = apply_signal_trust_cap(sig, registry=registry, promotion_store=store)
 
     assert clamped.confidence == 0.4
 

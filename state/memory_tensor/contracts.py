@@ -68,22 +68,14 @@ def validate_embedding(
     """
 
     if not isinstance(embedding, tuple):
-        raise TypeError(
-            f"{field} must be a tuple of floats, "
-            f"got {type(embedding).__name__}"
-        )
+        raise TypeError(f"{field} must be a tuple of floats, got {type(embedding).__name__}")
     if len(embedding) == 0:
         raise ValueError(f"{field} must not be empty")
     for i, v in enumerate(embedding):
         if not isinstance(v, float):
-            raise TypeError(
-                f"{field}[{i}] must be float, "
-                f"got {type(v).__name__}"
-            )
+            raise TypeError(f"{field}[{i}] must be float, got {type(v).__name__}")
         if not math.isfinite(v):
-            raise ValueError(
-                f"{field}[{i}] must be finite, got {v!r}"
-            )
+            raise ValueError(f"{field}[{i}] must be finite, got {v!r}")
 
 
 # ---------------------------------------------------------------------------
@@ -114,29 +106,19 @@ class Episode:
     ts_ns: int
     episode_id: str
     embedding: tuple[float, ...]
-    payload: Mapping[str, str] = dataclasses.field(
-        default_factory=lambda: MappingProxyType({})
-    )
+    payload: Mapping[str, str] = dataclasses.field(default_factory=lambda: MappingProxyType({}))
 
     def __post_init__(self) -> None:
         if self.ts_ns <= 0:
-            raise ValueError(
-                f"Episode.ts_ns must be positive, got {self.ts_ns!r}"
-            )
+            raise ValueError(f"Episode.ts_ns must be positive, got {self.ts_ns!r}")
         if not self.episode_id:
             raise ValueError("Episode.episode_id must be non-empty")
         validate_embedding(self.embedding, field="Episode.embedding")
         for k, v in self.payload.items():
             if not isinstance(k, str):
-                raise TypeError(
-                    "Episode.payload keys must be str, "
-                    f"got {type(k).__name__}"
-                )
+                raise TypeError(f"Episode.payload keys must be str, got {type(k).__name__}")
             if not isinstance(v, str):
-                raise TypeError(
-                    f"Episode.payload[{k!r}] must be str, "
-                    f"got {type(v).__name__}"
-                )
+                raise TypeError(f"Episode.payload[{k!r}] must be str, got {type(v).__name__}")
         # Freeze the payload so callers cannot mutate it after the
         # episode is stored. Re-uses the same MappingProxyType the
         # default factory would have built.
@@ -181,9 +163,7 @@ class MemoryQuery:
 
     def __post_init__(self) -> None:
         if self.ts_ns <= 0:
-            raise ValueError(
-                f"MemoryQuery.ts_ns must be positive, got {self.ts_ns!r}"
-            )
+            raise ValueError(f"MemoryQuery.ts_ns must be positive, got {self.ts_ns!r}")
         if not self.query_id:
             raise ValueError("MemoryQuery.query_id must be non-empty")
         validate_embedding(
@@ -191,9 +171,7 @@ class MemoryQuery:
             field="MemoryQuery.embedding",
         )
         if self.k <= 0:
-            raise ValueError(
-                f"MemoryQuery.k must be positive, got {self.k!r}"
-            )
+            raise ValueError(f"MemoryQuery.k must be positive, got {self.k!r}")
 
     @property
     def dim(self) -> int:
@@ -224,42 +202,24 @@ class MemoryHit:
     episode_id: str
     distance: float
     ts_ns: int
-    payload: Mapping[str, str] = dataclasses.field(
-        default_factory=lambda: MappingProxyType({})
-    )
+    payload: Mapping[str, str] = dataclasses.field(default_factory=lambda: MappingProxyType({}))
 
     def __post_init__(self) -> None:
         if not self.episode_id:
             raise ValueError("MemoryHit.episode_id must be non-empty")
         if not isinstance(self.distance, float):
-            raise TypeError(
-                "MemoryHit.distance must be float, "
-                f"got {type(self.distance).__name__}"
-            )
+            raise TypeError(f"MemoryHit.distance must be float, got {type(self.distance).__name__}")
         if not math.isfinite(self.distance):
-            raise ValueError(
-                f"MemoryHit.distance must be finite, got {self.distance!r}"
-            )
+            raise ValueError(f"MemoryHit.distance must be finite, got {self.distance!r}")
         if self.distance < 0.0:
-            raise ValueError(
-                f"MemoryHit.distance must be non-negative, "
-                f"got {self.distance!r}"
-            )
+            raise ValueError(f"MemoryHit.distance must be non-negative, got {self.distance!r}")
         if self.ts_ns <= 0:
-            raise ValueError(
-                f"MemoryHit.ts_ns must be positive, got {self.ts_ns!r}"
-            )
+            raise ValueError(f"MemoryHit.ts_ns must be positive, got {self.ts_ns!r}")
         for k, v in self.payload.items():
             if not isinstance(k, str):
-                raise TypeError(
-                    "MemoryHit.payload keys must be str, "
-                    f"got {type(k).__name__}"
-                )
+                raise TypeError(f"MemoryHit.payload keys must be str, got {type(k).__name__}")
             if not isinstance(v, str):
-                raise TypeError(
-                    f"MemoryHit.payload[{k!r}] must be str, "
-                    f"got {type(v).__name__}"
-                )
+                raise TypeError(f"MemoryHit.payload[{k!r}] must be str, got {type(v).__name__}")
         if not isinstance(self.payload, MappingProxyType):
             object.__setattr__(
                 self,
@@ -287,29 +247,21 @@ class MemoryResult:
 
     def __post_init__(self) -> None:
         if self.ts_ns <= 0:
-            raise ValueError(
-                f"MemoryResult.ts_ns must be positive, got {self.ts_ns!r}"
-            )
+            raise ValueError(f"MemoryResult.ts_ns must be positive, got {self.ts_ns!r}")
         if not self.query_id:
             raise ValueError("MemoryResult.query_id must be non-empty")
         if not isinstance(self.hits, tuple):
-            raise TypeError(
-                "MemoryResult.hits must be a tuple, "
-                f"got {type(self.hits).__name__}"
-            )
+            raise TypeError(f"MemoryResult.hits must be a tuple, got {type(self.hits).__name__}")
         previous: float = -1.0
         for i, h in enumerate(self.hits):
             if not isinstance(h, MemoryHit):
-                raise TypeError(
-                    f"MemoryResult.hits[{i}] must be MemoryHit, "
-                    f"got {type(h).__name__}"
-                )
+                raise TypeError(f"MemoryResult.hits[{i}] must be MemoryHit, got {type(h).__name__}")
             if h.distance < previous:
                 raise ValueError(
                     "MemoryResult.hits must be sorted by ascending "
                     "distance, but "
                     f"hits[{i}].distance={h.distance!r} < "
-                    f"hits[{i-1}].distance={previous!r}"
+                    f"hits[{i - 1}].distance={previous!r}"
                 )
             previous = h.distance
 

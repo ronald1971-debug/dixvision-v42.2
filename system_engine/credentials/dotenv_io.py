@@ -88,7 +88,7 @@ def _unescape_double_quoted(body: str) -> str:
     n = len(body)
     while i < n:
         c = body[i]
-        if c == "\\" and i + 1 < n and body[i + 1] in ('\\', '"', '$'):
+        if c == "\\" and i + 1 < n and body[i + 1] in ("\\", '"', "$"):
             out.append(body[i + 1])
             i += 2
             continue
@@ -159,17 +159,11 @@ def _format_value(value: str) -> str:
         return '""'
     if re.fullmatch(r"[A-Za-z0-9_\-./:]+", value):
         return value
-    escaped = (
-        value.replace("\\", "\\\\")
-        .replace('"', '\\"')
-        .replace("$", "\\$")
-    )
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"').replace("$", "\\$")
     return f'"{escaped}"'
 
 
-def update_dotenv_file(
-    path: Path, updates: Mapping[str, str]
-) -> dict[str, str]:
+def update_dotenv_file(path: Path, updates: Mapping[str, str]) -> dict[str, str]:
     """Atomically update ``path`` with ``updates`` and return the
     final ``key → value`` map.
 
@@ -190,13 +184,9 @@ def update_dotenv_file(
         if not is_valid_env_var_name(key):
             raise ValueError(f"invalid env var name: {key!r}")
         if not isinstance(value, str):
-            raise TypeError(
-                f"value for {key!r} must be str, got {type(value).__name__}"
-            )
+            raise TypeError(f"value for {key!r} must be str, got {type(value).__name__}")
         if "\n" in value or "\r" in value:
-            raise ValueError(
-                f"value for {key!r} contains a newline; not supported"
-            )
+            raise ValueError(f"value for {key!r} contains a newline; not supported")
 
     if path.exists():
         content = path.read_text(encoding="utf-8")
@@ -229,9 +219,7 @@ def update_dotenv_file(
         body += "\n"
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_path = tempfile.mkstemp(
-        dir=str(path.parent), prefix=".env.", suffix=".tmp"
-    )
+    fd, tmp_path = tempfile.mkstemp(dir=str(path.parent), prefix=".env.", suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             fh.write(body)

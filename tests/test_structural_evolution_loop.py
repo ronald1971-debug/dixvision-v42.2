@@ -60,15 +60,11 @@ _MODULE_PATH = (
 
 
 def _frozen_policy() -> LearningEvolutionFreezePolicy:
-    return LearningEvolutionFreezePolicy(
-        mode=SystemMode.PAPER, operator_override=False
-    )
+    return LearningEvolutionFreezePolicy(mode=SystemMode.PAPER, operator_override=False)
 
 
 def _unfrozen_policy() -> LearningEvolutionFreezePolicy:
-    return LearningEvolutionFreezePolicy(
-        mode=SystemMode.LIVE, operator_override=True
-    )
+    return LearningEvolutionFreezePolicy(mode=SystemMode.LIVE, operator_override=True)
 
 
 def _breaching_stats(strategy_id: str = "alpha") -> StrategyStats:
@@ -101,9 +97,7 @@ def _clean_evidence(_proposal: PatchProposal) -> StageEvidence:
     return StageEvidence(
         sandbox_touchpoints=_proposal.touchpoints,
         static_findings=(),
-        backtest_summary=BacktestSummary(
-            runs=10, pnl=12.5, sharpe=1.5, max_drawdown=0.05
-        ),
+        backtest_summary=BacktestSummary(runs=10, pnl=12.5, sharpe=1.5, max_drawdown=0.05),
         shadow_samples=120,
         shadow_matches=119,
         canary_orders=20,
@@ -124,9 +118,7 @@ def _make_loop(
     return StructuralEvolutionLoop(
         proposer=proposer
         or MutationProposer(
-            thresholds=MutationThresholds(
-                min_trades=10, min_win_rate=0.5, min_mean_pnl=0.0
-            )
+            thresholds=MutationThresholds(min_trades=10, min_win_rate=0.5, min_mean_pnl=0.0)
         ),
         orchestrator=orchestrator,
         policy_supplier=lambda: policy,
@@ -239,9 +231,7 @@ def test_mode_flip_mid_loop() -> None:
     orchestrator = PatchPipelineOrchestrator(bridge=bridge)
     loop = StructuralEvolutionLoop(
         proposer=MutationProposer(
-            thresholds=MutationThresholds(
-                min_trades=10, min_win_rate=0.5, min_mean_pnl=0.0
-            )
+            thresholds=MutationThresholds(min_trades=10, min_win_rate=0.5, min_mean_pnl=0.0)
         ),
         orchestrator=orchestrator,
         policy_supplier=lambda: next(iter_pol),
@@ -281,9 +271,7 @@ def test_byte_identical_replay() -> None:
     # identical proposal IDs. Compare structurally.
     assert a.proposals == b.proposals == c.proposals
     assert a.emitted_events == b.emitted_events == c.emitted_events
-    assert tuple(r.decision.decision for r in a.runs) == tuple(
-        r.decision.decision for r in b.runs
-    )
+    assert tuple(r.decision.decision for r in a.runs) == tuple(r.decision.decision for r in b.runs)
 
 
 # ---------------------------------------------------------------------------
@@ -309,12 +297,12 @@ def test_loop_module_does_not_directly_construct_typed_events() -> None:
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
             fn = node.func
-            name = fn.id if isinstance(fn, ast.Name) else (
-                fn.attr if isinstance(fn, ast.Attribute) else None
+            name = (
+                fn.id
+                if isinstance(fn, ast.Name)
+                else (fn.attr if isinstance(fn, ast.Attribute) else None)
             )
-            assert (
-                name not in bad_constructors
-            ), f"structural_loop must not construct {name}"
+            assert name not in bad_constructors, f"structural_loop must not construct {name}"
 
 
 def test_loop_module_does_not_import_runtime_engines() -> None:

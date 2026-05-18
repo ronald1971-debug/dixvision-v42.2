@@ -160,9 +160,7 @@ class Topic:
     def __post_init__(self) -> None:
         if not self.name:
             raise ValueError("Topic.name must be non-empty")
-        if not isinstance(self.num_partitions, int) or isinstance(
-            self.num_partitions, bool
-        ):
+        if not isinstance(self.num_partitions, int) or isinstance(self.num_partitions, bool):
             raise TypeError("Topic.num_partitions must be int")
         if self.num_partitions <= 0:
             raise ValueError("Topic.num_partitions must be > 0")
@@ -190,9 +188,7 @@ class TopicPartition:
     def __post_init__(self) -> None:
         if not self.topic_name:
             raise ValueError("TopicPartition.topic_name must be non-empty")
-        if not isinstance(self.partition_idx, int) or isinstance(
-            self.partition_idx, bool
-        ):
+        if not isinstance(self.partition_idx, int) or isinstance(self.partition_idx, bool):
             raise TypeError("TopicPartition.partition_idx must be int")
         if self.partition_idx < 0:
             raise ValueError("TopicPartition.partition_idx must be >= 0")
@@ -271,9 +267,7 @@ class ProducerRecord:
                 or not isinstance(entry[0], str)
                 or not isinstance(entry[1], bytes)
             ):
-                raise TypeError(
-                    "ProducerRecord.headers entries must be (str, bytes) tuples"
-                )
+                raise TypeError("ProducerRecord.headers entries must be (str, bytes) tuples")
 
 
 @dataclass(frozen=True, slots=True)
@@ -348,9 +342,7 @@ class KafkaConfig:
             raise TypeError("KafkaConfig.bootstrap_servers must be tuple")
         for srv in self.bootstrap_servers:
             if not isinstance(srv, str) or not srv:
-                raise TypeError(
-                    "KafkaConfig.bootstrap_servers entries must be non-empty str"
-                )
+                raise TypeError("KafkaConfig.bootstrap_servers entries must be non-empty str")
         if self.acks not in ("0", "1", "all"):
             raise ValueError("KafkaConfig.acks must be one of '0' / '1' / 'all'")
 
@@ -448,9 +440,7 @@ def serialize_record(payload: Mapping[str, Any]) -> bytes:
     """
     if not isinstance(payload, Mapping):
         raise TypeError("payload must be Mapping")
-    return json.dumps(
-        dict(payload), sort_keys=True, separators=(",", ":")
-    ).encode("utf-8")
+    return json.dumps(dict(payload), sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
 def deserialize_record(blob: bytes) -> dict[str, Any]:
@@ -482,12 +472,8 @@ class InMemoryBroker:
     """
 
     topics: tuple[Topic, ...]
-    _logs: dict[TopicPartition, list[ConsumerRecord]] = field(
-        default_factory=dict
-    )
-    _offsets: dict[tuple[str, TopicPartition], int] = field(
-        default_factory=dict
-    )
+    _logs: dict[TopicPartition, list[ConsumerRecord]] = field(default_factory=dict)
+    _offsets: dict[tuple[str, TopicPartition], int] = field(default_factory=dict)
     _topic_index: dict[str, Topic] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -500,9 +486,7 @@ class InMemoryBroker:
             if not isinstance(topic, Topic):
                 raise TypeError("InMemoryBroker.topics entries must be Topic")
             if topic.name in names:
-                raise ValueError(
-                    f"InMemoryBroker.topics duplicate name {topic.name!r}"
-                )
+                raise ValueError(f"InMemoryBroker.topics duplicate name {topic.name!r}")
             names.add(topic.name)
             self._topic_index[topic.name] = topic
             for idx in range(topic.num_partitions):
@@ -535,10 +519,7 @@ class InMemoryBroker:
         topic = self._topic_index.get(topic_name)
         if topic is None:
             raise KeyError(f"unknown topic {topic_name!r}")
-        return tuple(
-            TopicPartition(topic_name, idx)
-            for idx in range(topic.num_partitions)
-        )
+        return tuple(TopicPartition(topic_name, idx) for idx in range(topic.num_partitions))
 
     def fetch(
         self,
@@ -553,9 +534,7 @@ class InMemoryBroker:
             raise KeyError(f"unknown partition {tp!r}")
         return tuple(log[offset : offset + max_records])
 
-    def committed(
-        self, group_id: str, tp: TopicPartition
-    ) -> OffsetAndMetadata:
+    def committed(self, group_id: str, tp: TopicPartition) -> OffsetAndMetadata:
         return OffsetAndMetadata(
             offset=self._offsets.get((group_id, tp), 0),
             metadata="",
@@ -696,11 +675,7 @@ class InMemoryConsumer:
             raise RuntimeError("InMemoryConsumer is stopped")
         if not topics:
             raise ValueError("topics must be non-empty")
-        members = (
-            tuple(group_members)
-            if group_members is not None
-            else (self.member_id,)
-        )
+        members = tuple(group_members) if group_members is not None else (self.member_id,)
         if self.member_id not in members:
             raise ValueError("member_id must be present in group_members")
         # Build the full partition set the group is consuming.
@@ -714,9 +689,7 @@ class InMemoryConsumer:
         # Seed positions from durable offsets.
         new_positions: dict[TopicPartition, int] = {}
         for tp in self._assigned:
-            new_positions[tp] = self.broker.committed(
-                self.group.group_id, tp
-            ).offset
+            new_positions[tp] = self.broker.committed(self.group.group_id, tp).offset
         self._positions = new_positions
 
     def assignment(self) -> tuple[TopicPartition, ...]:
@@ -804,14 +777,11 @@ def kafka_producer_factory(config: KafkaConfig) -> Any:
     if not isinstance(config, KafkaConfig):
         raise TypeError("config must be KafkaConfig")
     raise NotImplementedError(
-        "kafka_producer_factory is a lazy seam; activation gated on "
-        "research-acceptance PR"
+        "kafka_producer_factory is a lazy seam; activation gated on research-acceptance PR"
     )
 
 
-def kafka_consumer_factory(
-    config: KafkaConfig, group: ConsumerGroup
-) -> Any:
+def kafka_consumer_factory(config: KafkaConfig, group: ConsumerGroup) -> Any:
     """Lazy seam — returns a real :class:`AIOKafkaConsumer` once gated.
 
     See :func:`kafka_producer_factory` for the activation rules.
@@ -821,8 +791,7 @@ def kafka_consumer_factory(
     if not isinstance(group, ConsumerGroup):
         raise TypeError("group must be ConsumerGroup")
     raise NotImplementedError(
-        "kafka_consumer_factory is a lazy seam; activation gated on "
-        "research-acceptance PR"
+        "kafka_consumer_factory is a lazy seam; activation gated on research-acceptance PR"
     )
 
 
@@ -858,9 +827,7 @@ class App:
             raise TypeError("group must be ConsumerGroup")
         for existing in self.consumer_groups:
             if existing.group_id == group.group_id:
-                raise ValueError(
-                    f"duplicate consumer group {group.group_id!r}"
-                )
+                raise ValueError(f"duplicate consumer group {group.group_id!r}")
         return replace(
             self,
             consumer_groups=(*self.consumer_groups, group),
@@ -891,9 +858,7 @@ def bus_digest(records: Iterable[ConsumerRecord]) -> str:
     want to compare two runs without invoking :func:`run_app`.
     """
     h = hashlib.blake2b(digest_size=16)
-    for rec in sorted(
-        records, key=lambda r: (r.topic_name, r.partition_idx, r.offset)
-    ):
+    for rec in sorted(records, key=lambda r: (r.topic_name, r.partition_idx, r.offset)):
         h.update(rec.topic_name.encode("utf-8"))
         h.update(b"\x00")
         h.update(rec.partition_idx.to_bytes(4, "big"))
@@ -959,12 +924,7 @@ def run_app(
             key=lambda r: (r.topic_name, r.partition_idx, r.offset),
         )
     )
-    commits = tuple(
-        sorted(
-            (g, tp, offset)
-            for (g, tp), offset in broker._offsets.items()
-        )
-    )
+    commits = tuple(sorted((g, tp, offset) for (g, tp), offset in broker._offsets.items()))
     return AppResult(
         records=sorted_records,
         commits=commits,
@@ -1001,11 +961,7 @@ def _kafka_worker_loop(
             out_q.put(item)
             return
         if not isinstance(item, ProducerRecord):
-            out_q.put(
-                ValueError(
-                    f"worker received non-ProducerRecord: {type(item).__name__}"
-                )
-            )
+            out_q.put(ValueError(f"worker received non-ProducerRecord: {type(item).__name__}"))
             return
         cr = broker.append(item)
         out_q.put(cr)

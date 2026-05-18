@@ -400,12 +400,8 @@ def test_reconcile_aggregate_position_side_flip_escalates() -> None:
         now_ns=1,
         expected_wallets={"USDT": _w("USDT", 1_000.0)},
         actual_wallets={"USDT": _w("USDT", 1_000.0)},
-        expected_positions={
-            "BTC/USDT:USDT": _pos("BTC/USDT:USDT", 0.5, PositionSide.LONG)
-        },
-        actual_positions={
-            "BTC/USDT:USDT": _pos("BTC/USDT:USDT", 0.5, PositionSide.SHORT)
-        },
+        expected_positions={"BTC/USDT:USDT": _pos("BTC/USDT:USDT", 0.5, PositionSide.LONG)},
+        actual_positions={"BTC/USDT:USDT": _pos("BTC/USDT:USDT", 0.5, PositionSide.SHORT)},
     )
     assert rep.outcome is ReconciliationOutcome.DRIFT_HAZARD
 

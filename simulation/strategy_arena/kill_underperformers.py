@@ -134,13 +134,9 @@ class DemotionRecommendation:
 
     def __post_init__(self) -> None:
         if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
-            raise KillUnderperformersInputError(
-                "DemotionRecommendation.ts_ns must be int"
-            )
+            raise KillUnderperformersInputError("DemotionRecommendation.ts_ns must be int")
         if self.ts_ns < 0:
-            raise KillUnderperformersInputError(
-                "DemotionRecommendation.ts_ns must be non-negative"
-            )
+            raise KillUnderperformersInputError("DemotionRecommendation.ts_ns must be non-negative")
         for field_name in (
             "recommendation_id",
             "source",
@@ -157,9 +153,7 @@ class DemotionRecommendation:
                     f"DemotionRecommendation.{field_name} must be non-empty str"
                 )
         if not isinstance(self.pnl_mean_usd, float):
-            raise KillUnderperformersInputError(
-                "DemotionRecommendation.pnl_mean_usd must be float"
-            )
+            raise KillUnderperformersInputError("DemotionRecommendation.pnl_mean_usd must be float")
         if not isinstance(self.max_drawdown_usd, float):
             raise KillUnderperformersInputError(
                 "DemotionRecommendation.max_drawdown_usd must be float"
@@ -178,8 +172,7 @@ class DemotionRecommendation:
                 or not pair[0]
             ):
                 raise KillUnderperformersInputError(
-                    "DemotionRecommendation.meta entries must be "
-                    "(non-empty str, str) tuples"
+                    "DemotionRecommendation.meta entries must be (non-empty str, str) tuples"
                 )
             if pair[0] in seen_keys:
                 raise KillUnderperformersInputError(
@@ -219,20 +212,16 @@ def build_demotion_recommendations(
         )
     if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
         raise KillUnderperformersInputError(
-            f"build_demotion_recommendations.ts_ns must be int, "
-            f"got {type(ts_ns).__name__}"
+            f"build_demotion_recommendations.ts_ns must be int, got {type(ts_ns).__name__}"
         )
     if ts_ns < 0:
         raise KillUnderperformersInputError(
-            "build_demotion_recommendations.ts_ns must be non-negative, "
-            f"got {ts_ns!r}"
+            f"build_demotion_recommendations.ts_ns must be non-negative, got {ts_ns!r}"
         )
     extra = _validate_extra_meta(extra_meta)
 
     survivors = frozenset(result.survivors)
-    eliminated: list[Contestant] = [
-        c for c in result.contestants if c.strategy_id not in survivors
-    ]
+    eliminated: list[Contestant] = [c for c in result.contestants if c.strategy_id not in survivors]
     if len(eliminated) > MAX_KILL_BATCH:
         raise KillUnderperformersInputError(
             "build_demotion_recommendations: eliminated count exceeds "
@@ -284,8 +273,7 @@ def _validate_extra_meta(
     for key, value in extra_meta.items():
         if not isinstance(key, str) or not key:
             raise KillUnderperformersInputError(
-                "extra_meta keys must be non-empty str, "
-                f"got {key!r}"
+                f"extra_meta keys must be non-empty str, got {key!r}"
             )
         if not isinstance(value, str):
             raise KillUnderperformersInputError(
@@ -367,9 +355,7 @@ def _recommendation_id(
     """
 
     canonical = (
-        f"arena_digest={arena_digest}\n"
-        f"strategy_id={strategy_id}\n"
-        f"ts_ns={ts_ns}\n"
+        f"arena_digest={arena_digest}\nstrategy_id={strategy_id}\nts_ns={ts_ns}\n"
     ).encode()
     return "demote-" + hashlib.blake2b(canonical, digest_size=8).hexdigest()
 

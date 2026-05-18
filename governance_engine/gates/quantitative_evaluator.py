@@ -76,9 +76,7 @@ class QuantitativeThresholds:
 
 #: Default conservative thresholds, mirrored against
 #: ``docs/promotion_gates.yaml`` ``shadow_to_canary.performance``.
-DEFAULT_QUANTITATIVE_THRESHOLDS: QuantitativeThresholds = (
-    QuantitativeThresholds()
-)
+DEFAULT_QUANTITATIVE_THRESHOLDS: QuantitativeThresholds = QuantitativeThresholds()
 
 
 @dataclass(frozen=True, slots=True)
@@ -172,9 +170,7 @@ class QuantitativeEvaluator:
                 kind=QuantitativeVerdictKind.INSUFFICIENT_DATA,
                 passed=False,
                 rejection_codes=(REJECTION_CODE_INSUFFICIENT_SAMPLES,),
-                detail=(
-                    f"samples={metrics.samples} < samples_min={t.samples_min}"
-                ),
+                detail=(f"samples={metrics.samples} < samples_min={t.samples_min}"),
             )
 
         codes: list[str] = []

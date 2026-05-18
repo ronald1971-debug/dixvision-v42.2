@@ -119,11 +119,11 @@ class InProcessHeliusTransport:
         token_holders: Mapping of mint → ordered list of holder dicts.
     """
 
-    enhanced_transactions: Mapping[str, Mapping[str, object]] = (
-        dataclasses.field(default_factory=dict)
+    enhanced_transactions: Mapping[str, Mapping[str, object]] = dataclasses.field(
+        default_factory=dict
     )
-    token_holders: Mapping[str, Sequence[Mapping[str, object]]] = (
-        dataclasses.field(default_factory=dict)
+    token_holders: Mapping[str, Sequence[Mapping[str, object]]] = dataclasses.field(
+        default_factory=dict
     )
 
     def get_enhanced_transactions(
@@ -149,14 +149,10 @@ class InProcessHeliusTransport:
     ) -> tuple[Mapping[str, object], ...]:
         if not isinstance(mint, str) or not mint:
             raise ValueError(
-                "InProcessHeliusTransport.get_token_holders: "
-                "mint must be a non-empty string"
+                "InProcessHeliusTransport.get_token_holders: mint must be a non-empty string"
             )
         if limit <= 0:
-            raise ValueError(
-                "InProcessHeliusTransport.get_token_holders: "
-                "limit must be positive"
-            )
+            raise ValueError("InProcessHeliusTransport.get_token_holders: limit must be positive")
         rows = self.token_holders.get(mint, ())
         materialised = [dict(r) for r in rows[:limit]]
         return tuple(materialised)
@@ -233,13 +229,9 @@ def parse_enhanced_transaction(
     """
 
     if not isinstance(payload, Mapping):
-        raise TypeError(
-            "parse_enhanced_transaction: payload must be a mapping"
-        )
+        raise TypeError("parse_enhanced_transaction: payload must be a mapping")
     if ts_ns <= 0:
-        raise ValueError(
-            "parse_enhanced_transaction: ts_ns must be positive"
-        )
+        raise ValueError("parse_enhanced_transaction: ts_ns must be positive")
 
     kind = _normalise_kind(payload.get("type"))
     signature = _coerce_str(payload.get("signature"))
@@ -318,9 +310,7 @@ def _heuristic_rug_score(
     """
 
     delta = max(0.0, share_after - share_before)
-    churn = (
-        min(1.0, holders_changed / float(top_n)) if top_n > 0 else 0.0
-    )
+    churn = min(1.0, holders_changed / float(top_n)) if top_n > 0 else 0.0
     score = 0.6 * delta + 0.4 * churn
     if score < 0.0:
         return 0.0
@@ -425,11 +415,7 @@ class HeliusAdapter(LiveAdapterBase):
             missing.append("transport")
         if missing:
             self._state = AdapterState.DISCONNECTED
-            self._detail = (
-                "missing credentials: "
-                + ", ".join(missing)
-                + " — scaffold mode active"
-            )
+            self._detail = "missing credentials: " + ", ".join(missing) + " — scaffold mode active"
             return
         self._state = AdapterState.CONNECTING
         self._detail = "awaiting first Helius RPC roundtrip"
@@ -454,13 +440,9 @@ class HeliusAdapter(LiveAdapterBase):
         if self._transport is None:
             return ()
         if ts_ns <= 0:
-            raise ValueError(
-                "fetch_enhanced_transactions: ts_ns must be positive"
-            )
+            raise ValueError("fetch_enhanced_transactions: ts_ns must be positive")
         payloads = self._transport.get_enhanced_transactions(signatures)
-        return tuple(
-            parse_enhanced_transaction(p, ts_ns=ts_ns) for p in payloads
-        )
+        return tuple(parse_enhanced_transaction(p, ts_ns=ts_ns) for p in payloads)
 
     def diff_token_holders(
         self,
@@ -522,13 +504,9 @@ def helius_http_transport_factory(
     """
 
     if not api_key:
-        raise ValueError(
-            "helius_http_transport_factory: api_key must be non-empty"
-        )
+        raise ValueError("helius_http_transport_factory: api_key must be non-empty")
     if not base_url:
-        raise ValueError(
-            "helius_http_transport_factory: base_url must be non-empty"
-        )
+        raise ValueError("helius_http_transport_factory: base_url must be non-empty")
 
     import helius_sdk  # noqa: PLC0415
 
@@ -549,9 +527,7 @@ def helius_http_transport_factory(
                 return ()
             raw = method(list(signatures))
             if isinstance(raw, Sequence):
-                return tuple(
-                    dict(item) for item in raw if isinstance(item, Mapping)
-                )
+                return tuple(dict(item) for item in raw if isinstance(item, Mapping))
             return ()
 
         def get_token_holders(
@@ -568,9 +544,7 @@ def helius_http_transport_factory(
                 return ()
             raw = method(mint, limit=limit)
             if isinstance(raw, Sequence):
-                return tuple(
-                    dict(item) for item in raw if isinstance(item, Mapping)
-                )
+                return tuple(dict(item) for item in raw if isinstance(item, Mapping))
             return ()
 
     return _HttpHeliusTransport(client)

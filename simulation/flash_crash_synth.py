@@ -70,13 +70,11 @@ class FlashCrashConfig:
     def __post_init__(self) -> None:
         if not 0.0 <= self.drop_jitter <= 1.0:
             raise ValueError(
-                "FlashCrashConfig.drop_jitter must be in [0, 1], "
-                f"got {self.drop_jitter!r}"
+                f"FlashCrashConfig.drop_jitter must be in [0, 1], got {self.drop_jitter!r}"
             )
         if not 0.0 <= self.recovery_jitter <= 1.0:
             raise ValueError(
-                "FlashCrashConfig.recovery_jitter must be in [0, 1], "
-                f"got {self.recovery_jitter!r}"
+                f"FlashCrashConfig.recovery_jitter must be in [0, 1], got {self.recovery_jitter!r}"
             )
 
 
@@ -128,9 +126,7 @@ def _require_side(meta: dict[str, Any]) -> str:
         raise ValueError("RealityScenario.meta missing required key 'side'")
     side = meta["side"]
     if side not in (_LONG, _SHORT):
-        raise ValueError(
-            f"meta['side'] must be 'long' or 'short', got {side!r}"
-        )
+        raise ValueError(f"meta['side'] must be 'long' or 'short', got {side!r}")
     return side
 
 

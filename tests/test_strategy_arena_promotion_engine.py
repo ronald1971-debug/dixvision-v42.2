@@ -256,8 +256,7 @@ def test_b28_authority_symmetry_no_patchproposal():
     for node in ast.walk(PROMOTE_TREE):
         if isinstance(node, ast.ImportFrom) and node.module:
             assert node.module != "core.contracts.learning", (
-                "promotion_engine must NOT import from "
-                "core.contracts.learning (B28 / HARDEN-06)"
+                "promotion_engine must NOT import from core.contracts.learning (B28 / HARDEN-06)"
             )
         if isinstance(node, ast.Call):
             func = node.func
@@ -320,7 +319,9 @@ def test_extra_meta_must_be_mapping_or_none():
     result = _make_result()
     with pytest.raises(PromotionEngineInputError):
         build_promotion_recommendations(
-            result=result, ts_ns=1, extra_meta=[("k", "v")]  # type: ignore[arg-type]
+            result=result,
+            ts_ns=1,
+            extra_meta=[("k", "v")],  # type: ignore[arg-type]
         )
 
 
@@ -328,7 +329,9 @@ def test_extra_meta_keys_must_be_str():
     result = _make_result()
     with pytest.raises(PromotionEngineInputError):
         build_promotion_recommendations(
-            result=result, ts_ns=1, extra_meta={1: "v"}  # type: ignore[dict-item]
+            result=result,
+            ts_ns=1,
+            extra_meta={1: "v"},  # type: ignore[dict-item]
         )
 
 
@@ -336,16 +339,16 @@ def test_extra_meta_values_must_be_str():
     result = _make_result()
     with pytest.raises(PromotionEngineInputError):
         build_promotion_recommendations(
-            result=result, ts_ns=1, extra_meta={"k": 1}  # type: ignore[dict-item]
+            result=result,
+            ts_ns=1,
+            extra_meta={"k": 1},  # type: ignore[dict-item]
         )
 
 
 def test_extra_meta_keys_cannot_be_empty():
     result = _make_result()
     with pytest.raises(PromotionEngineInputError):
-        build_promotion_recommendations(
-            result=result, ts_ns=1, extra_meta={"": "v"}
-        )
+        build_promotion_recommendations(result=result, ts_ns=1, extra_meta={"": "v"})
 
 
 def test_extra_meta_cannot_collide_with_reserved():
@@ -359,9 +362,7 @@ def test_extra_meta_cannot_collide_with_reserved():
         "max_drawdown_usd",
     ):
         with pytest.raises(PromotionEngineInputError):
-            build_promotion_recommendations(
-                result=result, ts_ns=1, extra_meta={key: "x"}
-            )
+            build_promotion_recommendations(result=result, ts_ns=1, extra_meta={key: "x"})
 
 
 def test_extra_meta_none_is_allowed():
@@ -550,7 +551,7 @@ def test_recommendation_id_format():
     recs = build_promotion_recommendations(result=result, ts_ns=1)
     for r in recs:
         assert r.recommendation_id.startswith("promote-")
-        suffix = r.recommendation_id[len("promote-"):]
+        suffix = r.recommendation_id[len("promote-") :]
         assert len(suffix) == 16
         int(suffix, 16)  # hex check
 
@@ -585,9 +586,7 @@ def test_rationale_non_empty():
 
 def test_meta_is_tuple():
     result = _make_result()
-    recs = build_promotion_recommendations(
-        result=result, ts_ns=1, extra_meta={"a": "1"}
-    )
+    recs = build_promotion_recommendations(result=result, ts_ns=1, extra_meta={"a": "1"})
     for r in recs:
         assert isinstance(r.meta, tuple)
 
@@ -728,12 +727,8 @@ def test_same_arena_different_ts_ns_same_target():
 def test_extra_meta_key_order_does_not_matter():
     """Reorder extra_meta keys → identical recommendation tuple."""
     result = _make_result()
-    a = build_promotion_recommendations(
-        result=result, ts_ns=1, extra_meta={"a": "1", "b": "2"}
-    )
-    b = build_promotion_recommendations(
-        result=result, ts_ns=1, extra_meta={"b": "2", "a": "1"}
-    )
+    a = build_promotion_recommendations(result=result, ts_ns=1, extra_meta={"a": "1", "b": "2"})
+    b = build_promotion_recommendations(result=result, ts_ns=1, extra_meta={"b": "2", "a": "1"})
     assert a == b
 
 
@@ -809,10 +804,7 @@ def test_no_survivors_returns_empty():
 
 def test_all_survive_when_n_winners_equals_population():
     """All contestants survive → one recommendation per contestant."""
-    contestants = [
-        _make_contestant(f"strat-{i:03d}", pnl_mean=float(i))
-        for i in range(3)
-    ]
+    contestants = [_make_contestant(f"strat-{i:03d}", pnl_mean=float(i)) for i in range(3)]
     config = ArenaConfig(
         arena_id="arena-all-survive",
         tournament_size=2,
@@ -821,9 +813,7 @@ def test_all_survive_when_n_winners_equals_population():
         drawdown_weight=0.0,
     )
     arena = Arena()
-    result = arena.run(
-        contestants=contestants, config=config, seed=1, ts_ns=1
-    )
+    result = arena.run(contestants=contestants, config=config, seed=1, ts_ns=1)
     recs = build_promotion_recommendations(result=result, ts_ns=1)
     assert len(recs) == len(result.survivors)
     assert {r.strategy_id for r in recs} <= {c.strategy_id for c in contestants}

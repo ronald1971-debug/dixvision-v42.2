@@ -388,9 +388,7 @@ def _flat_bars(n: int, *, start: float = 100.0, step: float = 0.0) -> tuple[OHLC
     bars: list[OHLCVBar] = []
     for i in range(n):
         price = start + i * step
-        bars.append(
-            _bar(i * 10, price, price + 0.5, price - 0.5, price, 1.0 + i * 0.1)
-        )
+        bars.append(_bar(i * 10, price, price + 0.5, price - 0.5, price, 1.0 + i * 0.1))
     return tuple(bars)
 
 

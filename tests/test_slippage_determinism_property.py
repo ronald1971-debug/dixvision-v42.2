@@ -50,15 +50,9 @@ from simulation_engine.slippage_model import (
 def _book_snapshots(draw: st.DrawFn) -> BookSnapshot:
     """A well-formed L2 book with positive depth on both sides."""
 
-    mid = draw(
-        st.floats(min_value=10.0, max_value=10_000.0, allow_nan=False)
-    )
-    bid_step = draw(
-        st.floats(min_value=0.01, max_value=1.0, allow_nan=False)
-    )
-    ask_step = draw(
-        st.floats(min_value=0.01, max_value=1.0, allow_nan=False)
-    )
+    mid = draw(st.floats(min_value=10.0, max_value=10_000.0, allow_nan=False))
+    bid_step = draw(st.floats(min_value=0.01, max_value=1.0, allow_nan=False))
+    ask_step = draw(st.floats(min_value=0.01, max_value=1.0, allow_nan=False))
     n_levels = draw(st.integers(min_value=3, max_value=8))
 
     bids: list[BookLevel] = []
@@ -66,11 +60,7 @@ def _book_snapshots(draw: st.DrawFn) -> BookSnapshot:
         bids.append(
             BookLevel(
                 price=mid - bid_step * (i + 1),
-                qty=draw(
-                    st.floats(
-                        min_value=0.01, max_value=100.0, allow_nan=False
-                    )
-                ),
+                qty=draw(st.floats(min_value=0.01, max_value=100.0, allow_nan=False)),
             )
         )
     asks: list[BookLevel] = []
@@ -78,11 +68,7 @@ def _book_snapshots(draw: st.DrawFn) -> BookSnapshot:
         asks.append(
             BookLevel(
                 price=mid + ask_step * (i + 1),
-                qty=draw(
-                    st.floats(
-                        min_value=0.01, max_value=100.0, allow_nan=False
-                    )
-                ),
+                qty=draw(st.floats(min_value=0.01, max_value=100.0, allow_nan=False)),
             )
         )
     return BookSnapshot(bids=tuple(bids), asks=tuple(asks))
@@ -144,9 +130,7 @@ def test_constant_bps_deterministic_and_sided(
     mark=_MARKS,
     bps=st.floats(min_value=0.0, max_value=200.0, allow_nan=False),
 )
-def test_constant_bps_symmetric_around_mark(
-    qty: float, mark: float, bps: float
-) -> None:
+def test_constant_bps_symmetric_around_mark(qty: float, mark: float, bps: float) -> None:
     """Buy excess equals sell discount (reflection around mark)."""
 
     model = ConstantBpsSlippage(bps=bps)
@@ -166,9 +150,7 @@ def test_constant_bps_symmetric_around_mark(
     suppress_health_check=[HealthCheck.too_slow],
 )
 @given(book=_book_snapshots(), side=_SIDES)
-def test_book_walk_deterministic_and_sided(
-    book: BookSnapshot, side: Side
-) -> None:
+def test_book_walk_deterministic_and_sided(book: BookSnapshot, side: Side) -> None:
     model = BookWalkSlippage()
     mark = book.mid_price
     assert mark is not None

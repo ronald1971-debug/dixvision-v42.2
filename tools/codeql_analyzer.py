@@ -67,9 +67,7 @@ MAX_QUERY_NAME_LEN: Final[int] = 128
 MAX_PATTERN_LEN: Final[int] = 256
 MAX_CODE_LEN: Final[int] = 10_000_000
 MAX_TRACE_DEPTH: Final[int] = 64
-QUERY_NAME_PATTERN: Final[re.Pattern[str]] = re.compile(
-    r"^[A-Za-z0-9][A-Za-z0-9._-]*$"
-)
+QUERY_NAME_PATTERN: Final[re.Pattern[str]] = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
 # ---------------------------------------------------------------------------
@@ -124,17 +122,12 @@ class TaintSource:
             )
         if not QUERY_NAME_PATTERN.match(self.name):
             raise AnalyzerError(
-                f"TaintSource.name {self.name!r} must match "
-                f"{QUERY_NAME_PATTERN.pattern}"
+                f"TaintSource.name {self.name!r} must match {QUERY_NAME_PATTERN.pattern}"
             )
         if not isinstance(self.kind, PatternKind):
-            raise AnalyzerError(
-                "TaintSource.kind must be a PatternKind member"
-            )
+            raise AnalyzerError("TaintSource.kind must be a PatternKind member")
         if not isinstance(self.pattern, str) or not self.pattern:
-            raise AnalyzerError(
-                "TaintSource.pattern must be a non-empty string"
-            )
+            raise AnalyzerError("TaintSource.pattern must be a non-empty string")
         if len(self.pattern) > MAX_PATTERN_LEN:
             raise AnalyzerError(
                 f"TaintSource.pattern length {len(self.pattern)} exceeds "
@@ -172,22 +165,16 @@ class TaintSink:
             )
         if not QUERY_NAME_PATTERN.match(self.name):
             raise AnalyzerError(
-                f"TaintSink.name {self.name!r} must match "
-                f"{QUERY_NAME_PATTERN.pattern}"
+                f"TaintSink.name {self.name!r} must match {QUERY_NAME_PATTERN.pattern}"
             )
         if not isinstance(self.kind, PatternKind):
-            raise AnalyzerError(
-                "TaintSink.kind must be a PatternKind member"
-            )
+            raise AnalyzerError("TaintSink.kind must be a PatternKind member")
         if self.kind is not PatternKind.CALL:
             raise AnalyzerError(
-                "TaintSink only supports PatternKind.CALL (sinks are "
-                "function calls)"
+                "TaintSink only supports PatternKind.CALL (sinks are function calls)"
             )
         if not isinstance(self.pattern, str) or not self.pattern:
-            raise AnalyzerError(
-                "TaintSink.pattern must be a non-empty string"
-            )
+            raise AnalyzerError("TaintSink.pattern must be a non-empty string")
         if len(self.pattern) > MAX_PATTERN_LEN:
             raise AnalyzerError(
                 f"TaintSink.pattern length {len(self.pattern)} exceeds "
@@ -222,8 +209,7 @@ class Sanitizer:
             )
         if not QUERY_NAME_PATTERN.match(self.name):
             raise AnalyzerError(
-                f"Sanitizer.name {self.name!r} must match "
-                f"{QUERY_NAME_PATTERN.pattern}"
+                f"Sanitizer.name {self.name!r} must match {QUERY_NAME_PATTERN.pattern}"
             )
         if not isinstance(self.pattern, str) or not self.pattern:
             raise AnalyzerError("Sanitizer.pattern must be a non-empty string")
@@ -255,9 +241,7 @@ class DataFlowQuery:
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, str) or not self.name:
-            raise AnalyzerError(
-                "DataFlowQuery.name must be a non-empty string"
-            )
+            raise AnalyzerError("DataFlowQuery.name must be a non-empty string")
         if len(self.name) > MAX_QUERY_NAME_LEN:
             raise AnalyzerError(
                 f"DataFlowQuery.name length {len(self.name)} exceeds "
@@ -265,8 +249,7 @@ class DataFlowQuery:
             )
         if not QUERY_NAME_PATTERN.match(self.name):
             raise AnalyzerError(
-                f"DataFlowQuery.name {self.name!r} must match "
-                f"{QUERY_NAME_PATTERN.pattern}"
+                f"DataFlowQuery.name {self.name!r} must match {QUERY_NAME_PATTERN.pattern}"
             )
         if not isinstance(self.sources, tuple):
             raise AnalyzerError("DataFlowQuery.sources must be a tuple")
@@ -274,27 +257,19 @@ class DataFlowQuery:
             raise AnalyzerError("DataFlowQuery.sources must be non-empty")
         for src in self.sources:
             if not isinstance(src, TaintSource):
-                raise AnalyzerError(
-                    "DataFlowQuery.sources must contain TaintSource "
-                    "instances"
-                )
+                raise AnalyzerError("DataFlowQuery.sources must contain TaintSource instances")
         if not isinstance(self.sinks, tuple):
             raise AnalyzerError("DataFlowQuery.sinks must be a tuple")
         if not self.sinks:
             raise AnalyzerError("DataFlowQuery.sinks must be non-empty")
         for snk in self.sinks:
             if not isinstance(snk, TaintSink):
-                raise AnalyzerError(
-                    "DataFlowQuery.sinks must contain TaintSink instances"
-                )
+                raise AnalyzerError("DataFlowQuery.sinks must contain TaintSink instances")
         if not isinstance(self.sanitizers, tuple):
             raise AnalyzerError("DataFlowQuery.sanitizers must be a tuple")
         for san in self.sanitizers:
             if not isinstance(san, Sanitizer):
-                raise AnalyzerError(
-                    "DataFlowQuery.sanitizers must contain Sanitizer "
-                    "instances"
-                )
+                raise AnalyzerError("DataFlowQuery.sanitizers must contain Sanitizer instances")
 
 
 @dataclass(frozen=True, slots=True)
@@ -349,21 +324,14 @@ class AnalysisResult:
             raise AnalyzerError("AnalysisResult.traces must be a tuple")
         for trace in self.traces:
             if not isinstance(trace, Trace):
-                raise AnalyzerError(
-                    "AnalysisResult.traces must contain Trace instances"
-                )
+                raise AnalyzerError("AnalysisResult.traces must contain Trace instances")
         if not isinstance(self.query_name, str) or not self.query_name:
-            raise AnalyzerError(
-                "AnalysisResult.query_name must be a non-empty string"
-            )
+            raise AnalyzerError("AnalysisResult.query_name must be a non-empty string")
         if not isinstance(self.file_path, str):
-            raise AnalyzerError(
-                "AnalysisResult.file_path must be a string"
-            )
+            raise AnalyzerError("AnalysisResult.file_path must be a string")
         if self.backend not in {"stdlib", "codeql"}:
             raise AnalyzerError(
-                f"AnalysisResult.backend must be 'stdlib' or 'codeql', "
-                f"got {self.backend!r}"
+                f"AnalysisResult.backend must be 'stdlib' or 'codeql', got {self.backend!r}"
             )
 
     def is_clean(self) -> bool:
@@ -508,9 +476,7 @@ class _Tainted:
     source_col: int
 
 
-def _scan_argument_for_taint(
-    arg: ast.AST, taint_map: Mapping[str, _Tainted]
-) -> _Tainted | None:
+def _scan_argument_for_taint(arg: ast.AST, taint_map: Mapping[str, _Tainted]) -> _Tainted | None:
     """Walk ``arg`` for the first :class:`ast.Name` reference whose
     identifier is in ``taint_map``.
 
@@ -551,27 +517,20 @@ def analyze(
     """
 
     if not isinstance(query, DataFlowQuery):
-        raise AnalyzerError(
-            "analyze() query must be a DataFlowQuery instance"
-        )
+        raise AnalyzerError("analyze() query must be a DataFlowQuery instance")
     if not isinstance(code, str):
         raise AnalyzerError("analyze() code must be a string")
     if len(code) > MAX_CODE_LEN:
         raise AnalyzerError(
-            f"analyze() code length {len(code)} exceeds "
-            f"MAX_CODE_LEN={MAX_CODE_LEN}"
+            f"analyze() code length {len(code)} exceeds MAX_CODE_LEN={MAX_CODE_LEN}"
         )
     if not isinstance(file_path, str) or not file_path:
-        raise AnalyzerError(
-            "analyze() file_path must be a non-empty string"
-        )
+        raise AnalyzerError("analyze() file_path must be a non-empty string")
 
     try:
         tree = ast.parse(code, filename=file_path, mode="exec")
     except SyntaxError as exc:
-        raise AnalyzerError(
-            f"analyze() failed to parse {file_path!r}: {exc.msg}"
-        ) from exc
+        raise AnalyzerError(f"analyze() failed to parse {file_path!r}: {exc.msg}") from exc
 
     taint_map: dict[str, _Tainted] = {}
     traces: list[Trace] = []
@@ -599,9 +558,7 @@ def analyze(
         if isinstance(node, ast.Assign):
             rhs = node.value
             # Sanitizer: RHS is a CALL matching any sanitizer.
-            if isinstance(rhs, ast.Call) and _matches_sanitizer(
-                rhs, query.sanitizers
-            ):
+            if isinstance(rhs, ast.Call) and _matches_sanitizer(rhs, query.sanitizers):
                 for tgt in _assignment_targets(node):
                     taint_map.pop(tgt, None)
                 continue
@@ -750,10 +707,7 @@ def enable_codeql_factory(
     if overrides is not None:
         unknown = set(overrides) - allowed_keys
         if unknown:
-            raise AnalyzerError(
-                f"enable_codeql_factory: unknown override keys "
-                f"{sorted(unknown)}"
-            )
+            raise AnalyzerError(f"enable_codeql_factory: unknown override keys {sorted(unknown)}")
 
     def _analyzer(
         query: DataFlowQuery,

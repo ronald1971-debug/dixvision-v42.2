@@ -43,9 +43,7 @@ class _RecordingClient:
         try:
             payload = self._payloads[url]
         except KeyError as exc:
-            raise RuntimeError(
-                f"_RecordingClient: no canned payload for {url!r}"
-            ) from exc
+            raise RuntimeError(f"_RecordingClient: no canned payload for {url!r}") from exc
         if isinstance(payload, type) and issubclass(payload, BaseException):
             raise payload(f"stub error for {url}")
         return payload
@@ -248,9 +246,7 @@ def test_fetch_after_disconnect_raises() -> None:
     crawler = FirecrawlCrawler(
         seed_urls={"a": "https://a.example"},
         credentials=FirecrawlCredentials(api_key="fc"),
-        client_factory=lambda _c: _RecordingClient(
-            {"https://a.example": _ok_payload("t", "b")}
-        ),
+        client_factory=lambda _c: _RecordingClient({"https://a.example": _ok_payload("t", "b")}),
     )
     crawler.connect()
     crawler.disconnect()
@@ -594,14 +590,10 @@ def test_module_does_not_import_os_or_time() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 root = alias.name.split(".", 1)[0]
-                assert root not in forbidden, (
-                    f"forbidden top-level import: {alias.name}"
-                )
+                assert root not in forbidden, f"forbidden top-level import: {alias.name}"
         elif isinstance(node, ast.ImportFrom):
             root = (node.module or "").split(".", 1)[0]
-            assert root not in forbidden, (
-                f"forbidden from-import: {node.module}"
-            )
+            assert root not in forbidden, f"forbidden from-import: {node.module}"
 
 
 def test_module_does_not_call_environ_or_clock() -> None:
@@ -624,9 +616,7 @@ def test_module_does_not_call_environ_or_clock() -> None:
         ("asyncio", "sleep"),
     }
     for node in ast.walk(tree):
-        if isinstance(node, ast.Attribute) and isinstance(
-            node.value, ast.Name
-        ):
+        if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
             chain = (node.value.id, node.attr)
             assert chain not in forbidden_chains, (
                 f"forbidden attribute access: {chain[0]}.{chain[1]}"
@@ -652,15 +642,8 @@ def test_agpl_mitigation_only_scrape_url_call() -> None:
     tree = _module_ast()
     sdk_attrs: set[str] = set()
     for node in ast.walk(tree):
-        if isinstance(node, ast.Call) and isinstance(
-            node.func, ast.Attribute
-        ):
-            if (
-                isinstance(node.func.value, ast.Name)
-                and node.func.value.id == "client"
-            ):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            if isinstance(node.func.value, ast.Name) and node.func.value.id == "client":
                 sdk_attrs.add(node.func.attr)
     # The only Firecrawl SDK method we call is scrape_url.
-    assert sdk_attrs == {"scrape_url"}, (
-        f"unexpected SDK call sites: {sdk_attrs}"
-    )
+    assert sdk_attrs == {"scrape_url"}, f"unexpected SDK call sites: {sdk_attrs}"

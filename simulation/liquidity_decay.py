@@ -79,18 +79,15 @@ class LiquidityDecayConfig:
     def __post_init__(self) -> None:
         if not 0.0 <= self.depth_jitter <= 1.0:
             raise ValueError(
-                "LiquidityDecayConfig.depth_jitter must be in [0, 1], "
-                f"got {self.depth_jitter!r}"
+                f"LiquidityDecayConfig.depth_jitter must be in [0, 1], got {self.depth_jitter!r}"
             )
         if not self.min_depth_usd > 0.0:
             raise ValueError(
-                "LiquidityDecayConfig.min_depth_usd must be > 0, "
-                f"got {self.min_depth_usd!r}"
+                f"LiquidityDecayConfig.min_depth_usd must be > 0, got {self.min_depth_usd!r}"
             )
         if not 1 <= self.max_slices <= 100_000:
             raise ValueError(
-                "LiquidityDecayConfig.max_slices must be in [1, 100000], "
-                f"got {self.max_slices!r}"
+                f"LiquidityDecayConfig.max_slices must be in [1, 100000], got {self.max_slices!r}"
             )
 
 
@@ -111,9 +108,7 @@ def _require_positive_float(meta: dict[str, Any], key: str) -> float:
     return v
 
 
-def _require_unit_interval(
-    meta: dict[str, Any], key: str, *, exclusive_upper: bool
-) -> float:
+def _require_unit_interval(meta: dict[str, Any], key: str, *, exclusive_upper: bool) -> float:
     if key not in meta:
         raise ValueError(f"RealityScenario.meta missing required key {key!r}")
     raw = meta[key]
@@ -133,26 +128,18 @@ def _require_side(meta: dict[str, Any]) -> str:
         raise ValueError("RealityScenario.meta missing required key 'side'")
     side = meta["side"]
     if side not in (_BUY, _SELL):
-        raise ValueError(
-            f"meta['side'] must be 'buy' or 'sell', got {side!r}"
-        )
+        raise ValueError(f"meta['side'] must be 'buy' or 'sell', got {side!r}")
     return side
 
 
 def _require_num_slices(meta: dict[str, Any], max_slices: int) -> int:
     if "num_slices" not in meta:
-        raise ValueError(
-            "RealityScenario.meta missing required key 'num_slices'"
-        )
+        raise ValueError("RealityScenario.meta missing required key 'num_slices'")
     raw = meta["num_slices"]
     if not isinstance(raw, int) or isinstance(raw, bool):
-        raise ValueError(
-            f"meta['num_slices'] must be an int, got {raw!r}"
-        )
+        raise ValueError(f"meta['num_slices'] must be an int, got {raw!r}")
     if not 1 <= raw <= max_slices:
-        raise ValueError(
-            f"meta['num_slices'] must be in [1, {max_slices}], got {raw!r}"
-        )
+        raise ValueError(f"meta['num_slices'] must be in [1, {max_slices}], got {raw!r}")
     return raw
 
 
@@ -176,9 +163,7 @@ class LiquidityDecay:
         reference = _require_positive_float(meta, "reference_price")
         size_usd = _require_positive_float(meta, "order_size_usd")
         initial_depth = _require_positive_float(meta, "initial_depth_usd")
-        decay_rate = _require_unit_interval(
-            meta, "decay_rate", exclusive_upper=True
-        )
+        decay_rate = _require_unit_interval(meta, "decay_rate", exclusive_upper=True)
         num_slices = _require_num_slices(meta, cfg.max_slices)
         side = _require_side(meta)
 

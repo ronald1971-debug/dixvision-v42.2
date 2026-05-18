@@ -508,10 +508,7 @@ def test_protocol_non_conforming_class_fails_isinstance() -> None:
 
 
 _CONTRACTS_PATH = (
-    Path(__file__).resolve().parent.parent
-    / "state"
-    / "memory_tensor"
-    / "contracts.py"
+    Path(__file__).resolve().parent.parent / "state" / "memory_tensor" / "contracts.py"
 )
 
 
@@ -570,25 +567,21 @@ def test_contracts_has_no_engine_cross_imports() -> None:
 def test_contracts_has_adapted_from_header() -> None:
     src = _CONTRACTS_PATH.read_text()
     assert src.startswith("# ADAPTED FROM: facebookresearch/faiss"), (
-        "S-08 spec requires '# ADAPTED FROM: facebookresearch/faiss "
-        "Python interface' header"
+        "S-08 spec requires '# ADAPTED FROM: facebookresearch/faiss Python interface' header"
     )
 
 
 def test_contracts_has_no_clock_calls() -> None:
     src = _CONTRACTS_PATH.read_text()
     for needle in ("time.time(", "time.monotonic(", "datetime.now(", "time_ns("):
-        assert needle not in src, (
-            f"contracts.py must not call {needle!r} (INV-15)"
-        )
+        assert needle not in src, f"contracts.py must not call {needle!r} (INV-15)"
 
 
 def test_contracts_uses_no_typing_any_for_payloads() -> None:
     """Payload values must be ``str`` per the S-08 ledger-friendly rule."""
     src = _CONTRACTS_PATH.read_text()
     assert "Mapping[str, Any]" not in src, (
-        "Payload mappings must be Mapping[str, str] (ledger-friendly), "
-        "not Mapping[str, Any]"
+        "Payload mappings must be Mapping[str, str] (ledger-friendly), not Mapping[str, Any]"
     )
 
 
@@ -624,8 +617,6 @@ def test_unused_imports_kept_intentionally() -> None:
     _ = Any
     src = _CONTRACTS_PATH.read_text()
     assert "from typing import" in src
-    assert "Any" not in src.split("__all__")[0].split(
-        "from typing import"
-    )[1].split("\n")[0], (
+    assert "Any" not in src.split("__all__")[0].split("from typing import")[1].split("\n")[0], (
         "contracts.py must not import typing.Any"
     )

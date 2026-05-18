@@ -148,18 +148,14 @@ class CritiqueRoundRecord:
     consensus: CritiqueConsensus
 
     def __post_init__(self) -> None:
-        if (
-            not isinstance(self.round_index, int)
-            or isinstance(self.round_index, bool)
-        ):
+        if not isinstance(self.round_index, int) or isinstance(self.round_index, bool):
             raise CritiqueLoopError(
                 "CritiqueRoundRecord.round_index must be int, "
                 f"got {type(self.round_index).__name__}"
             )
         if self.round_index < 0:
             raise CritiqueLoopError(
-                "CritiqueRoundRecord.round_index must be >= 0, "
-                f"got {self.round_index!r}"
+                f"CritiqueRoundRecord.round_index must be >= 0, got {self.round_index!r}"
             )
         if not isinstance(self.proposal, Mapping):
             raise CritiqueLoopError(
@@ -168,8 +164,7 @@ class CritiqueRoundRecord:
             )
         if not isinstance(self.log, CritiqueLog):
             raise CritiqueLoopError(
-                "CritiqueRoundRecord.log must be CritiqueLog, "
-                f"got {type(self.log).__name__}"
+                f"CritiqueRoundRecord.log must be CritiqueLog, got {type(self.log).__name__}"
             )
         if not isinstance(self.consensus, CritiqueConsensus):
             raise CritiqueLoopError(
@@ -206,8 +201,7 @@ class CritiqueLoopResult:
     def __post_init__(self) -> None:
         if not isinstance(self.proposal_id, str) or not self.proposal_id:
             raise CritiqueLoopError(
-                "CritiqueLoopResult.proposal_id must be a "
-                f"non-empty str, got {self.proposal_id!r}"
+                f"CritiqueLoopResult.proposal_id must be a non-empty str, got {self.proposal_id!r}"
             )
         if not isinstance(self.initial_proposal, Mapping):
             raise CritiqueLoopError(
@@ -221,13 +215,10 @@ class CritiqueLoopResult:
             )
         if not isinstance(self.rounds, tuple):
             raise CritiqueLoopError(
-                "CritiqueLoopResult.rounds must be a tuple, got "
-                f"{type(self.rounds).__name__}"
+                f"CritiqueLoopResult.rounds must be a tuple, got {type(self.rounds).__name__}"
             )
         if not self.rounds:
-            raise CritiqueLoopError(
-                "CritiqueLoopResult.rounds must be non-empty"
-            )
+            raise CritiqueLoopError("CritiqueLoopResult.rounds must be non-empty")
         for i, record in enumerate(self.rounds):
             if not isinstance(record, CritiqueRoundRecord):
                 raise CritiqueLoopError(
@@ -239,9 +230,7 @@ class CritiqueLoopResult:
                     f"CritiqueLoopResult.rounds[{i}].round_index "
                     f"must equal {i}, got {record.round_index!r}"
                 )
-        if not isinstance(
-            self.terminal_recommendation, CritiqueRecommendation
-        ):
+        if not isinstance(self.terminal_recommendation, CritiqueRecommendation):
             raise CritiqueLoopError(
                 "CritiqueLoopResult.terminal_recommendation must "
                 "be CritiqueRecommendation, got "
@@ -249,16 +238,11 @@ class CritiqueLoopResult:
             )
         if not isinstance(self.converged, bool):
             raise CritiqueLoopError(
-                "CritiqueLoopResult.converged must be bool, got "
-                f"{type(self.converged).__name__}"
+                f"CritiqueLoopResult.converged must be bool, got {type(self.converged).__name__}"
             )
-        if (
-            self.rounds[-1].consensus.recommendation
-            is not self.terminal_recommendation
-        ):
+        if self.rounds[-1].consensus.recommendation is not self.terminal_recommendation:
             raise CritiqueLoopError(
-                "CritiqueLoopResult.terminal_recommendation must "
-                "mirror the last round's consensus"
+                "CritiqueLoopResult.terminal_recommendation must mirror the last round's consensus"
             )
 
 
@@ -267,13 +251,11 @@ class CritiqueLoopResult:
 # ---------------------------------------------------------------------------
 
 
-_TERMINAL_RECOMMENDATIONS: Final[frozenset[CritiqueRecommendation]] = (
-    frozenset(
-        (
-            CritiqueRecommendation.APPROVE,
-            CritiqueRecommendation.REJECT,
-            CritiqueRecommendation.ESCALATE,
-        )
+_TERMINAL_RECOMMENDATIONS: Final[frozenset[CritiqueRecommendation]] = frozenset(
+    (
+        CritiqueRecommendation.APPROVE,
+        CritiqueRecommendation.REJECT,
+        CritiqueRecommendation.ESCALATE,
     )
 )
 
@@ -283,14 +265,12 @@ def _validate_role_bundle(
 ) -> None:
     if not isinstance(bundle, Mapping):
         raise CritiqueLoopError(
-            "run_critique_loop role_bundle must be a Mapping, "
-            f"got {type(bundle).__name__}"
+            f"run_critique_loop role_bundle must be a Mapping, got {type(bundle).__name__}"
         )
     for role in CANONICAL_CRITIC_ROLES:
         if role not in bundle:
             raise CritiqueLoopError(
-                "run_critique_loop role_bundle missing canonical "
-                f"role {role.value!r}"
+                f"run_critique_loop role_bundle missing canonical role {role.value!r}"
             )
 
 
@@ -302,8 +282,7 @@ def _apply_mutator(
     out = mutator.mutate(proposal, consensus)
     if not isinstance(out, Mapping):
         raise MutationError(
-            "ProposalMutator.mutate must return a Mapping, got "
-            f"{type(out).__name__}"
+            f"ProposalMutator.mutate must return a Mapping, got {type(out).__name__}"
         )
     expected = set(proposal.keys())
     got = set(out.keys())
@@ -322,8 +301,7 @@ def _apply_mutator(
         v = out[k]
         if not isinstance(v, str):
             raise MutationError(
-                f"ProposalMutator.mutate output [{k!r}] must be "
-                f"str, got {type(v).__name__}"
+                f"ProposalMutator.mutate output [{k!r}] must be str, got {type(v).__name__}"
             )
         ordered[k] = v
     return ordered
@@ -357,28 +335,22 @@ def run_critique_loop(
 
     if not isinstance(proposal_id, str) or not proposal_id:
         raise CritiqueLoopError(
-            "run_critique_loop proposal_id must be a non-empty "
-            f"str, got {proposal_id!r}"
+            f"run_critique_loop proposal_id must be a non-empty str, got {proposal_id!r}"
         )
     if not isinstance(proposal, Mapping):
         raise CritiqueLoopError(
-            "run_critique_loop proposal must be a Mapping, got "
-            f"{type(proposal).__name__}"
+            f"run_critique_loop proposal must be a Mapping, got {type(proposal).__name__}"
         )
     if not proposal:
-        raise CritiqueLoopError(
-            "run_critique_loop proposal must be non-empty"
-        )
+        raise CritiqueLoopError("run_critique_loop proposal must be non-empty")
     for k, v in proposal.items():
         if not isinstance(k, str) or not k:
             raise CritiqueLoopError(
-                "run_critique_loop proposal keys must be "
-                f"non-empty str, got {k!r}"
+                f"run_critique_loop proposal keys must be non-empty str, got {k!r}"
             )
         if not isinstance(v, str):
             raise CritiqueLoopError(
-                f"run_critique_loop proposal[{k!r}] must be str, "
-                f"got {type(v).__name__}"
+                f"run_critique_loop proposal[{k!r}] must be str, got {type(v).__name__}"
             )
     _validate_role_bundle(role_bundle)
     if not isinstance(speaker, StructuredSpeaker):
@@ -393,12 +365,9 @@ def run_critique_loop(
             "ProposalMutator, got "
             f"{type(mutator).__name__}"
         )
-    if isinstance(max_rounds, bool) or not isinstance(
-        max_rounds, int
-    ):
+    if isinstance(max_rounds, bool) or not isinstance(max_rounds, int):
         raise CritiqueLoopError(
-            "run_critique_loop max_rounds must be int, got "
-            f"{type(max_rounds).__name__}"
+            f"run_critique_loop max_rounds must be int, got {type(max_rounds).__name__}"
         )
     if not (MIN_ROUNDS <= max_rounds <= MAX_ROUNDS):
         raise CritiqueLoopError(

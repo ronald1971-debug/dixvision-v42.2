@@ -116,9 +116,7 @@ class RetryPolicy:
     jitter_factor: float = DEFAULT_JITTER_FACTOR
 
     def __post_init__(self) -> None:
-        if not isinstance(self.max_attempts, int) or isinstance(
-            self.max_attempts, bool
-        ):
+        if not isinstance(self.max_attempts, int) or isinstance(self.max_attempts, bool):
             raise TypeError("max_attempts must be int")
         if self.max_attempts < 0:
             raise ValueError("max_attempts must be >= 0")
@@ -128,15 +126,11 @@ class RetryPolicy:
             raise TypeError("base_delay_sec must be float")
         if self.base_delay_sec < 0.0:
             raise ValueError("base_delay_sec must be >= 0.0")
-        if not isinstance(self.max_delay_sec, (int, float)) or isinstance(
-            self.max_delay_sec, bool
-        ):
+        if not isinstance(self.max_delay_sec, (int, float)) or isinstance(self.max_delay_sec, bool):
             raise TypeError("max_delay_sec must be float")
         if self.max_delay_sec < self.base_delay_sec:
             raise ValueError("max_delay_sec must be >= base_delay_sec")
-        if not isinstance(self.jitter_factor, (int, float)) or isinstance(
-            self.jitter_factor, bool
-        ):
+        if not isinstance(self.jitter_factor, (int, float)) or isinstance(self.jitter_factor, bool):
             raise TypeError("jitter_factor must be float")
         if not (0.0 <= self.jitter_factor <= 1.0):
             raise ValueError("jitter_factor must be in [0.0, 1.0]")
@@ -171,9 +165,7 @@ class RetryRecord:
     attempts: tuple[RetryAttempt, ...]
     final_error_class: str
     final_error_message: str
-    meta: Mapping[str, str] = dataclasses.field(
-        default_factory=lambda: types.MappingProxyType({})
-    )
+    meta: Mapping[str, str] = dataclasses.field(default_factory=lambda: types.MappingProxyType({}))
 
 
 # ---------------------------------------------------------------------------
@@ -343,9 +335,7 @@ class RetryExecutor:
             delay = (
                 0.0
                 if attempt_index == 0
-                else compute_backoff_sec(
-                    attempt_index, self._policy, seed=self._prng_seed
-                )
+                else compute_backoff_sec(attempt_index, self._policy, seed=self._prng_seed)
             )
             if delay > 0.0:
                 self._sleep_fn(delay)
@@ -442,9 +432,7 @@ class RetryMixin:
         callable_name: str = "",
         meta: Mapping[str, str] | None = None,
     ) -> tuple[T, RetryRecord]:
-        return self._retry_executor.run(
-            fn, callable_name=callable_name, meta=meta
-        )
+        return self._retry_executor.run(fn, callable_name=callable_name, meta=meta)
 
 
 # ---------------------------------------------------------------------------
@@ -478,8 +466,7 @@ class NonRecoverableError(RuntimeError):
 
     def __init__(self, record: RetryRecord) -> None:
         super().__init__(
-            f"non-recoverable {record.final_error_class}: "
-            f"{record.final_error_message}"
+            f"non-recoverable {record.final_error_class}: {record.final_error_message}"
         )
         self.record = record
 
@@ -490,9 +477,7 @@ class NonRecoverableError(RuntimeError):
 
 
 def _frozen_meta(meta: Mapping[str, str]) -> Mapping[str, str]:
-    return types.MappingProxyType(
-        {k: meta[k] for k in sorted(meta.keys())}
-    )
+    return types.MappingProxyType({k: meta[k] for k in sorted(meta.keys())})
 
 
 class _NoExc(BaseException):

@@ -15,6 +15,7 @@ Covers:
     only in seam, no typed-event ctors (B27/B28/INV-71), no B1 runtime-tier
     imports, no wall-clock reads.
 """
+
 from __future__ import annotations
 
 import ast
@@ -138,9 +139,7 @@ def test_dix_config_get_returns_value() -> None:
 
 
 def test_dix_config_source_of() -> None:
-    c = cfg.DIXConfig(
-        entries=(_entry("a", "1", cfg.ConfigSource.ENV),)
-    )
+    c = cfg.DIXConfig(entries=(_entry("a", "1", cfg.ConfigSource.ENV),))
     assert c.source_of("a") == cfg.ConfigSource.ENV
     assert c.source_of("missing") is None
 
@@ -382,9 +381,21 @@ def test_load_config_stdlib_empty_returns_empty_config() -> None:
 # ---------------------------------------------------------------------------
 @pytest.mark.parametrize(
     "key",
-    ["api_key", "openai_api_key", "secret", "client_secret", "password",
-     "db_password", "private_key", "auth_token", "session_key",
-     "auth_header", "credential", "API_KEY", "Secret_X"],
+    [
+        "api_key",
+        "openai_api_key",
+        "secret",
+        "client_secret",
+        "password",
+        "db_password",
+        "private_key",
+        "auth_token",
+        "session_key",
+        "auth_header",
+        "credential",
+        "API_KEY",
+        "Secret_X",
+    ],
 )
 def test_load_config_stdlib_rejects_forbidden_in_defaults(key: str) -> None:
     with pytest.raises(ValueError, match="forbidden secret"):
@@ -460,10 +471,9 @@ def _build_canonical_inputs() -> dict[str, object]:
 
 
 def _digest(c: cfg.DIXConfig) -> str:
-    raw = "\n".join(
-        f"{e.key}\x1e{e.value!r}\x1e{e.source.value}"
-        for e in c.entries
-    ).encode("utf-8")
+    raw = "\n".join(f"{e.key}\x1e{e.value!r}\x1e{e.source.value}" for e in c.entries).encode(
+        "utf-8"
+    )
     return blake2b(raw, digest_size=16).hexdigest()
 
 
@@ -564,8 +574,7 @@ def test_ast_no_typed_event_constructors() -> None:
                 name = target.attr
             if name and name in forbidden_ctors:
                 pytest.fail(
-                    f"Forbidden typed-event constructor {name!r} called in "
-                    f"system_engine/config.py"
+                    f"Forbidden typed-event constructor {name!r} called in system_engine/config.py"
                 )
 
 

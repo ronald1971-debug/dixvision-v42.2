@@ -149,41 +149,26 @@ class OnlineLearnerConfig:
             raise OnlineLearnerError(f"dim must be > 0, got {self.dim}")
 
         if not isinstance(self.adwin_delta, float):
-            raise TypeError(
-                f"adwin_delta must be float, got {type(self.adwin_delta).__name__}"
-            )
+            raise TypeError(f"adwin_delta must be float, got {type(self.adwin_delta).__name__}")
         if not (0.0 < self.adwin_delta < 1.0):
-            raise OnlineLearnerError(
-                f"adwin_delta must be in (0, 1), got {self.adwin_delta}"
-            )
+            raise OnlineLearnerError(f"adwin_delta must be in (0, 1), got {self.adwin_delta}")
 
         if not isinstance(self.pa_C, float):
-            raise TypeError(
-                f"pa_C must be float, got {type(self.pa_C).__name__}"
-            )
+            raise TypeError(f"pa_C must be float, got {type(self.pa_C).__name__}")
         if not (self.pa_C > 0.0):
-            raise OnlineLearnerError(
-                f"pa_C must be > 0 (non-NaN), got {self.pa_C}"
-            )
+            raise OnlineLearnerError(f"pa_C must be > 0 (non-NaN), got {self.pa_C}")
 
         if self.pa_variant not in _KNOWN_PA_VARIANTS:
             raise OnlineLearnerError(
-                f"pa_variant must be one of {sorted(_KNOWN_PA_VARIANTS)}, "
-                f"got {self.pa_variant!r}"
+                f"pa_variant must be one of {sorted(_KNOWN_PA_VARIANTS)}, got {self.pa_variant!r}"
             )
 
-        if (
-            not isinstance(self.adwin_min_window, int)
-            or isinstance(self.adwin_min_window, bool)
-        ):
+        if not isinstance(self.adwin_min_window, int) or isinstance(self.adwin_min_window, bool):
             raise TypeError(
-                "adwin_min_window must be int, got "
-                f"{type(self.adwin_min_window).__name__}"
+                f"adwin_min_window must be int, got {type(self.adwin_min_window).__name__}"
             )
         if self.adwin_min_window < 2:
-            raise OnlineLearnerError(
-                f"adwin_min_window must be >= 2, got {self.adwin_min_window}"
-            )
+            raise OnlineLearnerError(f"adwin_min_window must be >= 2, got {self.adwin_min_window}")
 
         if not isinstance(self.version, str) or not self.version:
             raise OnlineLearnerError("version must be non-empty str")
@@ -223,23 +208,17 @@ class OnlineLearnerObservation:
             raise OnlineLearnerError("learner_id must be non-empty str")
 
         if not isinstance(self.x, tuple):
-            raise TypeError(
-                f"x must be tuple[float, ...], got {type(self.x).__name__}"
-            )
+            raise TypeError(f"x must be tuple[float, ...], got {type(self.x).__name__}")
         for i, v in enumerate(self.x):
             if not isinstance(v, float) or isinstance(v, bool):
-                raise TypeError(
-                    f"x[{i}] must be float, got {type(v).__name__}"
-                )
+                raise TypeError(f"x[{i}] must be float, got {type(v).__name__}")
             if math.isnan(v) or math.isinf(v):
                 raise OnlineLearnerError(f"x[{i}] must be finite, got {v}")
 
         if not isinstance(self.y, int) or isinstance(self.y, bool):
             raise TypeError(f"y must be int, got {type(self.y).__name__}")
         if self.y not in VALID_LABELS:
-            raise OnlineLearnerError(
-                f"y must be in {VALID_LABELS}, got {self.y}"
-            )
+            raise OnlineLearnerError(f"y must be in {VALID_LABELS}, got {self.y}")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -410,8 +389,7 @@ def predict(state: OnlineLearnerState, x: tuple[float, ...]) -> Prediction:
     """Return ``w·x + b``-based prediction; pure, no state mutation."""
     if len(x) != len(state.weights):
         raise OnlineLearnerError(
-            f"x dim {len(x)} does not match state.weights dim "
-            f"{len(state.weights)}"
+            f"x dim {len(x)} does not match state.weights dim {len(state.weights)}"
         )
     score = math.fsum(w * v for w, v in zip(state.weights, x, strict=True))
     score += state.bias
@@ -468,9 +446,7 @@ def _pa_update(
     if loss == 0.0:
         return weights, bias
     x_norm_sq = math.fsum(v * v for v in x)
-    tau = _pa_tau(
-        loss=loss, x_norm_sq=x_norm_sq, C=config.pa_C, variant=config.pa_variant
-    )
+    tau = _pa_tau(loss=loss, x_norm_sq=x_norm_sq, C=config.pa_C, variant=config.pa_variant)
     if tau == 0.0:
         return weights, bias
     new_weights = tuple(w + tau * y * v for w, v in zip(weights, x, strict=True))
@@ -565,18 +541,13 @@ def step(
     state. The lane is pure: no clock reads, no global mutation.
     """
     if not isinstance(state, OnlineLearnerState):
-        raise TypeError(
-            f"state must be OnlineLearnerState, got {type(state).__name__}"
-        )
+        raise TypeError(f"state must be OnlineLearnerState, got {type(state).__name__}")
     if not isinstance(observation, OnlineLearnerObservation):
         raise TypeError(
-            "observation must be OnlineLearnerObservation, "
-            f"got {type(observation).__name__}"
+            f"observation must be OnlineLearnerObservation, got {type(observation).__name__}"
         )
     if not isinstance(config, OnlineLearnerConfig):
-        raise TypeError(
-            f"config must be OnlineLearnerConfig, got {type(config).__name__}"
-        )
+        raise TypeError(f"config must be OnlineLearnerConfig, got {type(config).__name__}")
 
     if observation.learner_id != state.learner_id:
         raise OnlineLearnerError(
@@ -590,8 +561,7 @@ def step(
         )
     if len(state.weights) != config.dim:
         raise OnlineLearnerError(
-            f"state.weights dim {len(state.weights)} does not match "
-            f"config.dim {config.dim}"
+            f"state.weights dim {len(state.weights)} does not match config.dim {config.dim}"
         )
 
     pre_pred = predict(state, observation.x)
@@ -613,9 +583,7 @@ def step(
     # fires. Tracking the signed-margin would be invariant to label
     # flips (the model adapts by inverting weights, leaving margin
     # near +1 in both regimes) and so would never see drift.
-    post_score = math.fsum(
-        w * v for w, v in zip(new_weights, observation.x, strict=True)
-    )
+    post_score = math.fsum(w * v for w, v in zip(new_weights, observation.x, strict=True))
     post_score += new_bias
     appended_window = state.adwin_window + (post_score,)
 
@@ -642,9 +610,7 @@ def step(
             n_observations_before=len(appended_window),
             epsilon_cut=eps,
         )
-        proposed_update = build_drift_update(
-            drift=drift_report, version=config.version
-        )
+        proposed_update = build_drift_update(drift=drift_report, version=config.version)
 
     new_state = OnlineLearnerState(
         learner_id=state.learner_id,
@@ -676,9 +642,7 @@ def build_drift_update(*, drift: DriftReport, version: str) -> LearningUpdate:
     decides whether to enact it.
     """
     if not isinstance(drift, DriftReport):
-        raise TypeError(
-            f"drift must be DriftReport, got {type(drift).__name__}"
-        )
+        raise TypeError(f"drift must be DriftReport, got {type(drift).__name__}")
     meta: Mapping[str, str] = {
         "change_point": str(drift.change_point),
         "magnitude": f"{drift.magnitude:.12g}",
@@ -718,27 +682,18 @@ def load_state(payload: Mapping[str, str]) -> OnlineLearnerState:
     }
     missing = required - payload.keys()
     if missing:
-        raise OnlineLearnerError(
-            f"load_state payload missing keys: {sorted(missing)}"
-        )
+        raise OnlineLearnerError(f"load_state payload missing keys: {sorted(missing)}")
     extra = payload.keys() - required
     if extra:
-        raise OnlineLearnerError(
-            f"load_state payload has unknown keys: {sorted(extra)}"
-        )
+        raise OnlineLearnerError(f"load_state payload has unknown keys: {sorted(extra)}")
     if payload["version"] != ONLINE_LEARNER_VERSION:
         raise OnlineLearnerError(
-            f"checkpoint version {payload['version']!r} != "
-            f"current {ONLINE_LEARNER_VERSION!r}"
+            f"checkpoint version {payload['version']!r} != current {ONLINE_LEARNER_VERSION!r}"
         )
     raw_weights = payload["weights"]
-    weights = (
-        tuple(float(w) for w in raw_weights.split(",")) if raw_weights else ()
-    )
+    weights = tuple(float(w) for w in raw_weights.split(",")) if raw_weights else ()
     raw_window = payload["adwin_window"]
-    window = (
-        tuple(float(v) for v in raw_window.split(",")) if raw_window else ()
-    )
+    window = tuple(float(v) for v in raw_window.split(",")) if raw_window else ()
     return OnlineLearnerState(
         learner_id=payload["learner_id"],
         version=payload["version"],

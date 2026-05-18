@@ -124,9 +124,7 @@ def test_authority_no_typed_event_construction() -> None:
             elif isinstance(func, ast.Attribute):
                 name = func.attr
             if name and name in forbidden_calls:
-                raise AssertionError(
-                    f"sensory tier may not construct typed event: {name}()"
-                )
+                raise AssertionError(f"sensory tier may not construct typed event: {name}()")
 
 
 def test_authority_no_production_tier_imports_spyke_encoder() -> None:
@@ -577,11 +575,10 @@ def test_spyketorch_factory_raises_not_implemented() -> None:
 
 def test_spyketorch_backend_protocol_is_runtime_checkable() -> None:
     assert isinstance(SpykeBackend, type)
+
     # Anonymous backend that satisfies the Protocol structurally.
     class _Stub:
-        def intensity_to_latency(
-            self, features, num_steps
-        ) -> SpikeTrain:
+        def intensity_to_latency(self, features, num_steps) -> SpikeTrain:
             return temporal_encode(features, num_steps=num_steps)
 
     assert isinstance(_Stub(), SpykeBackend)

@@ -35,10 +35,7 @@ from sensory.web_autolearn.extractors import (
 )
 
 _MODULE_PATH = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / "sensory"
-    / "web_autolearn"
-    / "extractors.py"
+    pathlib.Path(__file__).resolve().parent.parent / "sensory" / "web_autolearn" / "extractors.py"
 )
 _MODULE_SOURCE = _MODULE_PATH.read_text(encoding="utf-8")
 _MODULE_AST = ast.parse(_MODULE_SOURCE)
@@ -127,10 +124,7 @@ class _FakeDocument:
         return "Sample Story"
 
     def summary(self) -> str:
-        return (
-            "<div><p>Hello world.</p>"
-            "<p>Second paragraph for context.</p></div>"
-        )
+        return "<div><p>Hello world.</p><p>Second paragraph for context.</p></div>"
 
 
 class _FakeDocumentEmpty(_FakeDocument):
@@ -626,30 +620,21 @@ class TestInv15Determinism:
         ext = trafilatura_extractor_factory(
             extract_callable=_fake_trafilatura_ok,
         )
-        projections = [
-            _project(ext.extract(_SAMPLE_HTML, url="https://x/a"))
-            for _ in range(3)
-        ]
+        projections = [_project(ext.extract(_SAMPLE_HTML, url="https://x/a")) for _ in range(3)]
         assert projections[0] == projections[1] == projections[2]
 
     def test_newspaper3k_three_run_equality(self) -> None:
         ext = newspaper3k_extractor_factory(
             article_factory=lambda url: _FakeArticle(url),
         )
-        projections = [
-            _project(ext.extract(_SAMPLE_HTML, url="https://x/a"))
-            for _ in range(3)
-        ]
+        projections = [_project(ext.extract(_SAMPLE_HTML, url="https://x/a")) for _ in range(3)]
         assert projections[0] == projections[1] == projections[2]
 
     def test_readability_three_run_equality(self) -> None:
         ext = readability_extractor_factory(
             document_factory=lambda html: _FakeDocument(html),
         )
-        projections = [
-            _project(ext.extract(_SAMPLE_HTML, url="https://x/a"))
-            for _ in range(3)
-        ]
+        projections = [_project(ext.extract(_SAMPLE_HTML, url="https://x/a")) for _ in range(3)]
         assert projections[0] == projections[1] == projections[2]
 
     def test_pipeline_three_run_equality(self) -> None:
@@ -715,9 +700,7 @@ class TestAstGuards:
     def test_no_top_level_external_imports(self) -> None:
         top = _top_level_imported_modules(_MODULE_AST)
         forbidden = {"trafilatura", "newspaper", "readability", "lxml"}
-        assert forbidden.isdisjoint(top), (
-            f"top-level imports forbidden: {top & forbidden}"
-        )
+        assert forbidden.isdisjoint(top), f"top-level imports forbidden: {top & forbidden}"
 
     def test_no_engine_imports(self) -> None:
         imported = _imported_modules(_MODULE_AST)
@@ -770,8 +753,7 @@ class TestAstGuards:
 
     def test_adapted_from_header_present(self) -> None:
         assert _MODULE_SOURCE.startswith(
-            "# ADAPTED FROM: adbar/trafilatura + codelucas/newspaper "
-            "+ buriy/python-readability"
+            "# ADAPTED FROM: adbar/trafilatura + codelucas/newspaper + buriy/python-readability"
         )
 
     def test_lazy_imports_only_inside_function_bodies(self) -> None:
@@ -800,15 +782,9 @@ class TestAstGuards:
             return seen
 
         func_imports = _walk_func_imports(_MODULE_AST)
-        assert "trafilatura" in func_imports, (
-            "trafilatura must be lazy-imported in a function body"
-        )
-        assert "newspaper" in func_imports, (
-            "newspaper must be lazy-imported in a function body"
-        )
-        assert "readability" in func_imports, (
-            "readability must be lazy-imported in a function body"
-        )
+        assert "trafilatura" in func_imports, "trafilatura must be lazy-imported in a function body"
+        assert "newspaper" in func_imports, "newspaper must be lazy-imported in a function body"
+        assert "readability" in func_imports, "readability must be lazy-imported in a function body"
 
     def test_extractor_factory_protocol_returns(self) -> None:
         # Sanity: each factory advertises return type :class:`Extractor`.

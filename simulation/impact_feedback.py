@@ -80,18 +80,15 @@ class ImpactFeedbackConfig:
     def __post_init__(self) -> None:
         if not 0.0 < self.impact_coef <= 1.0:
             raise ValueError(
-                "ImpactFeedbackConfig.impact_coef must be in (0, 1], "
-                f"got {self.impact_coef!r}"
+                f"ImpactFeedbackConfig.impact_coef must be in (0, 1], got {self.impact_coef!r}"
             )
         if not 0.0 <= self.impact_jitter <= 1.0:
             raise ValueError(
-                "ImpactFeedbackConfig.impact_jitter must be in [0, 1], "
-                f"got {self.impact_jitter!r}"
+                f"ImpactFeedbackConfig.impact_jitter must be in [0, 1], got {self.impact_jitter!r}"
             )
         if not 0.0 < self.max_ratio <= 100.0:
             raise ValueError(
-                "ImpactFeedbackConfig.max_ratio must be in (0, 100], "
-                f"got {self.max_ratio!r}"
+                f"ImpactFeedbackConfig.max_ratio must be in (0, 100], got {self.max_ratio!r}"
             )
 
 
@@ -117,9 +114,7 @@ def _require_side(meta: dict[str, Any]) -> str:
         raise ValueError("RealityScenario.meta missing required key 'side'")
     side = meta["side"]
     if side not in (_BUY, _SELL):
-        raise ValueError(
-            f"meta['side'] must be 'buy' or 'sell', got {side!r}"
-        )
+        raise ValueError(f"meta['side'] must be 'buy' or 'sell', got {side!r}")
     return side
 
 

@@ -186,54 +186,40 @@ def test_crisis_label_attributes_to_only_triggering_dimension() -> None:
 
     # Correlation exactly at threshold, vol well below crisis.
     # Only correlation triggers; label must be crisis_correlation.
-    r = eng.classify(
-        _snap(vol_index=20.0, return_correlation=eng.config.correlation_crisis)
-    )
+    r = eng.classify(_snap(vol_index=20.0, return_correlation=eng.config.correlation_crisis))
     assert r.regime is MacroRegime.CRISIS
     assert r.rule_fired == "crisis_correlation"
 
     # Vol exactly at threshold, correlation far below crisis.
     # Only vol triggers; label must be crisis_vol.
-    r2 = eng.classify(
-        _snap(vol_index=eng.config.vol_crisis, return_correlation=0.20)
-    )
+    r2 = eng.classify(_snap(vol_index=eng.config.vol_crisis, return_correlation=0.20))
     assert r2.regime is MacroRegime.CRISIS
     assert r2.rule_fired == "crisis_vol"
 
 
 def test_risk_off_fires_on_elevated_vol_alone() -> None:
     eng = _engine()
-    r = eng.classify(
-        _snap(vol_index=30.0, breadth=0.05, credit_spread_bps=400.0)
-    )
+    r = eng.classify(_snap(vol_index=30.0, breadth=0.05, credit_spread_bps=400.0))
     assert r.regime is MacroRegime.RISK_OFF
     assert r.rule_fired.startswith("risk_off_")
 
 
 def test_risk_off_fires_on_negative_breadth_alone() -> None:
     eng = _engine()
-    r = eng.classify(
-        _snap(vol_index=15.0, breadth=-0.30, credit_spread_bps=300.0)
-    )
+    r = eng.classify(_snap(vol_index=15.0, breadth=-0.30, credit_spread_bps=300.0))
     assert r.regime is MacroRegime.RISK_OFF
 
 
 def test_risk_off_fires_on_wide_credit_alone() -> None:
     eng = _engine()
-    r = eng.classify(
-        _snap(vol_index=15.0, breadth=0.10, credit_spread_bps=600.0)
-    )
+    r = eng.classify(_snap(vol_index=15.0, breadth=0.10, credit_spread_bps=600.0))
     assert r.regime is MacroRegime.RISK_OFF
 
 
 def test_risk_off_confidence_scales_with_dimensions() -> None:
     eng = _engine()
-    one = eng.classify(
-        _snap(vol_index=30.0, breadth=0.05, credit_spread_bps=300.0)
-    )
-    three = eng.classify(
-        _snap(vol_index=30.0, breadth=-0.30, credit_spread_bps=600.0)
-    )
+    one = eng.classify(_snap(vol_index=30.0, breadth=0.05, credit_spread_bps=300.0))
+    three = eng.classify(_snap(vol_index=30.0, breadth=-0.30, credit_spread_bps=600.0))
     assert one.regime is three.regime is MacroRegime.RISK_OFF
     assert three.confidence > one.confidence
     assert one.rule_fired == "risk_off_1_of_3"
@@ -242,9 +228,7 @@ def test_risk_off_confidence_scales_with_dimensions() -> None:
 
 def test_risk_on_requires_all_three_dimensions() -> None:
     eng = _engine()
-    r = eng.classify(
-        _snap(vol_index=12.0, breadth=0.40, credit_spread_bps=300.0)
-    )
+    r = eng.classify(_snap(vol_index=12.0, breadth=0.40, credit_spread_bps=300.0))
     assert r.regime is MacroRegime.RISK_ON
     assert r.rule_fired == "risk_on_all_dimensions"
 
@@ -252,17 +236,13 @@ def test_risk_on_requires_all_three_dimensions() -> None:
 def test_risk_on_does_not_fire_when_one_dimension_misaligned() -> None:
     eng = _engine()
     # vol clean + credit clean but breadth too tepid (<0.20 threshold)
-    r = eng.classify(
-        _snap(vol_index=12.0, breadth=0.05, credit_spread_bps=300.0)
-    )
+    r = eng.classify(_snap(vol_index=12.0, breadth=0.05, credit_spread_bps=300.0))
     assert r.regime is MacroRegime.NEUTRAL
 
 
 def test_neutral_fallback_when_nothing_fires() -> None:
     eng = _engine()
-    r = eng.classify(
-        _snap(vol_index=20.0, breadth=0.10, credit_spread_bps=400.0)
-    )
+    r = eng.classify(_snap(vol_index=20.0, breadth=0.10, credit_spread_bps=400.0))
     assert r.regime is MacroRegime.NEUTRAL
     assert r.rule_fired == "neutral_fallback"
     assert r.confidence == eng.config.confidence_floor

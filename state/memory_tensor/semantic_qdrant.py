@@ -136,9 +136,7 @@ class Filter:
         self._must_not = self._freeze(must_not, "must_not")
 
     @staticmethod
-    def _freeze(
-        m: Mapping[str, str] | None, name: str
-    ) -> tuple[tuple[str, str], ...]:
+    def _freeze(m: Mapping[str, str] | None, name: str) -> tuple[tuple[str, str], ...]:
         if m is None:
             return ()
         if not isinstance(m, Mapping):
@@ -190,10 +188,7 @@ class Filter:
         return hash((self._must, self._should, self._must_not))
 
     def __repr__(self) -> str:
-        return (
-            f"Filter(must={self._must!r}, should={self._should!r}, "
-            f"must_not={self._must_not!r})"
-        )
+        return f"Filter(must={self._must!r}, should={self._should!r}, must_not={self._must_not!r})"
 
 
 # ---------------------------------------------------------------------------
@@ -320,13 +315,9 @@ class SemanticQdrantStore:
         if not isinstance(episode, Episode):
             raise TypeError("episode must be an Episode")
         if episode.dim != self._dim:
-            raise ValueError(
-                f"episode.dim={episode.dim} != store.dim={self._dim}"
-            )
+            raise ValueError(f"episode.dim={episode.dim} != store.dim={self._dim}")
         if episode.episode_id in self._episodes:
-            raise ValueError(
-                f"episode_id={episode.episode_id!r} already in store"
-            )
+            raise ValueError(f"episode_id={episode.episode_id!r} already in store")
         if len(self._episodes) >= self._max_size:
             self._evict_oldest()
         self._episodes[episode.episode_id] = episode
@@ -370,16 +361,12 @@ class SemanticQdrantStore:
         if not isinstance(query, MemoryQuery):
             raise TypeError("query must be a MemoryQuery")
         if query.dim != self._dim:
-            raise ValueError(
-                f"query.dim={query.dim} != store.dim={self._dim}"
-            )
+            raise ValueError(f"query.dim={query.dim} != store.dim={self._dim}")
         if query_filter is not None and not isinstance(query_filter, Filter):
             raise TypeError("query_filter must be a Filter or None")
         scored: list[tuple[float, int, str, Episode]] = []
         for episode in self._episodes.values():
-            if query_filter is not None and not query_filter.matches(
-                episode.payload
-            ):
+            if query_filter is not None and not query_filter.matches(episode.payload):
                 continue
             d = _distance(
                 self._metric,
@@ -449,9 +436,7 @@ class SemanticQdrantStore:
             raise SemanticQdrantError("blob root must be an object")
         version = obj.get("version")
         if version != _SERIALIZATION_VERSION:
-            raise SemanticQdrantError(
-                f"unsupported version: {version!r}"
-            )
+            raise SemanticQdrantError(f"unsupported version: {version!r}")
         try:
             metric = DistanceMetric(obj["metric"])
         except (KeyError, ValueError) as exc:
@@ -469,9 +454,7 @@ class SemanticQdrantStore:
             payload_raw = row.get("payload", {})
             if not isinstance(payload_raw, dict):
                 raise SemanticQdrantError("payload must be an object")
-            payload = MappingProxyType(
-                {str(k): str(v) for k, v in payload_raw.items()}
-            )
+            payload = MappingProxyType({str(k): str(v) for k, v in payload_raw.items()})
             episode = Episode(
                 ts_ns=int(row["ts_ns"]),
                 episode_id=str(row["episode_id"]),

@@ -59,13 +59,17 @@ def _grad(client: str, delta: float, n: int, ts: int = 100) -> GradientUpdate:
 
 def _noise_g(sens: float = 1.0, mult: float = 1.0) -> NoiseConfig:
     return NoiseConfig(
-        mechanism="gaussian", sensitivity=sens, noise_multiplier=mult,
+        mechanism="gaussian",
+        sensitivity=sens,
+        noise_multiplier=mult,
     )
 
 
 def _noise_l(sens: float = 1.0, mult: float = 1.0) -> NoiseConfig:
     return NoiseConfig(
-        mechanism="laplace", sensitivity=sens, noise_multiplier=mult,
+        mechanism="laplace",
+        sensitivity=sens,
+        noise_multiplier=mult,
     )
 
 
@@ -183,13 +187,17 @@ class TestPrivacyBudget:
 class TestNoiseConfig:
     def test_gaussian(self) -> None:
         n = NoiseConfig(
-            mechanism="gaussian", sensitivity=1.0, noise_multiplier=1.5,
+            mechanism="gaussian",
+            sensitivity=1.0,
+            noise_multiplier=1.5,
         )
         assert n.mechanism == "gaussian"
 
     def test_laplace(self) -> None:
         n = NoiseConfig(
-            mechanism="laplace", sensitivity=1.0, noise_multiplier=1.0,
+            mechanism="laplace",
+            sensitivity=1.0,
+            noise_multiplier=1.0,
         )
         assert n.mechanism == "laplace"
 
@@ -201,25 +209,33 @@ class TestNoiseConfig:
     def test_unsupported_mechanism(self) -> None:
         with pytest.raises(ValueError):
             NoiseConfig(
-                mechanism="exponential", sensitivity=1.0, noise_multiplier=1.0,
+                mechanism="exponential",
+                sensitivity=1.0,
+                noise_multiplier=1.0,
             )
 
     def test_sensitivity_zero_rejected(self) -> None:
         with pytest.raises(ValueError):
             NoiseConfig(
-                mechanism="gaussian", sensitivity=0.0, noise_multiplier=1.0,
+                mechanism="gaussian",
+                sensitivity=0.0,
+                noise_multiplier=1.0,
             )
 
     def test_sensitivity_negative_rejected(self) -> None:
         with pytest.raises(ValueError):
             NoiseConfig(
-                mechanism="gaussian", sensitivity=-1.0, noise_multiplier=1.0,
+                mechanism="gaussian",
+                sensitivity=-1.0,
+                noise_multiplier=1.0,
             )
 
     def test_noise_mult_zero_rejected(self) -> None:
         with pytest.raises(ValueError):
             NoiseConfig(
-                mechanism="gaussian", sensitivity=1.0, noise_multiplier=0.0,
+                mechanism="gaussian",
+                sensitivity=1.0,
+                noise_multiplier=0.0,
             )
 
     def test_noise_mult_nan_rejected(self) -> None:
@@ -421,7 +437,10 @@ class TestApplyDpNoise:
     def test_gaussian_returns_contribution(self) -> None:
         u = _grad("c-a", 1.0, 10)
         c = apply_dp_noise(
-            update=u, noise=_noise_g(), round_id="r-1", epsilon=1.0,
+            update=u,
+            noise=_noise_g(),
+            round_id="r-1",
+            epsilon=1.0,
         )
         assert isinstance(c, PrivateContribution)
         assert c.client_id == "c-a"
@@ -431,14 +450,20 @@ class TestApplyDpNoise:
     def test_gaussian_finite(self) -> None:
         u = _grad("c-a", 1.0, 10)
         c = apply_dp_noise(
-            update=u, noise=_noise_g(), round_id="r-1", epsilon=1.0,
+            update=u,
+            noise=_noise_g(),
+            round_id="r-1",
+            epsilon=1.0,
         )
         assert math.isfinite(c.delta)
 
     def test_laplace_returns_contribution(self) -> None:
         u = _grad("c-a", 1.0, 10)
         c = apply_dp_noise(
-            update=u, noise=_noise_l(), round_id="r-1", epsilon=1.0,
+            update=u,
+            noise=_noise_l(),
+            round_id="r-1",
+            epsilon=1.0,
         )
         assert isinstance(c, PrivateContribution)
         assert math.isfinite(c.delta)
@@ -446,20 +471,32 @@ class TestApplyDpNoise:
     def test_noise_deterministic_for_same_seed(self) -> None:
         u = _grad("c-a", 1.0, 10)
         c1 = apply_dp_noise(
-            update=u, noise=_noise_g(), round_id="r-1", epsilon=1.0,
+            update=u,
+            noise=_noise_g(),
+            round_id="r-1",
+            epsilon=1.0,
         )
         c2 = apply_dp_noise(
-            update=u, noise=_noise_g(), round_id="r-1", epsilon=1.0,
+            update=u,
+            noise=_noise_g(),
+            round_id="r-1",
+            epsilon=1.0,
         )
         assert c1.delta == c2.delta
 
     def test_noise_differs_across_rounds(self) -> None:
         u = _grad("c-a", 1.0, 10)
         c1 = apply_dp_noise(
-            update=u, noise=_noise_g(), round_id="r-1", epsilon=1.0,
+            update=u,
+            noise=_noise_g(),
+            round_id="r-1",
+            epsilon=1.0,
         )
         c2 = apply_dp_noise(
-            update=u, noise=_noise_g(), round_id="r-2", epsilon=1.0,
+            update=u,
+            noise=_noise_g(),
+            round_id="r-2",
+            epsilon=1.0,
         )
         assert c1.delta != c2.delta
 
@@ -467,20 +504,32 @@ class TestApplyDpNoise:
         u1 = _grad("c-a", 1.0, 10)
         u2 = _grad("c-b", 1.0, 10)
         c1 = apply_dp_noise(
-            update=u1, noise=_noise_g(), round_id="r-1", epsilon=1.0,
+            update=u1,
+            noise=_noise_g(),
+            round_id="r-1",
+            epsilon=1.0,
         )
         c2 = apply_dp_noise(
-            update=u2, noise=_noise_g(), round_id="r-1", epsilon=1.0,
+            update=u2,
+            noise=_noise_g(),
+            round_id="r-1",
+            epsilon=1.0,
         )
         assert c1.delta != c2.delta
 
     def test_noise_differs_across_mechanism(self) -> None:
         u = _grad("c-a", 1.0, 10)
         c1 = apply_dp_noise(
-            update=u, noise=_noise_g(), round_id="r-1", epsilon=1.0,
+            update=u,
+            noise=_noise_g(),
+            round_id="r-1",
+            epsilon=1.0,
         )
         c2 = apply_dp_noise(
-            update=u, noise=_noise_l(), round_id="r-1", epsilon=1.0,
+            update=u,
+            noise=_noise_l(),
+            round_id="r-1",
+            epsilon=1.0,
         )
         assert c1.delta != c2.delta
 
@@ -494,7 +543,10 @@ class TestApplyDpNoise:
             meta={"region": "eu"},
         )
         c = apply_dp_noise(
-            update=u, noise=_noise_g(), round_id="r-1", epsilon=1.0,
+            update=u,
+            noise=_noise_g(),
+            round_id="r-1",
+            epsilon=1.0,
         )
         assert c.meta["region"] == "eu"
 
@@ -513,21 +565,30 @@ class TestApplyDpNoise:
         u = _grad("c-a", 1.0, 10)
         with pytest.raises(ValueError):
             apply_dp_noise(
-                update=u, noise=_noise_g(), round_id="", epsilon=1.0,
+                update=u,
+                noise=_noise_g(),
+                round_id="",
+                epsilon=1.0,
             )
 
     def test_epsilon_zero_rejected(self) -> None:
         u = _grad("c-a", 1.0, 10)
         with pytest.raises(ValueError):
             apply_dp_noise(
-                update=u, noise=_noise_g(), round_id="r-1", epsilon=0.0,
+                update=u,
+                noise=_noise_g(),
+                round_id="r-1",
+                epsilon=0.0,
             )
 
     def test_epsilon_negative_rejected(self) -> None:
         u = _grad("c-a", 1.0, 10)
         with pytest.raises(ValueError):
             apply_dp_noise(
-                update=u, noise=_noise_g(), round_id="r-1", epsilon=-1.0,
+                update=u,
+                noise=_noise_g(),
+                round_id="r-1",
+                epsilon=-1.0,
             )
 
     def test_meta_non_str_value_rejected(self) -> None:
@@ -565,7 +626,10 @@ class TestApplyDpNoise:
         )
         with pytest.raises(ValueError):
             apply_dp_noise(
-                update=u, noise=_noise_g(), round_id="r-1", epsilon=1.0,
+                update=u,
+                noise=_noise_g(),
+                round_id="r-1",
+                epsilon=1.0,
             )
 
     def test_gaussian_noise_scales_with_multiplier(self) -> None:
@@ -832,7 +896,11 @@ class TestAggregatePrivateRoundRejection:
             self._go(
                 contributions=[
                     _private_contribution(
-                        "c-a", 0.5, 10, eps=1.0, parameter="other",
+                        "c-a",
+                        0.5,
+                        10,
+                        eps=1.0,
+                        parameter="other",
                     ),
                     _private_contribution("c-b", 0.25, 10, eps=1.0),
                 ],
@@ -935,13 +1003,9 @@ class TestASTGuardrails:
             if isinstance(node, ast.Call):
                 fn = node.func
                 if isinstance(fn, ast.Name) and fn.id in forbidden:
-                    raise AssertionError(
-                        f"forbidden typed-event constructor: {fn.id}"
-                    )
+                    raise AssertionError(f"forbidden typed-event constructor: {fn.id}")
                 if isinstance(fn, ast.Attribute) and fn.attr in forbidden:
-                    raise AssertionError(
-                        f"forbidden typed-event constructor: {fn.attr}"
-                    )
+                    raise AssertionError(f"forbidden typed-event constructor: {fn.attr}")
 
     def test_only_learning_update_emitted(self, tree: ast.Module) -> None:
         learning_update_seen = False
@@ -974,8 +1038,5 @@ class TestASTGuardrails:
     def test_no_random_module_calls(self, tree: ast.Module) -> None:
         for node in ast.walk(tree):
             if isinstance(node, ast.Attribute):
-                if (
-                    isinstance(node.value, ast.Name)
-                    and node.value.id == "random"
-                ):
+                if isinstance(node.value, ast.Name) and node.value.id == "random":
                     raise AssertionError(f"forbidden random call: {node.attr}")

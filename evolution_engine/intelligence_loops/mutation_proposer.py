@@ -54,9 +54,7 @@ class MutationProposer:
         self._counter = 0
         self._freeze = freeze
 
-    def evaluate(
-        self, stats: StrategyStats
-    ) -> tuple[PatchProposal, ...]:
+    def evaluate(self, stats: StrategyStats) -> tuple[PatchProposal, ...]:
         """Return proposals for any newly-breached threshold."""
         assert_unfrozen(self._freeze, action="propose_patch")
         if stats.n_trades < self._thresholds.min_trades:
@@ -67,10 +65,7 @@ class MutationProposer:
             p = self._maybe_emit(
                 stats=stats,
                 reason="win_rate_below_floor",
-                rationale=(
-                    f"win_rate={stats.win_rate:.3f} < "
-                    f"{self._thresholds.min_win_rate:.3f}"
-                ),
+                rationale=(f"win_rate={stats.win_rate:.3f} < {self._thresholds.min_win_rate:.3f}"),
                 touchpoints=(f"strategies.{stats.strategy_id}.entry_filter",),
             )
             if p is not None:
@@ -81,10 +76,7 @@ class MutationProposer:
             p = self._maybe_emit(
                 stats=stats,
                 reason="mean_pnl_below_floor",
-                rationale=(
-                    f"mean_pnl={stats.mean_pnl:.4f} < "
-                    f"{self._thresholds.min_mean_pnl:.4f}"
-                ),
+                rationale=(f"mean_pnl={stats.mean_pnl:.4f} < {self._thresholds.min_mean_pnl:.4f}"),
                 touchpoints=(f"strategies.{stats.strategy_id}.exit_filter",),
             )
             if p is not None:

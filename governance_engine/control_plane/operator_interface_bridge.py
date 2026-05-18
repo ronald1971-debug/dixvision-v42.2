@@ -108,9 +108,7 @@ class OperatorInterfaceBridge:
 
     def submit(self, request: OperatorRequest) -> GovernanceDecision:
         current = self._state.current_mode()
-        permit_ok, permit_code = self._policy.permit_operator_action(
-            request, current
-        )
+        permit_ok, permit_code = self._policy.permit_operator_action(request, current)
         if not permit_ok:
             entry = self._ledger.append(
                 ts_ns=request.ts_ns,
@@ -168,9 +166,7 @@ class OperatorInterfaceBridge:
     # Handlers
     # ------------------------------------------------------------------
 
-    def _handle_mode(
-        self, request: OperatorRequest, current: SystemMode
-    ) -> GovernanceDecision:
+    def _handle_mode(self, request: OperatorRequest, current: SystemMode) -> GovernanceDecision:
         target_name = request.payload.get("target_mode", "")
         target = _parse_mode(target_name)
         if target is None:
@@ -193,9 +189,7 @@ class OperatorInterfaceBridge:
                 ledger_seq=entry.seq,
             )
 
-        operator_authorized = (
-            request.payload.get("operator_authorized", "false").lower() == "true"
-        )
+        operator_authorized = request.payload.get("operator_authorized", "false").lower() == "true"
 
         # Hardening-S1 item 8 — extract OperatorConsent envelope from
         # the dashboard payload when the requested edge requires it.
@@ -217,12 +211,7 @@ class OperatorInterfaceBridge:
                 consent_ts_ns = int(consent_ts_raw) if consent_ts_raw else 0
             except (TypeError, ValueError):
                 consent_ts_ns = 0
-            if (
-                consent_operator_id
-                and consent_policy_hash
-                and consent_nonce
-                and consent_ts_ns > 0
-            ):
+            if consent_operator_id and consent_policy_hash and consent_nonce and consent_ts_ns > 0:
                 consent = OperatorConsent(
                     ts_ns=consent_ts_ns,
                     operator_id=consent_operator_id,
@@ -256,9 +245,7 @@ class OperatorInterfaceBridge:
             ledger_seq=decision.ledger_seq,
         )
 
-    def _handle_kill(
-        self, request: OperatorRequest, current: SystemMode
-    ) -> GovernanceDecision:
+    def _handle_kill(self, request: OperatorRequest, current: SystemMode) -> GovernanceDecision:
         # P0-1b -- delegate to the SAFE-01 kill-switch primitive so the
         # operator-initiated kill edge and any future hazard-initiated
         # kill share one named seam. ``current`` is intentionally
@@ -272,9 +259,7 @@ class OperatorInterfaceBridge:
             ts_ns=request.ts_ns,
         )
 
-    def _handle_unlock(
-        self, request: OperatorRequest, current: SystemMode
-    ) -> GovernanceDecision:
+    def _handle_unlock(self, request: OperatorRequest, current: SystemMode) -> GovernanceDecision:
         decision = self._state.propose(
             ModeTransitionRequest(
                 ts_ns=request.ts_ns,
@@ -298,9 +283,7 @@ class OperatorInterfaceBridge:
             ledger_seq=decision.ledger_seq,
         )
 
-    def _handle_plugin_lifecycle(
-        self, request: OperatorRequest
-    ) -> GovernanceDecision:
+    def _handle_plugin_lifecycle(self, request: OperatorRequest) -> GovernanceDecision:
         plugin_path = request.payload.get("plugin_path", "")
         target_status = request.payload.get("target_status", "")
         if not plugin_path or not target_status:
@@ -341,7 +324,6 @@ class OperatorInterfaceBridge:
             summary=f"{plugin_path} -> {target_status}",
             ledger_seq=entry.seq,
         )
-
 
     def _handle_intent(self, request: OperatorRequest) -> GovernanceDecision:
         """Route a ``REQUEST_INTENT`` action to ``propose_intent``.

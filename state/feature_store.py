@@ -132,9 +132,7 @@ def _validate_name(name: str, *, label: str) -> None:
 
 def _validate_value(value: float, *, label: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise TypeError(
-            f"{label} must be a finite number, got {type(value).__name__}"
-        )
+        raise TypeError(f"{label} must be a finite number, got {type(value).__name__}")
     fv = float(value)
     if not math.isfinite(fv):
         raise ValueError(f"{label} must be finite, got {fv!r}")
@@ -176,24 +174,18 @@ class FeatureView:
         _validate_name(self.name, label="FeatureView.name")
         if not isinstance(self.entity_keys, tuple):
             raise TypeError(
-                "FeatureView.entity_keys must be tuple, "
-                f"got {type(self.entity_keys).__name__}"
+                f"FeatureView.entity_keys must be tuple, got {type(self.entity_keys).__name__}"
             )
         _frozen_str_tuple(self.entity_keys, label="FeatureView.entity_keys")
         if not isinstance(self.feature_names, tuple):
             raise TypeError(
-                "FeatureView.feature_names must be tuple, "
-                f"got {type(self.feature_names).__name__}"
+                f"FeatureView.feature_names must be tuple, got {type(self.feature_names).__name__}"
             )
         _frozen_str_tuple(self.feature_names, label="FeatureView.feature_names")
         if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
-            raise TypeError(
-                f"FeatureView.ts_ns must be int, got {type(self.ts_ns).__name__}"
-            )
+            raise TypeError(f"FeatureView.ts_ns must be int, got {type(self.ts_ns).__name__}")
         if self.ts_ns <= 0:
-            raise ValueError(
-                f"FeatureView.ts_ns must be positive, got {self.ts_ns!r}"
-            )
+            raise ValueError(f"FeatureView.ts_ns must be positive, got {self.ts_ns!r}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -211,19 +203,14 @@ class FeatureRecord:
 
     def __post_init__(self) -> None:
         if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
-            raise TypeError(
-                f"FeatureRecord.ts_ns must be int, got {type(self.ts_ns).__name__}"
-            )
+            raise TypeError(f"FeatureRecord.ts_ns must be int, got {type(self.ts_ns).__name__}")
         if self.ts_ns <= 0:
-            raise ValueError(
-                f"FeatureRecord.ts_ns must be positive, got {self.ts_ns!r}"
-            )
+            raise ValueError(f"FeatureRecord.ts_ns must be positive, got {self.ts_ns!r}")
         _validate_name(self.view_name, label="FeatureRecord.view_name")
         _validate_name(self.entity_key, label="FeatureRecord.entity_key")
         if not isinstance(self.values, Mapping):
             raise TypeError(
-                "FeatureRecord.values must be Mapping, "
-                f"got {type(self.values).__name__}"
+                f"FeatureRecord.values must be Mapping, got {type(self.values).__name__}"
             )
         if not self.values:
             raise ValueError("FeatureRecord.values must be non-empty")
@@ -248,13 +235,9 @@ class FeatureRequest:
 
     def __post_init__(self) -> None:
         if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
-            raise TypeError(
-                f"FeatureRequest.ts_ns must be int, got {type(self.ts_ns).__name__}"
-            )
+            raise TypeError(f"FeatureRequest.ts_ns must be int, got {type(self.ts_ns).__name__}")
         if self.ts_ns <= 0:
-            raise ValueError(
-                f"FeatureRequest.ts_ns must be positive, got {self.ts_ns!r}"
-            )
+            raise ValueError(f"FeatureRequest.ts_ns must be positive, got {self.ts_ns!r}")
         _validate_name(self.view_name, label="FeatureRequest.view_name")
         _validate_name(self.entity_key, label="FeatureRequest.entity_key")
         if not isinstance(self.feature_names, tuple):
@@ -286,19 +269,14 @@ class FeatureSnapshot:
 
     def __post_init__(self) -> None:
         if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
-            raise TypeError(
-                f"FeatureSnapshot.ts_ns must be int, got {type(self.ts_ns).__name__}"
-            )
+            raise TypeError(f"FeatureSnapshot.ts_ns must be int, got {type(self.ts_ns).__name__}")
         if self.ts_ns <= 0:
-            raise ValueError(
-                f"FeatureSnapshot.ts_ns must be positive, got {self.ts_ns!r}"
-            )
+            raise ValueError(f"FeatureSnapshot.ts_ns must be positive, got {self.ts_ns!r}")
         _validate_name(self.view_name, label="FeatureSnapshot.view_name")
         _validate_name(self.entity_key, label="FeatureSnapshot.entity_key")
         if not isinstance(self.values, Mapping):
             raise TypeError(
-                "FeatureSnapshot.values must be Mapping, "
-                f"got {type(self.values).__name__}"
+                f"FeatureSnapshot.values must be Mapping, got {type(self.values).__name__}"
             )
         if not isinstance(self.observed_ts_ns_per_feature, Mapping):
             raise TypeError(
@@ -309,9 +287,7 @@ class FeatureSnapshot:
             _validate_name(k, label="FeatureSnapshot.values key")
             _validate_value(v, label=f"FeatureSnapshot.values[{k!r}]")
         for k, v in self.observed_ts_ns_per_feature.items():
-            _validate_name(
-                k, label="FeatureSnapshot.observed_ts_ns_per_feature key"
-            )
+            _validate_name(k, label="FeatureSnapshot.observed_ts_ns_per_feature key")
             if not isinstance(v, int) or isinstance(v, bool) or v <= 0:
                 raise ValueError(
                     "FeatureSnapshot.observed_ts_ns_per_feature["
@@ -319,9 +295,7 @@ class FeatureSnapshot:
                 )
         # observed-ts keys must be a subset of values keys
         if set(self.observed_ts_ns_per_feature) - set(self.values):
-            raise ValueError(
-                "FeatureSnapshot.observed_ts_ns_per_feature has keys not in values"
-            )
+            raise ValueError("FeatureSnapshot.observed_ts_ns_per_feature has keys not in values")
 
 
 @dataclass(frozen=True, slots=True)
@@ -339,13 +313,9 @@ class HistoricalRow:
 
     def __post_init__(self) -> None:
         if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
-            raise TypeError(
-                f"HistoricalRow.ts_ns must be int, got {type(self.ts_ns).__name__}"
-            )
+            raise TypeError(f"HistoricalRow.ts_ns must be int, got {type(self.ts_ns).__name__}")
         if self.ts_ns <= 0:
-            raise ValueError(
-                f"HistoricalRow.ts_ns must be positive, got {self.ts_ns!r}"
-            )
+            raise ValueError(f"HistoricalRow.ts_ns must be positive, got {self.ts_ns!r}")
         _validate_name(self.view_name, label="HistoricalRow.view_name")
         _validate_name(self.entity_key, label="HistoricalRow.entity_key")
 
@@ -400,9 +370,7 @@ class FeatureStore:
 
     def __init__(self, *, path: str = ":memory:") -> None:
         if not isinstance(path, str):
-            raise TypeError(
-                f"FeatureStore.path must be str, got {type(path).__name__}"
-            )
+            raise TypeError(f"FeatureStore.path must be str, got {type(path).__name__}")
         if not path:
             raise ValueError("FeatureStore.path must be non-empty")
         self._path = path
@@ -422,9 +390,7 @@ class FeatureStore:
     def register_view(self, view: FeatureView) -> None:
         """Persist a feature view's schema. Idempotent for identical views."""
         if not isinstance(view, FeatureView):
-            raise TypeError(
-                f"register_view expects FeatureView, got {type(view).__name__}"
-            )
+            raise TypeError(f"register_view expects FeatureView, got {type(view).__name__}")
         ek = json.dumps(list(view.entity_keys), sort_keys=True)
         fn = json.dumps(list(view.feature_names), sort_keys=True)
         existing = self._conn.execute(
@@ -435,8 +401,7 @@ class FeatureStore:
         if existing is not None:
             if existing[0] != ek or existing[1] != fn:
                 raise ValueError(
-                    f"FeatureView {view.name!r} already registered with a "
-                    "different schema"
+                    f"FeatureView {view.name!r} already registered with a different schema"
                 )
             return
         self._conn.execute(
@@ -467,17 +432,13 @@ class FeatureStore:
     def ingest(self, record: FeatureRecord) -> None:
         """Push one row of features. Upsert by ``(view, entity, feature, ts_ns)``."""
         if not isinstance(record, FeatureRecord):
-            raise TypeError(
-                f"ingest expects FeatureRecord, got {type(record).__name__}"
-            )
+            raise TypeError(f"ingest expects FeatureRecord, got {type(record).__name__}")
         view_row = self._conn.execute(
             "SELECT feature_names_json FROM feature_views WHERE name = ?",
             (record.view_name,),
         ).fetchone()
         if view_row is None:
-            raise ValueError(
-                f"FeatureRecord.view_name {record.view_name!r} not registered"
-            )
+            raise ValueError(f"FeatureRecord.view_name {record.view_name!r} not registered")
         known = set(json.loads(view_row[0]))
         unknown = set(record.values) - known
         if unknown:
@@ -517,17 +478,14 @@ class FeatureStore:
         """
         if not isinstance(request, FeatureRequest):
             raise TypeError(
-                f"get_online_features expects FeatureRequest, "
-                f"got {type(request).__name__}"
+                f"get_online_features expects FeatureRequest, got {type(request).__name__}"
             )
         view_row = self._conn.execute(
             "SELECT feature_names_json FROM feature_views WHERE name = ?",
             (request.view_name,),
         ).fetchone()
         if view_row is None:
-            raise ValueError(
-                f"FeatureRequest.view_name {request.view_name!r} not registered"
-            )
+            raise ValueError(f"FeatureRequest.view_name {request.view_name!r} not registered")
         known = set(json.loads(view_row[0]))
         unknown = set(request.feature_names) - known
         if unknown:
@@ -578,9 +536,7 @@ class FeatureStore:
                 "get_historical_features expects a Sequence[HistoricalRow], "
                 f"got {type(rows).__name__}"
             )
-        if not isinstance(feature_names, Sequence) or isinstance(
-            feature_names, (str, bytes)
-        ):
+        if not isinstance(feature_names, Sequence) or isinstance(feature_names, (str, bytes)):
             raise TypeError(
                 "get_historical_features expects a Sequence[str] for "
                 f"feature_names, got {type(feature_names).__name__}"
@@ -590,8 +546,7 @@ class FeatureStore:
         for row in rows:
             if not isinstance(row, HistoricalRow):
                 raise TypeError(
-                    "get_historical_features rows must be HistoricalRow, "
-                    f"got {type(row).__name__}"
+                    f"get_historical_features rows must be HistoricalRow, got {type(row).__name__}"
                 )
             req = FeatureRequest(
                 ts_ns=row.ts_ns,

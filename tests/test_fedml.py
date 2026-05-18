@@ -49,10 +49,7 @@ from learning_engine.lanes.federated_fedml import (
 )
 
 MODULE_PATH = (
-    Path(__file__).resolve().parent.parent
-    / "learning_engine"
-    / "lanes"
-    / "federated_fedml.py"
+    Path(__file__).resolve().parent.parent / "learning_engine" / "lanes" / "federated_fedml.py"
 )
 
 
@@ -678,7 +675,10 @@ def test_ring_aggregate_privacy_violation_rejected() -> None:
     inputs = _ring_inputs()
     bad_updates = list(inputs["updates"])  # type: ignore[arg-type]
     bad_updates[0] = _u(
-        client_id="a", delta=0.0, num_samples=10, meta={"training_data": "leaked"},
+        client_id="a",
+        delta=0.0,
+        num_samples=10,
+        meta={"training_data": "leaked"},
     )
     inputs["updates"] = bad_updates
     with pytest.raises(ValueError, match="raw-data"):
@@ -767,9 +767,7 @@ def test_no_forbidden_top_level_imports() -> None:
         if isinstance(node, ast.Import):
             for n in node.names:
                 root = n.name.split(".")[0]
-                assert root not in _FORBIDDEN_TOP_LEVEL, (
-                    f"forbidden top-level import: {n.name}"
-                )
+                assert root not in _FORBIDDEN_TOP_LEVEL, f"forbidden top-level import: {n.name}"
         elif isinstance(node, ast.ImportFrom):
             assert node.module is not None
             root = node.module.split(".")[0]
@@ -795,16 +793,12 @@ def test_no_runtime_tier_imports() -> None:
         if isinstance(node, ast.Import):
             for n in node.names:
                 root = n.name.split(".")[0]
-                assert root not in _RUNTIME_TIERS, (
-                    f"forbidden runtime-tier import: {n.name}"
-                )
+                assert root not in _RUNTIME_TIERS, f"forbidden runtime-tier import: {n.name}"
         elif isinstance(node, ast.ImportFrom):
             if node.module is None:
                 continue
             root = node.module.split(".")[0]
-            assert root not in _RUNTIME_TIERS, (
-                f"forbidden runtime-tier import-from: {node.module}"
-            )
+            assert root not in _RUNTIME_TIERS, f"forbidden runtime-tier import-from: {node.module}"
 
 
 _TRANSPORT_EVENT_CONSTRUCTORS = frozenset(
@@ -830,8 +824,7 @@ def test_no_transport_event_constructors() -> None:
                 name = func.attr
             if name in _TRANSPORT_EVENT_CONSTRUCTORS:
                 pytest.fail(
-                    f"transport-layer typed-event constructor found: {name} "
-                    f"(B27/B28/INV-71)",
+                    f"transport-layer typed-event constructor found: {name} (B27/B28/INV-71)",
                 )
 
 

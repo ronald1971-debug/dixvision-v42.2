@@ -89,9 +89,7 @@ def test_audit_p1_1_harness_approved_intent_carries_signature(state):
     assert intent.decision_signature
     assert intent.approved_by_governance
     # The guard accepts the signed intent without raising.
-    state.authority_guard.assert_can_execute(
-        intent, caller="execution_engine"
-    )
+    state.authority_guard.assert_can_execute(intent, caller="execution_engine")
 
 
 def test_audit_p1_1_unsigned_intent_rejected_by_live_guard(state):
@@ -102,9 +100,7 @@ def test_audit_p1_1_unsigned_intent_rejected_by_live_guard(state):
     )
     assert intent.decision_signature == ""
     with pytest.raises(UnauthorizedActorError):
-        state.authority_guard.assert_can_execute(
-            intent, caller="execution_engine"
-        )
+        state.authority_guard.assert_can_execute(intent, caller="execution_engine")
 
 
 def test_audit_p1_1_forged_signature_rejected_by_live_guard(state):
@@ -119,6 +115,4 @@ def test_audit_p1_1_forged_signature_rejected_by_live_guard(state):
         decision_signature="00" * 32,  # plausible-looking but unsigned
     )
     with pytest.raises(UnauthorizedActorError):
-        state.authority_guard.assert_can_execute(
-            forged, caller="execution_engine"
-        )
+        state.authority_guard.assert_can_execute(forged, caller="execution_engine")

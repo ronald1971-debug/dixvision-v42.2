@@ -117,10 +117,7 @@ def load_reward_shaping_config(path: str | Path) -> RewardShapingConfig:
     """Load shaping config from YAML — fail-fast on missing/extra keys."""
     raw: Any = yaml.safe_load(Path(path).read_text())
     if not isinstance(raw, dict):
-        raise ValueError(
-            f"reward shaping config must be a YAML mapping, got "
-            f"{type(raw).__name__}"
-        )
+        raise ValueError(f"reward shaping config must be a YAML mapping, got {type(raw).__name__}")
     required = {
         "pnl_weight",
         "slippage_penalty_per_bps",
@@ -134,14 +131,10 @@ def load_reward_shaping_config(path: str | Path) -> RewardShapingConfig:
     }
     missing = required - raw.keys()
     if missing:
-        raise ValueError(
-            f"reward shaping config missing keys: {sorted(missing)}"
-        )
+        raise ValueError(f"reward shaping config missing keys: {sorted(missing)}")
     extra = raw.keys() - (required | {"version"})
     if extra:
-        raise ValueError(
-            f"reward shaping config has unknown keys: {sorted(extra)}"
-        )
+        raise ValueError(f"reward shaping config has unknown keys: {sorted(extra)}")
     kwargs: dict[str, Any] = {name: float(raw[name]) for name in required}
     if "version" in raw:
         kwargs["version"] = str(raw["version"])
@@ -243,18 +236,14 @@ def compute_reward_breakdown(
             f"{sorted(KNOWN_SIZING_RATIONALES)})"
         )
     if latency_ns < 0:
-        raise ValueError(
-            f"compute_reward_breakdown: latency_ns must be >= 0: {latency_ns}"
-        )
+        raise ValueError(f"compute_reward_breakdown: latency_ns must be >= 0: {latency_ns}")
     for cname, cval in (
         ("confidence_consensus", confidence_consensus),
         ("confidence_strength", confidence_strength),
         ("confidence_coverage", confidence_coverage),
     ):
         if not (0.0 <= cval <= 1.0):
-            raise ValueError(
-                f"compute_reward_breakdown: {cname} must be in [0, 1]: {cval}"
-            )
+            raise ValueError(f"compute_reward_breakdown: {cname} must be in [0, 1]: {cval}")
 
     components: list[tuple[str, float]] = []
 
@@ -295,13 +284,9 @@ def compute_reward_breakdown(
     )
 
     if sizing_rationale == SIZING_RATIONALE_KELLY_CAPPED:
-        components.append(
-            ("sizing_kelly_cap_penalty", -config.sizing_kelly_cap_penalty)
-        )
+        components.append(("sizing_kelly_cap_penalty", -config.sizing_kelly_cap_penalty))
     elif sizing_rationale == SIZING_RATIONALE_CONFIDENCE_BELOW_FLOOR:
-        components.append(
-            ("sizing_floor_penalty", -config.sizing_floor_penalty)
-        )
+        components.append(("sizing_floor_penalty", -config.sizing_floor_penalty))
 
     if fallback:
         components.append(("fallback_penalty", -config.fallback_penalty))

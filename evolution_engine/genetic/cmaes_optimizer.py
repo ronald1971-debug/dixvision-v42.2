@@ -224,36 +224,19 @@ class CMAESConfig:
 
     def __post_init__(self) -> None:
         if not isinstance(self.target_strategy_id, str):
-            raise CMAESConfigError(
-                "CMAESConfig.target_strategy_id must be str"
-            )
+            raise CMAESConfigError("CMAESConfig.target_strategy_id must be str")
         if not self.target_strategy_id:
-            raise CMAESConfigError(
-                "CMAESConfig.target_strategy_id must be non-empty"
-            )
-        if (
-            not isinstance(self.population_size, int)
-            or isinstance(self.population_size, bool)
-        ):
-            raise CMAESConfigError(
-                "CMAESConfig.population_size must be int"
-            )
-        if (
-            self.population_size < MIN_POPULATION_SIZE
-            or self.population_size > MAX_POPULATION_SIZE
-        ):
+            raise CMAESConfigError("CMAESConfig.target_strategy_id must be non-empty")
+        if not isinstance(self.population_size, int) or isinstance(self.population_size, bool):
+            raise CMAESConfigError("CMAESConfig.population_size must be int")
+        if self.population_size < MIN_POPULATION_SIZE or self.population_size > MAX_POPULATION_SIZE:
             raise CMAESConfigError(
                 f"CMAESConfig.population_size must be in "
                 f"[{MIN_POPULATION_SIZE}, {MAX_POPULATION_SIZE}], "
                 f"got {self.population_size!r}"
             )
-        if (
-            not isinstance(self.max_generations, int)
-            or isinstance(self.max_generations, bool)
-        ):
-            raise CMAESConfigError(
-                "CMAESConfig.max_generations must be int"
-            )
+        if not isinstance(self.max_generations, int) or isinstance(self.max_generations, bool):
+            raise CMAESConfigError("CMAESConfig.max_generations must be int")
         if self.max_generations < 1 or self.max_generations > MAX_GENERATIONS:
             raise CMAESConfigError(
                 f"CMAESConfig.max_generations must be in "
@@ -265,27 +248,17 @@ class CMAESConfig:
                 f"{self.population_size * self.max_generations} > "
                 f"{MAX_TOTAL_EVALUATIONS}"
             )
-        if not isinstance(self.sigma_init, (int, float)) or isinstance(
-            self.sigma_init, bool
-        ):
-            raise CMAESConfigError(
-                "CMAESConfig.sigma_init must be int|float"
-            )
+        if not isinstance(self.sigma_init, (int, float)) or isinstance(self.sigma_init, bool):
+            raise CMAESConfigError("CMAESConfig.sigma_init must be int|float")
         if not math.isfinite(self.sigma_init) or self.sigma_init <= 0.0:
             raise CMAESConfigError(
-                f"CMAESConfig.sigma_init must be a positive finite float, "
-                f"got {self.sigma_init!r}"
+                f"CMAESConfig.sigma_init must be a positive finite float, got {self.sigma_init!r}"
             )
         if not isinstance(self.fitness_drawdown_weight, (int, float)) or isinstance(
             self.fitness_drawdown_weight, bool
         ):
-            raise CMAESConfigError(
-                "CMAESConfig.fitness_drawdown_weight must be int|float"
-            )
-        if (
-            not math.isfinite(self.fitness_drawdown_weight)
-            or self.fitness_drawdown_weight < 0.0
-        ):
+            raise CMAESConfigError("CMAESConfig.fitness_drawdown_weight must be int|float")
+        if not math.isfinite(self.fitness_drawdown_weight) or self.fitness_drawdown_weight < 0.0:
             raise CMAESConfigError(
                 f"CMAESConfig.fitness_drawdown_weight must be a "
                 f"non-negative finite float, got "
@@ -311,48 +284,30 @@ class FitnessReport:
     meta: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if not isinstance(self.pnl_mean, (int, float)) or isinstance(
-            self.pnl_mean, bool
-        ):
-            raise CMAESEvaluationError(
-                "FitnessReport.pnl_mean must be int|float"
-            )
+        if not isinstance(self.pnl_mean, (int, float)) or isinstance(self.pnl_mean, bool):
+            raise CMAESEvaluationError("FitnessReport.pnl_mean must be int|float")
         if not math.isfinite(self.pnl_mean):
             raise CMAESEvaluationError(
-                f"FitnessReport.pnl_mean must be finite, got "
-                f"{self.pnl_mean!r}"
+                f"FitnessReport.pnl_mean must be finite, got {self.pnl_mean!r}"
             )
-        if not isinstance(self.max_drawdown, (int, float)) or isinstance(
-            self.max_drawdown, bool
-        ):
-            raise CMAESEvaluationError(
-                "FitnessReport.max_drawdown must be int|float"
-            )
+        if not isinstance(self.max_drawdown, (int, float)) or isinstance(self.max_drawdown, bool):
+            raise CMAESEvaluationError("FitnessReport.max_drawdown must be int|float")
         if not math.isfinite(self.max_drawdown) or self.max_drawdown < 0.0:
             raise CMAESEvaluationError(
                 f"FitnessReport.max_drawdown must be a non-negative "
                 f"finite float, got {self.max_drawdown!r}"
             )
-        if not isinstance(self.n_samples, int) or isinstance(
-            self.n_samples, bool
-        ):
-            raise CMAESEvaluationError(
-                "FitnessReport.n_samples must be int"
-            )
+        if not isinstance(self.n_samples, int) or isinstance(self.n_samples, bool):
+            raise CMAESEvaluationError("FitnessReport.n_samples must be int")
         if self.n_samples < 1:
             raise CMAESEvaluationError(
-                f"FitnessReport.n_samples must be >= 1, got "
-                f"{self.n_samples!r}"
+                f"FitnessReport.n_samples must be >= 1, got {self.n_samples!r}"
             )
         if not isinstance(self.meta, Mapping):
-            raise CMAESEvaluationError(
-                "FitnessReport.meta must be Mapping"
-            )
+            raise CMAESEvaluationError("FitnessReport.meta must be Mapping")
         for mk, mv in self.meta.items():
             if not isinstance(mk, str) or not isinstance(mv, str):
-                raise CMAESEvaluationError(
-                    "FitnessReport.meta must map str -> str"
-                )
+                raise CMAESEvaluationError("FitnessReport.meta must map str -> str")
 
     def fitness(self, drawdown_weight: float) -> float:
         """Collapse to a scalar: ``pnl_mean - w * max_drawdown``."""
@@ -393,20 +348,16 @@ class IndividualResult:
             )
         if not math.isfinite(self.fitness_scalar):
             raise ValueError(
-                f"IndividualResult.fitness_scalar must be finite, got "
-                f"{self.fitness_scalar!r}"
+                f"IndividualResult.fitness_scalar must be finite, got {self.fitness_scalar!r}"
             )
-        if not isinstance(self.generation_idx, int) or isinstance(
-            self.generation_idx, bool
-        ):
+        if not isinstance(self.generation_idx, int) or isinstance(self.generation_idx, bool):
             raise TypeError(
                 "IndividualResult.generation_idx must be int, got "
                 f"{type(self.generation_idx).__name__}"
             )
         if self.generation_idx < 0:
             raise ValueError(
-                f"IndividualResult.generation_idx must be >= 0, got "
-                f"{self.generation_idx!r}"
+                f"IndividualResult.generation_idx must be >= 0, got {self.generation_idx!r}"
             )
 
 
@@ -423,47 +374,34 @@ class GenerationReport:
     best_individual: IndividualResult
 
     def __post_init__(self) -> None:
-        if not isinstance(self.generation_idx, int) or isinstance(
-            self.generation_idx, bool
-        ):
+        if not isinstance(self.generation_idx, int) or isinstance(self.generation_idx, bool):
             raise TypeError(
                 "GenerationReport.generation_idx must be int, got "
                 f"{type(self.generation_idx).__name__}"
             )
         if self.generation_idx < 0:
             raise ValueError(
-                "GenerationReport.generation_idx must be >= 0, got "
-                f"{self.generation_idx!r}"
+                f"GenerationReport.generation_idx must be >= 0, got {self.generation_idx!r}"
             )
         if not isinstance(self.individuals, tuple):
             raise TypeError(
-                "GenerationReport.individuals must be tuple, got "
-                f"{type(self.individuals).__name__}"
+                f"GenerationReport.individuals must be tuple, got {type(self.individuals).__name__}"
             )
         if not self.individuals:
-            raise ValueError(
-                "GenerationReport.individuals must be non-empty"
-            )
+            raise ValueError("GenerationReport.individuals must be non-empty")
         for idx, ind in enumerate(self.individuals):
             if not isinstance(ind, IndividualResult):
-                raise TypeError(
-                    f"GenerationReport.individuals[{idx}] must be "
-                    "IndividualResult"
-                )
+                raise TypeError(f"GenerationReport.individuals[{idx}] must be IndividualResult")
         if not math.isfinite(self.best_fitness):
             raise ValueError(
-                f"GenerationReport.best_fitness must be finite, got "
-                f"{self.best_fitness!r}"
+                f"GenerationReport.best_fitness must be finite, got {self.best_fitness!r}"
             )
         if not math.isfinite(self.mean_fitness):
             raise ValueError(
-                f"GenerationReport.mean_fitness must be finite, got "
-                f"{self.mean_fitness!r}"
+                f"GenerationReport.mean_fitness must be finite, got {self.mean_fitness!r}"
             )
         if not isinstance(self.best_individual, IndividualResult):
-            raise TypeError(
-                "GenerationReport.best_individual must be IndividualResult"
-            )
+            raise TypeError("GenerationReport.best_individual must be IndividualResult")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -485,41 +423,28 @@ class CMAESResult:
     def __post_init__(self) -> None:
         if not isinstance(self.proposal, PatchProposal):
             raise TypeError(
-                "CMAESResult.proposal must be PatchProposal, got "
-                f"{type(self.proposal).__name__}"
+                f"CMAESResult.proposal must be PatchProposal, got {type(self.proposal).__name__}"
             )
         if not isinstance(self.generations, tuple):
             raise TypeError(
-                "CMAESResult.generations must be tuple, got "
-                f"{type(self.generations).__name__}"
+                f"CMAESResult.generations must be tuple, got {type(self.generations).__name__}"
             )
         if not self.generations:
-            raise ValueError(
-                "CMAESResult.generations must be non-empty"
-            )
+            raise ValueError("CMAESResult.generations must be non-empty")
         for idx, gen in enumerate(self.generations):
             if not isinstance(gen, GenerationReport):
-                raise TypeError(
-                    f"CMAESResult.generations[{idx}] must be "
-                    "GenerationReport"
-                )
+                raise TypeError(f"CMAESResult.generations[{idx}] must be GenerationReport")
         if not isinstance(self.best_individual, IndividualResult):
-            raise TypeError(
-                "CMAESResult.best_individual must be IndividualResult"
-            )
+            raise TypeError("CMAESResult.best_individual must be IndividualResult")
         if not isinstance(self.policy_digest, str):
-            raise TypeError(
-                "CMAESResult.policy_digest must be str"
-            )
+            raise TypeError("CMAESResult.policy_digest must be str")
         if len(self.policy_digest) != 16:
             raise ValueError(
-                f"CMAESResult.policy_digest must be 16 hex chars, got "
-                f"{self.policy_digest!r}"
+                f"CMAESResult.policy_digest must be 16 hex chars, got {self.policy_digest!r}"
             )
         if not all(c in "0123456789abcdef" for c in self.policy_digest):
             raise ValueError(
-                f"CMAESResult.policy_digest must be lowercase hex, got "
-                f"{self.policy_digest!r}"
+                f"CMAESResult.policy_digest must be lowercase hex, got {self.policy_digest!r}"
             )
 
 
@@ -604,9 +529,7 @@ def null_cmaes_callback() -> CMAESCallback:
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class _NullCallback:
-    def on_evolution_start(
-        self, *, ts_ns: int, config: CMAESConfig, dimensionality: int
-    ) -> None:
+    def on_evolution_start(self, *, ts_ns: int, config: CMAESConfig, dimensionality: int) -> None:
         return None
 
     def on_individual_evaluated(
@@ -620,14 +543,10 @@ class _NullCallback:
     ) -> None:
         return None
 
-    def on_generation_end(
-        self, *, ts_ns: int, report: GenerationReport
-    ) -> None:
+    def on_generation_end(self, *, ts_ns: int, report: GenerationReport) -> None:
         return None
 
-    def on_evolution_end(
-        self, *, ts_ns: int, result: CMAESResult
-    ) -> None:
+    def on_evolution_end(self, *, ts_ns: int, result: CMAESResult) -> None:
         return None
 
 
@@ -734,9 +653,7 @@ def _encoded_bounds(
     bounds: list[tuple[float, float]] = []
     for spec in specs:
         if spec.kind is ParameterKind.LOG_CONTINUOUS:
-            bounds.append(
-                (math.log10(spec.low), math.log10(spec.high))
-            )
+            bounds.append((math.log10(spec.low), math.log10(spec.high)))
         else:
             bounds.append((spec.low, spec.high))
     return tuple(bounds)
@@ -905,37 +822,21 @@ class CMAESOptimizer:
             raise CMAESConfigError("CMAESOptimizer.evolve.specs must be non-empty")
         for idx, spec in enumerate(specs):
             if not isinstance(spec, ParameterSpec):
-                raise CMAESConfigError(
-                    f"CMAESOptimizer.evolve.specs[{idx}] must be ParameterSpec"
-                )
+                raise CMAESConfigError(f"CMAESOptimizer.evolve.specs[{idx}] must be ParameterSpec")
         if not isinstance(config, CMAESConfig):
-            raise CMAESConfigError(
-                "CMAESOptimizer.evolve.config must be CMAESConfig"
-            )
+            raise CMAESConfigError("CMAESOptimizer.evolve.config must be CMAESConfig")
         if not isinstance(seed, int) or isinstance(seed, bool):
-            raise CMAESConfigError(
-                "CMAESOptimizer.evolve.seed must be int"
-            )
+            raise CMAESConfigError("CMAESOptimizer.evolve.seed must be int")
         if seed < 0:
-            raise CMAESConfigError(
-                f"CMAESOptimizer.evolve.seed must be >= 0, got {seed!r}"
-            )
+            raise CMAESConfigError(f"CMAESOptimizer.evolve.seed must be >= 0, got {seed!r}")
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
-            raise CMAESConfigError(
-                "CMAESOptimizer.evolve.ts_ns must be int"
-            )
+            raise CMAESConfigError("CMAESOptimizer.evolve.ts_ns must be int")
         if ts_ns < 0:
-            raise CMAESConfigError(
-                f"CMAESOptimizer.evolve.ts_ns must be >= 0, got {ts_ns!r}"
-            )
+            raise CMAESConfigError(f"CMAESOptimizer.evolve.ts_ns must be >= 0, got {ts_ns!r}")
         if not isinstance(proposal_id, str):
-            raise CMAESConfigError(
-                "CMAESOptimizer.evolve.proposal_id must be str"
-            )
+            raise CMAESConfigError("CMAESOptimizer.evolve.proposal_id must be str")
         if not proposal_id:
-            raise CMAESConfigError(
-                "CMAESOptimizer.evolve.proposal_id must be non-empty"
-            )
+            raise CMAESConfigError("CMAESOptimizer.evolve.proposal_id must be non-empty")
         if len(proposal_id) > MAX_PROPOSAL_ID_LEN:
             raise CMAESConfigError(
                 f"CMAESOptimizer.evolve.proposal_id must be <= "
@@ -944,13 +845,11 @@ class CMAESOptimizer:
         if initial_chromosome is not None:
             if not isinstance(initial_chromosome, StrategyChromosome):
                 raise CMAESConfigError(
-                    "CMAESOptimizer.evolve.initial_chromosome must be "
-                    "StrategyChromosome | None"
+                    "CMAESOptimizer.evolve.initial_chromosome must be StrategyChromosome | None"
                 )
             if initial_chromosome.specs != specs:
                 raise CMAESConfigError(
-                    "CMAESOptimizer.evolve.initial_chromosome.specs must "
-                    "match specs"
+                    "CMAESOptimizer.evolve.initial_chromosome.specs must match specs"
                 )
             if initial_chromosome.strategy_id != config.target_strategy_id:
                 raise CMAESConfigError(
@@ -961,8 +860,7 @@ class CMAESOptimizer:
         cb = callback if callback is not None else null_cmaes_callback()
         if not isinstance(cb, CMAESCallback):
             raise CMAESConfigError(
-                "CMAESOptimizer.evolve.callback must implement the "
-                "CMAESCallback Protocol"
+                "CMAESOptimizer.evolve.callback must implement the CMAESCallback Protocol"
             )
 
         # ---- sep-CMA-ES setup -----------------------------------------
@@ -979,18 +877,12 @@ class CMAESOptimizer:
 
         # Sep-CMA-ES learning rates (Hansen 2016 + Ros & Hansen 2008).
         c_sigma = (mu_eff + 2.0) / (n + mu_eff + 5.0)
-        d_sigma = (
-            1.0
-            + 2.0 * max(0.0, math.sqrt((mu_eff - 1.0) / (n + 1.0)) - 1.0)
-            + c_sigma
-        )
+        d_sigma = 1.0 + 2.0 * max(0.0, math.sqrt((mu_eff - 1.0) / (n + 1.0)) - 1.0) + c_sigma
         c_c = (4.0 + mu_eff / n) / (n + 4.0 + 2.0 * mu_eff / n)
         c_1_full = 2.0 / ((n + 1.3) * (n + 1.3) + mu_eff)
         c_mu_full = min(
             1.0 - c_1_full,
-            2.0
-            * (mu_eff - 2.0 + 1.0 / mu_eff)
-            / ((n + 2.0) * (n + 2.0) + mu_eff),
+            2.0 * (mu_eff - 2.0 + 1.0 / mu_eff) / ((n + 2.0) * (n + 2.0) + mu_eff),
         )
         # Sep-CMA-ES scaling (Ros & Hansen 2008 §3): boost rates by
         # (n+2)/3 because the diagonal model has fewer DoF than the
@@ -1000,9 +892,7 @@ class CMAESOptimizer:
         c_mu = min(1.0 - c_1, c_mu_full * sep_scale)
 
         # Expected length of N(0, I) approximation.
-        chi_n = math.sqrt(n) * (
-            1.0 - 1.0 / (4.0 * n) + 1.0 / (21.0 * n * n)
-        )
+        chi_n = math.sqrt(n) * (1.0 - 1.0 / (4.0 * n) + 1.0 / (21.0 * n * n))
 
         # State vectors.
         mean = _initial_mean_encoded(specs, initial_chromosome)
@@ -1015,9 +905,7 @@ class CMAESOptimizer:
         p_c = [0.0] * n
         sigma = float(config.sigma_init)
 
-        cb.on_evolution_start(
-            ts_ns=ts_ns, config=config, dimensionality=n
-        )
+        cb.on_evolution_start(ts_ns=ts_ns, config=config, dimensionality=n)
 
         # ---- Generation loop ------------------------------------------
         generation_reports: list[GenerationReport] = []
@@ -1038,8 +926,7 @@ class CMAESOptimizer:
                 zs.append(z)
                 # x = m + sigma * sqrt(diag_C) * z
                 x_enc: list[float] = [
-                    mean[i] + sigma * math.sqrt(diag_C[i]) * z[i]
-                    for i in range(n)
+                    mean[i] + sigma * math.sqrt(diag_C[i]) * z[i] for i in range(n)
                 ]
                 _clip_encoded(x_enc, bounds)
                 decoded_values = _encoded_to_decoded(specs, tuple(x_enc))
@@ -1062,9 +949,7 @@ class CMAESOptimizer:
             #    sharing state with the optimizer.
             individuals: list[IndividualResult] = []
             for k in range(lam):
-                ind_seed = _splitmix64(
-                    _splitmix64(seed) ^ ((gen_idx << 32) | k)
-                )
+                ind_seed = _splitmix64(_splitmix64(seed) ^ ((gen_idx << 32) | k))
                 report = self.evaluator.evaluate(
                     chromosome=xs_chromosomes[k],
                     seed=ind_seed,
@@ -1109,9 +994,7 @@ class CMAESOptimizer:
                 ),
             )
             sorted_individuals = tuple(individuals[k] for k in order)
-            mean_fitness = math.fsum(
-                ind.fitness_scalar for ind in individuals
-            ) / float(lam)
+            mean_fitness = math.fsum(ind.fitness_scalar for ind in individuals) / float(lam)
             best_in_gen = sorted_individuals[0]
 
             if (
@@ -1140,19 +1023,13 @@ class CMAESOptimizer:
             #    Mahalanobis-normalised step).
             selected_indices = order[:mu]
             z_w = [
-                math.fsum(
-                    weights[i] * zs[selected_indices[i]][j]
-                    for i in range(mu)
-                )
+                math.fsum(weights[i] * zs[selected_indices[i]][j] for i in range(mu))
                 for j in range(n)
             ]
 
             # New mean: m + sigma * sqrt(diag_C) * z_w (= weighted mean
             # of the selected x's, by linearity of the encoding).
-            new_mean = [
-                mean[j] + sigma * math.sqrt(diag_C[j]) * z_w[j]
-                for j in range(n)
-            ]
+            new_mean = [mean[j] + sigma * math.sqrt(diag_C[j]) * z_w[j] for j in range(n)]
             _clip_encoded(new_mean, bounds)
             mean = new_mean
 
@@ -1163,20 +1040,14 @@ class CMAESOptimizer:
                 + math.sqrt(c_sigma * (2.0 - c_sigma) * mu_eff) * z_w[j]
                 for j in range(n)
             ]
-            norm_p_sigma = math.sqrt(
-                math.fsum(v * v for v in p_sigma)
-            )
+            norm_p_sigma = math.sqrt(math.fsum(v * v for v in p_sigma))
 
             # Heaviside h_sigma: damp covariance update if p_sigma is
             # too long (early-iteration safety per Hansen 2016).
-            denom = math.sqrt(
-                max(0.0, 1.0 - math.pow(1.0 - c_sigma, 2.0 * (gen_idx + 1)))
-            )
+            denom = math.sqrt(max(0.0, 1.0 - math.pow(1.0 - c_sigma, 2.0 * (gen_idx + 1))))
             if denom > 0.0:
                 h_threshold = (1.4 + 2.0 / (n + 1.0)) * chi_n
-                h_sigma = (
-                    1.0 if (norm_p_sigma / denom) < h_threshold else 0.0
-                )
+                h_sigma = 1.0 if (norm_p_sigma / denom) < h_threshold else 0.0
             else:
                 h_sigma = 0.0
 
@@ -1185,10 +1056,7 @@ class CMAESOptimizer:
             # eigenmatrix; the math is the same on the diagonal).
             p_c = [
                 (1.0 - c_c) * p_c[j]
-                + h_sigma
-                * math.sqrt(c_c * (2.0 - c_c) * mu_eff)
-                * math.sqrt(diag_C[j])
-                * z_w[j]
+                + h_sigma * math.sqrt(c_c * (2.0 - c_c) * mu_eff) * math.sqrt(diag_C[j]) * z_w[j]
                 for j in range(n)
             ]
 
@@ -1199,8 +1067,7 @@ class CMAESOptimizer:
                 acc = math.fsum(
                     weights[i]
                     * math.pow(
-                        math.sqrt(diag_C[j])
-                        * zs[selected_indices[i]][j],
+                        math.sqrt(diag_C[j]) * zs[selected_indices[i]][j],
                         2.0,
                     )
                     for i in range(mu)
@@ -1222,9 +1089,7 @@ class CMAESOptimizer:
             diag_C = new_diag_C
 
             # Update sigma.
-            sigma_log_step = (c_sigma / d_sigma) * (
-                norm_p_sigma / chi_n - 1.0
-            )
+            sigma_log_step = (c_sigma / d_sigma) * (norm_p_sigma / chi_n - 1.0)
             # Clamp the log step so a single bad generation can't
             # blow sigma to inf — same defensive cap as evotorch's
             # CMAES default (max log step = ~5).
@@ -1235,9 +1100,7 @@ class CMAESOptimizer:
 
         # ---- Build proposal -------------------------------------------
         if running_best is None:  # pragma: no cover - guarded by max_gen >= 1
-            raise CMAESEvaluationError(
-                "CMA-ES produced no individuals; check max_generations"
-            )
+            raise CMAESEvaluationError("CMA-ES produced no individuals; check max_generations")
 
         digest = _compute_policy_digest(
             config=config,
@@ -1259,16 +1122,10 @@ class CMAESOptimizer:
             "population_size": str(config.population_size),
             "max_generations": str(config.max_generations),
             "generation_count": str(len(generation_reports)),
-            "best_chromosome_digest": chromosome_digest(
-                running_best.chromosome
-            ),
+            "best_chromosome_digest": chromosome_digest(running_best.chromosome),
             "best_fitness": repr(running_best.fitness_scalar),
-            "best_pnl_mean": repr(
-                running_best.fitness_report.pnl_mean
-            ),
-            "best_max_drawdown": repr(
-                running_best.fitness_report.max_drawdown
-            ),
+            "best_pnl_mean": repr(running_best.fitness_report.pnl_mean),
+            "best_max_drawdown": repr(running_best.fitness_report.max_drawdown),
         }
         touchpoints = tuple(s.name for s in specs)
         proposal = PatchProposal(

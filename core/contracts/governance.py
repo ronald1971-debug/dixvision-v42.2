@@ -359,9 +359,7 @@ class StateTransitionProtocol(Protocol):
     def current_mode(self) -> SystemMode:
         """Return the live :class:`SystemMode` (snapshot, no lock leak)."""
 
-    def propose(
-        self, request: ModeTransitionRequest
-    ) -> ModeTransitionDecision:
+    def propose(self, request: ModeTransitionRequest) -> ModeTransitionDecision:
         """Apply the full transition pipeline atomically."""
 
 

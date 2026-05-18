@@ -132,16 +132,12 @@ def test_spec_rejects_num_sites_bool() -> None:
 
 
 def test_spec_rejects_num_observations_negative() -> None:
-    with pytest.raises(
-        ValueError, match="num_observations must be non-negative"
-    ):
+    with pytest.raises(ValueError, match="num_observations must be non-negative"):
         _valid_spec(num_observations=-1)
 
 
 def test_spec_rejects_num_observations_above_max() -> None:
-    with pytest.raises(
-        ValueError, match="num_observations must be <="
-    ):
+    with pytest.raises(ValueError, match="num_observations must be <="):
         _valid_spec(num_observations=MAX_OBSERVATION_LEN + 1)
 
 
@@ -206,16 +202,12 @@ def test_args_is_frozen_and_slotted() -> None:
 
 
 def test_args_rejects_non_enum_inference_kind() -> None:
-    with pytest.raises(
-        TypeError, match="inference_kind must be NumpyroInferenceKind"
-    ):
+    with pytest.raises(TypeError, match="inference_kind must be NumpyroInferenceKind"):
         _valid_args(inference_kind="NUTS")  # type: ignore[arg-type]
 
 
 def test_args_rejects_negative_random_seed() -> None:
-    with pytest.raises(
-        ValueError, match="random_seed must be non-negative"
-    ):
+    with pytest.raises(ValueError, match="random_seed must be non-negative"):
         _valid_args(random_seed=-1)
 
 
@@ -286,9 +278,7 @@ def test_args_accepts_empty_observations() -> None:
 
 def test_args_rejects_observations_above_max() -> None:
     with pytest.raises(ValueError, match="observations must have <="):
-        _valid_args(
-            observations=tuple([1.0] * (MAX_OBSERVATION_LEN + 1))
-        )
+        _valid_args(observations=tuple([1.0] * (MAX_OBSERVATION_LEN + 1)))
 
 
 def test_args_rejects_non_float_observation() -> None:
@@ -471,9 +461,7 @@ def test_result_is_frozen_and_slotted() -> None:
 
 def test_result_rejects_non_tuple_summaries() -> None:
     with pytest.raises(TypeError, match="site_summaries must be a tuple"):
-        _valid_result(
-            site_summaries=[_valid_summary()]
-        )  # type: ignore[arg-type]
+        _valid_result(site_summaries=[_valid_summary()])  # type: ignore[arg-type]
 
 
 def test_result_rejects_empty_summaries() -> None:
@@ -482,9 +470,7 @@ def test_result_rejects_empty_summaries() -> None:
 
 
 def test_result_rejects_too_many_summaries() -> None:
-    too_many = tuple(
-        _valid_summary(name=f"s{i}") for i in range(MAX_NUM_SITES + 1)
-    )
+    too_many = tuple(_valid_summary(name=f"s{i}") for i in range(MAX_NUM_SITES + 1))
     with pytest.raises(ValueError, match="site_summaries must have <="):
         _valid_result(site_summaries=too_many)
 
@@ -494,9 +480,7 @@ def test_result_rejects_non_summary_entries() -> None:
         TypeError,
         match="site_summaries entries must be NumpyroSiteSummary",
     ):
-        _valid_result(
-            site_summaries=(_valid_summary(), "x")
-        )  # type: ignore[arg-type]
+        _valid_result(site_summaries=(_valid_summary(), "x"))  # type: ignore[arg-type]
 
 
 def test_result_rejects_duplicate_site_names() -> None:
@@ -607,9 +591,7 @@ def test_record_rejects_non_spec() -> None:
 
 
 def test_record_rejects_non_result() -> None:
-    with pytest.raises(
-        TypeError, match="result must be NumpyroInferenceResult"
-    ):
+    with pytest.raises(TypeError, match="result must be NumpyroInferenceResult"):
         _valid_record(result="x")  # type: ignore[arg-type]
 
 
@@ -703,9 +685,7 @@ def test_analyser_rejects_non_protocol_engine() -> None:
     class _NotEngine:
         pass
 
-    with pytest.raises(
-        TypeError, match="engine must implement the NumpyroInferenceEngine"
-    ):
+    with pytest.raises(TypeError, match="engine must implement the NumpyroInferenceEngine"):
         NumpyroSVIAnalyser(engine=_NotEngine())  # type: ignore[arg-type]
 
 
@@ -759,9 +739,7 @@ def test_analyser_rejects_non_spec() -> None:
 
 def test_analyser_rejects_non_args() -> None:
     a = NumpyroSVIAnalyser(engine=_FakeEngine())
-    with pytest.raises(
-        TypeError, match="arguments must be NumpyroInferenceArguments"
-    ):
+    with pytest.raises(TypeError, match="arguments must be NumpyroInferenceArguments"):
         a.analyse(
             spec=_valid_spec(),
             arguments="x",  # type: ignore[arg-type]
@@ -783,9 +761,7 @@ def test_analyser_rejects_non_int_ts_ns() -> None:
 
 def test_analyser_rejects_negative_ts_ns() -> None:
     a = NumpyroSVIAnalyser(engine=_FakeEngine())
-    with pytest.raises(
-        NumpyroAnalyserConfigError, match="ts_ns must be non-negative"
-    ):
+    with pytest.raises(NumpyroAnalyserConfigError, match="ts_ns must be non-negative"):
         a.analyse(
             spec=_valid_spec(),
             arguments=_valid_args(),
@@ -796,9 +772,7 @@ def test_analyser_rejects_negative_ts_ns() -> None:
 
 def test_analyser_rejects_empty_analysis_id() -> None:
     a = NumpyroSVIAnalyser(engine=_FakeEngine())
-    with pytest.raises(
-        NumpyroAnalyserConfigError, match="analysis_id must be non-empty"
-    ):
+    with pytest.raises(NumpyroAnalyserConfigError, match="analysis_id must be non-empty"):
         a.analyse(
             spec=_valid_spec(),
             arguments=_valid_args(),
@@ -809,9 +783,7 @@ def test_analyser_rejects_empty_analysis_id() -> None:
 
 def test_analyser_rejects_long_analysis_id() -> None:
     a = NumpyroSVIAnalyser(engine=_FakeEngine())
-    with pytest.raises(
-        NumpyroAnalyserConfigError, match="analysis_id must be <="
-    ):
+    with pytest.raises(NumpyroAnalyserConfigError, match="analysis_id must be <="):
         a.analyse(
             spec=_valid_spec(),
             arguments=_valid_args(),
@@ -823,9 +795,12 @@ def test_analyser_rejects_long_analysis_id() -> None:
 def test_analyser_rejects_engine_returning_wrong_type() -> None:
     class _BadEngine:
         def infer(
-            self, *, spec: NumpyroModelSpec,
+            self,
+            *,
+            spec: NumpyroModelSpec,
             arguments: NumpyroInferenceArguments,
-            ts_ns: int, callback: NumpyroInferenceCallback,
+            ts_ns: int,
+            callback: NumpyroInferenceCallback,
         ) -> NumpyroInferenceResult:
             return "not a result"  # type: ignore[return-value]
 
@@ -842,18 +817,19 @@ def test_analyser_rejects_engine_returning_wrong_type() -> None:
 def test_analyser_rejects_mismatched_site_count() -> None:
     class _MismatchEngine:
         def infer(
-            self, *, spec: NumpyroModelSpec,
+            self,
+            *,
+            spec: NumpyroModelSpec,
             arguments: NumpyroInferenceArguments,
-            ts_ns: int, callback: NumpyroInferenceCallback,
+            ts_ns: int,
+            callback: NumpyroInferenceCallback,
         ) -> NumpyroInferenceResult:
             return NumpyroInferenceResult(
                 site_summaries=(_valid_summary(name="only_one"),),
                 log_evidence=-1.0,
             )
 
-    a = NumpyroSVIAnalyser(
-        engine=_MismatchEngine()
-    )  # type: ignore[arg-type]
+    a = NumpyroSVIAnalyser(engine=_MismatchEngine())  # type: ignore[arg-type]
     with pytest.raises(
         NumpyroAnalyserConfigError,
         match="site_summaries length",
@@ -892,18 +868,27 @@ def test_analyser_threads_custom_callback() -> None:
 
     class _Recorder:
         def on_inference_start(
-            self, *, ts_ns: int, spec: NumpyroModelSpec,
+            self,
+            *,
+            ts_ns: int,
+            spec: NumpyroModelSpec,
             arguments: NumpyroInferenceArguments,
         ) -> None:
             start_seen.append(spec)
 
         def on_site_summary(
-            self, *, ts_ns: int, summary: NumpyroSiteSummary,
+            self,
+            *,
+            ts_ns: int,
+            summary: NumpyroSiteSummary,
         ) -> None:
             summaries_seen.append(summary)
 
         def on_inference_end(
-            self, *, ts_ns: int, result: NumpyroInferenceResult,
+            self,
+            *,
+            ts_ns: int,
+            result: NumpyroInferenceResult,
         ) -> None:
             end_seen.append(result)
 
@@ -926,14 +911,18 @@ def test_analyser_threads_custom_callback() -> None:
 
 
 def _run_once(
-    *, seed: int = 42, num_sites: int = 2, num_warmup: int = 50,
+    *,
+    seed: int = 42,
+    num_sites: int = 2,
+    num_warmup: int = 50,
     kind: NumpyroInferenceKind = NumpyroInferenceKind.NUTS,
 ) -> NumpyroInferenceRecord:
     a = NumpyroSVIAnalyser(engine=_FakeEngine())
     return a.analyse(
         spec=_valid_spec(num_sites=num_sites),
         arguments=_valid_args(
-            inference_kind=kind, random_seed=seed,
+            inference_kind=kind,
+            random_seed=seed,
             num_warmup=num_warmup,
         ),
         ts_ns=999,
@@ -1013,11 +1002,7 @@ def test_numpyro_svi_engine_factory_signature() -> None:
 # ---------------------------------------------------------------------------
 
 
-_MODULE_PATH = (
-    Path(__file__).resolve().parent.parent
-    / "intelligence_engine"
-    / "svi_numpyro.py"
-)
+_MODULE_PATH = Path(__file__).resolve().parent.parent / "intelligence_engine" / "svi_numpyro.py"
 
 
 def _module_ast() -> ast.Module:
@@ -1051,8 +1036,13 @@ def test_ast_no_top_level_numpy_import() -> None:
 
 def test_ast_no_top_level_io_imports() -> None:
     forbidden = {
-        "subprocess", "socket", "urllib", "requests",
-        "httpx", "aiohttp", "asyncio",
+        "subprocess",
+        "socket",
+        "urllib",
+        "requests",
+        "httpx",
+        "aiohttp",
+        "asyncio",
     }
     assert forbidden.isdisjoint(_top_level_imports())
 
@@ -1076,9 +1066,7 @@ def test_ast_no_cross_engine_imports() -> None:
         elif isinstance(node, ast.ImportFrom):
             if node.module:
                 seen.add(node.module.split(".")[0])
-    assert forbidden.isdisjoint(seen), (
-        f"forbidden imports in svi_numpyro.py: {forbidden & seen!r}"
-    )
+    assert forbidden.isdisjoint(seen), f"forbidden imports in svi_numpyro.py: {forbidden & seen!r}"
 
 
 def test_ast_vendor_imports_confined_to_factory() -> None:
@@ -1090,10 +1078,7 @@ def test_ast_vendor_imports_confined_to_factory() -> None:
     other_imports: set[str] = set()
 
     for node in ast.walk(tree):
-        if (
-            isinstance(node, ast.FunctionDef)
-            and node.name == "numpyro_svi_engine"
-        ):
+        if isinstance(node, ast.FunctionDef) and node.name == "numpyro_svi_engine":
             for sub in ast.walk(node):
                 if isinstance(sub, ast.Import):
                     for alias in sub.names:

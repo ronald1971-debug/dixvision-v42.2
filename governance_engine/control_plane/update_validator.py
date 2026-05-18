@@ -120,9 +120,7 @@ class UpdateValidator:
     def __init__(self, *, registry: StrategyRegistry) -> None:
         self._registry = registry
 
-    def validate(
-        self, *, update: ProposedUpdate, mode: SystemMode
-    ) -> UpdateDecision:
+    def validate(self, *, update: ProposedUpdate, mode: SystemMode) -> UpdateDecision:
         if not update.reason:
             return UpdateDecision(
                 verdict=UpdateVerdict.REJECT,
@@ -154,8 +152,7 @@ class UpdateValidator:
                 verdict=UpdateVerdict.REJECT,
                 code=UpdateRejectCode.LIFECYCLE_NOT_APPROVED,
                 detail=(
-                    f"strategy {update.strategy_id!r} is "
-                    f"{record.lifecycle.value}, not APPROVED"
+                    f"strategy {update.strategy_id!r} is {record.lifecycle.value}, not APPROVED"
                 ),
             )
 

@@ -343,9 +343,7 @@ def compute_gae_lambda(
     if not (0.0 <= gamma <= 1.0):
         raise PolicyDistillationError(f"gamma must be in [0, 1], got {gamma}")
     if not (0.0 <= gae_lambda <= 1.0):
-        raise PolicyDistillationError(
-            f"gae_lambda must be in [0, 1], got {gae_lambda}"
-        )
+        raise PolicyDistillationError(f"gae_lambda must be in [0, 1], got {gae_lambda}")
     steps = trajectory.steps
     n = len(steps)
     if n == 0:
@@ -355,9 +353,7 @@ def compute_gae_lambda(
     for t in range(n - 1, -1, -1):
         step = steps[t]
         next_nonterm = 0.0 if step.done else 1.0
-        next_value = (
-            trajectory.bootstrap_value if t == n - 1 else steps[t + 1].value
-        )
+        next_value = trajectory.bootstrap_value if t == n - 1 else steps[t + 1].value
         delta = step.reward + gamma * next_value * next_nonterm - step.value
         last_gae = delta + gamma * gae_lambda * next_nonterm * last_gae
         advantages[t] = last_gae
@@ -442,9 +438,7 @@ def _validate_step(step: TrajectoryStep, obs_dim: int, action_dim: int) -> None:
     if not isinstance(step, TrajectoryStep):  # type: ignore[redundant-cast]
         raise PolicyDistillationError(f"step must be TrajectoryStep, got {type(step)!r}")
     if len(step.obs) != obs_dim:
-        raise PolicyDistillationError(
-            f"obs length {len(step.obs)} != obs_dim {obs_dim}"
-        )
+        raise PolicyDistillationError(f"obs length {len(step.obs)} != obs_dim {obs_dim}")
     if len(step.action) != action_dim:
         raise PolicyDistillationError(
             f"action length {len(step.action)} != action_dim {action_dim}"
@@ -454,13 +448,9 @@ def _validate_step(step: TrajectoryStep, obs_dim: int, action_dim: int) -> None:
             raise PolicyDistillationError("non-finite value in trajectory step")
 
 
-def _validate_trajectory(
-    trajectory: Trajectory, obs_dim: int, action_dim: int
-) -> None:
+def _validate_trajectory(trajectory: Trajectory, obs_dim: int, action_dim: int) -> None:
     if not isinstance(trajectory, Trajectory):  # type: ignore[redundant-cast]
-        raise PolicyDistillationError(
-            f"trajectory must be Trajectory, got {type(trajectory)!r}"
-        )
+        raise PolicyDistillationError(f"trajectory must be Trajectory, got {type(trajectory)!r}")
     if not trajectory.trajectory_id:
         raise PolicyDistillationError("trajectory_id must be non-empty")
     if len(trajectory.steps) == 0:
@@ -506,22 +496,16 @@ def _validate_config(config: PPOConfig) -> None:
         )
 
 
-def _validate_trajectories(
-    trajectories: tuple[Trajectory, ...], config: PPOConfig
-) -> None:
+def _validate_trajectories(trajectories: tuple[Trajectory, ...], config: PPOConfig) -> None:
     if len(trajectories) == 0:
         raise PolicyDistillationError("at least one trajectory required")
     if len(trajectories) > MAX_TRAJECTORIES:
-        raise PolicyDistillationError(
-            f"trajectories {len(trajectories)} > MAX {MAX_TRAJECTORIES}"
-        )
+        raise PolicyDistillationError(f"trajectories {len(trajectories)} > MAX {MAX_TRAJECTORIES}")
     seen: set[str] = set()
     for tr in trajectories:
         _validate_trajectory(tr, config.obs_dim, config.action_dim)
         if tr.trajectory_id in seen:
-            raise PolicyDistillationError(
-                f"duplicate trajectory_id {tr.trajectory_id!r}"
-            )
+            raise PolicyDistillationError(f"duplicate trajectory_id {tr.trajectory_id!r}")
         seen.add(tr.trajectory_id)
 
 
@@ -537,9 +521,7 @@ class PolicyDistillation:
     """
 
     distiller: PolicyDistiller
-    callback: DistillationCallback = field(
-        default_factory=null_distillation_callback
-    )
+    callback: DistillationCallback = field(default_factory=null_distillation_callback)
 
     def distill(
         self,
@@ -572,9 +554,7 @@ class PolicyDistillation:
         advantages_per_traj: list[tuple[float, ...]] = []
         returns_per_traj: list[tuple[float, ...]] = []
         for tr in traj_tuple:
-            adv, ret = compute_gae_lambda(
-                tr, gamma=config.gamma, gae_lambda=config.gae_lambda
-            )
+            adv, ret = compute_gae_lambda(tr, gamma=config.gamma, gae_lambda=config.gae_lambda)
             advantages_per_traj.append(adv)
             returns_per_traj.append(ret)
 
@@ -598,9 +578,7 @@ class PolicyDistillation:
                 f"distiller must return PolicyArtifact, got {type(artifact)!r}"
             )
         if artifact.obs_dim != config.obs_dim or artifact.action_dim != config.action_dim:
-            raise PolicyDistillationError(
-                "artifact dims do not match config dims"
-            )
+            raise PolicyDistillationError("artifact dims do not match config dims")
 
         config_digest = _hash_blake2b_16(_canonical_config(config))
         rollout_digest = _hash_blake2b_16(_canonical_rollout(traj_tuple))
@@ -627,9 +605,7 @@ class PolicyDistillation:
                 "version": POLICY_DISTILLATION_VERSION,
                 "seed": str(seed),
                 "trajectories": str(len(traj_tuple)),
-                "total_steps": str(
-                    sum(len(t.steps) for t in traj_tuple)
-                ),
+                "total_steps": str(sum(len(t.steps) for t in traj_tuple)),
             },
         )
 

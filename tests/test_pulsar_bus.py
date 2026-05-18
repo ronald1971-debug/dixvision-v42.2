@@ -284,7 +284,9 @@ def test_producer_record_rejects_negative_ts() -> None:
 def test_producer_record_rejects_bad_properties_entry() -> None:
     with pytest.raises(TypeError):
         ProducerRecord(
-            T_ALPHA, b"v", properties=(("k", b"bad"),)  # type: ignore[arg-type]
+            T_ALPHA,
+            b"v",
+            properties=(("k", b"bad"),),  # type: ignore[arg-type]
         )
 
 
@@ -403,9 +405,7 @@ def test_broker_append_rejects_unknown_topic() -> None:
 
 def test_broker_append_at_chosen_partition() -> None:
     b = _broker()
-    msg = b.append_at(
-        T_ALPHA, 2, b"x", key=None, ts_ns=0, event_time_ns=0, properties=()
-    )
+    msg = b.append_at(T_ALPHA, 2, b"x", key=None, ts_ns=0, event_time_ns=0, properties=())
     assert msg.message_id.partition == 2
 
 
@@ -465,7 +465,9 @@ def test_attach_subscription_latest_position_skips_existing() -> None:
     # publish before subscribing
     b.append(ProducerRecord(T_ALPHA, b"old", ts_ns=1))
     sub = Subscription(
-        "s1", T_ALPHA, type=SubscriptionType.EXCLUSIVE,
+        "s1",
+        T_ALPHA,
+        type=SubscriptionType.EXCLUSIVE,
         initial_position_earliest=False,
     )
     b.attach_subscription(sub, "c1")
@@ -536,16 +538,8 @@ def test_routing_key_shared_same_key_same_consumer() -> None:
     sub = Subscription("s1", T_ALPHA, type=SubscriptionType.KEY_SHARED)
     b.attach_subscription(sub, "c1")
     b.attach_subscription(sub, "c2")
-    owners1 = [
-        c
-        for c in ("c1", "c2")
-        if b.consumer_owns(T_ALPHA, "s1", c, 0, 0, b"key-a")
-    ]
-    owners2 = [
-        c
-        for c in ("c1", "c2")
-        if b.consumer_owns(T_ALPHA, "s1", c, 0, 1, b"key-a")
-    ]
+    owners1 = [c for c in ("c1", "c2") if b.consumer_owns(T_ALPHA, "s1", c, 0, 0, b"key-a")]
+    owners2 = [c for c in ("c1", "c2") if b.consumer_owns(T_ALPHA, "s1", c, 0, 1, b"key-a")]
     assert len(owners1) == 1
     assert owners1 == owners2
 
@@ -823,11 +817,7 @@ def test_app_with_subscription_requires_known_topic() -> None:
 
 
 def test_app_with_subscription_rejects_duplicate() -> None:
-    app = (
-        App()
-        .with_topic(Topic(T_ALPHA))
-        .with_subscription(Subscription("s1", T_ALPHA))
-    )
+    app = App().with_topic(Topic(T_ALPHA)).with_subscription(Subscription("s1", T_ALPHA))
     with pytest.raises(ValueError):
         app.with_subscription(Subscription("s1", T_ALPHA))
 
@@ -848,12 +838,8 @@ def _replay_app() -> App:
         App()
         .with_topic(Topic(T_ALPHA, num_partitions=2))
         .with_topic(Topic(T_BETA, num_partitions=1))
-        .with_subscription(
-            Subscription("alpha-excl", T_ALPHA, type=SubscriptionType.EXCLUSIVE)
-        )
-        .with_subscription(
-            Subscription("beta-shared", T_BETA, type=SubscriptionType.SHARED)
-        )
+        .with_subscription(Subscription("alpha-excl", T_ALPHA, type=SubscriptionType.EXCLUSIVE))
+        .with_subscription(Subscription("beta-shared", T_BETA, type=SubscriptionType.SHARED))
     )
 
 
@@ -897,10 +883,7 @@ def test_run_app_delivers_every_record() -> None:
 
 def test_run_app_records_canonical_sorted() -> None:
     res = run_app(_replay_app(), _replay_inbound())
-    keys = [
-        (r.subscription_name, r.message.topic_name, r.message.message_id)
-        for r in res.records
-    ]
+    keys = [(r.subscription_name, r.message.topic_name, r.message.message_id) for r in res.records]
     assert keys == sorted(keys)
 
 

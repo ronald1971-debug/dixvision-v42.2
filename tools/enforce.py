@@ -147,9 +147,7 @@ def _check_failures(data: dict[str, Any]) -> list[str]:
         if kind == "pct_floor":
             actual_pct = _parse_pct(actual)
             if actual_pct is None:
-                failures.append(
-                    f"{summary_key} = {actual!r} (could not parse as N%)"
-                )
+                failures.append(f"{summary_key} = {actual!r} (could not parse as N%)")
             elif actual_pct < int(expected):
                 failures.append(
                     f"{summary_key} = {actual} regressed below floor "
@@ -159,9 +157,7 @@ def _check_failures(data: dict[str, Any]) -> list[str]:
             try:
                 actual_int = int(actual)  # type: ignore[arg-type]
             except (TypeError, ValueError):
-                failures.append(
-                    f"{summary_key} = {actual!r} (could not parse as int)"
-                )
+                failures.append(f"{summary_key} = {actual!r} (could not parse as int)")
                 continue
             if actual_int > int(expected):
                 failures.append(
@@ -170,9 +166,7 @@ def _check_failures(data: dict[str, Any]) -> list[str]:
                 )
         elif kind == "bool":
             if bool(actual) != bool(expected):
-                failures.append(
-                    f"{summary_key} = {actual!r} (expected {expected!r})"
-                )
+                failures.append(f"{summary_key} = {actual!r} (expected {expected!r})")
         else:  # pragma: no cover -- defensive
             failures.append(f"{threshold_key}: unknown kind {kind!r}")
     return failures
@@ -203,9 +197,7 @@ def main(argv: list[str] | None = None) -> int:
     for f in failures:
         print(f"  - {f}")
     print()
-    print(
-        "(advisory mode -- not blocking. Re-run with --strict to gate CI.)"
-    )
+    print("(advisory mode -- not blocking. Re-run with --strict to gate CI.)")
     return 0
 
 

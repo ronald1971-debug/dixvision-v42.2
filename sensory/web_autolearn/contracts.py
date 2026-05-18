@@ -72,13 +72,8 @@ class SocialPost:
             raise ValueError("SocialPost.author must be non-empty")
         if not self.body:
             raise ValueError("SocialPost.body must be non-empty")
-        if (
-            self.published_ts_ns is not None
-            and self.published_ts_ns <= 0
-        ):
-            raise ValueError(
-                "SocialPost.published_ts_ns must be positive or None"
-            )
+        if self.published_ts_ns is not None and self.published_ts_ns <= 0:
+            raise ValueError("SocialPost.published_ts_ns must be positive or None")
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,9 +153,7 @@ class FilteredItem:
         if not self.reason:
             raise ValueError("FilteredItem.reason must be non-empty")
         if not 0.0 <= self.score <= 1.0:
-            raise ValueError(
-                "FilteredItem.score must be in [0.0, 1.0]"
-            )
+            raise ValueError("FilteredItem.score must be in [0.0, 1.0]")
 
 
 @dataclass(frozen=True, slots=True)
@@ -200,13 +193,9 @@ class CuratedItem:
         if not self.url:
             raise ValueError("CuratedItem.url must be non-empty")
         if not self.seed_topic:
-            raise ValueError(
-                "CuratedItem.seed_topic must be non-empty"
-            )
+            raise ValueError("CuratedItem.seed_topic must be non-empty")
         if not 0.0 <= self.score <= 1.0:
-            raise ValueError(
-                "CuratedItem.score must be in [0.0, 1.0]"
-            )
+            raise ValueError("CuratedItem.score must be in [0.0, 1.0]")
 
 
 __all__ = [

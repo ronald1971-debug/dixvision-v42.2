@@ -33,12 +33,7 @@ from evolution_engine.genetic.strategy_chromosome import (
 # Module file path / AST authority pins
 # ---------------------------------------------------------------------------
 
-_MODULE_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "evolution_engine"
-    / "genetic"
-    / "crossover.py"
-)
+_MODULE_PATH = Path(__file__).resolve().parents[1] / "evolution_engine" / "genetic" / "crossover.py"
 
 
 def _module_ast() -> ast.Module:
@@ -170,9 +165,7 @@ def test_does_not_construct_patch_proposal() -> None:
             }, f"forbidden typed-event constructor: {name}"
 
 
-def _attr_chain_starts_with(
-    node: ast.Attribute, allowed_roots: tuple[str, ...]
-) -> bool:
+def _attr_chain_starts_with(node: ast.Attribute, allowed_roots: tuple[str, ...]) -> bool:
     cur: ast.expr = node
     while isinstance(cur, ast.Attribute):
         cur = cur.value
@@ -191,9 +184,7 @@ def test_no_clock_or_io() -> None:
     }
     for node in ast.walk(tree):
         if isinstance(node, ast.Attribute):
-            assert node.attr not in forbidden_attrs, (
-                f"forbidden attribute call: {ast.dump(node)}"
-            )
+            assert node.attr not in forbidden_attrs, f"forbidden attribute call: {ast.dump(node)}"
 
 
 def test_module_is_pure_function_layer() -> None:
@@ -300,9 +291,7 @@ def test_validate_pair_compatible_rejects_strategy_id_mismatch(
 def test_validate_pair_compatible_rejects_spec_mismatch(
     parent_a: StrategyChromosome,
 ) -> None:
-    other = _chromosome(
-        (0.0, 0.0, 0.0, 0.0), specs=_continuous_specs(), strategy_id="strat-A"
-    )
+    other = _chromosome((0.0, 0.0, 0.0, 0.0), specs=_continuous_specs(), strategy_id="strat-A")
     with pytest.raises(CrossoverOperatorError, match="specs mismatch"):
         simulated_binary_crossover(
             parent_a=parent_a,
@@ -442,16 +431,28 @@ def test_sbx_returns_two_children(parent_a, parent_b) -> None:
 
 def test_sbx_is_deterministic(parent_a, parent_b) -> None:
     c1_run1, c2_run1 = simulated_binary_crossover(
-        parent_a=parent_a, parent_b=parent_b,
-        eta=20.0, seed=7, generation=3, individual=11,
+        parent_a=parent_a,
+        parent_b=parent_b,
+        eta=20.0,
+        seed=7,
+        generation=3,
+        individual=11,
     )
     c1_run2, c2_run2 = simulated_binary_crossover(
-        parent_a=parent_a, parent_b=parent_b,
-        eta=20.0, seed=7, generation=3, individual=11,
+        parent_a=parent_a,
+        parent_b=parent_b,
+        eta=20.0,
+        seed=7,
+        generation=3,
+        individual=11,
     )
     c1_run3, c2_run3 = simulated_binary_crossover(
-        parent_a=parent_a, parent_b=parent_b,
-        eta=20.0, seed=7, generation=3, individual=11,
+        parent_a=parent_a,
+        parent_b=parent_b,
+        eta=20.0,
+        seed=7,
+        generation=3,
+        individual=11,
     )
     assert chromosome_digest(c1_run1) == chromosome_digest(c1_run2) == chromosome_digest(c1_run3)
     assert chromosome_digest(c2_run1) == chromosome_digest(c2_run2) == chromosome_digest(c2_run3)
@@ -459,20 +460,32 @@ def test_sbx_is_deterministic(parent_a, parent_b) -> None:
 
 def test_sbx_seed_sensitivity(parent_a, parent_b) -> None:
     c1, _ = simulated_binary_crossover(
-        parent_a=parent_a, parent_b=parent_b,
-        eta=20.0, seed=1, generation=0, individual=0,
+        parent_a=parent_a,
+        parent_b=parent_b,
+        eta=20.0,
+        seed=1,
+        generation=0,
+        individual=0,
     )
     c1_other, _ = simulated_binary_crossover(
-        parent_a=parent_a, parent_b=parent_b,
-        eta=20.0, seed=999, generation=0, individual=0,
+        parent_a=parent_a,
+        parent_b=parent_b,
+        eta=20.0,
+        seed=999,
+        generation=0,
+        individual=0,
     )
     assert chromosome_digest(c1) != chromosome_digest(c1_other)
 
 
 def test_sbx_meta_keys_sorted(parent_a, parent_b) -> None:
     c1, _ = simulated_binary_crossover(
-        parent_a=parent_a, parent_b=parent_b,
-        eta=20.0, seed=1, generation=0, individual=0,
+        parent_a=parent_a,
+        parent_b=parent_b,
+        eta=20.0,
+        seed=1,
+        generation=0,
+        individual=0,
         extra_meta={"trial": "alpha"},
     )
     keys = list(c1.meta.keys())
@@ -490,8 +503,12 @@ def test_sbx_meta_keys_sorted(parent_a, parent_b) -> None:
 
 def test_sbx_children_are_feasible(parent_a, parent_b) -> None:
     c1, c2 = simulated_binary_crossover(
-        parent_a=parent_a, parent_b=parent_b,
-        eta=20.0, seed=12345, generation=0, individual=0,
+        parent_a=parent_a,
+        parent_b=parent_b,
+        eta=20.0,
+        seed=12345,
+        generation=0,
+        individual=0,
     )
     for child in (c1, c2):
         for spec, value in zip(child.specs, child.values, strict=True):
@@ -506,8 +523,12 @@ def test_sbx_identical_parents_yield_identical_children() -> None:
 
     parent = _chromosome((0.0, 1e-3, 16.0))
     c1, c2 = simulated_binary_crossover(
-        parent_a=parent, parent_b=parent,
-        eta=20.0, seed=1, generation=0, individual=0,
+        parent_a=parent,
+        parent_b=parent,
+        eta=20.0,
+        seed=1,
+        generation=0,
+        individual=0,
     )
     # CONTINUOUS / LOG_CONTINUOUS collapse exactly; INTEGER passes through round()
     assert c1.values[0] == pytest.approx(0.0, abs=1e-12)
@@ -532,8 +553,12 @@ def test_sbx_eta_zero_is_arithmetic_recombination() -> None:
     n = 200
     for i in range(n):
         c1, c2 = simulated_binary_crossover(
-            parent_a=parent_a, parent_b=parent_b,
-            eta=0.0, seed=1, generation=0, individual=i,
+            parent_a=parent_a,
+            parent_b=parent_b,
+            eta=0.0,
+            seed=1,
+            generation=0,
+            individual=i,
         )
         s += c1.values[0] + c2.values[0]
     mean = s / (2 * n)
@@ -548,8 +573,12 @@ def test_sbx_eta_zero_is_arithmetic_recombination() -> None:
 
 def test_blend_returns_two_children(parent_a, parent_b) -> None:
     c1, c2 = blend_crossover(
-        parent_a=parent_a, parent_b=parent_b,
-        alpha=0.5, seed=1, generation=0, individual=0,
+        parent_a=parent_a,
+        parent_b=parent_b,
+        alpha=0.5,
+        seed=1,
+        generation=0,
+        individual=0,
     )
     assert isinstance(c1, StrategyChromosome)
     assert isinstance(c2, StrategyChromosome)
@@ -558,12 +587,20 @@ def test_blend_returns_two_children(parent_a, parent_b) -> None:
 
 def test_blend_is_deterministic(parent_a, parent_b) -> None:
     c1_a, c2_a = blend_crossover(
-        parent_a=parent_a, parent_b=parent_b,
-        alpha=0.5, seed=5, generation=2, individual=4,
+        parent_a=parent_a,
+        parent_b=parent_b,
+        alpha=0.5,
+        seed=5,
+        generation=2,
+        individual=4,
     )
     c1_b, c2_b = blend_crossover(
-        parent_a=parent_a, parent_b=parent_b,
-        alpha=0.5, seed=5, generation=2, individual=4,
+        parent_a=parent_a,
+        parent_b=parent_b,
+        alpha=0.5,
+        seed=5,
+        generation=2,
+        individual=4,
     )
     assert chromosome_digest(c1_a) == chromosome_digest(c1_b)
     assert chromosome_digest(c2_a) == chromosome_digest(c2_b)
@@ -581,8 +618,12 @@ def test_blend_alpha_zero_is_arithmetic_recombination() -> None:
     )
     for i in range(50):
         c1, c2 = blend_crossover(
-            parent_a=parent_a, parent_b=parent_b,
-            alpha=0.0, seed=1, generation=0, individual=i,
+            parent_a=parent_a,
+            parent_b=parent_b,
+            alpha=0.0,
+            seed=1,
+            generation=0,
+            individual=i,
         )
         for c in (c1, c2):
             assert -1.0 <= c.values[0] <= 5.0
@@ -603,8 +644,12 @@ def test_blend_alpha_extends_range() -> None:
     saw_above_max_parent = False
     for i in range(200):
         c1, _ = blend_crossover(
-            parent_a=parent_a, parent_b=parent_b,
-            alpha=0.5, seed=1, generation=0, individual=i,
+            parent_a=parent_a,
+            parent_b=parent_b,
+            alpha=0.5,
+            seed=1,
+            generation=0,
+            individual=i,
         )
         if c1.values[0] < 0.0:
             saw_below_min_parent = True
@@ -618,8 +663,12 @@ def test_blend_alpha_extends_range() -> None:
 def test_blend_children_are_feasible(parent_a, parent_b) -> None:
     for i in range(20):
         c1, c2 = blend_crossover(
-            parent_a=parent_a, parent_b=parent_b,
-            alpha=0.3, seed=99, generation=0, individual=i,
+            parent_a=parent_a,
+            parent_b=parent_b,
+            alpha=0.3,
+            seed=99,
+            generation=0,
+            individual=i,
         )
         for child in (c1, c2):
             for spec, value in zip(child.specs, child.values, strict=True):
@@ -631,8 +680,12 @@ def test_blend_children_are_feasible(parent_a, parent_b) -> None:
 def test_blend_identical_parents_yield_identical_children() -> None:
     parent = _chromosome((0.5, 1e-2, 32.0))
     c1, c2 = blend_crossover(
-        parent_a=parent, parent_b=parent,
-        alpha=0.5, seed=1, generation=0, individual=0,
+        parent_a=parent,
+        parent_b=parent,
+        alpha=0.5,
+        seed=1,
+        generation=0,
+        individual=0,
     )
     # identical parents collapse for every alpha (algebraic identity)
     for child in (c1, c2):
@@ -643,8 +696,12 @@ def test_blend_identical_parents_yield_identical_children() -> None:
 
 def test_blend_meta_includes_alpha(parent_a, parent_b) -> None:
     c1, _ = blend_crossover(
-        parent_a=parent_a, parent_b=parent_b,
-        alpha=0.25, seed=1, generation=0, individual=0,
+        parent_a=parent_a,
+        parent_b=parent_b,
+        alpha=0.25,
+        seed=1,
+        generation=0,
+        individual=0,
     )
     assert c1.meta["operator"] == OPERATOR_BLEND
     assert "alpha" in c1.meta
@@ -657,8 +714,11 @@ def test_blend_meta_includes_alpha(parent_a, parent_b) -> None:
 
 def test_two_point_returns_two_children(parent_a, parent_b) -> None:
     c1, c2 = two_point_crossover(
-        parent_a=parent_a, parent_b=parent_b,
-        seed=1, generation=0, individual=0,
+        parent_a=parent_a,
+        parent_b=parent_b,
+        seed=1,
+        generation=0,
+        individual=0,
     )
     assert isinstance(c1, StrategyChromosome)
     assert isinstance(c2, StrategyChromosome)
@@ -666,12 +726,18 @@ def test_two_point_returns_two_children(parent_a, parent_b) -> None:
 
 def test_two_point_is_deterministic(parent_a, parent_b) -> None:
     c1_a, c2_a = two_point_crossover(
-        parent_a=parent_a, parent_b=parent_b,
-        seed=10, generation=5, individual=2,
+        parent_a=parent_a,
+        parent_b=parent_b,
+        seed=10,
+        generation=5,
+        individual=2,
     )
     c1_b, c2_b = two_point_crossover(
-        parent_a=parent_a, parent_b=parent_b,
-        seed=10, generation=5, individual=2,
+        parent_a=parent_a,
+        parent_b=parent_b,
+        seed=10,
+        generation=5,
+        individual=2,
     )
     assert chromosome_digest(c1_a) == chromosome_digest(c1_b)
     assert chromosome_digest(c2_a) == chromosome_digest(c2_b)
@@ -682,8 +748,11 @@ def test_two_point_is_deterministic(parent_a, parent_b) -> None:
 def test_two_point_cuts_are_ordered(parent_a, parent_b) -> None:
     for i in range(50):
         c1, _ = two_point_crossover(
-            parent_a=parent_a, parent_b=parent_b,
-            seed=42, generation=0, individual=i,
+            parent_a=parent_a,
+            parent_b=parent_b,
+            seed=42,
+            generation=0,
+            individual=i,
         )
         lo = int(c1.meta["cut_lo"])
         hi = int(c1.meta["cut_hi"])
@@ -698,8 +767,11 @@ def test_two_point_swaps_segment_only() -> None:
     a = _chromosome((1.0, 2.0, 3.0, 4.0), specs=specs)
     b = _chromosome((-1.0, -2.0, -3.0, -4.0), specs=specs)
     c1, c2 = two_point_crossover(
-        parent_a=a, parent_b=b,
-        seed=1, generation=0, individual=0,
+        parent_a=a,
+        parent_b=b,
+        seed=1,
+        generation=0,
+        individual=0,
     )
     lo = int(c1.meta["cut_lo"])
     hi = int(c1.meta["cut_hi"])
@@ -721,8 +793,11 @@ def test_two_point_handles_dimension_one() -> None:
     b = _chromosome((0.75,), specs=single_spec)
     for i in range(20):
         c1, c2 = two_point_crossover(
-            parent_a=a, parent_b=b,
-            seed=1, generation=0, individual=i,
+            parent_a=a,
+            parent_b=b,
+            seed=1,
+            generation=0,
+            individual=i,
         )
         for child in (c1, c2):
             assert child.dimensionality == 1
@@ -731,8 +806,11 @@ def test_two_point_handles_dimension_one() -> None:
 
 def test_two_point_meta_includes_cuts(parent_a, parent_b) -> None:
     c1, _ = two_point_crossover(
-        parent_a=parent_a, parent_b=parent_b,
-        seed=1, generation=0, individual=0,
+        parent_a=parent_a,
+        parent_b=parent_b,
+        seed=1,
+        generation=0,
+        individual=0,
     )
     assert c1.meta["operator"] == OPERATOR_TWO_POINT
     assert "cut_lo" in c1.meta
@@ -750,8 +828,11 @@ def test_two_point_preserves_integer_kind_exactly() -> None:
     a = _chromosome((100.0, 8.0), specs=specs)
     b = _chromosome((300.0, 16.0), specs=specs)
     c1, c2 = two_point_crossover(
-        parent_a=a, parent_b=b,
-        seed=1, generation=0, individual=0,
+        parent_a=a,
+        parent_b=b,
+        seed=1,
+        generation=0,
+        individual=0,
     )
     for child in (c1, c2):
         for value in child.values:
@@ -761,8 +842,11 @@ def test_two_point_preserves_integer_kind_exactly() -> None:
 def test_two_point_children_are_feasible(parent_a, parent_b) -> None:
     for i in range(20):
         c1, c2 = two_point_crossover(
-            parent_a=parent_a, parent_b=parent_b,
-            seed=7, generation=0, individual=i,
+            parent_a=parent_a,
+            parent_b=parent_b,
+            seed=7,
+            generation=0,
+            individual=i,
         )
         for child in (c1, c2):
             for spec, value in zip(child.specs, child.values, strict=True):
@@ -778,22 +862,35 @@ def test_three_run_byte_identical_replay(parent_a, parent_b) -> None:
     digests: list[tuple[str, str]] = []
     for _ in range(3):
         c1_sbx, c2_sbx = simulated_binary_crossover(
-            parent_a=parent_a, parent_b=parent_b,
-            eta=20.0, seed=2024, generation=4, individual=8,
+            parent_a=parent_a,
+            parent_b=parent_b,
+            eta=20.0,
+            seed=2024,
+            generation=4,
+            individual=8,
         )
         c1_bl, c2_bl = blend_crossover(
-            parent_a=parent_a, parent_b=parent_b,
-            alpha=0.5, seed=2024, generation=4, individual=8,
+            parent_a=parent_a,
+            parent_b=parent_b,
+            alpha=0.5,
+            seed=2024,
+            generation=4,
+            individual=8,
         )
         c1_tp, c2_tp = two_point_crossover(
-            parent_a=parent_a, parent_b=parent_b,
-            seed=2024, generation=4, individual=8,
+            parent_a=parent_a,
+            parent_b=parent_b,
+            seed=2024,
+            generation=4,
+            individual=8,
         )
         digests.append(
             (
                 chromosome_digest(c1_sbx) + chromosome_digest(c2_sbx),
-                chromosome_digest(c1_bl) + chromosome_digest(c2_bl)
-                + chromosome_digest(c1_tp) + chromosome_digest(c2_tp),
+                chromosome_digest(c1_bl)
+                + chromosome_digest(c2_bl)
+                + chromosome_digest(c1_tp)
+                + chromosome_digest(c2_tp),
             )
         )
     assert digests[0] == digests[1] == digests[2]
@@ -806,13 +903,21 @@ def test_extra_meta_key_order_invariance(parent_a, parent_b) -> None:
     forward = {"a": "1", "b": "2", "c": "3"}
     reverse = {"c": "3", "b": "2", "a": "1"}
     c1_fwd, _ = blend_crossover(
-        parent_a=parent_a, parent_b=parent_b,
-        alpha=0.3, seed=1, generation=0, individual=0,
+        parent_a=parent_a,
+        parent_b=parent_b,
+        alpha=0.3,
+        seed=1,
+        generation=0,
+        individual=0,
         extra_meta=forward,
     )
     c1_rev, _ = blend_crossover(
-        parent_a=parent_a, parent_b=parent_b,
-        alpha=0.3, seed=1, generation=0, individual=0,
+        parent_a=parent_a,
+        parent_b=parent_b,
+        alpha=0.3,
+        seed=1,
+        generation=0,
+        individual=0,
         extra_meta=reverse,
     )
     assert chromosome_digest(c1_fwd) == chromosome_digest(c1_rev)
@@ -829,8 +934,11 @@ def test_version_bumps_per_parent_side(parent_a, parent_b) -> None:
         (two_point_crossover, {}),
     ]:
         c1, c2 = op_call(
-            parent_a=parent_a, parent_b=parent_b,
-            seed=1, generation=0, individual=0,
+            parent_a=parent_a,
+            parent_b=parent_b,
+            seed=1,
+            generation=0,
+            individual=0,
             **kwargs,  # type: ignore[arg-type]
         )
         assert c1.version == parent_a.version + 1

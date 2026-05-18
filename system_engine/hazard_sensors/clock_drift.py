@@ -40,11 +40,7 @@ class ClockDriftSensor:
         if self._armed:
             return ()
         self._armed = True
-        sev = (
-            HazardSeverity.CRITICAL
-            if drift > self._tolerance_ns * 4
-            else HazardSeverity.HIGH
-        )
+        sev = HazardSeverity.CRITICAL if drift > self._tolerance_ns * 4 else HazardSeverity.HIGH
         return (
             HazardEvent(
                 ts_ns=ts_ns,

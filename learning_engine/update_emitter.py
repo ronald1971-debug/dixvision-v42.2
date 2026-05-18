@@ -60,9 +60,7 @@ class UpdateEmitter:
             meta=dict(update.meta),
         )
 
-    def emit_many(
-        self, updates: tuple[LearningUpdate, ...]
-    ) -> tuple[SystemEvent, ...]:
+    def emit_many(self, updates: tuple[LearningUpdate, ...]) -> tuple[SystemEvent, ...]:
         return tuple(self.emit(u) for u in updates)
 
     @staticmethod

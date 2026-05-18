@@ -94,8 +94,7 @@ class ProviderTransportSpec:
         ):
             if not isinstance(value, str) or not value:
                 raise ProviderTransportError(
-                    f"ProviderTransportSpec.{field_name} must be a non-empty"
-                    f" str, got {value!r}"
+                    f"ProviderTransportSpec.{field_name} must be a non-empty str, got {value!r}"
                 )
         if self.family not in _ALLOWED_FAMILIES:
             raise ProviderTransportError(
@@ -109,8 +108,7 @@ class ProviderTransportSpec:
             )
         if not self.base_url.startswith("https://"):
             raise ProviderTransportError(
-                f"ProviderTransportSpec.base_url must be https://, got"
-                f" {self.base_url!r}"
+                f"ProviderTransportSpec.base_url must be https://, got {self.base_url!r}"
             )
 
 
@@ -191,8 +189,7 @@ def spec_for_provider(provider: str) -> ProviderTransportSpec:
         if spec.provider == provider:
             return spec
     raise ProviderTransportError(
-        f"spec_for_provider: no transport spec wired for provider"
-        f" {provider!r}"
+        f"spec_for_provider: no transport spec wired for provider {provider!r}"
     )
 
 

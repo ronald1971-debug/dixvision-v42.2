@@ -440,9 +440,7 @@ def test_three_run_byte_identical_proposal() -> None:
             clip_fraction=0.0,
             total_timesteps=0,
         ),
-        TorchRLPolicyArtifact(
-            backend="x", content_digest="0", obs_dim=1, action_dim=1
-        ),
+        TorchRLPolicyArtifact(backend="x", content_digest="0", obs_dim=1, action_dim=1),
     ],
 )
 def test_value_objects_frozen_and_slotted(obj: object) -> None:
@@ -501,12 +499,7 @@ def test_factory_raises_when_dep_missing(monkeypatch: pytest.MonkeyPatch) -> Non
 # AST guards — no top-level torch/torchrl/tensordict imports
 # ---------------------------------------------------------------------------
 _THIS = pathlib.Path(__file__).resolve()
-_MODULE = (
-    _THIS.parents[1]
-    / "learning_engine"
-    / "lanes"
-    / "policy_distillation_torchrl.py"
-)
+_MODULE = _THIS.parents[1] / "learning_engine" / "lanes" / "policy_distillation_torchrl.py"
 
 
 def _module_tree() -> ast.Module:
@@ -546,10 +539,7 @@ def test_torch_imports_confined_to_factory() -> None:
     tree = _module_tree()
     factory_node: ast.FunctionDef | None = None
     for node in tree.body:
-        if (
-            isinstance(node, ast.FunctionDef)
-            and node.name == "torchrl_distiller_factory"
-        ):
+        if isinstance(node, ast.FunctionDef) and node.name == "torchrl_distiller_factory":
             factory_node = node
             break
     assert factory_node is not None
@@ -568,6 +558,7 @@ def test_torch_imports_confined_to_factory() -> None:
 
 def test_module_exports_canonical_symbols() -> None:
     from learning_engine.lanes import policy_distillation_torchrl as mod
+
     for sym in (
         "PolicyDistillationTorchRL",
         "ActorCriticConfig",

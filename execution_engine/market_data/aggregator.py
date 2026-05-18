@@ -87,13 +87,9 @@ class Trade:
 
     def __post_init__(self) -> None:
         if self.side not in ("BUY", "SELL"):
-            raise ValueError(
-                f"Trade.side must be 'BUY' or 'SELL', got {self.side!r}"
-            )
+            raise ValueError(f"Trade.side must be 'BUY' or 'SELL', got {self.side!r}")
         if self.price <= 0:
-            raise ValueError(
-                f"Trade.price must be > 0, got {self.price!r}"
-            )
+            raise ValueError(f"Trade.price must be > 0, got {self.price!r}")
         if self.qty <= 0:
             raise ValueError(f"Trade.qty must be > 0, got {self.qty!r}")
         if not self.symbol:
@@ -111,13 +107,9 @@ class OrderBookLevel:
 
     def __post_init__(self) -> None:
         if self.price <= 0:
-            raise ValueError(
-                f"OrderBookLevel.price must be > 0, got {self.price!r}"
-            )
+            raise ValueError(f"OrderBookLevel.price must be > 0, got {self.price!r}")
         if self.qty < 0:
-            raise ValueError(
-                f"OrderBookLevel.qty must be >= 0, got {self.qty!r}"
-            )
+            raise ValueError(f"OrderBookLevel.qty must be >= 0, got {self.qty!r}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,22 +134,17 @@ class OrderBookSnapshot:
             raise ValueError("OrderBookSnapshot.symbol must be non-empty")
         if self.last_update_id < 0:
             raise ValueError(
-                "OrderBookSnapshot.last_update_id must be >= 0, "
-                f"got {self.last_update_id!r}"
+                f"OrderBookSnapshot.last_update_id must be >= 0, got {self.last_update_id!r}"
             )
         # Sort invariants — checked, not auto-sorted, so the caller
         # explicitly funnels through ``_make_snapshot`` (or apply_*
         # which both go through it).
         for i in range(1, len(self.bids)):
             if self.bids[i - 1].price < self.bids[i].price:
-                raise ValueError(
-                    "OrderBookSnapshot.bids must be sorted price DESC"
-                )
+                raise ValueError("OrderBookSnapshot.bids must be sorted price DESC")
         for i in range(1, len(self.asks)):
             if self.asks[i - 1].price > self.asks[i].price:
-                raise ValueError(
-                    "OrderBookSnapshot.asks must be sorted price ASC"
-                )
+                raise ValueError("OrderBookSnapshot.asks must be sorted price ASC")
 
     def best_bid(self) -> OrderBookLevel | None:
         """Return the highest-price bid (or ``None`` if the bid side is empty)."""
@@ -199,13 +186,10 @@ class BookDelta:
             raise ValueError("BookDelta.symbol must be non-empty")
         if self.first_update_id < 0:
             raise ValueError(
-                "BookDelta.first_update_id must be >= 0, "
-                f"got {self.first_update_id!r}"
+                f"BookDelta.first_update_id must be >= 0, got {self.first_update_id!r}"
             )
         if self.final_update_id < self.first_update_id:
-            raise ValueError(
-                "BookDelta.final_update_id must be >= first_update_id"
-            )
+            raise ValueError("BookDelta.final_update_id must be >= first_update_id")
 
 
 @dataclass(frozen=True, slots=True)
@@ -289,9 +273,7 @@ def _parse_levels(
     return tuple(out)
 
 
-def parse_binance_trade(
-    payload: Any, *, ts_ns: int, venue: str = "BINANCE"
-) -> Trade | None:
+def parse_binance_trade(payload: Any, *, ts_ns: int, venue: str = "BINANCE") -> Trade | None:
     """Project one Binance ``trade`` WS frame into a :class:`Trade`.
 
     Frame shape (per Binance spot docs)::
@@ -435,9 +417,7 @@ def _merge_levels(
             book.pop(upd.price, None)
         else:
             book[upd.price] = upd.qty
-    levels = [
-        OrderBookLevel(price=price, qty=qty) for price, qty in book.items()
-    ]
+    levels = [OrderBookLevel(price=price, qty=qty) for price, qty in book.items()]
     levels.sort(
         key=lambda lvl: (lvl.price, lvl.qty),
         reverse=descending,
@@ -522,9 +502,7 @@ class OrderBookAggregator:
 
     def __init__(self, *, symbol: str) -> None:
         if not symbol:
-            raise ValueError(
-                "OrderBookAggregator.symbol must be non-empty"
-            )
+            raise ValueError("OrderBookAggregator.symbol must be non-empty")
         self._symbol = symbol
         self._snapshot: OrderBookSnapshot | None = None
 
@@ -580,9 +558,7 @@ class OrderBookAggregator:
         rationale as :meth:`apply_snapshot`).
         """
         if self._snapshot is None:
-            raise RuntimeError(
-                "OrderBookAggregator.apply_delta: must apply_snapshot first"
-            )
+            raise RuntimeError("OrderBookAggregator.apply_delta: must apply_snapshot first")
         if delta.symbol != self._symbol:
             raise ValueError(
                 f"OrderBookAggregator({self._symbol!r}).apply_delta: "
@@ -593,9 +569,7 @@ class OrderBookAggregator:
             return ApplyResult(snapshot=None, gap=None, stale=True)
         # Clean-window check: the *expected* next id (``last_id+1``)
         # must lie inside ``[first_update_id, final_update_id]``.
-        if not (
-            delta.first_update_id <= last_id + 1 <= delta.final_update_id
-        ):
+        if not (delta.first_update_id <= last_id + 1 <= delta.final_update_id):
             gap = BookGap(
                 ts_ns=delta.ts_ns,
                 symbol=delta.symbol,
@@ -605,12 +579,8 @@ class OrderBookAggregator:
                 delta_final_update_id=delta.final_update_id,
             )
             return ApplyResult(snapshot=None, gap=gap, stale=False)
-        new_bids = _merge_levels(
-            self._snapshot.bids, delta.bid_updates, descending=True
-        )
-        new_asks = _merge_levels(
-            self._snapshot.asks, delta.ask_updates, descending=False
-        )
+        new_bids = _merge_levels(self._snapshot.bids, delta.bid_updates, descending=True)
+        new_asks = _merge_levels(self._snapshot.asks, delta.ask_updates, descending=False)
         new_snapshot = OrderBookSnapshot(
             ts_ns=delta.ts_ns,
             symbol=self._symbol,
@@ -659,21 +629,13 @@ def next_reconnect_delay_s(
     want to catch loudly rather than silently degrade to a hot loop.
     """
     if attempt < 0:
-        raise ValueError(
-            f"next_reconnect_delay_s: attempt must be >= 0, got {attempt!r}"
-        )
+        raise ValueError(f"next_reconnect_delay_s: attempt must be >= 0, got {attempt!r}")
     if floor_s <= 0:
-        raise ValueError(
-            f"next_reconnect_delay_s: floor_s must be > 0, got {floor_s!r}"
-        )
+        raise ValueError(f"next_reconnect_delay_s: floor_s must be > 0, got {floor_s!r}")
     if ceiling_s < floor_s:
-        raise ValueError(
-            "next_reconnect_delay_s: ceiling_s must be >= floor_s"
-        )
+        raise ValueError("next_reconnect_delay_s: ceiling_s must be >= floor_s")
     if factor <= 1.0:
-        raise ValueError(
-            f"next_reconnect_delay_s: factor must be > 1.0, got {factor!r}"
-        )
+        raise ValueError(f"next_reconnect_delay_s: factor must be > 1.0, got {factor!r}")
     delay = floor_s * (factor**attempt)
     if delay > ceiling_s:
         return ceiling_s

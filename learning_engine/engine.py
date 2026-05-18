@@ -45,9 +45,7 @@ class LearningEngine(OfflineEngine):
         cron: str = "0 */1 * * *",
         is_active_fn: Callable[[], bool] | None = None,
     ) -> None:
-        self.plugin_slots: Mapping[str, Sequence[Plugin]] = dict(
-            plugin_slots or {}
-        )
+        self.plugin_slots: Mapping[str, Sequence[Plugin]] = dict(plugin_slots or {})
         self._cron = cron
         self._is_active_fn = is_active_fn
 

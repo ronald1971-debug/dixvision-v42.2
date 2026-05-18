@@ -217,15 +217,11 @@ def _derive_agent_seed(scenario_ts_ns: int, agent_id: AgentID) -> int:
 
 def _validate_agent_id(agent_id: AgentID) -> None:
     if not isinstance(agent_id, str):
-        raise TypeError(
-            f"MultiAgentDIXEnv agent_id must be str, got {type(agent_id).__name__}"
-        )
+        raise TypeError(f"MultiAgentDIXEnv agent_id must be str, got {type(agent_id).__name__}")
     if not agent_id:
         raise ValueError("MultiAgentDIXEnv agent_id must be non-empty")
     if len(agent_id) > 64:
-        raise ValueError(
-            f"MultiAgentDIXEnv agent_id must be <= 64 chars, got {len(agent_id)!r}"
-        )
+        raise ValueError(f"MultiAgentDIXEnv agent_id must be <= 64 chars, got {len(agent_id)!r}")
 
 
 # ---------------------------------------------------------------------------
@@ -291,9 +287,7 @@ class MultiAgentTrainerConfig:
                 f"(0.0, 1.0], got {self.gamma!r}"
             )
         if not self.target_strategy_id:
-            raise ValueError(
-                "MultiAgentTrainerConfig.target_strategy_id must be non-empty"
-            )
+            raise ValueError("MultiAgentTrainerConfig.target_strategy_id must be non-empty")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -312,9 +306,7 @@ class AgentMetrics:
     def __post_init__(self) -> None:
         _validate_agent_id(self.agent_id)
         if self.seed < 0:
-            raise ValueError(
-                f"AgentMetrics.seed must be non-negative, got {self.seed!r}"
-            )
+            raise ValueError(f"AgentMetrics.seed must be non-negative, got {self.seed!r}")
         if self.episodes_completed < 0:
             raise ValueError(
                 "AgentMetrics.episodes_completed must be non-negative, "
@@ -327,26 +319,20 @@ class AgentMetrics:
             )
         if not math.isfinite(self.mean_episode_reward):
             raise ValueError(
-                "AgentMetrics.mean_episode_reward must be finite, "
-                f"got {self.mean_episode_reward!r}"
+                f"AgentMetrics.mean_episode_reward must be finite, got {self.mean_episode_reward!r}"
             )
         if not math.isfinite(self.cumulative_pnl_usd):
             raise ValueError(
-                "AgentMetrics.cumulative_pnl_usd must be finite, "
-                f"got {self.cumulative_pnl_usd!r}"
+                f"AgentMetrics.cumulative_pnl_usd must be finite, got {self.cumulative_pnl_usd!r}"
             )
-        if (
-            not math.isfinite(self.terminal_drawdown_usd)
-            or self.terminal_drawdown_usd < 0.0
-        ):
+        if not math.isfinite(self.terminal_drawdown_usd) or self.terminal_drawdown_usd < 0.0:
             raise ValueError(
                 "AgentMetrics.terminal_drawdown_usd must be a non-negative "
                 f"finite number, got {self.terminal_drawdown_usd!r}"
             )
         if self.fills_count < 0:
             raise ValueError(
-                "AgentMetrics.fills_count must be non-negative, "
-                f"got {self.fills_count!r}"
+                f"AgentMetrics.fills_count must be non-negative, got {self.fills_count!r}"
             )
 
 
@@ -371,13 +357,11 @@ class MultiAgentPolicyArtifact:
             raise ValueError("MultiAgentPolicyArtifact.framework must be non-empty")
         if len(self.digest) != 16:
             raise ValueError(
-                "MultiAgentPolicyArtifact.digest must be a 16-hex-char digest, "
-                f"got {self.digest!r}"
+                f"MultiAgentPolicyArtifact.digest must be a 16-hex-char digest, got {self.digest!r}"
             )
         if not all(c in "0123456789abcdef" for c in self.digest):
             raise ValueError(
-                "MultiAgentPolicyArtifact.digest must be lowercase hex, "
-                f"got {self.digest!r}"
+                f"MultiAgentPolicyArtifact.digest must be lowercase hex, got {self.digest!r}"
             )
 
 
@@ -431,8 +415,7 @@ class MultiAgentTrainResult:
             )
         if len(set(agent_ids)) != len(agent_ids):
             raise ValueError(
-                "MultiAgentTrainResult.per_agent contains duplicate "
-                f"agent_id(s) in {agent_ids!r}"
+                f"MultiAgentTrainResult.per_agent contains duplicate agent_id(s) in {agent_ids!r}"
             )
         for i, outcome in enumerate(self.outcomes):
             if outcome.scenario_id != self.scenario.scenario_id:
@@ -511,8 +494,7 @@ class MultiAgentDIXEnv:
     ) -> None:
         if not isinstance(scenario, RealityScenario):
             raise TypeError(
-                "MultiAgentDIXEnv scenario must be RealityScenario, got "
-                f"{type(scenario).__name__}"
+                f"MultiAgentDIXEnv scenario must be RealityScenario, got {type(scenario).__name__}"
             )
         if not isinstance(episode_config, EpisodeConfig):
             raise TypeError(
@@ -520,9 +502,7 @@ class MultiAgentDIXEnv:
                 f"{type(episode_config).__name__}"
             )
         if not dynamics_per_agent:
-            raise ValueError(
-                "MultiAgentDIXEnv dynamics_per_agent must be non-empty"
-            )
+            raise ValueError("MultiAgentDIXEnv dynamics_per_agent must be non-empty")
         if len(dynamics_per_agent) < MIN_AGENTS:
             raise ValueError(
                 "MultiAgentDIXEnv dynamics_per_agent must contain at least "
@@ -547,12 +527,10 @@ class MultiAgentDIXEnv:
 
         self._agents: tuple[AgentID, ...] = tuple(agent_ids)
         self._envs: dict[AgentID, DIXStrategyEnv] = {
-            agent_id: DIXStrategyEnv(dynamics_per_agent[agent_id])
-            for agent_id in agent_ids
+            agent_id: DIXStrategyEnv(dynamics_per_agent[agent_id]) for agent_id in agent_ids
         }
         self._seeds: dict[AgentID, int] = {
-            agent_id: _derive_agent_seed(scenario.ts_ns, agent_id)
-            for agent_id in agent_ids
+            agent_id: _derive_agent_seed(scenario.ts_ns, agent_id) for agent_id in agent_ids
         }
         self._scenario: RealityScenario = scenario
         self._episode_config: EpisodeConfig = episode_config
@@ -584,12 +562,12 @@ class MultiAgentDIXEnv:
         ``scenario.ts_ns`` + ``agent_id``."""
 
         if agent_id not in self._seeds:
-            raise KeyError(
-                f"MultiAgentDIXEnv.seed_for unknown agent_id {agent_id!r}"
-            )
+            raise KeyError(f"MultiAgentDIXEnv.seed_for unknown agent_id {agent_id!r}")
         return self._seeds[agent_id]
 
-    def reset(self) -> tuple[
+    def reset(
+        self,
+    ) -> tuple[
         Mapping[AgentID, Observation],
         Mapping[AgentID, Mapping[str, Any]],
     ]:
@@ -631,14 +609,11 @@ class MultiAgentDIXEnv:
         """
 
         if not self._started:
-            raise RuntimeError(
-                "MultiAgentDIXEnv.step called before reset()"
-            )
+            raise RuntimeError("MultiAgentDIXEnv.step called before reset()")
         unknown = set(action_dict.keys()) - set(self._agents)
         if unknown:
             raise KeyError(
-                f"MultiAgentDIXEnv.step received unknown agent_id(s): "
-                f"{sorted(unknown)!r}"
+                f"MultiAgentDIXEnv.step received unknown agent_id(s): {sorted(unknown)!r}"
             )
 
         obs_dict: dict[AgentID, Observation] = {}
@@ -651,10 +626,7 @@ class MultiAgentDIXEnv:
             if agent_id in self._terminated_set or agent_id in self._truncated_set:
                 continue
             if agent_id not in action_dict:
-                raise KeyError(
-                    f"MultiAgentDIXEnv.step missing action for live agent "
-                    f"{agent_id!r}"
-                )
+                raise KeyError(f"MultiAgentDIXEnv.step missing action for live agent {agent_id!r}")
             env = self._envs[agent_id]
             action = action_dict[agent_id]
             obs, reward, terminated, truncated, info = env.step(action)
@@ -670,10 +642,9 @@ class MultiAgentDIXEnv:
 
         finished = self._terminated_set | self._truncated_set
         terminated_dict["__all__"] = len(self._terminated_set) == len(self._agents)
-        truncated_dict["__all__"] = (
-            len(finished) == len(self._agents)
-            and len(self._terminated_set) < len(self._agents)
-        )
+        truncated_dict["__all__"] = len(finished) == len(self._agents) and len(
+            self._terminated_set
+        ) < len(self._agents)
         return (
             dict(sorted(obs_dict.items())),
             dict(sorted(reward_dict.items())),
@@ -768,13 +739,10 @@ class RLLibTrainer:
 
         if not isinstance(proposal_id, str):
             raise TypeError(
-                "RLLibTrainer.train proposal_id must be str, got "
-                f"{type(proposal_id).__name__}"
+                f"RLLibTrainer.train proposal_id must be str, got {type(proposal_id).__name__}"
             )
         if not proposal_id:
-            raise ValueError(
-                "RLLibTrainer.train proposal_id must be non-empty"
-            )
+            raise ValueError("RLLibTrainer.train proposal_id must be non-empty")
         if len(proposal_id) > MAX_PROPOSAL_ID_LEN:
             raise ValueError(
                 "RLLibTrainer.train proposal_id must be <= "
@@ -799,9 +767,7 @@ class RLLibTrainer:
 
         # Re-sort by agent_id ascending — RLLib worker scheduling order
         # MUST NOT leak into the public surface.
-        per_agent: tuple[AgentMetrics, ...] = tuple(
-            sorted(per_agent_raw, key=lambda m: m.agent_id)
-        )
+        per_agent: tuple[AgentMetrics, ...] = tuple(sorted(per_agent_raw, key=lambda m: m.agent_id))
         artifacts: tuple[MultiAgentPolicyArtifact, ...] = tuple(
             sorted(artifacts_raw, key=lambda a: a.agent_id)
         )
@@ -895,33 +861,20 @@ def _compute_policy_digest(
         lines.append(f"config_meta[{key!r}]={config.meta[key]!r}")
     for metric in per_agent:
         lines.append(f"agent[{metric.agent_id!r}].seed={metric.seed!r}")
+        lines.append(f"agent[{metric.agent_id!r}].episodes_completed={metric.episodes_completed!r}")
         lines.append(
-            f"agent[{metric.agent_id!r}].episodes_completed="
-            f"{metric.episodes_completed!r}"
+            f"agent[{metric.agent_id!r}].total_steps_executed={metric.total_steps_executed!r}"
         )
         lines.append(
-            f"agent[{metric.agent_id!r}].total_steps_executed="
-            f"{metric.total_steps_executed!r}"
+            f"agent[{metric.agent_id!r}].mean_episode_reward={metric.mean_episode_reward!r}"
         )
+        lines.append(f"agent[{metric.agent_id!r}].cumulative_pnl_usd={metric.cumulative_pnl_usd!r}")
         lines.append(
-            f"agent[{metric.agent_id!r}].mean_episode_reward="
-            f"{metric.mean_episode_reward!r}"
+            f"agent[{metric.agent_id!r}].terminal_drawdown_usd={metric.terminal_drawdown_usd!r}"
         )
-        lines.append(
-            f"agent[{metric.agent_id!r}].cumulative_pnl_usd="
-            f"{metric.cumulative_pnl_usd!r}"
-        )
-        lines.append(
-            f"agent[{metric.agent_id!r}].terminal_drawdown_usd="
-            f"{metric.terminal_drawdown_usd!r}"
-        )
-        lines.append(
-            f"agent[{metric.agent_id!r}].fills_count={metric.fills_count!r}"
-        )
+        lines.append(f"agent[{metric.agent_id!r}].fills_count={metric.fills_count!r}")
     for artifact in artifacts:
-        lines.append(
-            f"artifact[{artifact.agent_id!r}].framework={artifact.framework!r}"
-        )
+        lines.append(f"artifact[{artifact.agent_id!r}].framework={artifact.framework!r}")
         lines.append(f"artifact[{artifact.agent_id!r}].digest={artifact.digest!r}")
     payload = "\n".join(lines).encode("utf-8")
     return hashlib.blake2b(payload, digest_size=8).hexdigest()

@@ -260,9 +260,7 @@ class StreamGraph:
     def source(self, name: str) -> StreamGraph:
         return self._with(SourceNode(name=name))
 
-    def map(
-        self, name: str, upstream: str, fn: Callable[[Any], Any]
-    ) -> StreamGraph:
+    def map(self, name: str, upstream: str, fn: Callable[[Any], Any]) -> StreamGraph:
         self._require_upstream(upstream)
         return self._with(MapNode(name=name, upstream=upstream, fn=fn))
 
@@ -273,9 +271,7 @@ class StreamGraph:
         predicate: Callable[[Any], bool],
     ) -> StreamGraph:
         self._require_upstream(upstream)
-        return self._with(
-            FilterNode(name=name, upstream=upstream, predicate=predicate)
-        )
+        return self._with(FilterNode(name=name, upstream=upstream, predicate=predicate))
 
     def accumulate(
         self,
@@ -285,31 +281,21 @@ class StreamGraph:
         step: Callable[[Any, Any], tuple[Any, Any]],
     ) -> StreamGraph:
         self._require_upstream(upstream)
-        return self._with(
-            AccumulateNode(
-                name=name, upstream=upstream, init=init, step=step
-            )
-        )
+        return self._with(AccumulateNode(name=name, upstream=upstream, init=init, step=step))
 
     def zip(self, name: str, upstreams: Sequence[str]) -> StreamGraph:
         if len(upstreams) < 2:
             raise ValueError("zip requires at least 2 upstreams")
         for up in upstreams:
             self._require_upstream(up)
-        return self._with(
-            ZipNode(name=name, upstreams=tuple(upstreams))
-        )
+        return self._with(ZipNode(name=name, upstreams=tuple(upstreams)))
 
-    def combine_latest(
-        self, name: str, upstreams: Sequence[str]
-    ) -> StreamGraph:
+    def combine_latest(self, name: str, upstreams: Sequence[str]) -> StreamGraph:
         if len(upstreams) < 2:
             raise ValueError("combine_latest requires at least 2 upstreams")
         for up in upstreams:
             self._require_upstream(up)
-        return self._with(
-            CombineLatestNode(name=name, upstreams=tuple(upstreams))
-        )
+        return self._with(CombineLatestNode(name=name, upstreams=tuple(upstreams)))
 
     def sliding_window(
         self,
@@ -338,9 +324,7 @@ class StreamGraph:
         sink_fn: Callable[[Any], None] | None = None,
     ) -> StreamGraph:
         self._require_upstream(upstream)
-        return self._with(
-            SinkNode(name=name, upstream=upstream, sink_fn=sink_fn)
-        )
+        return self._with(SinkNode(name=name, upstream=upstream, sink_fn=sink_fn))
 
     # ------------------------------------------------------------------
     # Read-only helpers.
@@ -354,14 +338,10 @@ class StreamGraph:
         return tuple(_node_name(n) for n in self.nodes)
 
     def source_names(self) -> tuple[str, ...]:
-        return tuple(
-            _node_name(n) for n in self.nodes if isinstance(n, SourceNode)
-        )
+        return tuple(_node_name(n) for n in self.nodes if isinstance(n, SourceNode))
 
     def sink_names(self) -> tuple[str, ...]:
-        return tuple(
-            _node_name(n) for n in self.nodes if isinstance(n, SinkNode)
-        )
+        return tuple(_node_name(n) for n in self.nodes if isinstance(n, SinkNode))
 
     def graph_digest(self) -> str:
         """Stable 16-hex BLAKE2b digest over the node + edge spec.
@@ -450,11 +430,7 @@ def _topological_order(graph: StreamGraph) -> tuple[Node, ...]:
             ups = n.upstreams
         elif isinstance(
             n,
-            MapNode
-            | FilterNode
-            | AccumulateNode
-            | SlidingWindowNode
-            | SinkNode,
+            MapNode | FilterNode | AccumulateNode | SlidingWindowNode | SinkNode,
         ):
             ups = (n.upstream,)
         else:
@@ -576,9 +552,7 @@ def run_graph(
                 for item in outbox[up]:
                     latest[up] = item
                     if all(latest[u] is not sentinel for u in node.upstreams):
-                        outbox[nm].append(
-                            tuple(latest[u] for u in node.upstreams)
-                        )
+                        outbox[nm].append(tuple(latest[u] for u in node.upstreams))
             continue
         if isinstance(node, SinkNode):
             recorded: list[Any] = []
@@ -611,9 +585,7 @@ def _run_digest(graph_digest: str, sink_outputs: Mapping[str, tuple[Any, ...]]) 
     """
     encoded_sinks: list[tuple[str, list[str]]] = []
     for name in sorted(sink_outputs):
-        encoded_sinks.append(
-            (name, [_safe_repr(v) for v in sink_outputs[name]])
-        )
+        encoded_sinks.append((name, [_safe_repr(v) for v in sink_outputs[name]]))
     payload = json.dumps(
         {"graph_digest": graph_digest, "sinks": encoded_sinks},
         separators=(",", ":"),

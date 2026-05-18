@@ -89,8 +89,7 @@ class PressureConfig:
             )
         if not (0.0 <= self.entropy_high_water <= 1.0):
             raise ValueError(
-                "PressureConfig.entropy_high_water must be in [0,1]: "
-                f"{self.entropy_high_water}"
+                f"PressureConfig.entropy_high_water must be in [0,1]: {self.entropy_high_water}"
             )
         if self.entropy_high_water_modifier < 0.0:
             raise ValueError(

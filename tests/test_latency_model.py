@@ -162,7 +162,7 @@ def test_interpolated_latency_single_row_is_constant() -> None:
     m = InterpolatedLatency(samples=((0, 100, 200),))
     assert m.sample(ts_ns=0) == LatencySample(100, 200)
     assert m.sample(ts_ns=10**12) == LatencySample(100, 200)
-    assert m.sample(ts_ns=-10**12) == LatencySample(100, 200)
+    assert m.sample(ts_ns=-(10**12)) == LatencySample(100, 200)
 
 
 def test_interpolated_latency_clamps_left() -> None:
@@ -417,4 +417,3 @@ def test_replay_determinism_inv_15(model: LatencyModel) -> None:
     b = model.sample(ts_ns=1500, seed=42)
     c = model.sample(ts_ns=1500, seed=42)
     assert a == b == c
-

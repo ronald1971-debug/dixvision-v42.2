@@ -234,22 +234,16 @@ def test_nan_inputs_rejected() -> None:
         "per_step_std",
     ):
         with pytest.raises(ValueError):
-            FillStarvation().step(
-                seed=0, scenario=_scenario(extra={key: nan})
-            )
+            FillStarvation().step(seed=0, scenario=_scenario(extra={key: nan}))
 
 
 def test_infinity_inputs_rejected() -> None:
     inf = float("inf")
     for key in ("entry_price", "order_size_usd"):
         with pytest.raises(ValueError):
-            FillStarvation().step(
-                seed=0, scenario=_scenario(extra={key: inf})
-            )
+            FillStarvation().step(seed=0, scenario=_scenario(extra={key: inf}))
         with pytest.raises(ValueError):
-            FillStarvation().step(
-                seed=0, scenario=_scenario(extra={key: -inf})
-            )
+            FillStarvation().step(seed=0, scenario=_scenario(extra={key: -inf}))
 
 
 def test_invalid_config_rejected() -> None:

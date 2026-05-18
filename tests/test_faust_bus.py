@@ -195,11 +195,7 @@ def test_app_agent_requires_registered_topic() -> None:
 
 
 def test_app_agent_defaults_name() -> None:
-    a = (
-        App(id="x")
-        .topic("market")
-        .agent("market", fn=lambda ctx, ev: None)
-    )
+    a = App(id="x").topic("market").agent("market", fn=lambda ctx, ev: None)
     assert a.agents[0].name == "agent_0"
 
 
@@ -242,12 +238,7 @@ def test_run_app_single_agent_emits_send_ops_in_yield_order() -> None:
             SendOp(topic_name="out", payload=ev * 10),
         ]
 
-    a = (
-        App(id="x")
-        .topic("in")
-        .topic("out")
-        .agent("in", fn=agent_fn)
-    )
+    a = App(id="x").topic("in").topic("out").agent("in", fn=agent_fn)
     results = run_app(
         a,
         [InboundEvent(topic_name="in", payload=1)],
@@ -485,9 +476,7 @@ def test_replay_insertion_order_independence_on_windowed_table() -> None:
     base = _windowed_events()
     permuted = [base[2], base[0], base[4], base[3], base[1]]
     run_base = tuple(r for r in run_app(_windowed_app(), base) if r.kind == "window")
-    run_perm = tuple(
-        r for r in run_app(_windowed_app(), permuted) if r.kind == "window"
-    )
+    run_perm = tuple(r for r in run_app(_windowed_app(), permuted) if r.kind == "window")
     assert [(r.bucket_idx, r.key, r.payload) for r in run_base] == [
         (r.bucket_idx, r.key, r.payload) for r in run_perm
     ]

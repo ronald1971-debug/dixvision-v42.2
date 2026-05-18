@@ -156,9 +156,7 @@ class LIFParams:
         if not (self.dt > 0 and math.isfinite(self.dt)):
             raise NeuroPrototypeError(f"dt must be > 0, got {self.dt}")
         if self.refractory_steps < 0:
-            raise NeuroPrototypeError(
-                f"refractory_steps must be >= 0, got {self.refractory_steps}"
-            )
+            raise NeuroPrototypeError(f"refractory_steps must be >= 0, got {self.refractory_steps}")
 
 
 # ----------------------------------------------------------------- trace
@@ -233,13 +231,10 @@ class LIFComparisonReport:
                 f"got {len(self.continuous.spikes)} vs {len(self.discrete.spikes)}"
             )
         if self.count_tolerance < 0:
-            raise NeuroPrototypeError(
-                f"count_tolerance must be >= 0, got {self.count_tolerance}"
-            )
+            raise NeuroPrototypeError(f"count_tolerance must be >= 0, got {self.count_tolerance}")
         if self.first_spike_step_tolerance < 0:
             raise NeuroPrototypeError(
-                "first_spike_step_tolerance must be >= 0, "
-                f"got {self.first_spike_step_tolerance}"
+                f"first_spike_step_tolerance must be >= 0, got {self.first_spike_step_tolerance}"
             )
 
     @property
@@ -295,9 +290,7 @@ def _validate_current(current: Sequence[float]) -> tuple[float, ...]:
     out: list[float] = []
     for i, value in enumerate(current):
         if not isinstance(value, (int, float)) or isinstance(value, bool):
-            raise NeuroPrototypeError(
-                f"current[{i}] must be float, got {type(value).__name__}"
-            )
+            raise NeuroPrototypeError(f"current[{i}] must be float, got {type(value).__name__}")
         fv = float(value)
         if not math.isfinite(fv):
             raise NeuroPrototypeError(f"current[{i}] must be finite, got {fv}")
@@ -335,9 +328,7 @@ def continuous_time_lif_reference(
     if sub_steps < 1:
         raise NeuroPrototypeError(f"sub_steps must be >= 1, got {sub_steps}")
     if sub_steps > 1_000:
-        raise NeuroPrototypeError(
-            f"sub_steps must be <= 1000 (sanity cap), got {sub_steps}"
-        )
+        raise NeuroPrototypeError(f"sub_steps must be <= 1000 (sanity cap), got {sub_steps}")
 
     micro_dt = params.dt / sub_steps
     decay_micro = micro_dt / params.tau_mem
@@ -454,9 +445,7 @@ def prototype_lif_market_signal(
             ``|c.first_spike - d.first_spike|`` (in macro steps).
     """
 
-    cont = continuous_time_lif_reference(
-        current=current, params=params, sub_steps=sub_steps
-    )
+    cont = continuous_time_lif_reference(current=current, params=params, sub_steps=sub_steps)
     disc = norse_style_discrete_lif(current=current, params=params)
     return LIFComparisonReport(
         continuous=cont,

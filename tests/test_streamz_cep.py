@@ -90,12 +90,7 @@ def test_run_graph_rejects_wrong_type() -> None:
 
 
 def test_map_doubles_every_element() -> None:
-    g = (
-        StreamGraph(name="m")
-        .source("src")
-        .map("dbl", "src", lambda x: x * 2)
-        .sink("out", "dbl")
-    )
+    g = StreamGraph(name="m").source("src").map("dbl", "src", lambda x: x * 2).sink("out", "dbl")
     result = run_graph(g, {"src": [1, 2, 3]})
     assert result.sink_outputs == {"out": (2, 4, 6)}
 
@@ -112,22 +107,14 @@ def test_filter_drops_odd() -> None:
 
 
 def test_sink_records_arrival_order() -> None:
-    g = (
-        StreamGraph(name="s")
-        .source("src")
-        .sink("out", "src")
-    )
+    g = StreamGraph(name="s").source("src").sink("out", "src")
     result = run_graph(g, {"src": ["c", "a", "b"]})
     assert result.sink_outputs == {"out": ("c", "a", "b")}
 
 
 def test_sink_fn_called_per_element() -> None:
     seen: list[int] = []
-    g = (
-        StreamGraph(name="s")
-        .source("src")
-        .sink("out", "src", sink_fn=seen.append)
-    )
+    g = StreamGraph(name="s").source("src").sink("out", "src", sink_fn=seen.append)
     run_graph(g, {"src": [10, 20, 30]})
     assert seen == [10, 20, 30]
 
@@ -172,16 +159,9 @@ def test_accumulate_can_emit_different_type() -> None:
 
 
 def test_sliding_window_emits_only_full_windows_by_default() -> None:
-    g = (
-        StreamGraph(name="w")
-        .source("src")
-        .sliding_window("win", "src", n=3)
-        .sink("out", "win")
-    )
+    g = StreamGraph(name="w").source("src").sliding_window("win", "src", n=3).sink("out", "win")
     result = run_graph(g, {"src": [1, 2, 3, 4, 5]})
-    assert result.sink_outputs == {
-        "out": ((1, 2, 3), (2, 3, 4), (3, 4, 5))
-    }
+    assert result.sink_outputs == {"out": ((1, 2, 3), (2, 3, 4), (3, 4, 5))}
 
 
 def test_sliding_window_return_partial_emits_partials() -> None:
@@ -192,9 +172,7 @@ def test_sliding_window_return_partial_emits_partials() -> None:
         .sink("out", "win")
     )
     result = run_graph(g, {"src": [1, 2, 3, 4]})
-    assert result.sink_outputs == {
-        "out": ((1,), (1, 2), (1, 2, 3), (2, 3, 4))
-    }
+    assert result.sink_outputs == {"out": ((1,), (1, 2), (1, 2, 3), (2, 3, 4))}
 
 
 def test_sliding_window_rejects_non_positive_n() -> None:
@@ -218,9 +196,7 @@ def test_zip_synchronous_pairs() -> None:
         .sink("out", "paired")
     )
     result = run_graph(g, {"a": [1, 2, 3], "b": ["x", "y", "z"]})
-    assert result.sink_outputs == {
-        "out": ((1, "x"), (2, "y"), (3, "z"))
-    }
+    assert result.sink_outputs == {"out": ((1, "x"), (2, "y"), (3, "z"))}
 
 
 def test_zip_truncates_to_shortest() -> None:
@@ -244,12 +220,8 @@ def test_zip_three_upstreams() -> None:
         .zip("t", ["a", "b", "c"])
         .sink("out", "t")
     )
-    result = run_graph(
-        g, {"a": [1, 2], "b": ["x", "y"], "c": [True, False]}
-    )
-    assert result.sink_outputs == {
-        "out": ((1, "x", True), (2, "y", False))
-    }
+    result = run_graph(g, {"a": [1, 2], "b": ["x", "y"], "c": [True, False]})
+    assert result.sink_outputs == {"out": ((1, "x", True), (2, "y", False))}
 
 
 def test_zip_rejects_single_upstream() -> None:
@@ -364,12 +336,7 @@ def test_graph_digest_is_stable_across_rebuilds() -> None:
 
 def test_graph_digest_changes_with_topology() -> None:
     g1 = _build_pipeline()
-    g2 = (
-        StreamGraph(name="p")
-        .source("src")
-        .map("dbl", "src", lambda x: x * 2)
-        .sink("out", "dbl")
-    )
+    g2 = StreamGraph(name="p").source("src").map("dbl", "src", lambda x: x * 2).sink("out", "dbl")
     assert g1.graph_digest() != g2.graph_digest()
 
 
@@ -419,9 +386,7 @@ def test_branch_and_join_pipeline() -> None:
         .sink("out", "paired")
     )
     result = run_graph(g, {"src": [1, 2, 3]})
-    assert result.sink_outputs == {
-        "out": ((2, 2), (3, 4), (4, 6))
-    }
+    assert result.sink_outputs == {"out": ((2, 2), (3, 4), (4, 6))}
 
 
 def test_cycle_detection() -> None:
@@ -508,9 +473,9 @@ def test_no_forbidden_toplevel_imports() -> None:
     imported = _top_level_imports(MODULE_TREE)
     for forbidden in FORBIDDEN_TOPLEVEL:
         for name in imported:
-            assert not (
-                name == forbidden or name.startswith(forbidden + ".")
-            ), f"streamz_cep.py imports {forbidden!r} at module top-level"
+            assert not (name == forbidden or name.startswith(forbidden + ".")), (
+                f"streamz_cep.py imports {forbidden!r} at module top-level"
+            )
 
 
 RUNTIME_TIERS = (
@@ -526,9 +491,9 @@ def test_no_runtime_tier_imports() -> None:
     imported = _top_level_imports(MODULE_TREE)
     for tier in RUNTIME_TIERS:
         for name in imported:
-            assert not (
-                name == tier or name.startswith(tier + ".")
-            ), f"streamz_cep.py imports runtime tier {tier!r}"
+            assert not (name == tier or name.startswith(tier + ".")), (
+                f"streamz_cep.py imports runtime tier {tier!r}"
+            )
 
 
 FORBIDDEN_TYPED_EVENT_CTORS = (
@@ -561,9 +526,7 @@ def test_no_typed_event_constructors_called() -> None:
 
     v = _Visitor()
     v.visit(MODULE_TREE)
-    assert not v.bad, (
-        "streamz_cep.py constructs typed events: " + ", ".join(v.bad)
-    )
+    assert not v.bad, "streamz_cep.py constructs typed events: " + ", ".join(v.bad)
 
 
 def test_module_reimports_clean() -> None:
@@ -637,9 +600,21 @@ def test_hazard_sensor_motivating_pipeline() -> None:
     )
     inputs = {
         "ticks": [
-            100, 101, 99, 102, 100,  # window 1: spread=3
-            105, 110, 108, 95, 120,  # window ends with spread=25
-            121, 122, 123, 124, 125,  # spread=4
+            100,
+            101,
+            99,
+            102,
+            100,  # window 1: spread=3
+            105,
+            110,
+            108,
+            95,
+            120,  # window ends with spread=25
+            121,
+            122,
+            123,
+            124,
+            125,  # spread=4
         ],
     }
     result = run_graph(g, inputs)

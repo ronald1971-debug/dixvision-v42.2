@@ -49,15 +49,11 @@ class AdapterRouter:
 
     def __init__(
         self,
-        adapters: (
-            Mapping[tuple[TradingDomain, str], BrokerAdapter] | None
-        ) = None,
+        adapters: (Mapping[tuple[TradingDomain, str], BrokerAdapter] | None) = None,
         *,
         default_domain: TradingDomain = TradingDomain.NORMAL,
     ) -> None:
-        self._adapters: dict[tuple[TradingDomain, str], BrokerAdapter] = (
-            dict(adapters or {})
-        )
+        self._adapters: dict[tuple[TradingDomain, str], BrokerAdapter] = dict(adapters or {})
         self._default_domain = default_domain
 
     # -- registration ------------------------------------------------------
@@ -77,9 +73,7 @@ class AdapterRouter:
         self._adapters[key] = adapter
 
     def venues(self, domain: TradingDomain) -> tuple[str, ...]:
-        return tuple(
-            sorted(v for (d, v) in self._adapters if d == domain)
-        )
+        return tuple(sorted(v for (d, v) in self._adapters if d == domain))
 
     def __len__(self) -> int:
         return len(self._adapters)
@@ -105,15 +99,11 @@ class AdapterRouter:
         domain = self.domain_of(signal)
         chosen_venue = venue or signal.meta.get("venue")
         if not chosen_venue:
-            raise RouterError(
-                "venue required (pass venue=... or signal.meta['venue'])"
-            )
+            raise RouterError("venue required (pass venue=... or signal.meta['venue'])")
         key = (domain, chosen_venue)
         adapter = self._adapters.get(key)
         if adapter is None:
-            raise RouterError(
-                f"no adapter for {domain.name}/{chosen_venue}"
-            )
+            raise RouterError(f"no adapter for {domain.name}/{chosen_venue}")
         return adapter
 
 

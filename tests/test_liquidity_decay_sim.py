@@ -48,12 +48,8 @@ def test_no_decay_no_jitter_matches_linear_law() -> None:
 
 def test_decay_increases_cost_vs_no_decay() -> None:
     cfg = LiquidityDecayConfig(depth_jitter=0.0)
-    no_decay = LiquidityDecay(cfg).step(
-        seed=0, scenario=_scenario(decay_rate=0.0)
-    )
-    with_decay = LiquidityDecay(cfg).step(
-        seed=0, scenario=_scenario(decay_rate=0.3)
-    )
+    no_decay = LiquidityDecay(cfg).step(seed=0, scenario=_scenario(decay_rate=0.0))
+    with_decay = LiquidityDecay(cfg).step(seed=0, scenario=_scenario(decay_rate=0.3))
     assert with_decay.terminal_drawdown_usd > no_decay.terminal_drawdown_usd
 
 
@@ -142,9 +138,7 @@ def test_invalid_size_or_depth_rejected() -> None:
     with pytest.raises(ValueError):
         LiquidityDecay().step(seed=0, scenario=_scenario(order_size_usd=0.0))
     with pytest.raises(ValueError):
-        LiquidityDecay().step(
-            seed=0, scenario=_scenario(initial_depth_usd=-1.0)
-        )
+        LiquidityDecay().step(seed=0, scenario=_scenario(initial_depth_usd=-1.0))
 
 
 def test_invalid_config_rejected() -> None:
@@ -165,10 +159,7 @@ def test_max_slices_cap_enforced() -> None:
 def test_distribution_over_seeds_varies() -> None:
     s = _scenario()
     runner = LiquidityDecay()
-    costs = {
-        runner.step(seed=seed, scenario=s).terminal_drawdown_usd
-        for seed in range(50)
-    }
+    costs = {runner.step(seed=seed, scenario=s).terminal_drawdown_usd for seed in range(50)}
     assert len(costs) > 1
 
 

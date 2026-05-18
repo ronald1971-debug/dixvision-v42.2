@@ -129,26 +129,18 @@ class WhereFilter:
         self._not_equals = self._freeze(not_equals, "not_equals")
 
     @staticmethod
-    def _freeze(
-        m: Mapping[str, str] | None, name: str
-    ) -> tuple[tuple[str, str], ...]:
+    def _freeze(m: Mapping[str, str] | None, name: str) -> tuple[tuple[str, str], ...]:
         if m is None:
             return ()
         if not isinstance(m, Mapping):
-            raise TypeError(
-                f"WhereFilter.{name} must be a Mapping or None"
-            )
+            raise TypeError(f"WhereFilter.{name} must be a Mapping or None")
         pairs: list[tuple[str, str]] = []
         for key in sorted(m):
             if not isinstance(key, str):
-                raise TypeError(
-                    f"WhereFilter.{name} keys must be str"
-                )
+                raise TypeError(f"WhereFilter.{name} keys must be str")
             value = m[key]
             if not isinstance(value, str):
-                raise TypeError(
-                    f"WhereFilter.{name}[{key!r}] must be str"
-                )
+                raise TypeError(f"WhereFilter.{name}[{key!r}] must be str")
             pairs.append((key, value))
         return tuple(pairs)
 
@@ -172,19 +164,13 @@ class WhereFilter:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, WhereFilter):
             return NotImplemented
-        return (
-            self._equals == other._equals
-            and self._not_equals == other._not_equals
-        )
+        return self._equals == other._equals and self._not_equals == other._not_equals
 
     def __hash__(self) -> int:
         return hash((self._equals, self._not_equals))
 
     def __repr__(self) -> str:
-        return (
-            f"WhereFilter(equals={self._equals!r}, "
-            f"not_equals={self._not_equals!r})"
-        )
+        return f"WhereFilter(equals={self._equals!r}, not_equals={self._not_equals!r})"
 
 
 # ---------------------------------------------------------------------------
@@ -212,9 +198,7 @@ def _cosine_distance(a: Sequence[float], b: Sequence[float]) -> float:
 
 
 def _l2_distance(a: Sequence[float], b: Sequence[float]) -> float:
-    return math.sqrt(
-        math.fsum((x - y) ** 2 for x, y in zip(a, b, strict=True))
-    )
+    return math.sqrt(math.fsum((x - y) ** 2 for x, y in zip(a, b, strict=True)))
 
 
 def _distance(
@@ -316,13 +300,9 @@ class ChromaCollectionStore:
         if not isinstance(episode, Episode):
             raise TypeError("episode must be an Episode")
         if episode.dim != self._dim:
-            raise ValueError(
-                f"episode.dim={episode.dim} != store.dim={self._dim}"
-            )
+            raise ValueError(f"episode.dim={episode.dim} != store.dim={self._dim}")
         if episode.episode_id in self._episodes:
-            raise ValueError(
-                f"episode_id={episode.episode_id!r} already in store"
-            )
+            raise ValueError(f"episode_id={episode.episode_id!r} already in store")
         if len(self._episodes) >= self._max_size:
             self._evict_oldest()
         self._episodes[episode.episode_id] = episode
@@ -351,11 +331,7 @@ class ChromaCollectionStore:
         """Chromadb ``Collection.delete(where=...)``."""
         if not isinstance(where, WhereFilter):
             raise TypeError("where must be a WhereFilter")
-        to_remove = [
-            eid
-            for eid, ep in self._episodes.items()
-            if where.matches(ep.payload)
-        ]
+        to_remove = [eid for eid, ep in self._episodes.items() if where.matches(ep.payload)]
         for eid in to_remove:
             del self._episodes[eid]
         return len(to_remove)
@@ -384,9 +360,7 @@ class ChromaCollectionStore:
         if not isinstance(query, MemoryQuery):
             raise TypeError("query must be a MemoryQuery")
         if query.dim != self._dim:
-            raise ValueError(
-                f"query.dim={query.dim} != store.dim={self._dim}"
-            )
+            raise ValueError(f"query.dim={query.dim} != store.dim={self._dim}")
         if where is not None and not isinstance(where, WhereFilter):
             raise TypeError("where must be a WhereFilter or None")
         scored: list[tuple[float, int, str, Episode]] = []
@@ -486,16 +460,12 @@ class ChromaCollectionStore:
         try:
             obj = json.loads(raw.decode("ascii"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise ChromaStoreError(
-                f"corrupt serialised blob: {exc!s}"
-            ) from exc
+            raise ChromaStoreError(f"corrupt serialised blob: {exc!s}") from exc
         if not isinstance(obj, dict):
             raise ChromaStoreError("blob root must be an object")
         version = obj.get("version")
         if version != _SERIALIZATION_VERSION:
-            raise ChromaStoreError(
-                f"unsupported version: {version!r}"
-            )
+            raise ChromaStoreError(f"unsupported version: {version!r}")
         try:
             metric = DistanceMetric(obj["metric"])
         except (KeyError, ValueError) as exc:
@@ -513,9 +483,7 @@ class ChromaCollectionStore:
             payload_raw = row.get("payload", {})
             if not isinstance(payload_raw, dict):
                 raise ChromaStoreError("payload must be an object")
-            payload = MappingProxyType(
-                {str(k): str(v) for k, v in payload_raw.items()}
-            )
+            payload = MappingProxyType({str(k): str(v) for k, v in payload_raw.items()})
             episode = Episode(
                 ts_ns=int(row["ts_ns"]),
                 episode_id=str(row["episode_id"]),
@@ -542,18 +510,13 @@ def chroma_client_factory(
     persistent client is returned (``chromadb.PersistentClient(path=...)``).
     """
     if persist_directory is not None and (
-        not isinstance(persist_directory, str)
-        or not persist_directory
+        not isinstance(persist_directory, str) or not persist_directory
     ):
-        raise ValueError(
-            "persist_directory must be a non-empty str or None"
-        )
+        raise ValueError("persist_directory must be a non-empty str or None")
     try:
         import chromadb  # noqa: PLC0415
     except ImportError as exc:  # pragma: no cover - exercised when dep absent
-        raise ChromaStoreError(
-            "chromadb is not installed; see NEW_PIP_DEPENDENCIES"
-        ) from exc
+        raise ChromaStoreError("chromadb is not installed; see NEW_PIP_DEPENDENCIES") from exc
     if persist_directory is None:
         return chromadb.Client()
     return chromadb.PersistentClient(path=persist_directory)

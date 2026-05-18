@@ -67,8 +67,7 @@ class RegimeRouterConfig:
     def __post_init__(self) -> None:
         if self.persistence_ticks < 1:
             raise ValueError(
-                "RegimeRouterConfig.persistence_ticks must be >= 1: "
-                f"{self.persistence_ticks}"
+                f"RegimeRouterConfig.persistence_ticks must be >= 1: {self.persistence_ticks}"
             )
         if not (0.0 <= self.confidence_delta_threshold <= 1.0):
             raise ValueError(
@@ -137,9 +136,7 @@ def initial_router_state(
 ) -> RegimeRouterState:
     """Construct a fresh :class:`RegimeRouterState` at boot."""
     if not (0.0 <= initial_confidence <= 1.0):
-        raise ValueError(
-            f"initial_confidence must be in [0, 1]: {initial_confidence}"
-        )
+        raise ValueError(f"initial_confidence must be in [0, 1]: {initial_confidence}")
     return RegimeRouterState(
         current_regime=initial_regime,
         current_confidence=initial_confidence,

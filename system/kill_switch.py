@@ -99,9 +99,7 @@ class KillSwitch:
     name: str = "kill_switch"
     spec_id: str = "SAFE-01"
 
-    def __init__(
-        self, *, state_transitions: StateTransitionProtocol
-    ) -> None:
+    def __init__(self, *, state_transitions: StateTransitionProtocol) -> None:
         # AUDIT-P1.2 — typed against ``StateTransitionProtocol`` (a
         # structural-typing surface in ``core.contracts.governance``)
         # rather than the concrete ``StateTransitionManager`` so this

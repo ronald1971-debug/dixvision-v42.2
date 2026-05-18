@@ -67,8 +67,7 @@ class ParallelRunnerConfig:
     def __post_init__(self) -> None:
         if self.min_realities < 1:
             raise ValueError(
-                "ParallelRunnerConfig.min_realities must be >= 1, "
-                f"got {self.min_realities!r}"
+                f"ParallelRunnerConfig.min_realities must be >= 1, got {self.min_realities!r}"
             )
         if self.max_realities < self.min_realities:
             raise ValueError(
@@ -141,13 +140,10 @@ class ParallelRunner:
         seen: set[int] = set()
         for s in seeds:
             if s < 0:
-                raise ValueError(
-                    f"ParallelRunner.run: seeds must be non-negative, got {s!r}"
-                )
+                raise ValueError(f"ParallelRunner.run: seeds must be non-negative, got {s!r}")
             if s in seen:
                 raise ValueError(
-                    f"ParallelRunner.run: duplicate seed {s!r} would "
-                    "produce duplicate realities"
+                    f"ParallelRunner.run: duplicate seed {s!r} would produce duplicate realities"
                 )
             seen.add(s)
 

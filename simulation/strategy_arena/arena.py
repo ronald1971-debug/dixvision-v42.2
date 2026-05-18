@@ -165,20 +165,17 @@ class Contestant:
     def __post_init__(self) -> None:
         if not isinstance(self.strategy_id, str):
             raise ArenaInputError(
-                "Contestant.strategy_id must be str, "
-                f"got {type(self.strategy_id).__name__}"
+                f"Contestant.strategy_id must be str, got {type(self.strategy_id).__name__}"
             )
         if not self.strategy_id:
             raise ArenaInputError("Contestant.strategy_id must be non-empty")
         if len(self.strategy_id) > 128:
             raise ArenaInputError(
-                "Contestant.strategy_id must be <= 128 chars, "
-                f"got len={len(self.strategy_id)}"
+                f"Contestant.strategy_id must be <= 128 chars, got len={len(self.strategy_id)}"
             )
         if not isinstance(self.summary, RealitySummary):
             raise ArenaInputError(
-                "Contestant.summary must be a RealitySummary, "
-                f"got {type(self.summary).__name__}"
+                f"Contestant.summary must be a RealitySummary, got {type(self.summary).__name__}"
             )
 
 
@@ -197,30 +194,20 @@ class TournamentBracket:
     winner_fitness: float
 
     def __post_init__(self) -> None:
-        if not isinstance(self.bracket_id, int) or isinstance(
-            self.bracket_id, bool
-        ):
+        if not isinstance(self.bracket_id, int) or isinstance(self.bracket_id, bool):
             raise ArenaInputError(
-                "TournamentBracket.bracket_id must be int, "
-                f"got {type(self.bracket_id).__name__}"
+                f"TournamentBracket.bracket_id must be int, got {type(self.bracket_id).__name__}"
             )
         if self.bracket_id < 0:
             raise ArenaInputError(
-                "TournamentBracket.bracket_id must be non-negative, "
-                f"got {self.bracket_id!r}"
+                f"TournamentBracket.bracket_id must be non-negative, got {self.bracket_id!r}"
             )
         if not self.candidate_ids:
-            raise ArenaInputError(
-                "TournamentBracket.candidate_ids must be non-empty"
-            )
+            raise ArenaInputError("TournamentBracket.candidate_ids must be non-empty")
         if not all(isinstance(c, str) and c for c in self.candidate_ids):
-            raise ArenaInputError(
-                "TournamentBracket.candidate_ids entries must be non-empty str"
-            )
+            raise ArenaInputError("TournamentBracket.candidate_ids entries must be non-empty str")
         if not isinstance(self.winner_id, str) or not self.winner_id:
-            raise ArenaInputError(
-                "TournamentBracket.winner_id must be non-empty str"
-            )
+            raise ArenaInputError("TournamentBracket.winner_id must be non-empty str")
         if self.winner_id not in self.candidate_ids:
             raise ArenaInputError(
                 "TournamentBracket.winner_id must appear in candidate_ids, "
@@ -229,8 +216,7 @@ class TournamentBracket:
             )
         if not _is_finite_float(self.winner_fitness):
             raise ArenaInputError(
-                "TournamentBracket.winner_fitness must be finite, "
-                f"got {self.winner_fitness!r}"
+                f"TournamentBracket.winner_fitness must be finite, got {self.winner_fitness!r}"
             )
 
 
@@ -257,8 +243,7 @@ class ArenaConfig:
     def __post_init__(self) -> None:
         if not isinstance(self.arena_id, str):
             raise ArenaConfigError(
-                "ArenaConfig.arena_id must be str, "
-                f"got {type(self.arena_id).__name__}"
+                f"ArenaConfig.arena_id must be str, got {type(self.arena_id).__name__}"
             )
         if not self.arena_id:
             raise ArenaConfigError("ArenaConfig.arena_id must be non-empty")
@@ -268,11 +253,7 @@ class ArenaConfig:
                 f"{MAX_ARENA_ID_LEN} chars, got len={len(self.arena_id)}"
             )
         _require_int(self.tournament_size, "tournament_size")
-        if not (
-            MIN_TOURNAMENT_SIZE
-            <= self.tournament_size
-            <= MAX_TOURNAMENT_SIZE
-        ):
+        if not (MIN_TOURNAMENT_SIZE <= self.tournament_size <= MAX_TOURNAMENT_SIZE):
             raise ArenaConfigError(
                 "ArenaConfig.tournament_size must be in "
                 f"[{MIN_TOURNAMENT_SIZE}, {MAX_TOURNAMENT_SIZE}], "
@@ -281,8 +262,7 @@ class ArenaConfig:
         _require_int(self.n_winners, "n_winners")
         if not (1 <= self.n_winners <= MAX_N_WINNERS):
             raise ArenaConfigError(
-                "ArenaConfig.n_winners must be in "
-                f"[1, {MAX_N_WINNERS}], got {self.n_winners!r}"
+                f"ArenaConfig.n_winners must be in [1, {MAX_N_WINNERS}], got {self.n_winners!r}"
             )
         _require_int(self.elitism_count, "elitism_count")
         if not (0 <= self.elitism_count <= MAX_ELITISM_COUNT):
@@ -292,13 +272,11 @@ class ArenaConfig:
             )
         if not _is_finite_float(self.drawdown_weight):
             raise ArenaConfigError(
-                "ArenaConfig.drawdown_weight must be finite, "
-                f"got {self.drawdown_weight!r}"
+                f"ArenaConfig.drawdown_weight must be finite, got {self.drawdown_weight!r}"
             )
         if self.drawdown_weight < 0.0:
             raise ArenaConfigError(
-                "ArenaConfig.drawdown_weight must be non-negative, "
-                f"got {self.drawdown_weight!r}"
+                f"ArenaConfig.drawdown_weight must be non-negative, got {self.drawdown_weight!r}"
             )
 
 
@@ -331,33 +309,24 @@ class TournamentResult:
 
     def __post_init__(self) -> None:
         if not isinstance(self.arena_id, str) or not self.arena_id:
-            raise ArenaInputError(
-                "TournamentResult.arena_id must be non-empty str"
-            )
+            raise ArenaInputError("TournamentResult.arena_id must be non-empty str")
         if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
             raise ArenaInputError("TournamentResult.ts_ns must be int")
         if self.ts_ns < 0:
             raise ArenaInputError(
-                "TournamentResult.ts_ns must be non-negative, "
-                f"got {self.ts_ns!r}"
+                f"TournamentResult.ts_ns must be non-negative, got {self.ts_ns!r}"
             )
         if not isinstance(self.seed, int) or isinstance(self.seed, bool):
             raise ArenaInputError("TournamentResult.seed must be int")
         if self.seed < 0:
-            raise ArenaInputError(
-                "TournamentResult.seed must be non-negative, "
-                f"got {self.seed!r}"
-            )
+            raise ArenaInputError(f"TournamentResult.seed must be non-negative, got {self.seed!r}")
         if not self.contestants:
-            raise ArenaInputError(
-                "TournamentResult.contestants must be non-empty"
-            )
+            raise ArenaInputError("TournamentResult.contestants must be non-empty")
         ids = {c.strategy_id for c in self.contestants}
         for elite in self.elites:
             if elite not in ids:
                 raise ArenaInputError(
-                    "TournamentResult.elites entries must be among "
-                    f"contestants, got {elite!r}"
+                    f"TournamentResult.elites entries must be among contestants, got {elite!r}"
                 )
         for winner in self.tournament_winners:
             if winner not in ids:
@@ -372,9 +341,7 @@ class TournamentResult:
                     f"contestants, got {survivor!r}"
                 )
         if not isinstance(self.arena_digest, str):
-            raise ArenaInputError(
-                "TournamentResult.arena_digest must be str"
-            )
+            raise ArenaInputError("TournamentResult.arena_digest must be str")
         if len(self.arena_digest) != 16:
             raise ArenaInputError(
                 "TournamentResult.arena_digest must be 16 hex chars, "
@@ -384,8 +351,7 @@ class TournamentResult:
             int(self.arena_digest, 16)
         except ValueError as exc:
             raise ArenaInputError(
-                "TournamentResult.arena_digest must be hex, "
-                f"got {self.arena_digest!r}"
+                f"TournamentResult.arena_digest must be hex, got {self.arena_digest!r}"
             ) from exc
 
 
@@ -405,10 +371,7 @@ def _is_finite_float(value: object) -> bool:
 
 def _require_int(value: object, label: str) -> None:
     if not isinstance(value, int) or isinstance(value, bool):
-        raise ArenaConfigError(
-            f"ArenaConfig.{label} must be int, "
-            f"got {type(value).__name__}"
-        )
+        raise ArenaConfigError(f"ArenaConfig.{label} must be int, got {type(value).__name__}")
 
 
 def _composite_fitness(summary: RealitySummary, drawdown_weight: float) -> float:
@@ -572,26 +535,15 @@ class Arena:
 
         contestants_tuple = _validate_contestants(contestants)
         if not isinstance(config, ArenaConfig):
-            raise ArenaInputError(
-                "Arena.run requires an ArenaConfig, "
-                f"got {type(config).__name__}"
-            )
+            raise ArenaInputError(f"Arena.run requires an ArenaConfig, got {type(config).__name__}")
         if not isinstance(seed, int) or isinstance(seed, bool):
-            raise ArenaInputError(
-                f"Arena.run.seed must be int, got {type(seed).__name__}"
-            )
+            raise ArenaInputError(f"Arena.run.seed must be int, got {type(seed).__name__}")
         if seed < 0:
-            raise ArenaInputError(
-                f"Arena.run.seed must be non-negative, got {seed!r}"
-            )
+            raise ArenaInputError(f"Arena.run.seed must be non-negative, got {seed!r}")
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
-            raise ArenaInputError(
-                f"Arena.run.ts_ns must be int, got {type(ts_ns).__name__}"
-            )
+            raise ArenaInputError(f"Arena.run.ts_ns must be int, got {type(ts_ns).__name__}")
         if ts_ns < 0:
-            raise ArenaInputError(
-                f"Arena.run.ts_ns must be non-negative, got {ts_ns!r}"
-            )
+            raise ArenaInputError(f"Arena.run.ts_ns must be non-negative, got {ts_ns!r}")
         if config.elitism_count > len(contestants_tuple):
             raise ArenaInputError(
                 "ArenaConfig.elitism_count exceeds contestants count, "
@@ -615,9 +567,7 @@ class Arena:
             winner, fitness = _select_tournament_winner(
                 contestants_tuple, idx_tuple, config.drawdown_weight
             )
-            candidate_ids = tuple(
-                contestants_tuple[i].strategy_id for i in idx_tuple
-            )
+            candidate_ids = tuple(contestants_tuple[i].strategy_id for i in idx_tuple)
             brackets.append(
                 TournamentBracket(
                     bracket_id=bracket_id,
@@ -665,33 +615,28 @@ def _validate_contestants(
 
     if not isinstance(contestants, (list, tuple)):
         raise ArenaInputError(
-            "Arena.run.contestants must be a list or tuple, "
-            f"got {type(contestants).__name__}"
+            f"Arena.run.contestants must be a list or tuple, got {type(contestants).__name__}"
         )
     seen: set[str] = set()
     out: list[Contestant] = []
     for entry in contestants:
         if not isinstance(entry, Contestant):
             raise ArenaInputError(
-                "Arena.run.contestants entries must be Contestant, "
-                f"got {type(entry).__name__}"
+                f"Arena.run.contestants entries must be Contestant, got {type(entry).__name__}"
             )
         if entry.strategy_id in seen:
             raise ArenaInputError(
-                "Arena.run.contestants strategy_id must be unique, "
-                f"duplicate {entry.strategy_id!r}"
+                f"Arena.run.contestants strategy_id must be unique, duplicate {entry.strategy_id!r}"
             )
         seen.add(entry.strategy_id)
         out.append(entry)
     if len(out) < MIN_CONTESTANTS:
         raise ArenaInputError(
-            f"Arena.run.contestants must have >= {MIN_CONTESTANTS} entries, "
-            f"got {len(out)}"
+            f"Arena.run.contestants must have >= {MIN_CONTESTANTS} entries, got {len(out)}"
         )
     if len(out) > MAX_CONTESTANTS:
         raise ArenaInputError(
-            f"Arena.run.contestants must have <= {MAX_CONTESTANTS} entries, "
-            f"got {len(out)}"
+            f"Arena.run.contestants must have <= {MAX_CONTESTANTS} entries, got {len(out)}"
         )
     return tuple(out)
 

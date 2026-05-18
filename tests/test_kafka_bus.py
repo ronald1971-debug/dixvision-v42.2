@@ -133,7 +133,9 @@ def test_producer_record_construction_and_validation() -> None:
         kb.ProducerRecord(topic_name="t", value=b"", ts_ns=-1)
     with pytest.raises(TypeError):
         kb.ProducerRecord(
-            topic_name="t", value=b"", headers=(("h", "not bytes"),)  # type: ignore[arg-type]
+            topic_name="t",
+            value=b"",
+            headers=(("h", "not bytes"),),  # type: ignore[arg-type]
         )
 
 
@@ -216,15 +218,11 @@ def test_assign_partitions_rejects_bad_inputs() -> None:
     with pytest.raises(ValueError):
         kb.assign_partitions([kb.TopicPartition("t", 0)], [])
     with pytest.raises(ValueError):
-        kb.assign_partitions(
-            [kb.TopicPartition("t", 0)], ["m", "m"]
-        )
+        kb.assign_partitions([kb.TopicPartition("t", 0)], ["m", "m"])
 
 
 def test_assign_partitions_empty_member_gets_empty_tuple() -> None:
-    out = kb.assign_partitions(
-        [kb.TopicPartition("t", 0)], ["a", "b", "c"]
-    )
+    out = kb.assign_partitions([kb.TopicPartition("t", 0)], ["a", "b", "c"])
     assert out["b"] == () and out["c"] == ()
 
 
@@ -261,9 +259,7 @@ def test_broker_construction_validates_topics() -> None:
     with pytest.raises(ValueError):
         kb.InMemoryBroker(topics=())
     with pytest.raises(ValueError):
-        kb.InMemoryBroker(
-            topics=(kb.Topic("a"), kb.Topic("a"))
-        )
+        kb.InMemoryBroker(topics=(kb.Topic("a"), kb.Topic("a")))
     with pytest.raises(TypeError):
         kb.InMemoryBroker(topics=("not-topic",))  # type: ignore[arg-type]
 
@@ -373,18 +369,14 @@ def test_consumer_commit_persists_position_for_next_subscribe() -> None:
     producer = kb.InMemoryProducer(broker=broker)
     for i in range(3):
         producer.send("t", f"v{i}".encode(), key=b"k")
-    c1 = kb.InMemoryConsumer(
-        broker=broker, group=kb.ConsumerGroup("g1")
-    )
+    c1 = kb.InMemoryConsumer(broker=broker, group=kb.ConsumerGroup("g1"))
     c1.subscribe(["t"])
     batch1 = c1.getmany()
     assert sum(len(v) for v in batch1.values()) == 3
     c1.commit()
     c1.stop()
     # New consumer for the same group sees zero uncommitted records.
-    c2 = kb.InMemoryConsumer(
-        broker=broker, group=kb.ConsumerGroup("g1")
-    )
+    c2 = kb.InMemoryConsumer(broker=broker, group=kb.ConsumerGroup("g1"))
     c2.subscribe(["t"])
     assert c2.getmany() == {}
 
@@ -394,9 +386,7 @@ def test_consumer_seek_replays_partition() -> None:
     producer = kb.InMemoryProducer(broker=broker)
     for i in range(3):
         producer.send("t", f"v{i}".encode(), key=b"k")
-    consumer = kb.InMemoryConsumer(
-        broker=broker, group=kb.ConsumerGroup("g1")
-    )
+    consumer = kb.InMemoryConsumer(broker=broker, group=kb.ConsumerGroup("g1"))
     consumer.subscribe(["t"])
     consumer.getmany()
     consumer.commit()
@@ -446,9 +436,7 @@ def test_consumer_subscribe_rejects_member_not_in_group() -> None:
 
 def test_consumer_stop_blocks_further_ops() -> None:
     broker = kb.InMemoryBroker(topics=(kb.Topic("t"),))
-    consumer = kb.InMemoryConsumer(
-        broker=broker, group=kb.ConsumerGroup("g1")
-    )
+    consumer = kb.InMemoryConsumer(broker=broker, group=kb.ConsumerGroup("g1"))
     consumer.subscribe(["t"])
     consumer.stop()
     with pytest.raises(RuntimeError):
@@ -471,9 +459,7 @@ def test_kafka_producer_factory_raises_not_implemented() -> None:
 
 def test_kafka_consumer_factory_raises_not_implemented() -> None:
     with pytest.raises(NotImplementedError):
-        kb.kafka_consumer_factory(
-            kb.KafkaConfig(), kb.ConsumerGroup("g1")
-        )
+        kb.kafka_consumer_factory(kb.KafkaConfig(), kb.ConsumerGroup("g1"))
 
 
 def test_lazy_seam_validates_config_types() -> None:
@@ -701,10 +687,7 @@ def test_no_typed_event_constructors() -> None:
             func = node.func
             if isinstance(func, ast.Name) and func.id in _FORBIDDEN_EVENT_CONSTRUCTORS:
                 bad.append(func.id)
-            elif (
-                isinstance(func, ast.Attribute)
-                and func.attr in _FORBIDDEN_EVENT_CONSTRUCTORS
-            ):
+            elif isinstance(func, ast.Attribute) and func.attr in _FORBIDDEN_EVENT_CONSTRUCTORS:
                 bad.append(func.attr)
     assert not bad, f"typed-event constructors in transport: {bad}"
 

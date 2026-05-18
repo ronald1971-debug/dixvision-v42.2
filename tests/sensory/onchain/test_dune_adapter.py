@@ -55,29 +55,17 @@ from sensory.onchain.dune_adapter import (
 
 
 def test_make_execute_url_canonical() -> None:
-    assert (
-        make_execute_url(1234567)
-        == "https://api.dune.com/api/v1/query/1234567/execute"
-    )
+    assert make_execute_url(1234567) == "https://api.dune.com/api/v1/query/1234567/execute"
 
 
 def test_make_status_url_quotes_execution_id() -> None:
-    assert (
-        make_status_url("01HF1XYZ")
-        == "https://api.dune.com/api/v1/execution/01HF1XYZ/status"
-    )
+    assert make_status_url("01HF1XYZ") == "https://api.dune.com/api/v1/execution/01HF1XYZ/status"
     # A weird id with a slash would otherwise escape the path.
-    assert (
-        make_status_url("a/b")
-        == "https://api.dune.com/api/v1/execution/a%2Fb/status"
-    )
+    assert make_status_url("a/b") == "https://api.dune.com/api/v1/execution/a%2Fb/status"
 
 
 def test_make_results_url_quotes_execution_id() -> None:
-    assert (
-        make_results_url("01HF1XYZ")
-        == "https://api.dune.com/api/v1/execution/01HF1XYZ/results"
-    )
+    assert make_results_url("01HF1XYZ") == "https://api.dune.com/api/v1/execution/01HF1XYZ/results"
 
 
 def test_make_verify_url_defaults_to_query_one() -> None:
@@ -112,9 +100,7 @@ def test_url_builders_strip_trailing_slash() -> None:
 
 
 def test_parse_execution_id_returns_id_on_success() -> None:
-    body = json.dumps(
-        {"execution_id": "01HFEXEC", "state": EXECUTION_STATE_PENDING}
-    ).encode()
+    body = json.dumps({"execution_id": "01HFEXEC", "state": EXECUTION_STATE_PENDING}).encode()
     assert parse_execution_id(body) == "01HFEXEC"
 
 
@@ -124,9 +110,7 @@ def test_parse_execution_id_returns_none_on_failures() -> None:
     assert parse_execution_id(b"[]") is None
     assert parse_execution_id(json.dumps({}).encode()) is None
     assert parse_execution_id(json.dumps({"execution_id": ""}).encode()) is None
-    assert (
-        parse_execution_id(json.dumps({"execution_id": 123}).encode()) is None
-    )
+    assert parse_execution_id(json.dumps({"execution_id": 123}).encode()) is None
 
 
 def test_parse_execution_status_extracts_state() -> None:
@@ -153,9 +137,7 @@ def test_parse_results_payload_happy_path() -> None:
             {"value": 0},
         ]
     )
-    out = parse_results_payload(
-        body, ts_ns=1_700_000_000_000_000_000, metric="m"
-    )
+    out = parse_results_payload(body, ts_ns=1_700_000_000_000_000_000, metric="m")
     assert len(out) == 3
     assert {x.value for x in out} == {42.5, 1000.0, 0.0}
     assert all(x.ts_ns == 1_700_000_000_000_000_000 for x in out)
@@ -191,9 +173,7 @@ def test_parse_results_payload_observed_ts_epoch_scales() -> None:
             {"value": 4, "t": 1_700_000_000_000_000_000},  # nanoseconds
         ]
     )
-    out = parse_results_payload(
-        body, ts_ns=1, metric="m", observed_ts_field="t"
-    )
+    out = parse_results_payload(body, ts_ns=1, metric="m", observed_ts_field="t")
     expected_ns = 1_700_000_000_000_000_000
     assert [x.observed_ts_ns for x in out] == [
         expected_ns,
@@ -211,9 +191,7 @@ def test_parse_results_payload_observed_ts_iso() -> None:
             {"value": 3, "t": "not a date"},
         ]
     )
-    out = parse_results_payload(
-        body, ts_ns=1, metric="m", observed_ts_field="t"
-    )
+    out = parse_results_payload(body, ts_ns=1, metric="m", observed_ts_field="t")
     assert out[0].observed_ts_ns == out[1].observed_ts_ns
     assert out[0].observed_ts_ns is not None
     assert out[2].observed_ts_ns is None
@@ -291,17 +269,10 @@ def test_dune_query_spec_validation() -> None:
 
 
 def test_dune_query_spec_parameters_byte_stable_across_insertion_order() -> None:
-    a = DuneQuerySpec(
-        query_id=1, metric="m", parameters={"b": "2", "a": "1"}
-    )
-    b = DuneQuerySpec(
-        query_id=1, metric="m", parameters={"a": "1", "b": "2"}
-    )
+    a = DuneQuerySpec(query_id=1, metric="m", parameters={"b": "2", "a": "1"})
+    b = DuneQuerySpec(query_id=1, metric="m", parameters={"a": "1", "b": "2"})
     assert serialize_execute_body(a) == serialize_execute_body(b)
-    assert (
-        serialize_execute_body(a)
-        == b'{"query_parameters":{"a":"1","b":"2"}}'
-    )
+    assert serialize_execute_body(a) == b'{"query_parameters":{"a":"1","b":"2"}}'
 
 
 def test_dune_query_spec_empty_parameters_serialises_empty_object() -> None:
@@ -383,22 +354,12 @@ def loop():
 
 
 def test_run_query_once_happy_path(loop) -> None:
-    spec = DuneQuerySpec(
-        query_id=42, metric="daily_active_addresses", asset="BTC"
-    )
+    spec = DuneQuerySpec(query_id=42, metric="daily_active_addresses", asset="BTC")
     fetch = _ScriptedFetch(
         {
-            make_execute_url(42): [
-                json.dumps({"execution_id": "EXEC1"}).encode()
-            ],
-            make_status_url("EXEC1"): [
-                json.dumps({"state": EXECUTION_STATE_COMPLETED}).encode()
-            ],
-            make_results_url("EXEC1"): [
-                _results_body(
-                    [{"value": 1_000_000}, {"value": 500}]
-                )
-            ],
+            make_execute_url(42): [json.dumps({"execution_id": "EXEC1"}).encode()],
+            make_status_url("EXEC1"): [json.dumps({"state": EXECUTION_STATE_COMPLETED}).encode()],
+            make_results_url("EXEC1"): [_results_body([{"value": 1_000_000}, {"value": 500}])],
         }
     )
     captured: list[OnChainMetric] = []
@@ -430,9 +391,7 @@ def test_run_query_once_polls_until_completed(loop) -> None:
     spec = DuneQuerySpec(query_id=7, metric="m", poll_interval_s=0.01)
     fetch = _ScriptedFetch(
         {
-            make_execute_url(7): [
-                json.dumps({"execution_id": "EXEC7"}).encode()
-            ],
+            make_execute_url(7): [json.dumps({"execution_id": "EXEC7"}).encode()],
             make_status_url("EXEC7"): [
                 json.dumps({"state": EXECUTION_STATE_PENDING}).encode(),
                 json.dumps({"state": EXECUTION_STATE_EXECUTING}).encode(),
@@ -458,12 +417,8 @@ def test_run_query_once_handles_failed_state(loop) -> None:
     spec = DuneQuerySpec(query_id=99, metric="m")
     fetch = _ScriptedFetch(
         {
-            make_execute_url(99): [
-                json.dumps({"execution_id": "F"}).encode()
-            ],
-            make_status_url("F"): [
-                json.dumps({"state": EXECUTION_STATE_FAILED}).encode()
-            ],
+            make_execute_url(99): [json.dumps({"execution_id": "F"}).encode()],
+            make_status_url("F"): [json.dumps({"state": EXECUTION_STATE_FAILED}).encode()],
         }
     )
     client = DuneAnalyticsClient(
@@ -484,9 +439,7 @@ def test_run_query_once_handles_failed_state(loop) -> None:
 
 def test_run_query_once_handles_execute_network_failure(loop) -> None:
     spec = DuneQuerySpec(query_id=99, metric="m")
-    fetch = _ScriptedFetch(
-        {make_execute_url(99): [RuntimeError("boom")]}
-    )
+    fetch = _ScriptedFetch({make_execute_url(99): [RuntimeError("boom")]})
     client = DuneAnalyticsClient(
         sink=lambda _row: None,
         api_key="K",
@@ -505,12 +458,8 @@ def test_run_query_once_handles_results_decode_failure(loop) -> None:
     spec = DuneQuerySpec(query_id=5, metric="m")
     fetch = _ScriptedFetch(
         {
-            make_execute_url(5): [
-                json.dumps({"execution_id": "X"}).encode()
-            ],
-            make_status_url("X"): [
-                json.dumps({"state": EXECUTION_STATE_COMPLETED}).encode()
-            ],
+            make_execute_url(5): [json.dumps({"execution_id": "X"}).encode()],
+            make_status_url("X"): [json.dumps({"state": EXECUTION_STATE_COMPLETED}).encode()],
             make_results_url("X"): [b"<<not json>>"],
         }
     )
@@ -539,9 +488,7 @@ def test_run_query_once_execution_timeout(loop) -> None:
     )
     fetch = _ScriptedFetch(
         {
-            make_execute_url(11): [
-                json.dumps({"execution_id": "T"}).encode()
-            ],
+            make_execute_url(11): [json.dumps({"execution_id": "T"}).encode()],
             make_status_url("T"): [
                 json.dumps({"state": EXECUTION_STATE_PENDING}).encode(),
             ]
@@ -566,19 +513,11 @@ def test_run_all_specs_once_runs_each_spec_serially(loop) -> None:
     spec_b = DuneQuerySpec(query_id=2, metric="b")
     fetch = _ScriptedFetch(
         {
-            make_execute_url(1): [
-                json.dumps({"execution_id": "A"}).encode()
-            ],
-            make_status_url("A"): [
-                json.dumps({"state": EXECUTION_STATE_COMPLETED}).encode()
-            ],
+            make_execute_url(1): [json.dumps({"execution_id": "A"}).encode()],
+            make_status_url("A"): [json.dumps({"state": EXECUTION_STATE_COMPLETED}).encode()],
             make_results_url("A"): [_results_body([{"value": 1}])],
-            make_execute_url(2): [
-                json.dumps({"execution_id": "B"}).encode()
-            ],
-            make_status_url("B"): [
-                json.dumps({"state": EXECUTION_STATE_COMPLETED}).encode()
-            ],
+            make_execute_url(2): [json.dumps({"execution_id": "B"}).encode()],
+            make_status_url("B"): [json.dumps({"state": EXECUTION_STATE_COMPLETED}).encode()],
             make_results_url("B"): [_results_body([{"value": 2}])],
         }
     )
@@ -635,12 +574,8 @@ def test_headers_include_dune_api_key_and_no_authorization(loop) -> None:
     spec = DuneQuerySpec(query_id=1, metric="m")
     fetch = _ScriptedFetch(
         {
-            make_execute_url(1): [
-                json.dumps({"execution_id": "E"}).encode()
-            ],
-            make_status_url("E"): [
-                json.dumps({"state": EXECUTION_STATE_COMPLETED}).encode()
-            ],
+            make_execute_url(1): [json.dumps({"execution_id": "E"}).encode()],
+            make_status_url("E"): [json.dumps({"state": EXECUTION_STATE_COMPLETED}).encode()],
             make_results_url("E"): [_results_body([])],
         }
     )
@@ -667,12 +602,8 @@ def test_execute_request_body_serialises_parameters(loop) -> None:
     )
     fetch = _ScriptedFetch(
         {
-            make_execute_url(1): [
-                json.dumps({"execution_id": "E"}).encode()
-            ],
-            make_status_url("E"): [
-                json.dumps({"state": EXECUTION_STATE_COMPLETED}).encode()
-            ],
+            make_execute_url(1): [json.dumps({"execution_id": "E"}).encode()],
+            make_status_url("E"): [json.dumps({"state": EXECUTION_STATE_COMPLETED}).encode()],
             make_results_url("E"): [_results_body([])],
         }
     )
@@ -690,9 +621,7 @@ def test_execute_request_body_serialises_parameters(loop) -> None:
     assert url == make_execute_url(1)
     assert body is not None
     decoded = json.loads(body)
-    assert decoded == {
-        "query_parameters": {"address": "0xabc", "chain": "ethereum"}
-    }
+    assert decoded == {"query_parameters": {"address": "0xabc", "chain": "ethereum"}}
 
 
 # ---------------------------------------------------------------------------
@@ -725,12 +654,8 @@ def test_dune_feed_status_frozen_and_slotted() -> None:
 
 def _build_canned_responses(execution_id: str) -> dict[str, list[bytes]]:
     return {
-        make_execute_url(1): [
-            json.dumps({"execution_id": execution_id}).encode()
-        ],
-        make_status_url(execution_id): [
-            json.dumps({"state": EXECUTION_STATE_COMPLETED}).encode()
-        ],
+        make_execute_url(1): [json.dumps({"execution_id": execution_id}).encode()],
+        make_status_url(execution_id): [json.dumps({"state": EXECUTION_STATE_COMPLETED}).encode()],
         make_results_url(execution_id): [
             _results_body(
                 [
@@ -805,12 +730,7 @@ def test_three_replays_byte_identical(loop) -> None:
 # ---------------------------------------------------------------------------
 
 
-_DUNE_ADAPTER_PATH = (
-    Path(__file__).resolve().parents[3]
-    / "sensory"
-    / "onchain"
-    / "dune_adapter.py"
-)
+_DUNE_ADAPTER_PATH = Path(__file__).resolve().parents[3] / "sensory" / "onchain" / "dune_adapter.py"
 
 
 def _adapter_tree() -> ast.AST:
@@ -838,16 +758,16 @@ def test_no_forbidden_top_level_imports() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 head = alias.name.split(".")[0]
-                assert (
-                    head not in _FORBIDDEN_TOP_LEVEL_IMPORTS
-                ), f"forbidden top-level import: {alias.name}"
+                assert head not in _FORBIDDEN_TOP_LEVEL_IMPORTS, (
+                    f"forbidden top-level import: {alias.name}"
+                )
         elif isinstance(node, ast.ImportFrom):
             if node.module is None:
                 continue
             head = node.module.split(".")[0]
-            assert (
-                head not in _FORBIDDEN_TOP_LEVEL_IMPORTS
-            ), f"forbidden top-level import: {node.module}"
+            assert head not in _FORBIDDEN_TOP_LEVEL_IMPORTS, (
+                f"forbidden top-level import: {node.module}"
+            )
 
 
 def test_no_runtime_tier_imports() -> None:
@@ -869,16 +789,12 @@ def test_no_runtime_tier_imports() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 head = alias.name.split(".")[0]
-                assert (
-                    head not in forbidden
-                ), f"runtime-tier import banned: {alias.name}"
+                assert head not in forbidden, f"runtime-tier import banned: {alias.name}"
         elif isinstance(node, ast.ImportFrom):
             if node.module is None:
                 continue
             head = node.module.split(".")[0]
-            assert (
-                head not in forbidden
-            ), f"runtime-tier import banned: {node.module}"
+            assert head not in forbidden, f"runtime-tier import banned: {node.module}"
 
 
 def test_no_typed_event_constructors() -> None:
@@ -906,9 +822,9 @@ def test_no_typed_event_constructors() -> None:
             elif isinstance(func, ast.Attribute):
                 name = func.attr
             if name is not None:
-                assert (
-                    name not in forbidden_constructors
-                ), f"typed-event constructor banned in sensory adapter: {name}"
+                assert name not in forbidden_constructors, (
+                    f"typed-event constructor banned in sensory adapter: {name}"
+                )
 
 
 def test_no_top_level_clock_call() -> None:
@@ -929,9 +845,7 @@ def test_no_top_level_clock_call() -> None:
                     "now",
                     "utcnow",
                 }:
-                    pytest.fail(
-                        f"top-level clock call: {ast.dump(call)!r}"
-                    )
+                    pytest.fail(f"top-level clock call: {ast.dump(call)!r}")
 
 
 # ---------------------------------------------------------------------------

@@ -109,9 +109,7 @@ def test_ts_iso_invalid_ts_ns_falls_back() -> None:
 
 
 def test_sse_format_emits_canonical_data_line() -> None:
-    framed = _sse_format(
-        {"channel": "ticks", "ts_iso": "2024-01-01T00:00:00+00:00", "payload": {}}
-    )
+    framed = _sse_format({"channel": "ticks", "ts_iso": "2024-01-01T00:00:00+00:00", "payload": {}})
     assert framed.startswith("data: ")
     assert framed.endswith("\n\n")
     body = framed[len("data: ") : -2]

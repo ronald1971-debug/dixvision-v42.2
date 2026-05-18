@@ -68,9 +68,7 @@ def test_authority_entries_replay_writer_rows(tmp_path: Path) -> None:
 
     db_path = tmp_path / "authority.db"
     writer = _writer(db_path)
-    e1 = writer.append(
-        ts_ns=1_000, kind="MODE_TRANSITION", payload={"to": "PAPER"}
-    )
+    e1 = writer.append(ts_ns=1_000, kind="MODE_TRANSITION", payload={"to": "PAPER"})
     e2 = writer.append(
         ts_ns=2_000,
         kind="STRATEGY_LIFECYCLE",
@@ -176,9 +174,7 @@ def test_reader_close_releases_handle(tmp_path: Path) -> None:
     """``close()`` is idempotent and releases the SQLite handle."""
 
     db_path = tmp_path / "authority.db"
-    _writer(db_path).append(
-        ts_ns=1_000, kind="MODE_TRANSITION", payload={"to": "PAPER"}
-    )
+    _writer(db_path).append(ts_ns=1_000, kind="MODE_TRANSITION", payload={"to": "PAPER"})
     reader = LedgerReader(db_path=db_path)
     assert reader._conn is not None
     reader.close()
@@ -218,9 +214,7 @@ def test_authority_entries_match_writer_chain_hashes(tmp_path: Path) -> None:
         for i in range(4)
     ]
     reader = LedgerReader(db_path=db_path)
-    for written_row, read_row in zip(
-        written, reader.authority_entries(), strict=True
-    ):
+    for written_row, read_row in zip(written, reader.authority_entries(), strict=True):
         assert written_row.seq == read_row.seq
         assert written_row.ts_ns == read_row.ts_ns
         assert written_row.kind == read_row.kind

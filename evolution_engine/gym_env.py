@@ -156,24 +156,17 @@ class EpisodeConfig:
                 f"{self.initial_notional_usd!r}"
             )
         if self.max_steps <= 0:
-            raise ValueError(
-                "EpisodeConfig.max_steps must be positive, got "
-                f"{self.max_steps!r}"
-            )
+            raise ValueError(f"EpisodeConfig.max_steps must be positive, got {self.max_steps!r}")
         if self.max_steps > MAX_EPISODE_STEPS:
             raise ValueError(
-                "EpisodeConfig.max_steps must be <= "
-                f"{MAX_EPISODE_STEPS!r}, got {self.max_steps!r}"
+                f"EpisodeConfig.max_steps must be <= {MAX_EPISODE_STEPS!r}, got {self.max_steps!r}"
             )
         if not math.isfinite(self.reward_scale) or self.reward_scale <= 0.0:
             raise ValueError(
                 "EpisodeConfig.reward_scale must be a positive finite "
                 f"number, got {self.reward_scale!r}"
             )
-        if (
-            not math.isfinite(self.drawdown_penalty_weight)
-            or self.drawdown_penalty_weight < 0.0
-        ):
+        if not math.isfinite(self.drawdown_penalty_weight) or self.drawdown_penalty_weight < 0.0:
             raise ValueError(
                 "EpisodeConfig.drawdown_penalty_weight must be a "
                 "non-negative finite number, got "
@@ -213,14 +206,10 @@ class Observation:
 
     def __post_init__(self) -> None:
         if self.step_idx < 0:
-            raise ValueError(
-                f"Observation.step_idx must be non-negative, got "
-                f"{self.step_idx!r}"
-            )
+            raise ValueError(f"Observation.step_idx must be non-negative, got {self.step_idx!r}")
         if not math.isfinite(self.mid_price) or self.mid_price <= 0.0:
             raise ValueError(
-                "Observation.mid_price must be a positive finite "
-                f"number, got {self.mid_price!r}"
+                f"Observation.mid_price must be a positive finite number, got {self.mid_price!r}"
             )
         if self.inventory_signed not in (-1, 0, 1):
             raise ValueError(
@@ -229,18 +218,15 @@ class Observation:
             )
         if not math.isfinite(self.cumulative_pnl_usd):
             raise ValueError(
-                "Observation.cumulative_pnl_usd must be finite, got "
-                f"{self.cumulative_pnl_usd!r}"
+                f"Observation.cumulative_pnl_usd must be finite, got {self.cumulative_pnl_usd!r}"
             )
         if len(self.state_hash) != 16:
             raise ValueError(
-                "Observation.state_hash must be a 16-hex-char digest, "
-                f"got {self.state_hash!r}"
+                f"Observation.state_hash must be a 16-hex-char digest, got {self.state_hash!r}"
             )
         if not all(c in "0123456789abcdef" for c in self.state_hash):
             raise ValueError(
-                "Observation.state_hash must be lowercase hex, got "
-                f"{self.state_hash!r}"
+                f"Observation.state_hash must be lowercase hex, got {self.state_hash!r}"
             )
 
 
@@ -262,23 +248,16 @@ class Transition:
     info: Mapping[str, Any] = dataclasses.field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if (
-            not math.isfinite(self.next_mid_price)
-            or self.next_mid_price <= 0.0
-        ):
+        if not math.isfinite(self.next_mid_price) or self.next_mid_price <= 0.0:
             raise ValueError(
                 "Transition.next_mid_price must be a positive finite "
                 f"number, got {self.next_mid_price!r}"
             )
         if not math.isfinite(self.realised_pnl_usd):
             raise ValueError(
-                "Transition.realised_pnl_usd must be finite, got "
-                f"{self.realised_pnl_usd!r}"
+                f"Transition.realised_pnl_usd must be finite, got {self.realised_pnl_usd!r}"
             )
-        if (
-            not math.isfinite(self.drawdown_usd)
-            or self.drawdown_usd < 0.0
-        ):
+        if not math.isfinite(self.drawdown_usd) or self.drawdown_usd < 0.0:
             raise ValueError(
                 "Transition.drawdown_usd must be a non-negative finite "
                 f"number, got {self.drawdown_usd!r}"
@@ -442,24 +421,15 @@ class DIXStrategyEnv:
         """Start a new episode. Mirrors ``gymnasium.Env.reset`` shape."""
 
         if not isinstance(seed, int) or isinstance(seed, bool):
-            raise TypeError(
-                "DIXStrategyEnv.reset requires int seed, got "
-                f"{type(seed).__name__}"
-            )
+            raise TypeError(f"DIXStrategyEnv.reset requires int seed, got {type(seed).__name__}")
         if seed < 0:
-            raise ValueError(
-                f"DIXStrategyEnv.reset seed must be non-negative, got "
-                f"{seed!r}"
-            )
+            raise ValueError(f"DIXStrategyEnv.reset seed must be non-negative, got {seed!r}")
         if not isinstance(config, EpisodeConfig):
             raise TypeError(
-                "DIXStrategyEnv.reset requires EpisodeConfig, got "
-                f"{type(config).__name__}"
+                f"DIXStrategyEnv.reset requires EpisodeConfig, got {type(config).__name__}"
             )
 
-        initial_mid = self._dynamics.initial_mid_price(
-            seed=seed, config=config
-        )
+        initial_mid = self._dynamics.initial_mid_price(seed=seed, config=config)
         if not math.isfinite(initial_mid) or initial_mid <= 0.0:
             raise ValueError(
                 "MarketDynamics.initial_mid_price must return a "
@@ -497,37 +467,29 @@ class DIXStrategyEnv:
         """Advance the env. Mirrors ``gymnasium.Env.step`` shape."""
 
         if self._current_obs is None or self._config is None:
-            raise EpisodeNotStartedError(
-                "DIXStrategyEnv.step called before reset"
-            )
+            raise EpisodeNotStartedError("DIXStrategyEnv.step called before reset")
         if self._terminated or self._truncated:
             raise EpisodeBudgetExceededError(
-                "DIXStrategyEnv.step called on a terminated episode; "
-                "call reset() first"
+                "DIXStrategyEnv.step called on a terminated episode; call reset() first"
             )
         if not isinstance(action, TradeAction):
             try:
                 action = TradeAction(int(action))
             except (TypeError, ValueError) as exc:
                 raise TypeError(
-                    "DIXStrategyEnv.step action must coerce to "
-                    f"TradeAction, got {action!r}"
+                    f"DIXStrategyEnv.step action must coerce to TradeAction, got {action!r}"
                 ) from exc
         if self._step_count >= self._config.max_steps:
             raise EpisodeBudgetExceededError(
-                "DIXStrategyEnv.step exceeded EpisodeConfig.max_steps="
-                f"{self._config.max_steps!r}"
+                f"DIXStrategyEnv.step exceeded EpisodeConfig.max_steps={self._config.max_steps!r}"
             )
         if self._step_count >= MAX_EPISODE_STEPS:
             raise EpisodeBudgetExceededError(
-                "DIXStrategyEnv.step exceeded MAX_EPISODE_STEPS="
-                f"{MAX_EPISODE_STEPS!r}"
+                f"DIXStrategyEnv.step exceeded MAX_EPISODE_STEPS={MAX_EPISODE_STEPS!r}"
             )
         assert self._episode_seed is not None  # narrowed by reset() guard
 
-        per_step_seed = self._seed_factory(
-            self._episode_seed, self._step_count
-        )
+        per_step_seed = self._seed_factory(self._episode_seed, self._step_count)
         transition = self._dynamics.step(
             self._current_obs,
             action,
@@ -536,19 +498,14 @@ class DIXStrategyEnv:
         )
         if not isinstance(transition, Transition):
             raise TypeError(
-                "MarketDynamics.step must return Transition, got "
-                f"{type(transition).__name__}"
+                f"MarketDynamics.step must return Transition, got {type(transition).__name__}"
             )
 
         next_step_idx = self._step_count + 1
-        next_pnl = (
-            self._current_obs.cumulative_pnl_usd
-            + transition.realised_pnl_usd
-        )
+        next_pnl = self._current_obs.cumulative_pnl_usd + transition.realised_pnl_usd
         if not math.isfinite(next_pnl):
             raise ValueError(
-                "DIXStrategyEnv.step produced non-finite cumulative "
-                f"pnl: {next_pnl!r}"
+                f"DIXStrategyEnv.step produced non-finite cumulative pnl: {next_pnl!r}"
             )
         next_obs = Observation(
             step_idx=next_step_idx,
@@ -566,26 +523,18 @@ class DIXStrategyEnv:
 
         reward = (
             self._config.reward_scale * transition.realised_pnl_usd
-            - self._config.drawdown_penalty_weight
-            * transition.drawdown_usd
+            - self._config.drawdown_penalty_weight * transition.drawdown_usd
         )
         if not math.isfinite(reward):
-            raise ValueError(
-                f"DIXStrategyEnv.step produced non-finite reward: "
-                f"{reward!r}"
-            )
+            raise ValueError(f"DIXStrategyEnv.step produced non-finite reward: {reward!r}")
 
-        truncated = bool(transition.truncated) or (
-            next_step_idx >= self._config.max_steps
-        )
+        truncated = bool(transition.truncated) or (next_step_idx >= self._config.max_steps)
         terminated = bool(transition.terminated)
 
         info_payload: dict[str, Any] = dict(transition.info)
         info_payload.setdefault("step_seed", per_step_seed)
         info_payload.setdefault("step_idx", next_step_idx)
-        info_payload.setdefault(
-            "drawdown_usd", float(transition.drawdown_usd)
-        )
+        info_payload.setdefault("drawdown_usd", float(transition.drawdown_usd))
 
         self._current_obs = next_obs
         self._step_count = next_step_idx
@@ -635,9 +584,7 @@ def gymnasium_dix_strategy_env(
         action_space = spaces.Discrete(len(TradeAction))
         # Box space matches the Observation fields; mid_price unbounded
         # above, inventory_signed in {-1,0,1}, pnl unbounded.
-        observation_space = spaces.Box(
-            low=-math.inf, high=math.inf, shape=(4,)
-        )
+        observation_space = spaces.Box(low=-math.inf, high=math.inf, shape=(4,))
 
         def reset(  # type: ignore[override]
             self, *, seed: int | None = None, options: Any = None
@@ -660,9 +607,7 @@ def gymnasium_dix_strategy_env(
         def step(  # type: ignore[override]
             self, action: int
         ) -> tuple[Any, float, bool, bool, Mapping[str, Any]]:
-            obs, reward, terminated, truncated, info = inner.step(
-                TradeAction(int(action))
-            )
+            obs, reward, terminated, truncated, info = inner.step(TradeAction(int(action)))
             return (
                 _observation_to_tuple(obs),
                 reward,

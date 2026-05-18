@@ -219,9 +219,7 @@ def test_no_top_level_numba_import_in_this_file() -> None:
     import ast as _ast
     import inspect as _inspect
 
-    src = _inspect.getsource(
-        __import__("tests.bench.test_slippage_jit_bench", fromlist=["*"])
-    )
+    src = _inspect.getsource(__import__("tests.bench.test_slippage_jit_bench", fromlist=["*"]))
     tree = _ast.parse(src)
     for node in tree.body:
         if isinstance(node, _ast.Import):

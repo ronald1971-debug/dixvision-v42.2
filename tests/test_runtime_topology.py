@@ -55,11 +55,7 @@ from tools.runtime_topology import (
     is_legal_transition,
 )
 
-MODULE_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "tools"
-    / "runtime_topology.py"
-)
+MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "runtime_topology.py"
 
 
 # ---------------------------------------------------------------------------
@@ -158,9 +154,7 @@ def test_legal_transitions_declared_to_wired() -> None:
 
 
 def test_legal_transitions_declared_to_dormant() -> None:
-    assert is_legal_transition(
-        LifecycleState.DECLARED, LifecycleState.DORMANT
-    )
+    assert is_legal_transition(LifecycleState.DECLARED, LifecycleState.DORMANT)
 
 
 def test_legal_transitions_wired_to_started() -> None:
@@ -172,15 +166,11 @@ def test_legal_transitions_started_to_healthy() -> None:
 
 
 def test_legal_transitions_healthy_to_degraded() -> None:
-    assert is_legal_transition(
-        LifecycleState.HEALTHY, LifecycleState.DEGRADED
-    )
+    assert is_legal_transition(LifecycleState.HEALTHY, LifecycleState.DEGRADED)
 
 
 def test_legal_transitions_degraded_to_healthy() -> None:
-    assert is_legal_transition(
-        LifecycleState.DEGRADED, LifecycleState.HEALTHY
-    )
+    assert is_legal_transition(LifecycleState.DEGRADED, LifecycleState.HEALTHY)
 
 
 def test_legal_transitions_started_to_stopped() -> None:
@@ -189,28 +179,20 @@ def test_legal_transitions_started_to_stopped() -> None:
 
 def test_legal_transitions_stopped_to_wired_only() -> None:
     assert is_legal_transition(LifecycleState.STOPPED, LifecycleState.WIRED)
-    assert not is_legal_transition(
-        LifecycleState.STOPPED, LifecycleState.HEALTHY
-    )
+    assert not is_legal_transition(LifecycleState.STOPPED, LifecycleState.HEALTHY)
 
 
 def test_legal_transitions_dormant_to_wired_only() -> None:
     assert is_legal_transition(LifecycleState.DORMANT, LifecycleState.WIRED)
-    assert not is_legal_transition(
-        LifecycleState.DORMANT, LifecycleState.HEALTHY
-    )
+    assert not is_legal_transition(LifecycleState.DORMANT, LifecycleState.HEALTHY)
 
 
 def test_illegal_transition_declared_to_healthy() -> None:
-    assert not is_legal_transition(
-        LifecycleState.DECLARED, LifecycleState.HEALTHY
-    )
+    assert not is_legal_transition(LifecycleState.DECLARED, LifecycleState.HEALTHY)
 
 
 def test_illegal_transition_healthy_to_declared() -> None:
-    assert not is_legal_transition(
-        LifecycleState.HEALTHY, LifecycleState.DECLARED
-    )
+    assert not is_legal_transition(LifecycleState.HEALTHY, LifecycleState.DECLARED)
 
 
 # ---------------------------------------------------------------------------
@@ -341,9 +323,7 @@ def test_runtime_node_rejects_too_many_capabilities() -> None:
 
 def test_runtime_node_rejects_oversize_capability() -> None:
     with pytest.raises(TopologyError):
-        _make_node(
-            capabilities=frozenset({"a" * (MAX_CAPABILITY_LEN + 1)})
-        )
+        _make_node(capabilities=frozenset({"a" * (MAX_CAPABILITY_LEN + 1)}))
 
 
 def test_runtime_node_rejects_uppercase_capability() -> None:
@@ -364,25 +344,19 @@ def test_runtime_node_canonical_sorts_capabilities() -> None:
 
 
 def test_runtime_edge_is_frozen() -> None:
-    edge = RuntimeEdge(
-        source_id="a", target_id="b", relation=EdgeRelation.PRODUCES
-    )
+    edge = RuntimeEdge(source_id="a", target_id="b", relation=EdgeRelation.PRODUCES)
     with pytest.raises((AttributeError, TypeError)):
         edge.source_id = "other"  # type: ignore[misc]
 
 
 def test_runtime_edge_is_slotted() -> None:
-    edge = RuntimeEdge(
-        source_id="a", target_id="b", relation=EdgeRelation.PRODUCES
-    )
+    edge = RuntimeEdge(source_id="a", target_id="b", relation=EdgeRelation.PRODUCES)
     assert not hasattr(edge, "__dict__")
 
 
 def test_runtime_edge_rejects_self_loop() -> None:
     with pytest.raises(TopologyError):
-        RuntimeEdge(
-            source_id="a", target_id="a", relation=EdgeRelation.PRODUCES
-        )
+        RuntimeEdge(source_id="a", target_id="a", relation=EdgeRelation.PRODUCES)
 
 
 def test_runtime_edge_rejects_invalid_source() -> None:
@@ -438,11 +412,7 @@ def _two_node_topology() -> RuntimeTopology:
     )
     return RuntimeTopology(
         nodes=(a, b),
-        edges=(
-            RuntimeEdge(
-                source_id="a", target_id="b", relation=EdgeRelation.PRODUCES
-            ),
-        ),
+        edges=(RuntimeEdge(source_id="a", target_id="b", relation=EdgeRelation.PRODUCES),),
     )
 
 
@@ -544,9 +514,7 @@ def test_runtime_topology_allows_parallel_edges_with_different_relation() -> Non
 
 def test_runtime_topology_sorts_nodes_on_construction() -> None:
     a = _make_node(node_id="z_last", capabilities=frozenset())
-    b = _make_node(
-        node_id="a_first", kind=NodeKind.LOOP, capabilities=frozenset()
-    )
+    b = _make_node(node_id="a_first", kind=NodeKind.LOOP, capabilities=frozenset())
     topology = RuntimeTopology(nodes=(a, b), edges=())
     assert [n.node_id for n in topology.nodes] == ["a_first", "z_last"]
 
@@ -570,9 +538,7 @@ def test_runtime_topology_sorts_edges_on_construction() -> None:
             ),
         ),
     )
-    assert [
-        (e.source_id, e.target_id) for e in topology.edges
-    ] == [("a", "b"), ("b", "c")]
+    assert [(e.source_id, e.target_id) for e in topology.edges] == [("a", "b"), ("b", "c")]
 
 
 # ---------------------------------------------------------------------------
@@ -602,12 +568,8 @@ def test_topology_digest_is_deterministic_across_runs() -> None:
 
 def test_topology_digest_changes_on_node_addition() -> None:
     base = _two_node_topology()
-    extra = _make_node(
-        node_id="c", kind=NodeKind.LOOP, capabilities=frozenset({"z"})
-    )
-    enlarged = RuntimeTopology(
-        nodes=(*base.nodes, extra), edges=base.edges
-    )
+    extra = _make_node(node_id="c", kind=NodeKind.LOOP, capabilities=frozenset({"z"}))
+    enlarged = RuntimeTopology(nodes=(*base.nodes, extra), edges=base.edges)
     assert base.digest() != enlarged.digest()
 
 
@@ -619,9 +581,7 @@ def test_topology_digest_is_order_independent() -> None:
         tier=NodeTier.T1,
         capabilities=frozenset({"y"}),
     )
-    edge_ab = RuntimeEdge(
-        source_id="a", target_id="b", relation=EdgeRelation.PRODUCES
-    )
+    edge_ab = RuntimeEdge(source_id="a", target_id="b", relation=EdgeRelation.PRODUCES)
 
     forward = RuntimeTopology(nodes=(a, b), edges=(edge_ab,))
     reverse = RuntimeTopology(nodes=(b, a), edges=(edge_ab,))
@@ -630,11 +590,7 @@ def test_topology_digest_is_order_independent() -> None:
 
 def test_topology_digest_changes_on_relation_swap() -> None:
     base = _two_node_topology()
-    alt_edges = (
-        RuntimeEdge(
-            source_id="a", target_id="b", relation=EdgeRelation.GATES
-        ),
-    )
+    alt_edges = (RuntimeEdge(source_id="a", target_id="b", relation=EdgeRelation.GATES),)
     alt = RuntimeTopology(nodes=base.nodes, edges=alt_edges)
     assert base.digest() != alt.digest()
 
@@ -758,9 +714,7 @@ def test_factory_build_matches_direct_construction() -> None:
     factory = enable_runtime_topology_factory()
     a = _make_node(node_id="a", capabilities=frozenset())
     b = _make_node(node_id="b", kind=NodeKind.LOOP, capabilities=frozenset())
-    edge = RuntimeEdge(
-        source_id="a", target_id="b", relation=EdgeRelation.PRODUCES
-    )
+    edge = RuntimeEdge(source_id="a", target_id="b", relation=EdgeRelation.PRODUCES)
     topology = factory.build(nodes=(a, b), edges=(edge,))
     direct = RuntimeTopology(nodes=(a, b), edges=(edge,))
     assert topology.digest() == direct.digest()
@@ -797,18 +751,14 @@ def _build_realistic_topology() -> RuntimeTopology:
             kind=NodeKind.ENGINE,
             tier=NodeTier.T0,
             declared_version="v1",
-            capabilities=frozenset(
-                {"governance.policy", "governance.consent"}
-            ),
+            capabilities=frozenset({"governance.policy", "governance.consent"}),
         ),
         RuntimeNode(
             node_id="intelligence_engine",
             kind=NodeKind.ENGINE,
             tier=NodeTier.T1,
             declared_version="v1",
-            capabilities=frozenset(
-                {"intelligence.signal", "intelligence.meta"}
-            ),
+            capabilities=frozenset({"intelligence.signal", "intelligence.meta"}),
         ),
         RuntimeNode(
             node_id="intelligence_engine.closed_learning_loop",
@@ -896,13 +846,9 @@ def test_inv_15_three_runs_produce_identical_canonical() -> None:
 def test_realistic_topology_resolves_providers() -> None:
     topology = _build_realistic_topology()
     learning_providers = topology.providers_of("learning.closed_loop")
-    assert {n.node_id for n in learning_providers} == {
-        "intelligence_engine.closed_learning_loop"
-    }
+    assert {n.node_id for n in learning_providers} == {"intelligence_engine.closed_learning_loop"}
     governance_providers = topology.providers_of("governance.policy")
-    assert {n.node_id for n in governance_providers} == {
-        "governance_engine"
-    }
+    assert {n.node_id for n in governance_providers} == {"governance_engine"}
 
 
 # ---------------------------------------------------------------------------
@@ -994,8 +940,7 @@ def test_no_banned_top_level_imports() -> None:
     for imp in imports:
         root = imp.split(".")[0]
         assert root not in _BANNED_TOP_LEVEL_MODULES, (
-            f"banned top-level import {imp!r} (root {root!r}) found "
-            f"in tools/runtime_topology.py"
+            f"banned top-level import {imp!r} (root {root!r}) found in tools/runtime_topology.py"
         )
 
 

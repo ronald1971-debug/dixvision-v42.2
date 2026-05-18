@@ -50,9 +50,7 @@ def test_state_snapshot_values_are_strings() -> None:
 
 
 def test_strong_buy_is_faded_to_sell() -> None:
-    a = AdversarialAgent(
-        fade_threshold=0.5, fade_confidence_scale=0.5, min_confidence=0.0
-    )
+    a = AdversarialAgent(fade_threshold=0.5, fade_confidence_scale=0.5, min_confidence=0.0)
     trace = a.decide(_signal(1, Side.BUY, conf=0.8))
     assert trace.direction == "SELL"
     assert pytest.approx(trace.confidence) == 0.4
@@ -60,9 +58,7 @@ def test_strong_buy_is_faded_to_sell() -> None:
 
 
 def test_strong_sell_is_faded_to_buy() -> None:
-    a = AdversarialAgent(
-        fade_threshold=0.5, fade_confidence_scale=0.5, min_confidence=0.0
-    )
+    a = AdversarialAgent(fade_threshold=0.5, fade_confidence_scale=0.5, min_confidence=0.0)
     trace = a.decide(_signal(1, Side.SELL, conf=0.9))
     assert trace.direction == "BUY"
     assert pytest.approx(trace.confidence) == 0.45
@@ -85,9 +81,7 @@ def test_hold_side_not_faded() -> None:
 
 
 def test_threshold_boundary_is_inclusive() -> None:
-    a = AdversarialAgent(
-        fade_threshold=0.5, fade_confidence_scale=1.0, min_confidence=0.0
-    )
+    a = AdversarialAgent(fade_threshold=0.5, fade_confidence_scale=1.0, min_confidence=0.0)
     trace = a.decide(_signal(1, Side.BUY, conf=0.5))
     assert trace.direction == "SELL"
     assert "adversarial_fade_buy" in trace.rationale_tags
@@ -95,9 +89,7 @@ def test_threshold_boundary_is_inclusive() -> None:
 
 def test_low_confidence_after_scaling_downgraded() -> None:
     """0.6 BUY scaled by 0.1 = 0.06 — below floor of 0.1 → HOLD."""
-    a = AdversarialAgent(
-        fade_threshold=0.5, fade_confidence_scale=0.1, min_confidence=0.1
-    )
+    a = AdversarialAgent(fade_threshold=0.5, fade_confidence_scale=0.1, min_confidence=0.1)
     trace = a.decide(_signal(1, Side.BUY, conf=0.6))
     assert trace.direction == "HOLD"
     assert "confidence_below_floor" in trace.rationale_tags
@@ -145,9 +137,7 @@ def test_rationale_tags_in_registry_allowlist() -> None:
 
     repo = Path(__file__).resolve().parents[1]
     doc = yaml.safe_load(
-        (repo / "registry" / "agent_rationale_tags.yaml").read_text(
-            encoding="utf-8"
-        )
+        (repo / "registry" / "agent_rationale_tags.yaml").read_text(encoding="utf-8")
     )
     allowed = set(doc.get("tags", []))
     used = {

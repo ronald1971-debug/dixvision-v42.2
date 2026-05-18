@@ -41,9 +41,7 @@ from simulation.parallel_runner import (
     StepFn,
 )
 
-_MODULE_PATH = (
-    Path(__file__).resolve().parent.parent / "simulation" / "distributed_runner.py"
-)
+_MODULE_PATH = Path(__file__).resolve().parent.parent / "simulation" / "distributed_runner.py"
 
 
 # ---------------------------------------------------------------------------
@@ -282,10 +280,7 @@ def test_executor_duplicate_seed_rejected() -> None:
 
 
 def test_three_run_byte_identical_replay() -> None:
-    runs = [
-        DistributedRunner().run(_scenario(), [3, 1, 7, 5, 2], _step)
-        for _ in range(3)
-    ]
+    runs = [DistributedRunner().run(_scenario(), [3, 1, 7, 5, 2], _step) for _ in range(3)]
     assert runs[0] == runs[1] == runs[2]
 
 

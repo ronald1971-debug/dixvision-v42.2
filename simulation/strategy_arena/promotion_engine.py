@@ -154,13 +154,9 @@ class PromotionRecommendation:
 
     def __post_init__(self) -> None:
         if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
-            raise PromotionEngineInputError(
-                "PromotionRecommendation.ts_ns must be int"
-            )
+            raise PromotionEngineInputError("PromotionRecommendation.ts_ns must be int")
         if self.ts_ns < 0:
-            raise PromotionEngineInputError(
-                "PromotionRecommendation.ts_ns must be non-negative"
-            )
+            raise PromotionEngineInputError("PromotionRecommendation.ts_ns must be non-negative")
         for field_name in (
             "recommendation_id",
             "source",
@@ -184,9 +180,7 @@ class PromotionRecommendation:
                 f"got {self.role!r}"
             )
         if not isinstance(self.pnl_mean_usd, float):
-            raise PromotionEngineInputError(
-                "PromotionRecommendation.pnl_mean_usd must be float"
-            )
+            raise PromotionEngineInputError("PromotionRecommendation.pnl_mean_usd must be float")
         if not isinstance(self.max_drawdown_usd, float):
             raise PromotionEngineInputError(
                 "PromotionRecommendation.max_drawdown_usd must be float"
@@ -205,8 +199,7 @@ class PromotionRecommendation:
                 or not pair[0]
             ):
                 raise PromotionEngineInputError(
-                    "PromotionRecommendation.meta entries must be "
-                    "(non-empty str, str) tuples"
+                    "PromotionRecommendation.meta entries must be (non-empty str, str) tuples"
                 )
             if pair[0] in seen_keys:
                 raise PromotionEngineInputError(
@@ -252,22 +245,18 @@ def build_promotion_recommendations(
         )
     if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
         raise PromotionEngineInputError(
-            f"build_promotion_recommendations.ts_ns must be int, "
-            f"got {type(ts_ns).__name__}"
+            f"build_promotion_recommendations.ts_ns must be int, got {type(ts_ns).__name__}"
         )
     if ts_ns < 0:
         raise PromotionEngineInputError(
-            "build_promotion_recommendations.ts_ns must be non-negative, "
-            f"got {ts_ns!r}"
+            f"build_promotion_recommendations.ts_ns must be non-negative, got {ts_ns!r}"
         )
     extra = _validate_extra_meta(extra_meta)
 
     elites = frozenset(result.elites)
     winners = frozenset(result.tournament_winners)
 
-    contestants_by_id: dict[str, Contestant] = {
-        c.strategy_id: c for c in result.contestants
-    }
+    contestants_by_id: dict[str, Contestant] = {c.strategy_id: c for c in result.contestants}
 
     recommendations: list[PromotionRecommendation] = []
     for sid in result.survivors:
@@ -349,10 +338,7 @@ def _validate_extra_meta(
     pairs: list[tuple[str, str]] = []
     for key, value in extra_meta.items():
         if not isinstance(key, str) or not key:
-            raise PromotionEngineInputError(
-                "extra_meta keys must be non-empty str, "
-                f"got {key!r}"
-            )
+            raise PromotionEngineInputError(f"extra_meta keys must be non-empty str, got {key!r}")
         if not isinstance(value, str):
             raise PromotionEngineInputError(
                 "extra_meta values must be str, "
@@ -437,9 +423,7 @@ def _recommendation_id(
     """
 
     canonical = (
-        f"arena_digest={arena_digest}\n"
-        f"strategy_id={strategy_id}\n"
-        f"ts_ns={ts_ns}\n"
+        f"arena_digest={arena_digest}\nstrategy_id={strategy_id}\nts_ns={ts_ns}\n"
     ).encode()
     return "promote-" + hashlib.blake2b(canonical, digest_size=8).hexdigest()
 

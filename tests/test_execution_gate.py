@@ -110,9 +110,7 @@ def test_guard_rejects_unapproved_intent():
 
 def test_guard_rejects_caller_not_in_allowlist():
     hazards: list[HazardEvent] = []
-    guard = _guard(
-        hazards=hazards, caller_allowlist=frozenset({"execution_engine"})
-    )
+    guard = _guard(hazards=hazards, caller_allowlist=frozenset({"execution_engine"}))
     intent = _approved_intent()
     with pytest.raises(UnauthorizedActorError) as exc:
         guard.assert_can_execute(intent, caller="ui.dashboard")
@@ -169,15 +167,11 @@ def test_guard_rejects_tests_fixtures_origin_in_production_caller():
     ``execution_engine`` must still reject a fixture-origin intent."""
 
     hazards: list[HazardEvent] = []
-    guard = _guard(
-        hazards=hazards, caller_allowlist=frozenset({"execution_engine"})
-    )
+    guard = _guard(hazards=hazards, caller_allowlist=frozenset({"execution_engine"}))
     intent = _approved_intent()
     with pytest.raises(UnauthorizedActorError) as exc:
         guard.assert_can_execute(intent, caller="execution_engine")
-    assert "tests.fixtures origin requires explicit test caller" in str(
-        exc.value
-    )
+    assert "tests.fixtures origin requires explicit test caller" in str(exc.value)
 
 
 # ---------------------------------------------------------------------------
@@ -200,9 +194,7 @@ def test_execute_raises_when_unapproved():
     hazards: list[HazardEvent] = []
     guard = _guard(hazards=hazards)
     engine = ExecutionEngine(adapter=PaperBroker(), guard=guard)
-    proposal = create_execution_intent(
-        ts_ns=1, origin="tests.fixtures", signal=_signal()
-    )
+    proposal = create_execution_intent(ts_ns=1, origin="tests.fixtures", signal=_signal())
     with pytest.raises(UnauthorizedActorError):
         engine.execute(proposal, caller="tests.fixtures")
     assert len(hazards) == 1
@@ -211,9 +203,7 @@ def test_execute_raises_when_unapproved():
 
 def test_execute_raises_when_caller_not_authorised():
     hazards: list[HazardEvent] = []
-    guard = _guard(
-        hazards=hazards, caller_allowlist=frozenset({"execution_engine"})
-    )
+    guard = _guard(hazards=hazards, caller_allowlist=frozenset({"execution_engine"}))
     engine = ExecutionEngine(adapter=PaperBroker(), guard=guard)
     intent = _approved_intent(origin="intelligence_engine.meta_controller.hot_path")
     with pytest.raises(UnauthorizedActorError):

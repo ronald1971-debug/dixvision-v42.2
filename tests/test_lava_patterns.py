@@ -91,9 +91,7 @@ def test_authority_no_vendor_imports() -> None:
     imports = _iter_imports(MODULE_AST)
     for name in imports:
         root = name.split(".")[0]
-        assert (
-            root not in forbidden
-        ), f"forbidden vendor import: {name}"
+        assert root not in forbidden, f"forbidden vendor import: {name}"
 
 
 def test_authority_no_engine_cross_imports() -> None:
@@ -108,9 +106,7 @@ def test_authority_no_engine_cross_imports() -> None:
     )
     for name in imports:
         for prefix in forbidden_prefixes:
-            assert not name.startswith(prefix), (
-                f"forbidden cross-engine import: {name}"
-            )
+            assert not name.startswith(prefix), f"forbidden cross-engine import: {name}"
 
 
 def test_authority_no_runtime_imports() -> None:
@@ -132,9 +128,7 @@ def test_authority_no_runtime_imports() -> None:
     tops = _iter_top_level_imports(MODULE_AST)
     for name in tops:
         root = name.split(".")[0]
-        assert (
-            root not in forbidden_roots
-        ), f"forbidden top-level runtime import: {name}"
+        assert root not in forbidden_roots, f"forbidden top-level runtime import: {name}"
 
 
 def test_authority_allowed_stdlib_imports_only() -> None:
@@ -180,7 +174,9 @@ def test_spike_rejects_bool_ts() -> None:
 def test_spike_rejects_non_str_source_port_id() -> None:
     with pytest.raises(LavaPortError):
         LavaSpike[float](
-            ts_ns=1, payload=1.0, source_port_id=1  # type: ignore[arg-type]
+            ts_ns=1,
+            payload=1.0,
+            source_port_id=1,  # type: ignore[arg-type]
         )
 
 
@@ -357,7 +353,8 @@ def test_process_requires_non_empty_id() -> None:
 def test_process_rejects_non_tuple_in_ports() -> None:
     with pytest.raises(LavaCompositionError):
         LavaProcess(
-            process_id="p", in_ports=[LavaInPort(port_id="i")]  # type: ignore[arg-type]
+            process_id="p",
+            in_ports=[LavaInPort(port_id="i")],  # type: ignore[arg-type]
         )
 
 
@@ -486,14 +483,10 @@ def test_process_fifo_per_port() -> None:
 def test_process_listener_invoked() -> None:
     async def main() -> None:
         in_port = LavaInPort[int](port_id="i", capacity=8)
-        process = PassthroughProcess[int](
-            process_id="p", in_ports=(in_port,), out_ports=()
-        )
+        process = PassthroughProcess[int](process_id="p", in_ports=(in_port,), out_ports=())
         seen: list[int] = []
 
-        async def listener(
-            _p: LavaInPort[Any], s: LavaSpike[Any]
-        ) -> None:
+        async def listener(_p: LavaInPort[Any], s: LavaSpike[Any]) -> None:
             seen.append(s.payload)
 
         process.add_spike_listener(listener)
@@ -605,15 +598,9 @@ def test_graph_accepts_diamond() -> None:
     s_in_l = LavaInPort[int](port_id="s.l")
     s_in_r = LavaInPort[int](port_id="s.r")
     root = LavaProcess(process_id="root", out_ports=(root_out,))
-    left = LavaProcess(
-        process_id="left", in_ports=(l_in,), out_ports=(l_out,)
-    )
-    right = LavaProcess(
-        process_id="right", in_ports=(r_in,), out_ports=(r_out,)
-    )
-    sink = LavaProcess(
-        process_id="sink", in_ports=(s_in_l, s_in_r)
-    )
+    left = LavaProcess(process_id="left", in_ports=(l_in,), out_ports=(l_out,))
+    right = LavaProcess(process_id="right", in_ports=(r_in,), out_ports=(r_out,))
+    sink = LavaProcess(process_id="sink", in_ports=(s_in_l, s_in_r))
     graph = LavaGraph(processes=(root, left, right, sink))
     # Root fans out to both branches.
     root_out.connect(l_in)
@@ -661,9 +648,7 @@ def test_scheduler_rejects_invalid_timeout() -> None:
     asyncio.run(main())
 
 
-def _build_two_stage_graph() -> (
-    tuple[LavaOutPort[int], LavaScheduler, PassthroughProcess[int]]
-):
+def _build_two_stage_graph() -> tuple[LavaOutPort[int], LavaScheduler, PassthroughProcess[int]]:
     source_out = LavaOutPort[int](port_id="source.out")
     mid_in = LavaInPort[int](port_id="mid.in", capacity=64)
     mid_out = LavaOutPort[int](port_id="mid.out")
@@ -673,9 +658,7 @@ def _build_two_stage_graph() -> (
         in_ports=(mid_in,),
         out_ports=(mid_out,),
     )
-    sink = PassthroughProcess[int](
-        process_id="sink", in_ports=(sink_in,), out_ports=()
-    )
+    sink = PassthroughProcess[int](process_id="sink", in_ports=(sink_in,), out_ports=())
     graph = LavaGraph(processes=(midway, sink))
     graph.connect(source_out, mid_in)
     graph.connect(mid_out, sink_in)
@@ -756,9 +739,7 @@ def test_no_polling_when_idle() -> None:
 
     async def main() -> int:
         in_port = LavaInPort[int](port_id="i", capacity=4)
-        process = PassthroughProcess[int](
-            process_id="p", in_ports=(in_port,), out_ports=()
-        )
+        process = PassthroughProcess[int](process_id="p", in_ports=(in_port,), out_ports=())
         in_port.bind("ext")
         await in_port.close()
         await process.run()

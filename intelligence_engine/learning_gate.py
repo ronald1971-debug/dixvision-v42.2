@@ -109,9 +109,7 @@ class LearningGate:
     via the audited route propagates without re-wiring the engine.
     """
 
-    policy_supplier: Callable[[], DevelopmentModePolicy | None] = (
-        lambda: None
-    )
+    policy_supplier: Callable[[], DevelopmentModePolicy | None] = lambda: None
 
     def current_policy(self) -> DevelopmentModePolicy | None:
         """Re-read the policy from the supplier. Pure pass-through."""
@@ -160,12 +158,8 @@ class LearningGate:
             "policy": "DevelopmentModePolicy",
             "version": POLICY_VERSION,
             "reason": LEARNING_GATE_CLOSED_REASON,
-            "development_enabled": (
-                "true" if policy.development_enabled else "false"
-            ),
-            "trading_allowed": (
-                "true" if policy.trading_allowed else "false"
-            ),
+            "development_enabled": ("true" if policy.development_enabled else "false"),
+            "trading_allowed": ("true" if policy.trading_allowed else "false"),
             "mode": policy.mode.name if policy.mode is not None else "",
             "supplier": "live",
         }

@@ -175,14 +175,10 @@ class TimeSeries:
             raise FeatureExtractionError("TimeSeries.values exceeds MAX_SERIES_LEN")
         for i, value in enumerate(self.values):
             if isinstance(value, bool) or not isinstance(value, (int, float)):
-                raise FeatureExtractionError(
-                    f"TimeSeries.values[{i}] must be a real number"
-                )
+                raise FeatureExtractionError(f"TimeSeries.values[{i}] must be a real number")
             f = float(value)
             if f != f or f in (math.inf, -math.inf):
-                raise FeatureExtractionError(
-                    f"TimeSeries.values[{i}] must be finite"
-                )
+                raise FeatureExtractionError(f"TimeSeries.values[{i}] must be finite")
         if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
             raise FeatureExtractionError("TimeSeries.ts_ns must be int")
         if self.ts_ns < 0:
@@ -255,27 +251,17 @@ class FeatureVector:
         if not isinstance(self.feature_set, FeatureSet):
             raise FeatureExtractionError("FeatureVector.feature_set must be FeatureSet")
         if not isinstance(self.values, Mapping) or not self.values:
-            raise FeatureExtractionError(
-                "FeatureVector.values must be a non-empty Mapping"
-            )
+            raise FeatureExtractionError("FeatureVector.values must be a non-empty Mapping")
         for key, value in self.values.items():
             if not isinstance(key, str) or not key:
-                raise FeatureExtractionError(
-                    "FeatureVector.values keys must be non-empty str"
-                )
+                raise FeatureExtractionError("FeatureVector.values keys must be non-empty str")
             if len(key) > MAX_NAME_LEN:
-                raise FeatureExtractionError(
-                    "FeatureVector.values key too long"
-                )
+                raise FeatureExtractionError("FeatureVector.values key too long")
             if isinstance(value, bool) or not isinstance(value, (int, float)):
-                raise FeatureExtractionError(
-                    f"FeatureVector.values[{key!r}] must be a real number"
-                )
+                raise FeatureExtractionError(f"FeatureVector.values[{key!r}] must be a real number")
             f = float(value)
             if f != f or f in (math.inf, -math.inf):
-                raise FeatureExtractionError(
-                    f"FeatureVector.values[{key!r}] must be finite"
-                )
+                raise FeatureExtractionError(f"FeatureVector.values[{key!r}] must be finite")
         if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
             raise FeatureExtractionError("FeatureVector.ts_ns must be int")
         if self.ts_ns < 0:
@@ -283,9 +269,11 @@ class FeatureVector:
         sorted_values = {k: float(self.values[k]) for k in sorted(self.values)}
         object.__setattr__(self, "values", MappingProxyType(sorted_values))
         if not self.digest:
-            object.__setattr__(self, "digest", _compute_digest(
-                self.series_name, self.feature_set, sorted_values, self.ts_ns
-            ))
+            object.__setattr__(
+                self,
+                "digest",
+                _compute_digest(self.series_name, self.feature_set, sorted_values, self.ts_ns),
+            )
         else:
             if not isinstance(self.digest, str) or len(self.digest) != DIGEST_HEX_LEN:
                 raise FeatureExtractionError(
@@ -294,9 +282,7 @@ class FeatureVector:
             try:
                 int(self.digest, 16)
             except ValueError as exc:  # pragma: no cover - defensive
-                raise FeatureExtractionError(
-                    "FeatureVector.digest must be hex"
-                ) from exc
+                raise FeatureExtractionError("FeatureVector.digest must be hex") from exc
 
 
 # ---------------------------------------------------------------------------
@@ -477,7 +463,7 @@ def _skewness(x: Sequence[float]) -> float:
     if m2 == 0.0:
         return 0.0
     m3 = math.fsum((v - mean) ** 3 for v in x) / n
-    return m3 / (m2 ** 1.5)
+    return m3 / (m2**1.5)
 
 
 def _kurtosis(x: Sequence[float]) -> float:
@@ -525,31 +511,33 @@ def _make_quantile_calc(q: float):
 
 
 # Canonical name → calculator (sorted alphabetically for INV-15 stability).
-FEATURE_CALCULATORS: Final[Mapping[str, object]] = MappingProxyType({
-    "abs_energy": _abs_energy,
-    "absolute_maximum": _absolute_maximum,
-    "count_above_mean": _count_above_mean,
-    "count_below_mean": _count_below_mean,
-    "first_location_of_maximum": _first_location_of_maximum,
-    "first_location_of_minimum": _first_location_of_minimum,
-    "kurtosis": _kurtosis,
-    "last_location_of_maximum": _last_location_of_maximum,
-    "last_location_of_minimum": _last_location_of_minimum,
-    "length": _length,
-    "longest_strike_above_mean": _longest_strike_above_mean,
-    "longest_strike_below_mean": _longest_strike_below_mean,
-    "maximum": _maximum,
-    "mean": _mean,
-    "mean_abs_change": _mean_abs_change,
-    "mean_change": _mean_change,
-    "median": _median,
-    "minimum": _minimum,
-    "root_mean_square": _root_mean_square,
-    "skewness": _skewness,
-    "standard_deviation": _standard_deviation,
-    "sum_values": _sum_values,
-    "variance": _variance,
-})
+FEATURE_CALCULATORS: Final[Mapping[str, object]] = MappingProxyType(
+    {
+        "abs_energy": _abs_energy,
+        "absolute_maximum": _absolute_maximum,
+        "count_above_mean": _count_above_mean,
+        "count_below_mean": _count_below_mean,
+        "first_location_of_maximum": _first_location_of_maximum,
+        "first_location_of_minimum": _first_location_of_minimum,
+        "kurtosis": _kurtosis,
+        "last_location_of_maximum": _last_location_of_maximum,
+        "last_location_of_minimum": _last_location_of_minimum,
+        "length": _length,
+        "longest_strike_above_mean": _longest_strike_above_mean,
+        "longest_strike_below_mean": _longest_strike_below_mean,
+        "maximum": _maximum,
+        "mean": _mean,
+        "mean_abs_change": _mean_abs_change,
+        "mean_change": _mean_change,
+        "median": _median,
+        "minimum": _minimum,
+        "root_mean_square": _root_mean_square,
+        "skewness": _skewness,
+        "standard_deviation": _standard_deviation,
+        "sum_values": _sum_values,
+        "variance": _variance,
+    }
+)
 
 
 # Mirrors tsfresh's ``MinimalFCParameters`` preset (10 calculators).
@@ -571,22 +559,26 @@ MINIMAL_FEATURE_NAMES: Final[tuple[str, ...]] = (
 # calculator below is O(n) and side-effect-free; matches the upstream
 # "efficient" tier where tsfresh excludes O(n log n) and FFT-based
 # calculators.
-EFFICIENT_FEATURE_NAMES: Final[tuple[str, ...]] = tuple(sorted({
-    *MINIMAL_FEATURE_NAMES,
-    "abs_energy",
-    "count_above_mean",
-    "count_below_mean",
-    "first_location_of_maximum",
-    "first_location_of_minimum",
-    "kurtosis",
-    "last_location_of_maximum",
-    "last_location_of_minimum",
-    "longest_strike_above_mean",
-    "longest_strike_below_mean",
-    "mean_abs_change",
-    "mean_change",
-    "skewness",
-}))
+EFFICIENT_FEATURE_NAMES: Final[tuple[str, ...]] = tuple(
+    sorted(
+        {
+            *MINIMAL_FEATURE_NAMES,
+            "abs_energy",
+            "count_above_mean",
+            "count_below_mean",
+            "first_location_of_maximum",
+            "first_location_of_minimum",
+            "kurtosis",
+            "last_location_of_maximum",
+            "last_location_of_minimum",
+            "longest_strike_above_mean",
+            "longest_strike_below_mean",
+            "mean_abs_change",
+            "mean_change",
+            "skewness",
+        }
+    )
+)
 
 
 def _preset_names(feature_set: FeatureSet) -> tuple[str, ...]:
@@ -617,11 +609,9 @@ def calculate_feature(name: str, series: TimeSeries) -> float:
         return float(FEATURE_CALCULATORS[name](series.values))  # type: ignore[operator]
     if name.startswith("quantile_"):
         try:
-            q = float(name[len("quantile_"):])
+            q = float(name[len("quantile_") :])
         except ValueError as exc:
-            raise FeatureExtractionError(
-                f"unparseable quantile feature name: {name!r}"
-            ) from exc
+            raise FeatureExtractionError(f"unparseable quantile feature name: {name!r}") from exc
         return _quantile(series.values, q)
     raise FeatureExtractionError(f"unknown feature: {name!r}")
 
@@ -640,9 +630,7 @@ def extract_features(series: TimeSeries, spec: FeatureSpec) -> FeatureVector:
     if not isinstance(spec, FeatureSpec):
         raise FeatureExtractionError("spec must be FeatureSpec")
     if series.name != spec.series_name:
-        raise FeatureExtractionError(
-            "FeatureSpec.series_name does not match TimeSeries.name"
-        )
+        raise FeatureExtractionError("FeatureSpec.series_name does not match TimeSeries.name")
     preset_names = _preset_names(spec.feature_set)
     values: dict[str, float] = {}
     for name in preset_names:

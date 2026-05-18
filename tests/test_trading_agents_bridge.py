@@ -68,10 +68,7 @@ _PM_PERSONA = "Portfolio manager: weigh all analyses."
 
 
 def _make_analysts() -> tuple[RoleAnalyst, ...]:
-    return tuple(
-        RoleAnalyst(role=role, persona=_ANALYST_PERSONAS[role])
-        for role in ANALYST_ROLES
-    )
+    return tuple(RoleAnalyst(role=role, persona=_ANALYST_PERSONAS[role]) for role in ANALYST_ROLES)
 
 
 def _make_pm() -> RoleAnalyst:
@@ -95,20 +92,16 @@ class DeterministicSpeaker:
         if replies is None:
             replies = {
                 TradingRole.FUNDAMENTALS: (
-                    "DIRECTION: BUY\nCONFIDENCE: 0.8\n"
-                    "RATIONALE: Strong on-chain inflows."
+                    "DIRECTION: BUY\nCONFIDENCE: 0.8\nRATIONALE: Strong on-chain inflows."
                 ),
                 TradingRole.TECHNICAL: (
-                    "DIRECTION: BUY\nCONFIDENCE: 0.7\n"
-                    "RATIONALE: Breakout above EMA200."
+                    "DIRECTION: BUY\nCONFIDENCE: 0.7\nRATIONALE: Breakout above EMA200."
                 ),
                 TradingRole.SENTIMENT: (
-                    "DIRECTION: HOLD\nCONFIDENCE: 0.5\n"
-                    "RATIONALE: Mixed social signals."
+                    "DIRECTION: HOLD\nCONFIDENCE: 0.5\nRATIONALE: Mixed social signals."
                 ),
                 TradingRole.RESEARCHER: (
-                    "DIRECTION: BUY\nCONFIDENCE: 0.6\n"
-                    "RATIONALE: Macro tailwinds align."
+                    "DIRECTION: BUY\nCONFIDENCE: 0.6\nRATIONALE: Macro tailwinds align."
                 ),
                 TradingRole.PORTFOLIO_MANAGER: (
                     "DIRECTION: BUY\nCONFIDENCE: 0.75\n"
@@ -327,9 +320,7 @@ def test_config_wrong_pm_role_rejected() -> None:
         TradingAgentsConfig(
             brief="BTC",
             analysts=_make_analysts(),
-            portfolio_manager=RoleAnalyst(
-                role=TradingRole.FUNDAMENTALS, persona="PM."
-            ),
+            portfolio_manager=RoleAnalyst(role=TradingRole.FUNDAMENTALS, persona="PM."),
         )
 
 
@@ -456,9 +447,7 @@ def test_committee_with_custom_extractor() -> None:
     config = _make_config()
     speaker = DeterministicSpeaker()
 
-    def override_extractor(
-        role: TradingRole, text: str
-    ) -> tuple[str, float, str]:
+    def override_extractor(role: TradingRole, text: str) -> tuple[str, float, str]:
         return ("SELL", 0.9, "Always sell.")
 
     proposal = run_trading_agents_committee(
@@ -522,12 +511,8 @@ def test_inv15_three_run_byte_identical() -> None:
 
 def test_inv15_change_detection_brief() -> None:
     speaker = DeterministicSpeaker()
-    p1 = run_trading_agents_committee(
-        config=_make_config(brief="BTC/USDT 1h"), speaker=speaker
-    )
-    p2 = run_trading_agents_committee(
-        config=_make_config(brief="ETH/USDT 1h"), speaker=speaker
-    )
+    p1 = run_trading_agents_committee(config=_make_config(brief="BTC/USDT 1h"), speaker=speaker)
+    p2 = run_trading_agents_committee(config=_make_config(brief="ETH/USDT 1h"), speaker=speaker)
     assert p1.proposal_digest != p2.proposal_digest
 
 
@@ -535,9 +520,7 @@ def test_inv15_change_detection_role_reply() -> None:
     config = _make_config()
     base = DeterministicSpeaker()
     alt_replies = dict(base._replies)
-    alt_replies[TradingRole.FUNDAMENTALS] = (
-        "DIRECTION: SELL\nCONFIDENCE: 0.9\nRATIONALE: Changed."
-    )
+    alt_replies[TradingRole.FUNDAMENTALS] = "DIRECTION: SELL\nCONFIDENCE: 0.9\nRATIONALE: Changed."
     alt = DeterministicSpeaker(replies=alt_replies)
     p1 = run_trading_agents_committee(config=config, speaker=base)
     p2 = run_trading_agents_committee(config=config, speaker=alt)
@@ -610,10 +593,7 @@ def test_litellm_factory_system_prompt_prefix() -> None:
     config = _make_config()
     run_trading_agents_committee(config=config, speaker=speaker)
     assert any(
-        "DIX v42.2" in msg["content"]
-        for call in calls
-        for msg in call
-        if msg["role"] == "system"
+        "DIX v42.2" in msg["content"] for call in calls for msg in call if msg["role"] == "system"
     )
 
 

@@ -78,9 +78,7 @@ class FeedRunner:
             return self._provisional_status(running=False)
         return pump.status()
 
-    def start(
-        self, *, symbols: Sequence[str] | None = None
-    ) -> FeedStatus:
+    def start(self, *, symbols: Sequence[str] | None = None) -> FeedStatus:
         """Spawn the background thread + asyncio loop + pump.
 
         Idempotent: a no-op (returns current status) if the runner is

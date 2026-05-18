@@ -52,9 +52,7 @@ def test_production_schedule_loads() -> None:
 
 
 def test_classify_silent_far_before_window(tmp_path: Path) -> None:
-    schedule = rrr.load_schedule(
-        _write_schedule(tmp_path, deletion=date(2026, 1, 1))
-    )
+    schedule = rrr.load_schedule(_write_schedule(tmp_path, deletion=date(2026, 1, 1)))
     # 0 days after deletion -> 30 days remaining, silent.
     assert rrr.classify(schedule, date(2026, 1, 1)) == "silent"
     # day 24 -> 6 days remaining, still silent (warning starts at 5).
@@ -62,9 +60,7 @@ def test_classify_silent_far_before_window(tmp_path: Path) -> None:
 
 
 def test_classify_warning_inside_warning_window(tmp_path: Path) -> None:
-    schedule = rrr.load_schedule(
-        _write_schedule(tmp_path, deletion=date(2026, 1, 1))
-    )
+    schedule = rrr.load_schedule(_write_schedule(tmp_path, deletion=date(2026, 1, 1)))
     # day 25 -> 5 days remaining
     assert rrr.classify(schedule, date(2026, 1, 26)) == "warning"
     # day 29 -> 1 day remaining
@@ -72,18 +68,19 @@ def test_classify_warning_inside_warning_window(tmp_path: Path) -> None:
 
 
 def test_classify_due_on_and_after_revival_date(tmp_path: Path) -> None:
-    schedule = rrr.load_schedule(
-        _write_schedule(tmp_path, deletion=date(2026, 1, 1))
-    )
+    schedule = rrr.load_schedule(_write_schedule(tmp_path, deletion=date(2026, 1, 1)))
     # day 30 -> 0 remaining -> due
     assert rrr.classify(schedule, date(2026, 1, 31)) == "due"
     # day 31 -> -1 -> still due (idempotent past the cutoff)
     assert rrr.classify(schedule, date(2026, 2, 1)) == "due"
     # 100 days later -> still due
-    assert rrr.classify(
-        schedule,
-        date(2026, 1, 1) + timedelta(days=100),
-    ) == "due"
+    assert (
+        rrr.classify(
+            schedule,
+            date(2026, 1, 1) + timedelta(days=100),
+        )
+        == "due"
+    )
 
 
 def test_main_silent_path_prints_silent_and_no_api_calls(

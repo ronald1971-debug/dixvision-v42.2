@@ -30,7 +30,9 @@ def writable_env(monkeypatch, tmp_path: Path):
     monkeypatch.delenv("ENVRC", raising=False)
     monkeypatch.setattr(storage, "_has_devin_install_dir", lambda: False)
     monkeypatch.setattr(
-        storage, "default_dotenv_path", lambda: tmp_path / ".env",
+        storage,
+        "default_dotenv_path",
+        lambda: tmp_path / ".env",
     )
     return tmp_path / ".env"
 
@@ -82,9 +84,7 @@ def test_set_route_writes_to_dotenv(client, writable_env) -> None:
     assert os.environ.get("OPENAI_API_KEY") == "sk-fake-12345"
 
 
-def test_set_route_refuses_inside_devin_session(
-    client, monkeypatch
-) -> None:
+def test_set_route_refuses_inside_devin_session(client, monkeypatch) -> None:
     monkeypatch.setenv("DEVIN_SESSION_ID", "abc")
     r = client.post(
         "/api/credentials/set",
@@ -109,9 +109,7 @@ def test_set_route_404_on_unknown_source(client, writable_env) -> None:
     assert r.status_code == 404
 
 
-def test_set_route_422_when_env_var_not_in_blueprint(
-    client, writable_env
-) -> None:
+def test_set_route_422_when_env_var_not_in_blueprint(client, writable_env) -> None:
     r = client.post(
         "/api/credentials/set",
         json={

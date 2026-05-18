@@ -34,9 +34,7 @@ def test_legal_transitions_are_forward_only():
     }
     for prev, allowed in LEGAL_LIFECYCLE_TRANSITIONS.items():
         for new in allowed:
-            assert rank[new] > rank[prev], (
-                f"{prev.value} → {new.value} is not forward-only"
-            )
+            assert rank[new] > rank[prev], f"{prev.value} → {new.value} is not forward-only"
 
 
 def test_retired_is_terminal():
@@ -289,9 +287,7 @@ def test_replay_rebuilds_identical_registry():
         ts_ns=3,
         reason="passed shadow",
     )
-    live.register_draft(
-        strategy_id="s2", ts_ns=4, parameters={"gamma": "1.0"}
-    )
+    live.register_draft(strategy_id="s2", ts_ns=4, parameters={"gamma": "1.0"})
 
     replay = StrategyRegistry(ledger=LedgerAuthorityWriter())
     replay.replay_from_ledger(ledger.read())

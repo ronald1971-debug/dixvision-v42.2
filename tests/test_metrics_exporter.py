@@ -155,13 +155,10 @@ def test_no_typed_event_construction_in_module() -> None:
         if isinstance(node, ast.Call):
             func = node.func
             if isinstance(func, ast.Name) and func.id in forbidden:
-                raise AssertionError(
-                    f"forbidden typed-event constructor call: {func.id}"
-                )
+                raise AssertionError(f"forbidden typed-event constructor call: {func.id}")
             if isinstance(func, ast.Attribute) and func.attr in forbidden:
                 raise AssertionError(
-                    f"forbidden typed-event constructor attribute call: "
-                    f"{func.attr}"
+                    f"forbidden typed-event constructor attribute call: {func.attr}"
                 )
 
 
@@ -170,10 +167,7 @@ def test_prometheus_client_import_only_inside_factory() -> None:
 
     factory: ast.FunctionDef | None = None
     for node in _MODULE_TREE.body:
-        if (
-            isinstance(node, ast.FunctionDef)
-            and node.name == "prometheus_metrics_sink_factory"
-        ):
+        if isinstance(node, ast.FunctionDef) and node.name == "prometheus_metrics_sink_factory":
             factory = node
             break
     assert factory is not None, "factory function not found"
@@ -456,9 +450,7 @@ def test_render_prometheus_text_rejects_non_mapping() -> None:
 
 
 def test_render_prometheus_text_empty_snapshot_is_empty_bytes() -> None:
-    assert render_prometheus_text(
-        {"counters": {}, "gauges": {}, "histograms": {}}
-    ) == b""
+    assert render_prometheus_text({"counters": {}, "gauges": {}, "histograms": {}}) == b""
 
 
 def test_render_prometheus_text_returns_bytes() -> None:

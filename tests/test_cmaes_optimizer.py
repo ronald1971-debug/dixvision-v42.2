@@ -47,9 +47,7 @@ from evolution_engine.genetic.strategy_chromosome import (
     chromosome_digest,
 )
 
-MODULE_PATH = pathlib.Path(
-    "evolution_engine/genetic/cmaes_optimizer.py"
-).resolve()
+MODULE_PATH = pathlib.Path("evolution_engine/genetic/cmaes_optimizer.py").resolve()
 MODULE_TEXT = MODULE_PATH.read_text(encoding="utf-8")
 
 
@@ -60,71 +58,47 @@ MODULE_TEXT = MODULE_PATH.read_text(encoding="utf-8")
 
 def _two_d_specs() -> tuple[ParameterSpec, ...]:
     return (
-        ParameterSpec(
-            name="x", kind=ParameterKind.CONTINUOUS, low=-5.0, high=5.0
-        ),
-        ParameterSpec(
-            name="y", kind=ParameterKind.CONTINUOUS, low=-5.0, high=5.0
-        ),
+        ParameterSpec(name="x", kind=ParameterKind.CONTINUOUS, low=-5.0, high=5.0),
+        ParameterSpec(name="y", kind=ParameterKind.CONTINUOUS, low=-5.0, high=5.0),
     )
 
 
 def _mixed_specs() -> tuple[ParameterSpec, ...]:
     return (
-        ParameterSpec(
-            name="lr", kind=ParameterKind.LOG_CONTINUOUS, low=1e-4, high=1e-1
-        ),
-        ParameterSpec(
-            name="window", kind=ParameterKind.INTEGER, low=1.0, high=100.0
-        ),
-        ParameterSpec(
-            name="z", kind=ParameterKind.CONTINUOUS, low=-1.0, high=1.0
-        ),
+        ParameterSpec(name="lr", kind=ParameterKind.LOG_CONTINUOUS, low=1e-4, high=1e-1),
+        ParameterSpec(name="window", kind=ParameterKind.INTEGER, low=1.0, high=100.0),
+        ParameterSpec(name="z", kind=ParameterKind.CONTINUOUS, low=-1.0, high=1.0),
     )
 
 
 class SphereEvaluator:
     """Fitness = -(x^2 + y^2). Optimum at origin."""
 
-    def evaluate(
-        self, *, chromosome: StrategyChromosome, seed: int, ts_ns: int
-    ) -> FitnessReport:
+    def evaluate(self, *, chromosome: StrategyChromosome, seed: int, ts_ns: int) -> FitnessReport:
         m = chromosome.to_mapping()
         loss = sum(v * v for v in m.values())
-        return FitnessReport(
-            pnl_mean=-loss, max_drawdown=0.0, n_samples=1
-        )
+        return FitnessReport(pnl_mean=-loss, max_drawdown=0.0, n_samples=1)
 
 
 class ConstantEvaluator:
     def __init__(self, scalar: float) -> None:
         self.scalar = scalar
 
-    def evaluate(
-        self, *, chromosome: StrategyChromosome, seed: int, ts_ns: int
-    ) -> FitnessReport:
-        return FitnessReport(
-            pnl_mean=self.scalar, max_drawdown=0.0, n_samples=1
-        )
+    def evaluate(self, *, chromosome: StrategyChromosome, seed: int, ts_ns: int) -> FitnessReport:
+        return FitnessReport(pnl_mean=self.scalar, max_drawdown=0.0, n_samples=1)
 
 
 class CallCountingEvaluator:
     def __init__(self) -> None:
         self.calls: list[tuple[str, int, int]] = []
 
-    def evaluate(
-        self, *, chromosome: StrategyChromosome, seed: int, ts_ns: int
-    ) -> FitnessReport:
+    def evaluate(self, *, chromosome: StrategyChromosome, seed: int, ts_ns: int) -> FitnessReport:
         self.calls.append((chromosome.strategy_id, seed, ts_ns))
-        return FitnessReport(
-            pnl_mean=0.5, max_drawdown=0.1, n_samples=1
-        )
+        return FitnessReport(pnl_mean=0.5, max_drawdown=0.1, n_samples=1)
 
 
 class BadReturnEvaluator:
-    def evaluate(
-        self, *, chromosome: StrategyChromosome, seed: int, ts_ns: int
-    ) -> object:
+    def evaluate(self, *, chromosome: StrategyChromosome, seed: int, ts_ns: int) -> object:
         return "not a fitness report"
 
 
@@ -132,9 +106,7 @@ class NonFiniteEvaluator:
     """Evaluator returning a non-finite fitness scalar (via huge
     drawdown penalty interaction). FitnessReport itself is finite."""
 
-    def evaluate(
-        self, *, chromosome: StrategyChromosome, seed: int, ts_ns: int
-    ) -> FitnessReport:
+    def evaluate(self, *, chromosome: StrategyChromosome, seed: int, ts_ns: int) -> FitnessReport:
         return FitnessReport(
             pnl_mean=float("1e308"),
             max_drawdown=float("1e308"),
@@ -223,9 +195,7 @@ def test_ast_no_clock_imports():
 def test_ast_no_random_imports():
     for name in _iter_imports(_module_ast()):
         head = name.split(".")[0]
-        assert head not in {"random", "secrets", "os"}, (
-            f"forbidden PRNG/IO import: {name}"
-        )
+        assert head not in {"random", "secrets", "os"}, f"forbidden PRNG/IO import: {name}"
 
 
 def test_ast_no_engine_cross_imports():
@@ -241,13 +211,9 @@ def test_ast_no_engine_cross_imports():
     )
     for name in _iter_imports(_module_ast()):
         for prefix in forbidden_prefixes:
-            assert not name.startswith(prefix.rstrip(".")), (
-                f"forbidden engine import: {name}"
-            )
+            assert not name.startswith(prefix.rstrip(".")), f"forbidden engine import: {name}"
         for prefix in forbidden_prefixes:
-            assert not name.startswith(prefix), (
-                f"forbidden engine import: {name}"
-            )
+            assert not name.startswith(prefix), f"forbidden engine import: {name}"
 
 
 def test_ast_no_clock_text_in_module():
@@ -317,17 +283,13 @@ def test_config_happy_path():
 
 
 def test_config_is_frozen():
-    cfg = CMAESConfig(
-        target_strategy_id="alpha", population_size=8, max_generations=10
-    )
+    cfg = CMAESConfig(target_strategy_id="alpha", population_size=8, max_generations=10)
     with pytest.raises(FrozenInstanceError):
         cfg.population_size = 16  # type: ignore[misc]
 
 
 def test_config_is_slotted():
-    cfg = CMAESConfig(
-        target_strategy_id="alpha", population_size=8, max_generations=10
-    )
+    cfg = CMAESConfig(target_strategy_id="alpha", population_size=8, max_generations=10)
     assert not hasattr(cfg, "__dict__")
 
 
@@ -342,9 +304,7 @@ def test_config_rejects_non_str_target_strategy_id():
 
 def test_config_rejects_empty_target_strategy_id():
     with pytest.raises(CMAESConfigError):
-        CMAESConfig(
-            target_strategy_id="", population_size=8, max_generations=10
-        )
+        CMAESConfig(target_strategy_id="", population_size=8, max_generations=10)
 
 
 def test_config_rejects_population_below_min():
@@ -465,9 +425,7 @@ def test_fitness_report_is_slotted():
 
 def test_fitness_report_rejects_non_finite_pnl():
     with pytest.raises(CMAESEvaluationError):
-        FitnessReport(
-            pnl_mean=float("nan"), max_drawdown=0.0, n_samples=1
-        )
+        FitnessReport(pnl_mean=float("nan"), max_drawdown=0.0, n_samples=1)
 
 
 def test_fitness_report_rejects_negative_drawdown():
@@ -477,9 +435,7 @@ def test_fitness_report_rejects_negative_drawdown():
 
 def test_fitness_report_rejects_non_finite_drawdown():
     with pytest.raises(CMAESEvaluationError):
-        FitnessReport(
-            pnl_mean=1.0, max_drawdown=float("inf"), n_samples=1
-        )
+        FitnessReport(pnl_mean=1.0, max_drawdown=float("inf"), n_samples=1)
 
 
 def test_fitness_report_rejects_zero_n_samples():
@@ -521,9 +477,7 @@ def _toy_individual(scalar: float = 0.0, gen: int = 0) -> IndividualResult:
     )
     return IndividualResult(
         chromosome=chrom,
-        fitness_report=FitnessReport(
-            pnl_mean=scalar, max_drawdown=0.0, n_samples=1
-        ),
+        fitness_report=FitnessReport(pnl_mean=scalar, max_drawdown=0.0, n_samples=1),
         fitness_scalar=scalar,
         generation_idx=gen,
     )
@@ -538,15 +492,11 @@ def test_individual_result_is_frozen_and_slotted():
 
 def test_individual_result_rejects_non_finite_scalar():
     specs = _two_d_specs()
-    chrom = StrategyChromosome(
-        strategy_id="alpha", specs=specs, values=(0.0, 0.0), version=0
-    )
+    chrom = StrategyChromosome(strategy_id="alpha", specs=specs, values=(0.0, 0.0), version=0)
     with pytest.raises(ValueError):
         IndividualResult(
             chromosome=chrom,
-            fitness_report=FitnessReport(
-                pnl_mean=0.0, max_drawdown=0.0, n_samples=1
-            ),
+            fitness_report=FitnessReport(pnl_mean=0.0, max_drawdown=0.0, n_samples=1),
             fitness_scalar=float("nan"),
             generation_idx=0,
         )
@@ -554,15 +504,11 @@ def test_individual_result_rejects_non_finite_scalar():
 
 def test_individual_result_rejects_negative_generation():
     specs = _two_d_specs()
-    chrom = StrategyChromosome(
-        strategy_id="alpha", specs=specs, values=(0.0, 0.0), version=0
-    )
+    chrom = StrategyChromosome(strategy_id="alpha", specs=specs, values=(0.0, 0.0), version=0)
     with pytest.raises(ValueError):
         IndividualResult(
             chromosome=chrom,
-            fitness_report=FitnessReport(
-                pnl_mean=0.0, max_drawdown=0.0, n_samples=1
-            ),
+            fitness_report=FitnessReport(pnl_mean=0.0, max_drawdown=0.0, n_samples=1),
             fitness_scalar=0.0,
             generation_idx=-1,
         )
@@ -757,11 +703,7 @@ def test_evolve_rejects_oversized_proposal_id():
 
 def test_evolve_rejects_initial_chromosome_with_wrong_specs():
     opt = CMAESOptimizer(evaluator=SphereEvaluator())
-    other_specs = (
-        ParameterSpec(
-            name="q", kind=ParameterKind.CONTINUOUS, low=0.0, high=1.0
-        ),
-    )
+    other_specs = (ParameterSpec(name="q", kind=ParameterKind.CONTINUOUS, low=0.0, high=1.0),)
     bad = StrategyChromosome(
         strategy_id="alpha",
         specs=other_specs,
@@ -851,9 +793,7 @@ def test_evolve_individuals_in_each_generation_match_population_size():
         population_size=8,
         max_generations=3,
     )
-    res = opt.evolve(
-        specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p"
-    )
+    res = opt.evolve(specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p")
     for gen in res.generations:
         assert len(gen.individuals) == 8
 
@@ -865,9 +805,7 @@ def test_evolve_individuals_sorted_fittest_first():
         population_size=8,
         max_generations=3,
     )
-    res = opt.evolve(
-        specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p"
-    )
+    res = opt.evolve(specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p")
     for gen in res.generations:
         scalars = [ind.fitness_scalar for ind in gen.individuals]
         assert scalars == sorted(scalars, reverse=True)
@@ -881,12 +819,8 @@ def test_evolve_running_best_is_monotonic_non_decreasing():
         max_generations=10,
         sigma_init=2.0,
     )
-    res = opt.evolve(
-        specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p"
-    )
-    bests = [
-        gen.best_individual.fitness_scalar for gen in res.generations
-    ]
+    res = opt.evolve(specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p")
+    bests = [gen.best_individual.fitness_scalar for gen in res.generations]
     for prev, curr in zip(bests, bests[1:], strict=False):
         assert curr >= prev
 
@@ -898,9 +832,7 @@ def test_evolve_constant_evaluator_finishes():
         population_size=4,
         max_generations=3,
     )
-    res = opt.evolve(
-        specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p"
-    )
+    res = opt.evolve(specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p")
     for gen in res.generations:
         for ind in gen.individuals:
             assert ind.fitness_scalar == 0.7
@@ -914,9 +846,7 @@ def test_evolve_evaluator_seed_is_unique_per_individual():
         population_size=8,
         max_generations=3,
     )
-    opt.evolve(
-        specs=_two_d_specs(), config=cfg, seed=42, ts_ns=1, proposal_id="p"
-    )
+    opt.evolve(specs=_two_d_specs(), config=cfg, seed=42, ts_ns=1, proposal_id="p")
     seeds = [seed for _, seed, _ in eval_.calls]
     assert len(set(seeds)) == len(seeds)
 
@@ -989,9 +919,7 @@ def test_evolve_mixed_kinds_yields_feasible_chromosomes():
         max_generations=4,
         sigma_init=2.0,
     )
-    res = opt.evolve(
-        specs=specs, config=cfg, seed=1, ts_ns=1, proposal_id="p"
-    )
+    res = opt.evolve(specs=specs, config=cfg, seed=1, ts_ns=1, proposal_id="p")
     for gen in res.generations:
         for ind in gen.individuals:
             m = ind.chromosome.to_mapping()
@@ -1095,10 +1023,7 @@ def test_inv15_three_run_identical_chromosome_digests():
         )
         chains.append(
             tuple(
-                tuple(
-                    chromosome_digest(ind.chromosome)
-                    for ind in gen.individuals
-                )
+                tuple(chromosome_digest(ind.chromosome) for ind in gen.individuals)
                 for gen in res.generations
             )
         )
@@ -1112,12 +1037,8 @@ def test_inv15_different_seeds_yield_different_digests():
         population_size=8,
         max_generations=5,
     )
-    res_a = opt.evolve(
-        specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p"
-    )
-    res_b = opt.evolve(
-        specs=_two_d_specs(), config=cfg, seed=2, ts_ns=1, proposal_id="p"
-    )
+    res_a = opt.evolve(specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p")
+    res_b = opt.evolve(specs=_two_d_specs(), config=cfg, seed=2, ts_ns=1, proposal_id="p")
     assert res_a.policy_digest != res_b.policy_digest
 
 
@@ -1128,12 +1049,8 @@ def test_inv15_different_ts_ns_change_digest():
         population_size=4,
         max_generations=2,
     )
-    res_a = opt.evolve(
-        specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p"
-    )
-    res_b = opt.evolve(
-        specs=_two_d_specs(), config=cfg, seed=1, ts_ns=2, proposal_id="p"
-    )
+    res_a = opt.evolve(specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p")
+    res_b = opt.evolve(specs=_two_d_specs(), config=cfg, seed=1, ts_ns=2, proposal_id="p")
     assert res_a.policy_digest != res_b.policy_digest
 
 
@@ -1173,9 +1090,7 @@ def test_null_callback_is_a_callback():
 
 def test_null_callback_methods_are_no_ops():
     cb = null_cmaes_callback()
-    cfg = CMAESConfig(
-        target_strategy_id="alpha", population_size=4, max_generations=1
-    )
+    cfg = CMAESConfig(target_strategy_id="alpha", population_size=4, max_generations=1)
     cb.on_evolution_start(ts_ns=1, config=cfg, dimensionality=2)
     # Should not raise; that's the whole contract.
 
@@ -1184,9 +1099,7 @@ class RecordingCallback:
     def __init__(self) -> None:
         self.events: list[str] = []
 
-    def on_evolution_start(
-        self, *, ts_ns: int, config: CMAESConfig, dimensionality: int
-    ) -> None:
+    def on_evolution_start(self, *, ts_ns: int, config: CMAESConfig, dimensionality: int) -> None:
         self.events.append(f"start:{dimensionality}")
 
     def on_individual_evaluated(
@@ -1200,14 +1113,10 @@ class RecordingCallback:
     ) -> None:
         self.events.append(f"ind:{generation_idx}:{individual_idx}")
 
-    def on_generation_end(
-        self, *, ts_ns: int, report: GenerationReport
-    ) -> None:
+    def on_generation_end(self, *, ts_ns: int, report: GenerationReport) -> None:
         self.events.append(f"gen:{report.generation_idx}")
 
-    def on_evolution_end(
-        self, *, ts_ns: int, result: CMAESResult
-    ) -> None:
+    def on_evolution_end(self, *, ts_ns: int, result: CMAESResult) -> None:
         self.events.append("end")
 
 
@@ -1246,9 +1155,7 @@ def test_chromosomes_carry_target_strategy_id():
         population_size=4,
         max_generations=2,
     )
-    res = opt.evolve(
-        specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p"
-    )
+    res = opt.evolve(specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p")
     for gen in res.generations:
         for ind in gen.individuals:
             assert ind.chromosome.strategy_id == "alpha"
@@ -1261,9 +1168,7 @@ def test_chromosomes_version_matches_generation_idx():
         population_size=4,
         max_generations=3,
     )
-    res = opt.evolve(
-        specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p"
-    )
+    res = opt.evolve(specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p")
     for gen_idx, gen in enumerate(res.generations):
         for ind in gen.individuals:
             assert ind.chromosome.version == gen_idx
@@ -1276,9 +1181,7 @@ def test_chromosomes_meta_carries_generation_and_individual():
         population_size=4,
         max_generations=2,
     )
-    res = opt.evolve(
-        specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p"
-    )
+    res = opt.evolve(specs=_two_d_specs(), config=cfg, seed=1, ts_ns=1, proposal_id="p")
     for gen in res.generations:
         for ind in gen.individuals:
             assert "generation" in ind.chromosome.meta
@@ -1297,9 +1200,7 @@ def test_proposal_rationale_within_cap():
 
 def test_proposal_rationale_mentions_chromosome_digest():
     res = _build_minimal_result()
-    assert chromosome_digest(res.best_individual.chromosome) in (
-        res.proposal.rationale
-    )
+    assert chromosome_digest(res.best_individual.chromosome) in (res.proposal.rationale)
 
 
 def test_proposal_meta_keys_are_strs():
@@ -1345,9 +1246,7 @@ def test_module_imports_without_evotorch_or_numpy(monkeypatch: pytest.MonkeyPatc
         # Force reimport.
         if "evolution_engine.genetic.cmaes_optimizer" in sys.modules:
             del sys.modules["evolution_engine.genetic.cmaes_optimizer"]
-        importlib.import_module(
-            "evolution_engine.genetic.cmaes_optimizer"
-        )
+        importlib.import_module("evolution_engine.genetic.cmaes_optimizer")
     finally:
         for blocked, prev in saved.items():
             if prev is None:
@@ -1377,9 +1276,7 @@ def test_evolve_handles_high_dimensional_specs():
         population_size=12,
         max_generations=3,
     )
-    res = opt.evolve(
-        specs=specs, config=cfg, seed=1, ts_ns=1, proposal_id="p"
-    )
+    res = opt.evolve(specs=specs, config=cfg, seed=1, ts_ns=1, proposal_id="p")
     assert res.proposal.touchpoints == tuple(f"p{i}" for i in range(20))
 
 
@@ -1399,7 +1296,5 @@ def test_evolve_single_axis_specs_works():
         max_generations=20,
         sigma_init=2.0,
     )
-    res = opt.evolve(
-        specs=specs, config=cfg, seed=1, ts_ns=1, proposal_id="p"
-    )
+    res = opt.evolve(specs=specs, config=cfg, seed=1, ts_ns=1, proposal_id="p")
     assert abs(res.best_individual.chromosome.to_mapping()["solo"]) < 0.1

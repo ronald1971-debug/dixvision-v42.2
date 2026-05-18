@@ -26,12 +26,7 @@ from intelligence_engine.agents.autohedge_patterns import (
 # ---------------------------------------------------------------------------
 
 _REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
-_MODULE_PATH = (
-    _REPO_ROOT
-    / "intelligence_engine"
-    / "agents"
-    / "autohedge_patterns.py"
-)
+_MODULE_PATH = _REPO_ROOT / "intelligence_engine" / "agents" / "autohedge_patterns.py"
 
 
 # ===================================================================
@@ -72,8 +67,7 @@ class TestASTGuards:
                 continue
             for pattern in forbidden:
                 assert pattern not in stripped, (
-                    f"B1 violation: '{pattern}' found in "
-                    f"autohedge_patterns.py: {stripped}"
+                    f"B1 violation: '{pattern}' found in autohedge_patterns.py: {stripped}"
                 )
 
     def test_no_typed_event_constructors(self, source: str) -> None:
@@ -89,12 +83,10 @@ class TestASTGuards:
             stripped = line.strip()
             if stripped.startswith("#"):
                 continue
-            if stripped.startswith(("\"", "'")):
+            if stripped.startswith(('"', "'")):
                 continue
             for ctor in forbidden_constructors:
-                assert ctor not in stripped, (
-                    f"INV-71 violation: '{ctor}' found: {stripped}"
-                )
+                assert ctor not in stripped, f"INV-71 violation: '{ctor}' found: {stripped}"
 
     def test_no_wall_clock_or_prng(self, source: str) -> None:
         """INV-15: must not import random / time / datetime / secrets."""
@@ -110,9 +102,7 @@ class TestASTGuards:
             if stripped.startswith("#"):
                 continue
             for pattern in forbidden:
-                assert pattern not in stripped, (
-                    f"INV-15 violation: '{pattern}' found: {stripped}"
-                )
+                assert pattern not in stripped, f"INV-15 violation: '{pattern}' found: {stripped}"
 
     def test_b1_seam_no_top_level_framework_import(self, tree: ast.Module) -> None:
         """B1 lazy seam: no top-level ``import autohedge`` or
@@ -237,9 +227,7 @@ class TestCatalog:
         directory in the repo."""
         for entry in autohedge_pattern_catalog():
             target = _REPO_ROOT / entry.dix_module
-            assert target.exists(), (
-                f"{entry.dix_module} does not exist at {target}"
-            )
+            assert target.exists(), f"{entry.dix_module} does not exist at {target}"
 
 
 # ===================================================================
@@ -249,9 +237,7 @@ class TestCatalog:
 
 class TestReverseLookup:
     def test_known_path_returns_role(self) -> None:
-        role = autohedge_role_for_dix_module(
-            "governance_engine/control_plane/risk_evaluator.py"
-        )
+        role = autohedge_role_for_dix_module("governance_engine/control_plane/risk_evaluator.py")
         assert role is AutoHedgeRole.RISK_MANAGER
 
     def test_unknown_path_returns_none(self) -> None:

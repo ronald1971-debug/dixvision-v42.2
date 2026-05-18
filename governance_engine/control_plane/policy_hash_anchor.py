@@ -134,9 +134,7 @@ class PolicyHashAnchor:
 
         return tuple(self._bound.values())
 
-    def bind_session(
-        self, *, ts_ns: int, requestor: str
-    ) -> tuple[PolicyHashEntry, ...]:
+    def bind_session(self, *, ts_ns: int, requestor: str) -> tuple[PolicyHashEntry, ...]:
         """Anchor every configured policy file's hash to the ledger.
 
         Returns the bound entries. Raises :class:`FileNotFoundError`
@@ -154,9 +152,7 @@ class PolicyHashAnchor:
                 recorded_path = str(path.relative_to(_REPO_ROOT))
             except ValueError:
                 recorded_path = str(path)
-            entries[name] = PolicyHashEntry(
-                name=name, path=path, sha256=digest
-            )
+            entries[name] = PolicyHashEntry(name=name, path=path, sha256=digest)
             payload[f"{name}_sha256"] = digest
             payload[f"{name}_path"] = recorded_path
         self._ledger.append(
@@ -276,9 +272,7 @@ class PolicyHashAnchor:
                 # missing entry as drift via the unbound-name code
                 # path on the next bind cycle.
                 continue
-            rebuilt[name] = PolicyHashEntry(
-                name=name, path=path, sha256=digest
-            )
+            rebuilt[name] = PolicyHashEntry(name=name, path=path, sha256=digest)
         self._bound = rebuilt
 
 

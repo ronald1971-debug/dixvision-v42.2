@@ -239,11 +239,7 @@ class PatchPipelineOrchestrator:
             ts_ns=sandbox_ts,
             verdict=v_sandbox,
         )
-        events.append(
-            verdict_as_system_event(
-                patch_id=proposal.patch_id, verdict=v_sandbox
-            )
-        )
+        events.append(verdict_as_system_event(patch_id=proposal.patch_id, verdict=v_sandbox))
 
         # Stage 2 — static analysis.
         static_ts = ts_ns + _STAGE_TS_OFFSETS[PatchStage.STATIC_ANALYSIS]
@@ -266,11 +262,7 @@ class PatchPipelineOrchestrator:
             ts_ns=static_ts,
             verdict=v_static,
         )
-        events.append(
-            verdict_as_system_event(
-                patch_id=proposal.patch_id, verdict=v_static
-            )
-        )
+        events.append(verdict_as_system_event(patch_id=proposal.patch_id, verdict=v_static))
 
         # Stage 3 — backtest.
         backtest_ts = ts_ns + _STAGE_TS_OFFSETS[PatchStage.BACKTEST]
@@ -302,11 +294,7 @@ class PatchPipelineOrchestrator:
             ts_ns=backtest_ts,
             verdict=v_backtest,
         )
-        events.append(
-            verdict_as_system_event(
-                patch_id=proposal.patch_id, verdict=v_backtest
-            )
-        )
+        events.append(verdict_as_system_event(patch_id=proposal.patch_id, verdict=v_backtest))
 
         # Stage 4 — shadow.
         shadow_ts = ts_ns + _STAGE_TS_OFFSETS[PatchStage.SHADOW]
@@ -330,11 +318,7 @@ class PatchPipelineOrchestrator:
             ts_ns=shadow_ts,
             verdict=v_shadow,
         )
-        events.append(
-            verdict_as_system_event(
-                patch_id=proposal.patch_id, verdict=v_shadow
-            )
-        )
+        events.append(verdict_as_system_event(patch_id=proposal.patch_id, verdict=v_shadow))
 
         # Stage 5 — canary.
         canary_ts = ts_ns + _STAGE_TS_OFFSETS[PatchStage.CANARY]
@@ -359,11 +343,7 @@ class PatchPipelineOrchestrator:
             ts_ns=canary_ts,
             verdict=v_canary,
         )
-        events.append(
-            verdict_as_system_event(
-                patch_id=proposal.patch_id, verdict=v_canary
-            )
-        )
+        events.append(verdict_as_system_event(patch_id=proposal.patch_id, verdict=v_canary))
 
         # Terminal — Governance drives CANARY → APPROVED.
         approve_ts = ts_ns + _STAGE_TS_OFFSETS[PatchStage.APPROVED]
@@ -392,11 +372,7 @@ class PatchPipelineOrchestrator:
         ts_ns: int,
     ) -> PatchPipelineRun:
         """Short-circuit the run with a Governance-driven REJECTED."""
-        events.append(
-            verdict_as_system_event(
-                patch_id=record.patch_id, verdict=failing
-            )
-        )
+        events.append(verdict_as_system_event(patch_id=record.patch_id, verdict=failing))
         reject_ts = ts_ns + _STAGE_TS_OFFSETS[PatchStage.REJECTED]
         reason = f"{failing.stage.value.lower()}_failed:{failing.detail}"
         decision = self._bridge.reject(

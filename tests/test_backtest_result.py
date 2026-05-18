@@ -82,12 +82,18 @@ def _result(
     equity: tuple[EquityPoint, ...] | None = None,
     trades: tuple[BacktestTrade, ...] | None = None,
 ) -> BacktestResult:
-    equity = equity if equity is not None else (
-        EquityPoint(ts_ns=period_start, equity_usd=10_000.0),
-        EquityPoint(ts_ns=period_end, equity_usd=11_500.0),
+    equity = (
+        equity
+        if equity is not None
+        else (
+            EquityPoint(ts_ns=period_start, equity_usd=10_000.0),
+            EquityPoint(ts_ns=period_end, equity_usd=11_500.0),
+        )
     )
-    trades = trades if trades is not None else tuple(
-        _trade(period_start + i * 100) for i in range(n_trades)
+    trades = (
+        trades
+        if trades is not None
+        else tuple(_trade(period_start + i * 100) for i in range(n_trades))
     )
     return BacktestResult(
         ts_ns=period_end + 1,
@@ -236,16 +242,12 @@ def test_metrics_n_trades_mismatch() -> None:
 
 def test_metrics_win_rate_out_of_range() -> None:
     with pytest.raises(ValueError, match="win_rate"):
-        BacktestMetrics(
-            n_trades=1, win_rate=1.5, total_return=0.0, max_drawdown=0.0
-        )
+        BacktestMetrics(n_trades=1, win_rate=1.5, total_return=0.0, max_drawdown=0.0)
 
 
 def test_metrics_max_drawdown_out_of_range() -> None:
     with pytest.raises(ValueError, match="max_drawdown"):
-        BacktestMetrics(
-            n_trades=1, win_rate=0.5, total_return=0.0, max_drawdown=2.0
-        )
+        BacktestMetrics(n_trades=1, win_rate=0.5, total_return=0.0, max_drawdown=2.0)
 
 
 def test_trade_negative_qty() -> None:

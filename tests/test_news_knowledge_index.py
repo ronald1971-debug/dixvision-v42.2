@@ -79,16 +79,8 @@ def test_query_with_min_score_drops_unrelated() -> None:
 
 def test_query_filtered_by_source() -> None:
     idx = NewsKnowledgeIndex()
-    idx.add(
-        _item(
-            ts_ns=1, source="COINDESK", guid="a", title="ethereum upgrade"
-        )
-    )
-    idx.add(
-        _item(
-            ts_ns=2, source="REUTERS", guid="a", title="ethereum upgrade"
-        )
-    )
+    idx.add(_item(ts_ns=1, source="COINDESK", guid="a", title="ethereum upgrade"))
+    idx.add(_item(ts_ns=2, source="REUTERS", guid="a", title="ethereum upgrade"))
     hits = idx.query("ethereum", top_k=5, source="REUTERS")
     assert len(hits) == 1
     assert hits[0].item.source == "REUTERS"
@@ -125,10 +117,7 @@ def test_drop_removes_row() -> None:
 def test_query_is_deterministic_across_calls() -> None:
     idx_a = NewsKnowledgeIndex()
     idx_b = NewsKnowledgeIndex()
-    items = [
-        _item(ts_ns=i, guid=f"g{i}", title=f"bitcoin item {i}")
-        for i in range(10)
-    ]
+    items = [_item(ts_ns=i, guid=f"g{i}", title=f"bitcoin item {i}") for i in range(10)]
     # Insert in two different orders — the index is keyed on
     # (source, guid) so insertion order must not affect the result.
     for it in items:
@@ -137,9 +126,7 @@ def test_query_is_deterministic_across_calls() -> None:
         idx_b.add(it)
     hits_a = idx_a.query("bitcoin", top_k=5)
     hits_b = idx_b.query("bitcoin", top_k=5)
-    assert tuple(h.item.guid for h in hits_a) == tuple(
-        h.item.guid for h in hits_b
-    )
+    assert tuple(h.item.guid for h in hits_a) == tuple(h.item.guid for h in hits_b)
 
 
 def test_empty_query_text_returns_no_hits() -> None:

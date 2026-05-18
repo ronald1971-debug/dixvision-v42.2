@@ -90,9 +90,7 @@ class _ScriptedTransport:
         self.calls.append((provider.id, prompt, schema_class, retry_feedback))
         items = self._script.get(provider.id)
         if not items:
-            raise AssertionError(
-                f"no scripted response remaining for provider={provider.id!r}"
-            )
+            raise AssertionError(f"no scripted response remaining for provider={provider.id!r}")
         item = items.pop(0)
         if isinstance(item, BaseException):
             raise item
@@ -666,9 +664,7 @@ def test_run_typed_raises_schema_validation_after_retries() -> None:
 
 
 def test_run_typed_zero_retries_means_one_attempt() -> None:
-    transport = _ScriptedTransport(
-        {"a": ['{"symbol":"BTC","side":"BUY","confidence":2.5}']}
-    )
+    transport = _ScriptedTransport({"a": ['{"symbol":"BTC","side":"BUY","confidence":2.5}']})
     agent, _ = _build_agent(
         providers=(_provider("a"),),
         transport=transport,
@@ -756,9 +752,7 @@ def test_submit_proposal_called_exactly_once_on_success() -> None:
 
 
 def test_submit_proposal_not_called_on_validation_exhaustion() -> None:
-    transport = _ScriptedTransport(
-        {"a": ['{"symbol":"BTC","side":"BUY","confidence":2.5}']}
-    )
+    transport = _ScriptedTransport({"a": ['{"symbol":"BTC","side":"BUY","confidence":2.5}']})
     agent, rec = _build_agent(
         providers=(_provider("a"),),
         transport=transport,
@@ -923,9 +917,7 @@ def test_module_calls_only_run_sync_on_pydantic_ai_agent() -> None:
     documented = {"run_sync", "model_dump_json"}
     pydantic_ai_specific = {"crawl_url", "stream", "iter", "messages"}
     leaks = method_calls & pydantic_ai_specific
-    assert leaks == set(), (
-        f"pydantic_ai_transport reaches into undocumented surface: {leaks}"
-    )
+    assert leaks == set(), f"pydantic_ai_transport reaches into undocumented surface: {leaks}"
     assert documented <= method_calls, (
         f"pydantic_ai_transport missing documented calls: {documented - method_calls}"
     )

@@ -100,9 +100,7 @@ class OpponentObservation:
 
     def __post_init__(self) -> None:
         if self.ts_ns <= 0:
-            raise ValueError(
-                f"OpponentObservation.ts_ns must be positive, got {self.ts_ns!r}"
-            )
+            raise ValueError(f"OpponentObservation.ts_ns must be positive, got {self.ts_ns!r}")
         if not self.symbol:
             raise ValueError("OpponentObservation.symbol must be non-empty")
         # Phrased as ``not (lo <= x <= hi)`` so NaN — which compares False
@@ -150,13 +148,10 @@ class OpponentClassification:
     def __post_init__(self) -> None:
         if not (0.0 <= self.confidence <= 1.0):
             raise ValueError(
-                f"OpponentClassification.confidence must be in [0, 1], "
-                f"got {self.confidence!r}"
+                f"OpponentClassification.confidence must be in [0, 1], got {self.confidence!r}"
             )
         if not self.rule_fired:
-            raise ValueError(
-                "OpponentClassification.rule_fired must be non-empty"
-            )
+            raise ValueError("OpponentClassification.rule_fired must be non-empty")
         if self.observation_ts_ns <= 0:
             raise ValueError(
                 "OpponentClassification.observation_ts_ns must be positive, "
@@ -190,8 +185,7 @@ class BehaviorPrediction:
             raise ValueError("BehaviorPrediction.symbol must be non-empty")
         if not (0.0 <= self.confidence <= 1.0):
             raise ValueError(
-                f"BehaviorPrediction.confidence must be in [0, 1], "
-                f"got {self.confidence!r}"
+                f"BehaviorPrediction.confidence must be in [0, 1], got {self.confidence!r}"
             )
         if self.observation_ts_ns <= 0:
             raise ValueError(
@@ -200,6 +194,5 @@ class BehaviorPrediction:
             )
         if self.observation_ts_ns != self.classification.observation_ts_ns:
             raise ValueError(
-                "BehaviorPrediction.observation_ts_ns must match "
-                "classification.observation_ts_ns"
+                "BehaviorPrediction.observation_ts_ns must match classification.observation_ts_ns"
             )

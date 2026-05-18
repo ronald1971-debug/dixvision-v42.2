@@ -97,9 +97,7 @@ _POLARITY_LONG: str = "LONG"
 _POLARITY_SHORT: str = "SHORT"
 _POLARITY_NEUTRAL: str = "NEUTRAL"
 
-_POLARITIES: frozenset[str] = frozenset(
-    {_POLARITY_LONG, _POLARITY_SHORT, _POLARITY_NEUTRAL}
-)
+_POLARITIES: frozenset[str] = frozenset({_POLARITY_LONG, _POLARITY_SHORT, _POLARITY_NEUTRAL})
 
 RESET_SUBTRACT: str = "SUBTRACT"
 """snnTorch ``reset_mechanism="subtract"``: ``v -= spike * v_threshold``."""
@@ -150,17 +148,12 @@ class LeakyConfig:
     def __post_init__(self) -> None:
         if not (math.isfinite(self.beta) and 0.0 < self.beta < 1.0):
             raise SNNTorchDetectorError(
-                "LeakyConfig.beta must be in (0.0, 1.0), "
-                f"got {self.beta!r}"
+                f"LeakyConfig.beta must be in (0.0, 1.0), got {self.beta!r}"
             )
         if not math.isfinite(self.v_threshold):
-            raise SNNTorchDetectorError(
-                "LeakyConfig.v_threshold must be finite"
-            )
+            raise SNNTorchDetectorError("LeakyConfig.v_threshold must be finite")
         if not math.isfinite(self.v_reset):
-            raise SNNTorchDetectorError(
-                "LeakyConfig.v_reset must be finite"
-            )
+            raise SNNTorchDetectorError("LeakyConfig.v_reset must be finite")
         if self.reset_mechanism not in _RESET_MECHANISMS:
             raise SNNTorchDetectorError(
                 "LeakyConfig.reset_mechanism must be one of "
@@ -179,9 +172,7 @@ def beta_from_tau(dt: float, tau_mem: float) -> float:
     if not (math.isfinite(dt) and dt > 0.0):
         raise SNNTorchDetectorError("beta_from_tau: dt must be finite and > 0")
     if not (math.isfinite(tau_mem) and tau_mem > 0.0):
-        raise SNNTorchDetectorError(
-            "beta_from_tau: tau_mem must be finite and > 0"
-        )
+        raise SNNTorchDetectorError("beta_from_tau: tau_mem must be finite and > 0")
     return math.exp(-dt / tau_mem)
 
 
@@ -210,36 +201,22 @@ class LeakyWeights:
 
     def __post_init__(self) -> None:
         if self.input_dim < 1 or self.input_dim > MAX_INPUT_DIM:
-            raise SNNTorchDetectorError(
-                f"LeakyWeights.input_dim must be in [1, {MAX_INPUT_DIM}]"
-            )
+            raise SNNTorchDetectorError(f"LeakyWeights.input_dim must be in [1, {MAX_INPUT_DIM}]")
         if self.hidden_dim < 1 or self.hidden_dim > MAX_HIDDEN_DIM:
-            raise SNNTorchDetectorError(
-                f"LeakyWeights.hidden_dim must be in [1, {MAX_HIDDEN_DIM}]"
-            )
+            raise SNNTorchDetectorError(f"LeakyWeights.hidden_dim must be in [1, {MAX_HIDDEN_DIM}]")
         if len(self.weight) != self.input_dim:
-            raise SNNTorchDetectorError(
-                "LeakyWeights.weight row count must equal input_dim"
-            )
+            raise SNNTorchDetectorError("LeakyWeights.weight row count must equal input_dim")
         for row in self.weight:
             if len(row) != self.hidden_dim:
-                raise SNNTorchDetectorError(
-                    "LeakyWeights.weight row width must equal hidden_dim"
-                )
+                raise SNNTorchDetectorError("LeakyWeights.weight row width must equal hidden_dim")
             for value in row:
                 if not math.isfinite(value):
-                    raise SNNTorchDetectorError(
-                        "LeakyWeights.weight entries must be finite"
-                    )
+                    raise SNNTorchDetectorError("LeakyWeights.weight entries must be finite")
         if len(self.bias) != self.hidden_dim:
-            raise SNNTorchDetectorError(
-                "LeakyWeights.bias length must equal hidden_dim"
-            )
+            raise SNNTorchDetectorError("LeakyWeights.bias length must equal hidden_dim")
         for value in self.bias:
             if not math.isfinite(value):
-                raise SNNTorchDetectorError(
-                    "LeakyWeights.bias entries must be finite"
-                )
+                raise SNNTorchDetectorError("LeakyWeights.bias entries must be finite")
 
     def digest(self) -> str:
         """Stable 16-hex BLAKE2b-16 digest of (weight, bias, dims)."""
@@ -255,16 +232,10 @@ def identity_leaky_weights(dim: int) -> LeakyWeights:
     """
 
     if dim < 1 or dim > MAX_HIDDEN_DIM:
-        raise SNNTorchDetectorError(
-            f"identity_leaky_weights: dim must be in [1, {MAX_HIDDEN_DIM}]"
-        )
-    weight = tuple(
-        tuple(1.0 if i == j else 0.0 for j in range(dim)) for i in range(dim)
-    )
+        raise SNNTorchDetectorError(f"identity_leaky_weights: dim must be in [1, {MAX_HIDDEN_DIM}]")
+    weight = tuple(tuple(1.0 if i == j else 0.0 for j in range(dim)) for i in range(dim))
     bias = tuple(0.0 for _ in range(dim))
-    return LeakyWeights(
-        weight=weight, bias=bias, input_dim=dim, hidden_dim=dim
-    )
+    return LeakyWeights(weight=weight, bias=bias, input_dim=dim, hidden_dim=dim)
 
 
 # ---------------------------------------------------------------- state
@@ -284,9 +255,7 @@ class LeakyState:
     def __post_init__(self) -> None:
         for value in self.v:
             if not math.isfinite(value):
-                raise SNNTorchDetectorError(
-                    "LeakyState.v entries must be finite"
-                )
+                raise SNNTorchDetectorError("LeakyState.v entries must be finite")
 
 
 def initial_leaky_state(hidden_dim: int, *, v_init: float = 0.0) -> LeakyState:
@@ -297,9 +266,7 @@ def initial_leaky_state(hidden_dim: int, *, v_init: float = 0.0) -> LeakyState:
             f"initial_leaky_state: hidden_dim must be in [1, {MAX_HIDDEN_DIM}]"
         )
     if not math.isfinite(v_init):
-        raise SNNTorchDetectorError(
-            "initial_leaky_state: v_init must be finite"
-        )
+        raise SNNTorchDetectorError("initial_leaky_state: v_init must be finite")
     return LeakyState(v=tuple(v_init for _ in range(hidden_dim)))
 
 
@@ -345,24 +312,15 @@ class SpikePulse:
         if not self.symbol:
             raise SNNTorchDetectorError("SpikePulse.symbol must be non-empty")
         if self.polarity not in _POLARITIES:
-            raise SNNTorchDetectorError(
-                "SpikePulse.polarity must be one of "
-                f"{sorted(_POLARITIES)}"
-            )
-        if not (
-            math.isfinite(self.intensity) and 0.0 <= self.intensity <= 1.0
-        ):
-            raise SNNTorchDetectorError(
-                "SpikePulse.intensity must be finite in [0.0, 1.0]"
-            )
+            raise SNNTorchDetectorError(f"SpikePulse.polarity must be one of {sorted(_POLARITIES)}")
+        if not (math.isfinite(self.intensity) and 0.0 <= self.intensity <= 1.0):
+            raise SNNTorchDetectorError("SpikePulse.intensity must be finite in [0.0, 1.0]")
         if self.spike_count < 0:
             raise SNNTorchDetectorError("SpikePulse.spike_count must be >= 0")
         if self.sample_count < 1:
             raise SNNTorchDetectorError("SpikePulse.sample_count must be >= 1")
         if len(self.weights_digest) != _DIGEST_BYTES * 2:
-            raise SNNTorchDetectorError(
-                "SpikePulse.weights_digest must be 16-hex BLAKE2b-16"
-            )
+            raise SNNTorchDetectorError("SpikePulse.weights_digest must be 16-hex BLAKE2b-16")
 
 
 # ---------------------------------------------------------------- functional
@@ -396,8 +354,7 @@ def leaky_feed_forward_step(
 
     if len(input_current) != len(state.v):
         raise SNNTorchDetectorError(
-            "leaky_feed_forward_step: input_current length must equal "
-            "state.v length"
+            "leaky_feed_forward_step: input_current length must equal state.v length"
         )
     next_v: list[float] = []
     spikes: list[bool] = []
@@ -423,15 +380,11 @@ def _project(weights: LeakyWeights, x: Sequence[float]) -> tuple[float, ...]:
     """Linear projection ``W @ x + b`` for the frozen weight matrix."""
 
     if len(x) != weights.input_dim:
-        raise SNNTorchDetectorError(
-            "_project: input length must equal weights.input_dim"
-        )
+        raise SNNTorchDetectorError("_project: input length must equal weights.input_dim")
     out: list[float] = list(weights.bias)
     for i, xi in enumerate(x):
         if not math.isfinite(xi):
-            raise SNNTorchDetectorError(
-                "_project: input entries must be finite"
-            )
+            raise SNNTorchDetectorError("_project: input entries must be finite")
         row = weights.weight[i]
         for j, wij in enumerate(row):
             out[j] += wij * xi
@@ -456,15 +409,12 @@ class SNNTorchLeakyCell:
     weights: LeakyWeights
     config: LeakyConfig = field(default_factory=LeakyConfig)
 
-    def forward(
-        self, state: LeakyState, x: Sequence[float]
-    ) -> tuple[LeakyState, tuple[bool, ...]]:
+    def forward(self, state: LeakyState, x: Sequence[float]) -> tuple[LeakyState, tuple[bool, ...]]:
         """Single forward step: ``(next_state, spikes)``."""
 
         if len(state.v) != self.weights.hidden_dim:
             raise SNNTorchDetectorError(
-                "SNNTorchLeakyCell.forward: state.v length must equal "
-                "weights.hidden_dim"
+                "SNNTorchLeakyCell.forward: state.v length must equal weights.hidden_dim"
             )
         i = _project(self.weights, x)
         return leaky_feed_forward_step(state, i, self.config)
@@ -479,8 +429,7 @@ class LeakyForwardCallable(Protocol):
 
     def forward(
         self, state: LeakyState, x: Sequence[float]
-    ) -> tuple[LeakyState, tuple[bool, ...]]:
-        ...
+    ) -> tuple[LeakyState, tuple[bool, ...]]: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -523,17 +472,11 @@ class SNNTorchDetector:
         """Run the Leaky cell over ``window`` and emit a :class:`SpikePulse`."""
 
         if ts_ns < 0:
-            raise SNNTorchDetectorError(
-                "SNNTorchDetector.detect: ts_ns must be >= 0"
-            )
+            raise SNNTorchDetectorError("SNNTorchDetector.detect: ts_ns must be >= 0")
         if not source:
-            raise SNNTorchDetectorError(
-                "SNNTorchDetector.detect: source must be non-empty"
-            )
+            raise SNNTorchDetectorError("SNNTorchDetector.detect: source must be non-empty")
         if not symbol:
-            raise SNNTorchDetectorError(
-                "SNNTorchDetector.detect: symbol must be non-empty"
-            )
+            raise SNNTorchDetectorError("SNNTorchDetector.detect: symbol must be non-empty")
         if polarity_sign not in (-1, 0, 1):
             raise SNNTorchDetectorError(
                 "SNNTorchDetector.detect: polarity_sign must be in {-1, 0, 1}"
@@ -551,9 +494,7 @@ class SNNTorchDetector:
             for s in spikes:
                 if s:
                     spike_count += 1
-        intensity_raw = (
-            spike_count / total_neurons if total_neurons > 0 else 0.0
-        )
+        intensity_raw = spike_count / total_neurons if total_neurons > 0 else 0.0
         intensity = max(0.0, min(1.0, intensity_raw))
         if polarity_sign == 0 or intensity < self.spike_polarity_threshold:
             polarity = _POLARITY_NEUTRAL
@@ -613,17 +554,11 @@ class BackendBenchmark:
 
     def __post_init__(self) -> None:
         if self.norse_spike_count < 0:
-            raise SNNTorchDetectorError(
-                "BackendBenchmark.norse_spike_count must be >= 0"
-            )
+            raise SNNTorchDetectorError("BackendBenchmark.norse_spike_count must be >= 0")
         if self.snntorch_spike_count < 0:
-            raise SNNTorchDetectorError(
-                "BackendBenchmark.snntorch_spike_count must be >= 0"
-            )
+            raise SNNTorchDetectorError("BackendBenchmark.snntorch_spike_count must be >= 0")
         if len(self.digest) != _DIGEST_BYTES * 2:
-            raise SNNTorchDetectorError(
-                "BackendBenchmark.digest must be 16-hex BLAKE2b-16"
-            )
+            raise SNNTorchDetectorError("BackendBenchmark.digest must be 16-hex BLAKE2b-16")
 
     def is_precision_match(
         self,
@@ -641,9 +576,7 @@ class BackendBenchmark:
         """
 
         if count_tolerance < 0:
-            raise SNNTorchDetectorError(
-                "is_precision_match: count_tolerance must be >= 0"
-            )
+            raise SNNTorchDetectorError("is_precision_match: count_tolerance must be >= 0")
         if first_spike_step_tolerance < 0:
             raise SNNTorchDetectorError(
                 "is_precision_match: first_spike_step_tolerance must be >= 0"
@@ -700,36 +633,25 @@ def benchmark_against_norse(
     """
 
     if not (math.isfinite(dt) and dt > 0.0):
-        raise SNNTorchDetectorError(
-            "benchmark_against_norse: dt must be finite and > 0"
-        )
+        raise SNNTorchDetectorError("benchmark_against_norse: dt must be finite and > 0")
     if not (math.isfinite(tau_mem) and tau_mem > 0.0):
-        raise SNNTorchDetectorError(
-            "benchmark_against_norse: tau_mem must be finite and > 0"
-        )
+        raise SNNTorchDetectorError("benchmark_against_norse: tau_mem must be finite and > 0")
     if not math.isfinite(v_threshold):
-        raise SNNTorchDetectorError(
-            "benchmark_against_norse: v_threshold must be finite"
-        )
+        raise SNNTorchDetectorError("benchmark_against_norse: v_threshold must be finite")
     if reset_mechanism not in _RESET_MECHANISMS:
         raise SNNTorchDetectorError(
-            "benchmark_against_norse: reset_mechanism must be one of "
-            f"{sorted(_RESET_MECHANISMS)}"
+            f"benchmark_against_norse: reset_mechanism must be one of {sorted(_RESET_MECHANISMS)}"
         )
     rows = list(input_current)
     if not rows:
-        raise SNNTorchDetectorError(
-            "benchmark_against_norse: input_current must be non-empty"
-        )
+        raise SNNTorchDetectorError("benchmark_against_norse: input_current must be non-empty")
     if len(rows) > MAX_WINDOW:
         raise SNNTorchDetectorError(
             f"benchmark_against_norse: trace length must be <= {MAX_WINDOW}"
         )
     for value in rows:
         if not math.isfinite(value):
-            raise SNNTorchDetectorError(
-                "benchmark_against_norse: input entries must be finite"
-            )
+            raise SNNTorchDetectorError("benchmark_against_norse: input entries must be finite")
 
     # Norse forward-Euler reference
     norse_v = 0.0
@@ -794,15 +716,11 @@ def benchmark_against_norse(
 
 
 def _digest(payload: str) -> str:
-    return hashlib.blake2b(
-        payload.encode("utf-8"), digest_size=_DIGEST_BYTES
-    ).hexdigest()
+    return hashlib.blake2b(payload.encode("utf-8"), digest_size=_DIGEST_BYTES).hexdigest()
 
 
 def _canonical_weights(weights: LeakyWeights) -> str:
-    rows = ";".join(
-        ",".join(f"{v:.17g}" for v in row) for row in weights.weight
-    )
+    rows = ";".join(",".join(f"{v:.17g}" for v in row) for row in weights.weight)
     bias = ",".join(f"{v:.17g}" for v in weights.bias)
     return (
         f"v={SNNTORCH_DETECTOR_VERSION}|i={weights.input_dim}"

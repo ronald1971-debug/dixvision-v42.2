@@ -68,13 +68,11 @@ NONCE_RING_CAPACITY: Final[int] = 1024
 # The two consent-required edges per Hardening-S1 item 8. ``frozenset``
 # of ``(SystemMode, SystemMode)`` tuples; expanding the set is an
 # authority-matrix change that should land alongside test coverage.
-CONSENT_REQUIRED_EDGES: Final[frozenset[tuple[SystemMode, SystemMode]]] = (
-    frozenset(
-        {
-            (SystemMode.SAFE, SystemMode.PAPER),
-            (SystemMode.LIVE, SystemMode.AUTO),
-        }
-    )
+CONSENT_REQUIRED_EDGES: Final[frozenset[tuple[SystemMode, SystemMode]]] = frozenset(
+    {
+        (SystemMode.SAFE, SystemMode.PAPER),
+        (SystemMode.LIVE, SystemMode.AUTO),
+    }
 )
 
 
@@ -189,15 +187,11 @@ class OperatorConsentValidator:
         nonce_capacity: int = NONCE_RING_CAPACITY,
     ) -> None:
         if freshness_window_ns <= 0:
-            raise ValueError(
-                "freshness_window_ns must be positive nanoseconds"
-            )
+            raise ValueError("freshness_window_ns must be positive nanoseconds")
         if nonce_capacity <= 0:
             raise ValueError("nonce_capacity must be positive")
         self._freshness_window_ns = freshness_window_ns
-        self._seen_nonces: deque[tuple[str, str]] = deque(
-            maxlen=nonce_capacity
-        )
+        self._seen_nonces: deque[tuple[str, str]] = deque(maxlen=nonce_capacity)
 
     def validate(
         self,
@@ -274,10 +268,7 @@ class OperatorConsentValidator:
             return ConsentValidationResult(
                 ok=False,
                 code=CODE_FUTURE,
-                detail=(
-                    f"consent.ts_ns={consent.ts_ns} > "
-                    f"request.ts_ns={request_ts_ns}"
-                ),
+                detail=(f"consent.ts_ns={consent.ts_ns} > request.ts_ns={request_ts_ns}"),
             )
 
         # Stale consent — beyond the freshness window.

@@ -112,9 +112,7 @@ def test_collect_attr_assignments_picks_up_state_assigns(tmp_path: Path) -> None
 
     src = tmp_path / "manager.py"
     src.write_text(
-        "def populate(state):\n"
-        "    state.engine = object()\n"
-        "    state.loop = object()\n",
+        "def populate(state):\n    state.engine = object()\n    state.loop = object()\n",
         encoding="utf-8",
     )
     found = _collect_attr_assignments(src)
@@ -281,18 +279,14 @@ def test_phase_12_allowlist_covers_unwired_node(
     import ui.harness.runtime_registrar as registrar
 
     full_allowlist = frozenset(registrar.declared_node_ids())
-    monkeypatch.setattr(
-        registrar, "DECLARED_BUT_DORMANT_ALLOWLIST", full_allowlist
-    )
+    monkeypatch.setattr(registrar, "DECLARED_BUT_DORMANT_ALLOWLIST", full_allowlist)
 
     phase, ok, drift_count = tv._phase_12_topology_drift(advisory=False)
 
     assert ok is True
     assert drift_count == 0
     assert phase.status == "ok"
-    assert set(phase.details["allowlisted_node_ids"]) == set(
-        registrar.declared_node_ids()
-    )
+    assert set(phase.details["allowlisted_node_ids"]) == set(registrar.declared_node_ids())
     assert phase.details["wired_node_ids"] == []
 
 

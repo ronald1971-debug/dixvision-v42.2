@@ -369,9 +369,7 @@ def test_result_rejects_non_hex_digest() -> None:
 class _FakeDynamics:
     """Deterministic :class:`MarketDynamics` fake — drift-up by 1.0/step."""
 
-    def initial_mid_price(
-        self, *, seed: int, config: EpisodeConfig
-    ) -> float:
+    def initial_mid_price(self, *, seed: int, config: EpisodeConfig) -> float:
         return 100.0
 
     def step(
@@ -458,9 +456,7 @@ def _sandbox_inputs() -> tuple[
 ]:
     dynamics = _FakeDynamics()
     arguments = _valid_args()
-    episode_config = EpisodeConfig(
-        initial_notional_usd=1000.0, max_steps=8
-    )
+    episode_config = EpisodeConfig(initial_notional_usd=1000.0, max_steps=8)
     trainer = _FakeSampleFactoryTrainer(metrics=_valid_metrics())
     return dynamics, arguments, episode_config, trainer
 
@@ -511,10 +507,7 @@ def test_train_proposal_touchpoints_include_module_and_weights() -> None:
         ts_ns=1,
         proposal_id="p",
     )
-    assert (
-        "evolution_engine.sandbox_sample_factory"
-        in result.proposal.touchpoints
-    )
+    assert "evolution_engine.sandbox_sample_factory" in result.proposal.touchpoints
     assert "policy_weights" in result.proposal.touchpoints
 
 
@@ -549,9 +542,7 @@ def test_train_proposal_meta_includes_digest_and_algo_kind() -> None:
 
 def test_train_proposal_meta_overlays_do_not_override_provenance() -> None:
     dynamics, _, episode_config, trainer = _sandbox_inputs()
-    arguments = _valid_args(
-        meta={"policy_digest": "ZZZZ", "extra": "ok"}
-    )
+    arguments = _valid_args(meta={"policy_digest": "ZZZZ", "extra": "ok"})
     sandbox = SampleFactorySandbox(trainer=trainer)
     result = sandbox.train(
         dynamics=dynamics,
@@ -836,9 +827,7 @@ def test_sample_factory_appo_trainer_raises_when_dep_missing() -> None:
         with pytest.raises(ImportError, match="sample"):
             sample_factory_appo_trainer()
     else:
-        pytest.skip(
-            "sample_factory installed — production seam smoke skipped"
-        )
+        pytest.skip("sample_factory installed — production seam smoke skipped")
 
 
 def test_artifact_aliases_are_callable_typed() -> None:
@@ -853,9 +842,7 @@ def test_artifact_aliases_are_callable_typed() -> None:
 
 
 _MODULE_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "evolution_engine"
-    / "sandbox_sample_factory.py"
+    Path(__file__).resolve().parents[1] / "evolution_engine" / "sandbox_sample_factory.py"
 )
 
 
@@ -876,24 +863,15 @@ def _top_level_imports(tree: ast.Module) -> list[str]:
 
 
 def test_no_top_level_sample_factory_import() -> None:
-    assert all(
-        not name.startswith("sample_factory")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("sample_factory") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_torch_import() -> None:
-    assert all(
-        not name.startswith("torch")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("torch") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_numpy_import() -> None:
-    assert all(
-        not name.startswith("numpy")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("numpy") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_gymnasium_import() -> None:
@@ -945,11 +923,7 @@ def test_sample_factory_import_only_inside_factory() -> None:
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             mod = node.module if isinstance(node, ast.ImportFrom) else None
-            names = (
-                [a.name for a in node.names]
-                if isinstance(node, ast.Import)
-                else [mod or ""]
-            )
+            names = [a.name for a in node.names] if isinstance(node, ast.Import) else [mod or ""]
             for name in names:
                 if name.startswith(("sample_factory", "torch", "gymnasium")):
                     parent = _find_enclosing_function(tree, node)
@@ -963,9 +937,7 @@ def test_sample_factory_import_only_inside_factory() -> None:
                     )
 
 
-def _find_enclosing_function(
-    tree: ast.Module, target: ast.AST
-) -> ast.FunctionDef | None:
+def _find_enclosing_function(tree: ast.Module, target: ast.AST) -> ast.FunctionDef | None:
     for func in ast.walk(tree):
         if isinstance(func, ast.FunctionDef):
             for descendant in ast.walk(func):
@@ -987,9 +959,7 @@ def test_module_reload_is_idempotent() -> None:
 
     assert mod1.PROPOSAL_SOURCE == mod2.PROPOSAL_SOURCE
     assert mod1.MAX_TRAIN_FOR_ENV_STEPS == mod2.MAX_TRAIN_FOR_ENV_STEPS
-    assert (
-        mod1.SampleFactoryAlgoKind.APPO is mod2.SampleFactoryAlgoKind.APPO
-    )
+    assert mod1.SampleFactoryAlgoKind.APPO is mod2.SampleFactoryAlgoKind.APPO
 
 
 def test_marketdynamics_protocol_runtime_check_holds() -> None:

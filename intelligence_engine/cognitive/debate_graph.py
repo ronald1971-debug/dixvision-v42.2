@@ -294,8 +294,7 @@ class DebateParticipant:
             raise DebateError("DebateParticipant.persona must be non-empty")
         if len(self.persona) > MAX_PERSONA_LEN:
             raise DebateError(
-                "DebateParticipant.persona exceeds "
-                f"MAX_PERSONA_LEN={MAX_PERSONA_LEN}"
+                f"DebateParticipant.persona exceeds MAX_PERSONA_LEN={MAX_PERSONA_LEN}"
             )
 
 
@@ -319,71 +318,44 @@ class DebateConfig:
         if not self.topic.strip():
             raise DebateError("DebateConfig.topic must be non-empty")
         if len(self.topic) > MAX_TOPIC_LEN:
-            raise DebateError(
-                f"DebateConfig.topic exceeds MAX_TOPIC_LEN={MAX_TOPIC_LEN}"
-            )
+            raise DebateError(f"DebateConfig.topic exceeds MAX_TOPIC_LEN={MAX_TOPIC_LEN}")
         if not isinstance(self.participants, tuple):
-            raise DebateError(
-                "DebateConfig.participants must be a tuple "
-                "(immutable, hashable)"
-            )
+            raise DebateError("DebateConfig.participants must be a tuple (immutable, hashable)")
         if len(self.participants) < MIN_PARTICIPANTS:
             raise DebateError(
-                "DebateConfig.participants must have at least "
-                f"{MIN_PARTICIPANTS} entries"
+                f"DebateConfig.participants must have at least {MIN_PARTICIPANTS} entries"
             )
         if len(self.participants) > MAX_PARTICIPANTS:
             raise DebateError(
-                "DebateConfig.participants must have at most "
-                f"{MAX_PARTICIPANTS} entries"
+                f"DebateConfig.participants must have at most {MAX_PARTICIPANTS} entries"
             )
         if any(not isinstance(p, DebateParticipant) for p in self.participants):
-            raise DebateError(
-                "DebateConfig.participants entries must be DebateParticipant"
-            )
+            raise DebateError("DebateConfig.participants entries must be DebateParticipant")
         names = [p.name for p in self.participants]
         if len(set(names)) != len(names):
-            raise DebateError(
-                "DebateConfig.participants names must be unique"
-            )
+            raise DebateError("DebateConfig.participants names must be unique")
         if MODERATOR_NODE_ID in names:
             raise DebateError(
-                "DebateConfig.participants must not use the reserved name "
-                f"{MODERATOR_NODE_ID!r}"
+                f"DebateConfig.participants must not use the reserved name {MODERATOR_NODE_ID!r}"
             )
-        if not isinstance(self.max_rounds, int) or isinstance(
-            self.max_rounds, bool
-        ):
+        if not isinstance(self.max_rounds, int) or isinstance(self.max_rounds, bool):
             raise DebateError("DebateConfig.max_rounds must be an int")
         if self.max_rounds < MIN_ROUNDS:
-            raise DebateError(
-                f"DebateConfig.max_rounds must be >= {MIN_ROUNDS}"
-            )
+            raise DebateError(f"DebateConfig.max_rounds must be >= {MIN_ROUNDS}")
         if self.max_rounds > MAX_ROUNDS:
-            raise DebateError(
-                f"DebateConfig.max_rounds must be <= {MAX_ROUNDS}"
-            )
+            raise DebateError(f"DebateConfig.max_rounds must be <= {MAX_ROUNDS}")
         if not isinstance(self.moderator_persona, str):
-            raise DebateError(
-                "DebateConfig.moderator_persona must be a string"
-            )
+            raise DebateError("DebateConfig.moderator_persona must be a string")
         if not self.moderator_persona.strip():
-            raise DebateError(
-                "DebateConfig.moderator_persona must be non-empty"
-            )
+            raise DebateError("DebateConfig.moderator_persona must be non-empty")
         if len(self.moderator_persona) > MAX_PERSONA_LEN:
             raise DebateError(
-                "DebateConfig.moderator_persona exceeds "
-                f"MAX_PERSONA_LEN={MAX_PERSONA_LEN}"
+                f"DebateConfig.moderator_persona exceeds MAX_PERSONA_LEN={MAX_PERSONA_LEN}"
             )
         if not isinstance(self.convergence_marker, str):
-            raise DebateError(
-                "DebateConfig.convergence_marker must be a string"
-            )
+            raise DebateError("DebateConfig.convergence_marker must be a string")
         if not isinstance(self.require_unanimous_convergence, bool):
-            raise DebateError(
-                "DebateConfig.require_unanimous_convergence must be bool"
-            )
+            raise DebateError("DebateConfig.require_unanimous_convergence must be bool")
 
     @property
     def n_participants(self) -> int:
@@ -671,16 +643,12 @@ def _route_after_debater_factory(
     Returns either :data:`MODERATOR_NODE_ID` (terminate the
     debate) or the next debater's node id (continue round-robin)."""
 
-    debater_node_ids = tuple(
-        _debater_node_id(p.name) for p in config.participants
-    )
+    debater_node_ids = tuple(_debater_node_id(p.name) for p in config.participants)
 
     def _route(state: DebateGraphState) -> str:
         if state.get("converged", False):
             return MODERATOR_NODE_ID
-        if state.get("round_idx", 0) >= state.get(
-            "max_rounds", config.max_rounds
-        ):
+        if state.get("round_idx", 0) >= state.get("max_rounds", config.max_rounds):
             return MODERATOR_NODE_ID
         idx = int(state.get("speaker_idx", 0))
         if idx < 0 or idx >= len(debater_node_ids):
@@ -729,9 +697,7 @@ def build_debate_graph(
     first_node = _debater_node_id(config.participants[0].name)
     builder.add_edge(START, first_node)
 
-    debater_node_ids = tuple(
-        _debater_node_id(p.name) for p in config.participants
-    )
+    debater_node_ids = tuple(_debater_node_id(p.name) for p in config.participants)
     edges_map: dict[str, str] = {nid: nid for nid in debater_node_ids}
     edges_map[MODERATOR_NODE_ID] = MODERATOR_NODE_ID
 
@@ -771,8 +737,7 @@ def assemble_debate_graph(
     flag = feature_flag if feature_flag is not None else DebateFeatureFlag()
     if not flag.enabled:
         raise DebateGraphDisabledError(
-            "cognitive debate is disabled — set "
-            f"{FEATURE_FLAG_ENV_VAR}=true to enable"
+            f"cognitive debate is disabled — set {FEATURE_FLAG_ENV_VAR}=true to enable"
         )
 
     model = RegistryDrivenChatModel(
@@ -782,9 +747,7 @@ def assemble_debate_graph(
     )
     saver = AuditLedgerCheckpointSaver(ledger_append=ledger_append)
     graph = build_debate_graph(model=model, saver=saver, config=config)
-    return DebateGraphBundle(
-        graph=graph, model=model, saver=saver, config=config
-    )
+    return DebateGraphBundle(graph=graph, model=model, saver=saver, config=config)
 
 
 # ---------------------------------------------------------------------------
@@ -808,14 +771,10 @@ def extract_outcome(
     moderator_text: str | None = None
     debate_msgs: list[BaseMessage] = []
     for msg in transcript:
-        kwargs: Mapping[str, Any] = (
-            getattr(msg, "additional_kwargs", None) or {}
-        )
+        kwargs: Mapping[str, Any] = getattr(msg, "additional_kwargs", None) or {}
         if kwargs.get(PARTICIPANT_KWARG) == MODERATOR_NODE_ID:
             content = msg.content
-            moderator_text = content if isinstance(content, str) else str(
-                content
-            )
+            moderator_text = content if isinstance(content, str) else str(content)
         else:
             debate_msgs.append(msg)
 
@@ -828,8 +787,7 @@ def extract_outcome(
         kwargs = getattr(msg, "additional_kwargs", None) or {}
         tag = kwargs.get(PARTICIPANT_KWARG)
         participant_name = (
-            str(tag) if isinstance(tag, str) and tag
-            else participant_names[speaker_idx]
+            str(tag) if isinstance(tag, str) and tag else participant_names[speaker_idx]
         )
         content = msg.content
         text = content if isinstance(content, str) else str(content)

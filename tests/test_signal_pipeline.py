@@ -147,9 +147,7 @@ def test_pipeline_skips_eligible_but_not_due_plugin():
 
 
 def test_pipeline_disabled_plugin_does_not_fire():
-    plugin = _ScriptedPlugin(
-        "a", Side.BUY, 0.6, lifecycle=PluginLifecycle.DISABLED
-    )
+    plugin = _ScriptedPlugin("a", Side.BUY, 0.6, lifecycle=PluginLifecycle.DISABLED)
     pipe = _build_pipeline(plugin)
     out = pipe.on_tick(_tick(1))
     # The orchestrator/scheduler still mark it due+eligible, but the

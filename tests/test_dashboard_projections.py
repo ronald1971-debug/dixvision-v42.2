@@ -17,9 +17,7 @@ from fastapi.testclient import TestClient
 
 from ui.dashboard_projection_routes import build_projection_router
 
-_ISO_RE = re.compile(
-    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$"
-)
+_ISO_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$")
 
 
 @pytest.fixture()
@@ -221,9 +219,7 @@ def test_perps_liquidations_long_short_segregation(client: TestClient) -> None:
 
 
 def test_perps_liquidations_custom_symbol(client: TestClient) -> None:
-    body = client.get(
-        "/api/dashboard/perps/liquidations?symbol=ETH-PERP"
-    ).json()
+    body = client.get("/api/dashboard/perps/liquidations?symbol=ETH-PERP").json()
     assert body["symbol"] == "ETH-PERP"
 
 

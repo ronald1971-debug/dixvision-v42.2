@@ -191,8 +191,7 @@ class DebateAgent:
             raise DebateRoundError("DebateAgent.name must be non-empty")
         if len(self.name) > MAX_AGENT_NAME_LEN:
             raise DebateRoundError(
-                "DebateAgent.name exceeds "
-                f"MAX_AGENT_NAME_LEN={MAX_AGENT_NAME_LEN}"
+                f"DebateAgent.name exceeds MAX_AGENT_NAME_LEN={MAX_AGENT_NAME_LEN}"
             )
         if not isinstance(self.role, str):
             raise DebateRoundError("DebateAgent.role must be str")
@@ -200,18 +199,14 @@ class DebateAgent:
             raise DebateRoundError("DebateAgent.role must be non-empty")
         if len(self.role) > MAX_AGENT_ROLE_LEN:
             raise DebateRoundError(
-                "DebateAgent.role exceeds "
-                f"MAX_AGENT_ROLE_LEN={MAX_AGENT_ROLE_LEN}"
+                f"DebateAgent.role exceeds MAX_AGENT_ROLE_LEN={MAX_AGENT_ROLE_LEN}"
             )
         if not isinstance(self.persona, str):
             raise DebateRoundError("DebateAgent.persona must be str")
         if not self.persona.strip():
             raise DebateRoundError("DebateAgent.persona must be non-empty")
         if len(self.persona) > MAX_PERSONA_LEN:
-            raise DebateRoundError(
-                "DebateAgent.persona exceeds "
-                f"MAX_PERSONA_LEN={MAX_PERSONA_LEN}"
-            )
+            raise DebateRoundError(f"DebateAgent.persona exceeds MAX_PERSONA_LEN={MAX_PERSONA_LEN}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -235,54 +230,34 @@ class DebateRoundConfig:
         if not self.topic.strip():
             raise DebateRoundError("DebateRoundConfig.topic must be non-empty")
         if len(self.topic) > MAX_TOPIC_LEN:
-            raise DebateRoundError(
-                "DebateRoundConfig.topic exceeds "
-                f"MAX_TOPIC_LEN={MAX_TOPIC_LEN}"
-            )
+            raise DebateRoundError(f"DebateRoundConfig.topic exceeds MAX_TOPIC_LEN={MAX_TOPIC_LEN}")
         if not isinstance(self.agents, tuple):
             raise DebateRoundError(
-                "DebateRoundConfig.agents must be tuple "
-                "(immutable, hashable, order-stable)"
+                "DebateRoundConfig.agents must be tuple (immutable, hashable, order-stable)"
             )
         if len(self.agents) < MIN_AGENTS:
             raise DebateRoundError(
-                "DebateRoundConfig.agents must have at least "
-                f"{MIN_AGENTS} entries"
+                f"DebateRoundConfig.agents must have at least {MIN_AGENTS} entries"
             )
         if len(self.agents) > MAX_AGENTS:
             raise DebateRoundError(
-                "DebateRoundConfig.agents must have at most "
-                f"{MAX_AGENTS} entries"
+                f"DebateRoundConfig.agents must have at most {MAX_AGENTS} entries"
             )
         if any(not isinstance(a, DebateAgent) for a in self.agents):
-            raise DebateRoundError(
-                "DebateRoundConfig.agents entries must be DebateAgent"
-            )
+            raise DebateRoundError("DebateRoundConfig.agents entries must be DebateAgent")
         names = [a.name for a in self.agents]
         if len(set(names)) != len(names):
-            raise DebateRoundError(
-                "DebateRoundConfig.agents must have unique names"
-            )
-        if not isinstance(self.max_rounds, int) or isinstance(
-            self.max_rounds, bool
-        ):
+            raise DebateRoundError("DebateRoundConfig.agents must have unique names")
+        if not isinstance(self.max_rounds, int) or isinstance(self.max_rounds, bool):
             raise DebateRoundError("DebateRoundConfig.max_rounds must be int")
         if self.max_rounds < MIN_ROUNDS:
-            raise DebateRoundError(
-                f"DebateRoundConfig.max_rounds must be >= {MIN_ROUNDS}"
-            )
+            raise DebateRoundError(f"DebateRoundConfig.max_rounds must be >= {MIN_ROUNDS}")
         if self.max_rounds > MAX_ROUNDS:
-            raise DebateRoundError(
-                f"DebateRoundConfig.max_rounds must be <= {MAX_ROUNDS}"
-            )
+            raise DebateRoundError(f"DebateRoundConfig.max_rounds must be <= {MAX_ROUNDS}")
         if not isinstance(self.terminator_marker, str):
-            raise DebateRoundError(
-                "DebateRoundConfig.terminator_marker must be str"
-            )
+            raise DebateRoundError("DebateRoundConfig.terminator_marker must be str")
         if not self.terminator_marker:
-            raise DebateRoundError(
-                "DebateRoundConfig.terminator_marker must be non-empty"
-            )
+            raise DebateRoundError("DebateRoundConfig.terminator_marker must be non-empty")
 
     @property
     def n_agents(self) -> int:
@@ -457,13 +432,9 @@ def default_recommendation_extractor(
     :data:`RecommendationExtractor`."""
 
     if not isinstance(transcript, tuple):
-        raise DebateRoundError(
-            "default_recommendation_extractor: transcript must be tuple"
-        )
+        raise DebateRoundError("default_recommendation_extractor: transcript must be tuple")
     if not isinstance(config, DebateRoundConfig):
-        raise DebateRoundError(
-            "default_recommendation_extractor: config must be DebateRoundConfig"
-        )
+        raise DebateRoundError("default_recommendation_extractor: config must be DebateRoundConfig")
 
     last_turn_by_agent: dict[str, DebateTurn] = {}
     for turn in transcript:
@@ -484,9 +455,7 @@ def default_recommendation_extractor(
     for label in votes.values():
         counts[label] = counts.get(label, 0) + 1
     winner_count = max(counts.values()) if counts else 0
-    winners = sorted(
-        label for label, c in counts.items() if c == winner_count
-    )
+    winners = sorted(label for label, c in counts.items() if c == winner_count)
     recommendation = winners[0] if winners else DEFAULT_RECOMMENDATION
 
     rationale = DEFAULT_RATIONALE
@@ -506,44 +475,30 @@ def default_recommendation_extractor(
 
 def _validate_recommendation(value: object) -> str:
     if not isinstance(value, str):
-        raise DebateRoundError(
-            "recommendation_extractor must return str recommendation"
-        )
+        raise DebateRoundError("recommendation_extractor must return str recommendation")
     label = value.strip()
     if not label:
         raise DebateRoundError("recommendation must be non-empty")
     if len(label) > MAX_RECOMMENDATION_LEN:
-        raise DebateRoundError(
-            f"recommendation length {len(label)} > {MAX_RECOMMENDATION_LEN}"
-        )
+        raise DebateRoundError(f"recommendation length {len(label)} > {MAX_RECOMMENDATION_LEN}")
     return label
 
 
 def _validate_rationale(value: object) -> str:
     if not isinstance(value, str):
-        raise DebateRoundError(
-            "recommendation_extractor must return str rationale"
-        )
+        raise DebateRoundError("recommendation_extractor must return str rationale")
     if len(value) > MAX_RATIONALE_LEN:
-        raise DebateRoundError(
-            f"rationale length {len(value)} > {MAX_RATIONALE_LEN}"
-        )
+        raise DebateRoundError(f"rationale length {len(value)} > {MAX_RATIONALE_LEN}")
     return value
 
 
-def _validate_votes(
-    value: object, config: DebateRoundConfig
-) -> Mapping[str, str]:
+def _validate_votes(value: object, config: DebateRoundConfig) -> Mapping[str, str]:
     if not isinstance(value, Mapping):
-        raise DebateRoundError(
-            "recommendation_extractor must return Mapping[str, str] votes"
-        )
+        raise DebateRoundError("recommendation_extractor must return Mapping[str, str] votes")
     expected = {a.name for a in config.agents}
     got = set(value.keys())
     if got != expected:
-        raise DebateRoundError(
-            f"votes keys {sorted(got)} != agent names {sorted(expected)}"
-        )
+        raise DebateRoundError(f"votes keys {sorted(got)} != agent names {sorted(expected)}")
     cleaned: dict[str, str] = {}
     for k, v in value.items():
         if not isinstance(k, str):
@@ -551,9 +506,7 @@ def _validate_votes(
         if not isinstance(v, str):
             raise DebateRoundError(f"votes[{k!r}] must be str")
         if len(v) > MAX_RECOMMENDATION_LEN:
-            raise DebateRoundError(
-                f"votes[{k!r}] length {len(v)} > {MAX_RECOMMENDATION_LEN}"
-            )
+            raise DebateRoundError(f"votes[{k!r}] length {len(v)} > {MAX_RECOMMENDATION_LEN}")
         cleaned[k] = v
     return MappingProxyType(dict(sorted(cleaned.items())))
 
@@ -561,13 +514,11 @@ def _validate_votes(
 def _validate_turn_text(value: object, agent_name: str) -> str:
     if not isinstance(value, str):
         raise DebateRoundError(
-            f"Speaker.speak({agent_name!r}) must return str, got "
-            f"{type(value).__name__}"
+            f"Speaker.speak({agent_name!r}) must return str, got {type(value).__name__}"
         )
     if len(value) > MAX_TURN_TEXT_LEN:
         raise DebateRoundError(
-            f"Speaker.speak({agent_name!r}) returned "
-            f"{len(value)} chars > {MAX_TURN_TEXT_LEN}"
+            f"Speaker.speak({agent_name!r}) returned {len(value)} chars > {MAX_TURN_TEXT_LEN}"
         )
     return value
 
@@ -646,9 +597,7 @@ def run_debate_round(
     if not isinstance(config, DebateRoundConfig):
         raise DebateRoundError("run_debate_round: config must be DebateRoundConfig")
     if not isinstance(speaker, Speaker):
-        raise DebateRoundError(
-            "run_debate_round: speaker must implement the Speaker Protocol"
-        )
+        raise DebateRoundError("run_debate_round: speaker must implement the Speaker Protocol")
 
     extractor: RecommendationExtractor = (
         recommendation_extractor
@@ -689,8 +638,7 @@ def run_debate_round(
     extracted = extractor(final_transcript, config)
     if not isinstance(extracted, tuple) or len(extracted) != 3:
         raise DebateRoundError(
-            "recommendation_extractor must return "
-            "(recommendation, rationale, votes) tuple"
+            "recommendation_extractor must return (recommendation, rationale, votes) tuple"
         )
     rec_raw, rat_raw, votes_raw = extracted
     recommendation = _validate_recommendation(rec_raw)
@@ -748,13 +696,9 @@ def litellm_speaker_factory(
     whole debate is byte-identical replayable."""
 
     if not callable(completion):
-        raise DebateRoundError(
-            "litellm_speaker_factory: completion must be callable"
-        )
+        raise DebateRoundError("litellm_speaker_factory: completion must be callable")
     if not isinstance(system_prompt_prefix, str):
-        raise DebateRoundError(
-            "litellm_speaker_factory: system_prompt_prefix must be str"
-        )
+        raise DebateRoundError("litellm_speaker_factory: system_prompt_prefix must be str")
 
     @dataclass(frozen=True, slots=True)
     class _LiteLLMSpeaker:

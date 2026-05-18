@@ -183,10 +183,7 @@ def embed_text(text: str) -> tuple[float, ...]:
     embedder.
     """
     if not isinstance(text, str):
-        raise QueryError(
-            "embed_text: text must be str, got "
-            f"{type(text).__name__}"
-        )
+        raise QueryError(f"embed_text: text must be str, got {type(text).__name__}")
     vec = [0.0] * EMBED_DIM
     for token in tokenize(text):
         # BLAKE2b(8 bytes) is more than enough to project tokens
@@ -218,10 +215,7 @@ def _cosine_similarity(
     share the same length (``EMBED_DIM``).
     """
     if len(a) != len(b):
-        raise TransportError(
-            "vector dimension mismatch: "
-            f"{len(a)} vs {len(b)}"
-        )
+        raise TransportError(f"vector dimension mismatch: {len(a)} vs {len(b)}")
     total = 0.0
     for x, y in zip(a, b, strict=True):
         total += x * y
@@ -247,22 +241,17 @@ class VectorIndexTransport(Protocol):
     regardless of insertion order.
     """
 
-    def write(self, document: Document) -> None:
-        ...
+    def write(self, document: Document) -> None: ...
 
-    def read(self, doc_id: str) -> Document | None:
-        ...
+    def read(self, doc_id: str) -> Document | None: ...
 
-    def iter_documents(self) -> Iterator[Document]:
-        ...
+    def iter_documents(self) -> Iterator[Document]: ...
 
     def iter_embeddings(
         self,
-    ) -> Iterator[tuple[Document, tuple[float, ...]]]:
-        ...
+    ) -> Iterator[tuple[Document, tuple[float, ...]]]: ...
 
-    def __len__(self) -> int:
-        ...
+    def __len__(self) -> int: ...
 
 
 class InMemoryVectorIndex:
@@ -282,18 +271,14 @@ class InMemoryVectorIndex:
     def write(self, document: Document) -> None:
         if not isinstance(document, Document):
             raise DocumentError(
-                "InMemoryVectorIndex.write: expected Document, got "
-                f"{type(document).__name__}"
+                f"InMemoryVectorIndex.write: expected Document, got {type(document).__name__}"
             )
         embedding = embed_text(document.content)
         self._rows[document.id] = (document, embedding)
 
     def read(self, doc_id: str) -> Document | None:
         if not isinstance(doc_id, str) or not doc_id:
-            raise DocumentError(
-                "InMemoryVectorIndex.read: doc_id must be a "
-                "non-empty str"
-            )
+            raise DocumentError("InMemoryVectorIndex.read: doc_id must be a non-empty str")
         row = self._rows.get(doc_id)
         if row is None:
             return None
@@ -347,9 +332,7 @@ class CosineSimilarityRetriever:
     def retrieve(self, query: Query) -> RetrievedContext:
         if not isinstance(query, Query):
             raise QueryError(
-                "CosineSimilarityRetriever.retrieve: expected "
-                "Query, got "
-                f"{type(query).__name__}"
+                f"CosineSimilarityRetriever.retrieve: expected Query, got {type(query).__name__}"
             )
 
         query_vec = embed_text(query.text)
@@ -381,9 +364,7 @@ class CosineSimilarityRetriever:
 
         limit = min(query.top_k, len(scored))
         retrieved: list[RetrievedDocument] = []
-        for rank, (score, _doc_id, idx) in enumerate(
-            scored[:limit]
-        ):
+        for rank, (score, _doc_id, idx) in enumerate(scored[:limit]):
             retrieved.append(
                 RetrievedDocument(
                     document=corpus[idx],
@@ -482,31 +463,23 @@ class LlamaIndexKnowledgeStore:
     ) -> None:
         if not isinstance(transport, VectorIndexTransport):
             raise TransportError(
-                "LlamaIndexKnowledgeStore: transport must "
-                "implement VectorIndexTransport"
+                "LlamaIndexKnowledgeStore: transport must implement VectorIndexTransport"
             )
         if not isinstance(retriever, CosineSimilarityRetriever):
             raise KnowledgeStoreError(
-                "LlamaIndexKnowledgeStore: retriever must be a "
-                "CosineSimilarityRetriever"
+                "LlamaIndexKnowledgeStore: retriever must be a CosineSimilarityRetriever"
             )
         if not isinstance(builder, PromptBuilder):
-            raise KnowledgeStoreError(
-                "LlamaIndexKnowledgeStore: builder must be a "
-                "PromptBuilder"
-            )
+            raise KnowledgeStoreError("LlamaIndexKnowledgeStore: builder must be a PromptBuilder")
         self._transport = transport
         self._retriever = retriever
         self._builder = builder
 
     @classmethod
-    def in_memory(
-        cls, *, template: PromptTemplate
-    ) -> LlamaIndexKnowledgeStore:
+    def in_memory(cls, *, template: PromptTemplate) -> LlamaIndexKnowledgeStore:
         if not isinstance(template, PromptTemplate):
             raise TemplateError(
-                "LlamaIndexKnowledgeStore.in_memory: template must "
-                "be a PromptTemplate"
+                "LlamaIndexKnowledgeStore.in_memory: template must be a PromptTemplate"
             )
         transport = InMemoryVectorIndex()
         return cls(
@@ -517,10 +490,7 @@ class LlamaIndexKnowledgeStore:
 
     def ingest(self, document: Document) -> None:
         if not isinstance(document, Document):
-            raise DocumentError(
-                "LlamaIndexKnowledgeStore.ingest: expected "
-                "Document"
-            )
+            raise DocumentError("LlamaIndexKnowledgeStore.ingest: expected Document")
         self._transport.write(document)
 
     def retrieve(self, query: Query) -> RetrievedContext:
@@ -560,6 +530,3 @@ LiteLLMRouter` — direct LlamaIndex LLM SDK calls are forbidden by
         "yet activated — use LlamaIndexKnowledgeStore.in_memory() "
         "for the deterministic in-memory fallback"
     )
-
-
-

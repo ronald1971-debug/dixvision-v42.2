@@ -321,8 +321,7 @@ class App:
         return App(
             id=self.id,
             topics=self.topics,
-            agents=self.agents
-            + (Agent(topic_name=topic_name, fn=fn, name=agent_name),),
+            agents=self.agents + (Agent(topic_name=topic_name, fn=fn, name=agent_name),),
             tables=self.tables,
         )
 
@@ -341,9 +340,7 @@ class App:
         for t in self.topics:
             spec.append({"kind": "topic", "name": t.name, "schema": t.schema})
         for ag in self.agents:
-            spec.append(
-                {"kind": "agent", "name": ag.name, "topic": ag.topic_name}
-            )
+            spec.append({"kind": "agent", "name": ag.name, "topic": ag.topic_name})
         for tbl in self.tables:
             entry: dict[str, object] = {"kind": "table", "name": tbl.name}
             if tbl.window is not None:
@@ -450,13 +447,8 @@ def run_app(
                 continue
             for send in out:
                 if not isinstance(send, SendOp):
-                    raise TypeError(
-                        "agent must yield SendOp instances; "
-                        f"got {type(send).__name__}"
-                    )
-                queued.append(
-                    InboundEvent(topic_name=send.topic_name, payload=send.payload)
-                )
+                    raise TypeError(f"agent must yield SendOp instances; got {type(send).__name__}")
+                queued.append(InboundEvent(topic_name=send.topic_name, payload=send.payload))
                 results.append(
                     FaustResult(
                         seq=seq,
@@ -519,9 +511,7 @@ def _agent_context(
     body must address windowed cells explicitly via ``(bucket, key)``.
     """
 
-    windowed = [
-        spec for spec in table_specs.values() if spec.window is not None
-    ]
+    windowed = [spec for spec in table_specs.values() if spec.window is not None]
     current_ts_ns: int | None = None
     if len(windowed) == 1:
         spec = windowed[0]
@@ -545,9 +535,7 @@ def _cell_sort(cell: object) -> tuple[int, str]:
     """Stable cell-sort: ``(bucket asc, key asc)``."""
 
     if not (isinstance(cell, tuple) and len(cell) == 2):
-        raise TypeError(
-            f"windowed cell must be (bucket_idx, key); got {type(cell).__name__}"
-        )
+        raise TypeError(f"windowed cell must be (bucket_idx, key); got {type(cell).__name__}")
     bucket, key = cell
     if not isinstance(bucket, int):
         raise TypeError(f"bucket_idx must be int; got {type(bucket).__name__}")
@@ -618,10 +606,7 @@ def faust_worker_main(
             outbound.put(FaustBusSentinel())
             return
         if not isinstance(item, InboundEvent):
-            raise TypeError(
-                "faust worker expects InboundEvent items; "
-                f"got {type(item).__name__}"
-            )
+            raise TypeError(f"faust worker expects InboundEvent items; got {type(item).__name__}")
         batch.append(item)
         if len(batch) >= batch_size:
             outbound.put(run_app(app, batch))
@@ -681,8 +666,7 @@ def drain_queue(
             return tuple(drained)
         if not isinstance(chunk, tuple):
             raise TypeError(
-                "faust outbound expects FaustResult tuples; "
-                f"got {type(chunk).__name__}"
+                f"faust outbound expects FaustResult tuples; got {type(chunk).__name__}"
             )
         drained.extend(chunk)
 
@@ -713,6 +697,5 @@ def faust_app_factory(*args: object, **kwargs: object) -> object:
     """
 
     raise NotImplementedError(
-        "faust_app_factory: gated until research-acceptance "
-        "shadow-equivalence harness lands"
+        "faust_app_factory: gated until research-acceptance shadow-equivalence harness lands"
     )

@@ -81,9 +81,7 @@ def test_ledger_writer_is_deterministic():
     for ts, kind, payload in rows:
         a.append(ts_ns=ts, kind=kind, payload=payload)
         b.append(ts_ns=ts, kind=kind, payload=payload)
-    assert [r.hash_chain for r in a.read()] == [
-        r.hash_chain for r in b.read()
-    ]
+    assert [r.hash_chain for r in a.read()] == [r.hash_chain for r in b.read()]
 
 
 def test_ledger_writer_rejects_empty_kind():
@@ -97,14 +95,12 @@ def test_ledger_writer_rejects_empty_kind():
 # ---------------------------------------------------------------------------
 
 
-def _build_state(initial: SystemMode = SystemMode.SAFE) -> tuple[
-    StateTransitionManager, LedgerAuthorityWriter, PolicyEngine
-]:
+def _build_state(
+    initial: SystemMode = SystemMode.SAFE,
+) -> tuple[StateTransitionManager, LedgerAuthorityWriter, PolicyEngine]:
     ledger = LedgerAuthorityWriter()
     policy = PolicyEngine()
-    state = StateTransitionManager(
-        policy=policy, ledger=ledger, initial_mode=initial
-    )
+    state = StateTransitionManager(policy=policy, ledger=ledger, initial_mode=initial)
     return state, ledger, policy
 
 
@@ -497,18 +493,14 @@ def test_risk_evaluator_rejects_invalid_inputs():
 
 def test_compliance_blocks_trade_in_safe_mode():
     cv = ComplianceValidator()
-    r = cv.validate_order(
-        domain="NORMAL_TRADING", notional_usd=100.0, mode=SystemMode.SAFE
-    )
+    r = cv.validate_order(domain="NORMAL_TRADING", notional_usd=100.0, mode=SystemMode.SAFE)
     assert r.passed is False
     assert "COMPLIANCE_NO_TRADE_IN_SAFE" in r.violations
 
 
 def test_compliance_memecoin_per_trade_cap():
     cv = ComplianceValidator()
-    r = cv.validate_order(
-        domain="MEMECOIN", notional_usd=300.0, mode=SystemMode.LIVE
-    )
+    r = cv.validate_order(domain="MEMECOIN", notional_usd=300.0, mode=SystemMode.LIVE)
     assert r.passed is False
     assert any(v.startswith("COMPLIANCE_PER_TRADE_CAP:MEMECOIN") for v in r.violations)
 
@@ -517,22 +509,16 @@ def test_compliance_memecoin_daily_cap():
     cv = ComplianceValidator()
     # Four 200-USD trades within the per-trade cap (250) — total 800.
     for _ in range(4):
-        ok = cv.validate_order(
-            domain="MEMECOIN", notional_usd=200.0, mode=SystemMode.LIVE
-        )
+        ok = cv.validate_order(domain="MEMECOIN", notional_usd=200.0, mode=SystemMode.LIVE)
         assert ok.passed is True
-    breach = cv.validate_order(
-        domain="MEMECOIN", notional_usd=250.0, mode=SystemMode.LIVE
-    )
+    breach = cv.validate_order(domain="MEMECOIN", notional_usd=250.0, mode=SystemMode.LIVE)
     assert breach.passed is False
     assert any(v.startswith("COMPLIANCE_DAILY_CAP:MEMECOIN") for v in breach.violations)
 
 
 def test_compliance_unknown_domain_blocked():
     cv = ComplianceValidator()
-    r = cv.validate_order(
-        domain="WAT", notional_usd=10.0, mode=SystemMode.LIVE
-    )
+    r = cv.validate_order(domain="WAT", notional_usd=10.0, mode=SystemMode.LIVE)
     assert r.passed is False
     assert any(v.startswith("COMPLIANCE_UNKNOWN_DOMAIN") for v in r.violations)
 
@@ -545,8 +531,11 @@ def test_compliance_unknown_domain_blocked():
 def test_classifier_high_severity_hazard_triggers_lock():
     ec = EventClassifier()
     h = HazardEvent(
-        ts_ns=1, code="HAZ-04", severity=HazardSeverity.CRITICAL,
-        source="dyon", detail="stale data 5s",
+        ts_ns=1,
+        code="HAZ-04",
+        severity=HazardSeverity.CRITICAL,
+        source="dyon",
+        detail="stale data 5s",
     )
     route = ec.classify(h)
     assert route.emergency_lock is True
@@ -556,8 +545,11 @@ def test_classifier_high_severity_hazard_triggers_lock():
 def test_classifier_low_hazard_audit_only():
     ec = EventClassifier()
     h = HazardEvent(
-        ts_ns=1, code="HAZ-08", severity=HazardSeverity.LOW,
-        source="dyon", detail="benign",
+        ts_ns=1,
+        code="HAZ-08",
+        severity=HazardSeverity.LOW,
+        source="dyon",
+        detail="benign",
     )
     route = ec.classify(h)
     assert route.emergency_lock is False
@@ -723,9 +715,7 @@ def test_operator_bridge_plugin_lifecycle_logs_audit_row():
             ts_ns=1,
             requestor="op",
             action=OperatorAction.REQUEST_MODE,
-            payload=_consent_payload(
-                eng=eng, ts_ns=1, target_mode="PAPER", operator_id="op"
-            ),
+            payload=_consent_payload(eng=eng, ts_ns=1, target_mode="PAPER", operator_id="op"),
         )
     )
     decision = eng.operator.submit(
@@ -861,9 +851,7 @@ def test_two_engines_same_inputs_produce_same_ledger():
             ts_ns=1,
             requestor="op",
             action=OperatorAction.REQUEST_MODE,
-            payload=_consent_payload(
-                eng=a, ts_ns=1, target_mode="PAPER", operator_id="op"
-            ),
+            payload=_consent_payload(eng=a, ts_ns=1, target_mode="PAPER", operator_id="op"),
         ),
         OperatorRequest(
             ts_ns=2,

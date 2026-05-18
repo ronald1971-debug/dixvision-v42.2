@@ -128,9 +128,7 @@ def test_authority_no_runtime_imports() -> None:
     tops = _iter_top_level_imports(MODULE_AST)
     for name in tops:
         root = name.split(".")[0]
-        assert (
-            root not in forbidden_roots
-        ), f"forbidden top-level runtime import: {name}"
+        assert root not in forbidden_roots, f"forbidden top-level runtime import: {name}"
 
 
 def test_authority_no_engine_cross_imports() -> None:
@@ -144,9 +142,7 @@ def test_authority_no_engine_cross_imports() -> None:
     )
     for name in imports:
         for prefix in forbidden_prefixes:
-            assert not name.startswith(
-                prefix
-            ), f"forbidden cross-engine import: {name}"
+            assert not name.startswith(prefix), f"forbidden cross-engine import: {name}"
 
 
 def test_authority_vendor_imports_confined_to_factory() -> None:
@@ -179,10 +175,7 @@ def test_authority_vendor_imports_confined_to_factory() -> None:
                         break
                 if found:
                     break
-            assert found, (
-                f"vendor import {module!r} not confined to "
-                "nengo_cognitive_engine factory"
-            )
+            assert found, f"vendor import {module!r} not confined to nengo_cognitive_engine factory"
 
 
 def test_authority_version_string_stable() -> None:
@@ -274,9 +267,7 @@ def test_config_rejects_dt_larger_than_tau_rc() -> None:
 
 
 def _trivial_weights(n_neurons: int = 4, dimensions: int = 2) -> NengoEnsembleWeights:
-    return build_random_ensemble_weights(
-        n_neurons=n_neurons, dimensions=dimensions, seed=42
-    )
+    return build_random_ensemble_weights(n_neurons=n_neurons, dimensions=dimensions, seed=42)
 
 
 def test_weights_is_frozen_slotted() -> None:
@@ -326,9 +317,7 @@ def test_weights_rejects_dimensions_below_min() -> None:
 
 def test_weights_rejects_dimensions_above_max() -> None:
     with pytest.raises(NengoCognitiveError):
-        build_random_ensemble_weights(
-            n_neurons=4, dimensions=MAX_DIMENSIONS + 1, seed=0
-        )
+        build_random_ensemble_weights(n_neurons=4, dimensions=MAX_DIMENSIONS + 1, seed=0)
 
 
 def test_weights_rejects_neurons_below_min() -> None:
@@ -338,9 +327,7 @@ def test_weights_rejects_neurons_below_min() -> None:
 
 def test_weights_rejects_neurons_above_max() -> None:
     with pytest.raises(NengoCognitiveError):
-        build_random_ensemble_weights(
-            n_neurons=MAX_NEURONS + 1, dimensions=2, seed=0
-        )
+        build_random_ensemble_weights(n_neurons=MAX_NEURONS + 1, dimensions=2, seed=0)
 
 
 def test_weights_rejects_negative_seed() -> None:
@@ -397,9 +384,7 @@ def test_weights_rejects_inconsistent_row_count() -> None:
 
 def test_weights_rejects_inconsistent_row_width() -> None:
     base = _trivial_weights()
-    bad_encoders = tuple(
-        (1.0,) if i == 0 else base.encoders[i] for i in range(base.n_neurons)
-    )
+    bad_encoders = tuple((1.0,) if i == 0 else base.encoders[i] for i in range(base.n_neurons))
     with pytest.raises(NengoCognitiveError):
         NengoEnsembleWeights(
             encoders=bad_encoders,
@@ -427,9 +412,7 @@ def test_weights_gains_positive() -> None:
 
 def test_build_rejects_max_rate_non_positive() -> None:
     with pytest.raises(NengoCognitiveError):
-        build_random_ensemble_weights(
-            n_neurons=4, dimensions=2, seed=0, max_rate=0.0
-        )
+        build_random_ensemble_weights(n_neurons=4, dimensions=2, seed=0, max_rate=0.0)
 
 
 def test_build_rejects_inverted_intercept_bounds() -> None:
@@ -569,9 +552,7 @@ def test_pure_python_engine_run_window_basic() -> None:
     w = build_random_ensemble_weights(n_neurons=16, dimensions=2, seed=0)
     cfg = NengoEnsembleConfig()
     window = tuple((0.5, 0.0) for _ in range(10))
-    spike_count, decoded_mean = engine.run_window(
-        weights=w, config=cfg, window=window
-    )
+    spike_count, decoded_mean = engine.run_window(weights=w, config=cfg, window=window)
     assert isinstance(spike_count, int) and spike_count >= 0
     assert isinstance(decoded_mean, tuple) and len(decoded_mean) == 2
     for value in decoded_mean:
@@ -1325,12 +1306,8 @@ def test_analyser_inv15_byte_identical_replay() -> None:
 
     engine = pure_python_nengo_cognitive_engine()
     analyser = NengoCognitiveAnalyser(engine=engine, confidence_threshold=0.01)
-    weights = build_random_ensemble_weights(
-        n_neurons=24, dimensions=2, seed=314159
-    )
-    window = tuple(
-        (math.sin(0.1 * i), math.cos(0.1 * i)) for i in range(50)
-    )
+    weights = build_random_ensemble_weights(n_neurons=24, dimensions=2, seed=314159)
+    window = tuple((math.sin(0.1 * i), math.cos(0.1 * i)) for i in range(50))
     pulses = [
         analyser.detect(
             ts_ns=987654321,
@@ -1351,9 +1328,7 @@ def test_pure_python_pipeline_discriminates_bull_vs_bear() -> None:
 
     engine = pure_python_nengo_cognitive_engine()
     analyser = NengoCognitiveAnalyser(engine=engine, confidence_threshold=0.005)
-    weights = build_random_ensemble_weights(
-        n_neurons=64, dimensions=2, seed=42
-    )
+    weights = build_random_ensemble_weights(n_neurons=64, dimensions=2, seed=42)
     bull = tuple((1.0, 0.0) for _ in range(200))
     bear = tuple((-1.0, 0.0) for _ in range(200))
     p_bull = analyser.detect(
@@ -1384,9 +1359,7 @@ def test_pure_python_pipeline_neutral_input() -> None:
 
     engine = pure_python_nengo_cognitive_engine()
     analyser = NengoCognitiveAnalyser(engine=engine, confidence_threshold=0.05)
-    weights = build_random_ensemble_weights(
-        n_neurons=64, dimensions=2, seed=42
-    )
+    weights = build_random_ensemble_weights(n_neurons=64, dimensions=2, seed=42)
     window = tuple((0.0, 0.0) for _ in range(50))
     p = analyser.detect(
         ts_ns=1,

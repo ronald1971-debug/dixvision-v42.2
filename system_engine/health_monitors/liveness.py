@@ -55,11 +55,7 @@ class LivenessChecker:
         heartbeats: Mapping[str, int],
         engines: tuple[str, ...] | None = None,
     ) -> tuple[EngineLiveness, ...]:
-        names = (
-            tuple(sorted(engines))
-            if engines is not None
-            else tuple(sorted(heartbeats.keys()))
-        )
+        names = tuple(sorted(engines)) if engines is not None else tuple(sorted(heartbeats.keys()))
         out: list[EngineLiveness] = []
         for engine in names:
             last = heartbeats.get(engine)

@@ -95,9 +95,7 @@ def test_empty_urgency_string_does_not_trigger() -> None:
 
 def test_breaking_urgency_emits_high_severity() -> None:
     sensor = NewsShockSensor()
-    out = sensor.on_news(
-        _news(title="Fed announcement", urgency="breaking")
-    )
+    out = sensor.on_news(_news(title="Fed announcement", urgency="breaking"))
     assert len(out) == 1
     haz = out[0]
     assert haz.severity is HazardSeverity.HIGH
@@ -127,9 +125,7 @@ def test_flash_urgency_emits_high_severity() -> None:
 
 def test_single_shock_keyword_emits_medium_severity() -> None:
     sensor = NewsShockSensor()
-    out = sensor.on_news(
-        _news(title="exchange halt under review", summary="")
-    )
+    out = sensor.on_news(_news(title="exchange halt under review", summary=""))
     assert len(out) == 1
     assert out[0].severity is HazardSeverity.MEDIUM
     assert out[0].meta["reason"] == "shock_score_medium"
@@ -230,9 +226,7 @@ def test_hyphenated_compound_does_not_split_into_shock_keyword() -> None:
 
 def test_urgency_dominates_zero_keyword_score() -> None:
     sensor = NewsShockSensor()
-    out = sensor.on_news(
-        _news(title="calm headline", urgency="breaking")
-    )
+    out = sensor.on_news(_news(title="calm headline", urgency="breaking"))
     assert out[0].severity is HazardSeverity.HIGH
     assert int(out[0].meta["shock_score"]) == 0
 
@@ -321,9 +315,7 @@ def test_custom_thresholds_take_effect() -> None:
         high_score_threshold=2,
         medium_score_threshold=1,
     )
-    out = sensor.on_news(
-        _news(title="exchange hack and exploit", summary="")
-    )
+    out = sensor.on_news(_news(title="exchange hack and exploit", summary=""))
     # 2 hits → HIGH under custom thresholds, MEDIUM under defaults.
     assert out[0].severity is HazardSeverity.HIGH
 

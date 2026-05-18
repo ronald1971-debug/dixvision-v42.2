@@ -28,9 +28,7 @@ class StrategyRecord:
     allowed_regimes: frozenset[MarketRegime]
     min_state: StrategyState = StrategyState.CANARY
 
-    def is_eligible(
-        self, *, state: StrategyState, regime: MarketRegime
-    ) -> bool:
+    def is_eligible(self, *, state: StrategyState, regime: MarketRegime) -> bool:
         if state in (StrategyState.RETIRED, StrategyState.FAILED):
             return False
         if not _state_at_least(state, self.min_state):

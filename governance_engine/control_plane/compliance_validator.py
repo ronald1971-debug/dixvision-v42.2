@@ -45,8 +45,7 @@ class ComplianceValidator:
         store: ExposureStore | None = None,
     ) -> None:
         self._domain_caps: dict[str, dict[str, float]] = {
-            domain: dict(caps)
-            for domain, caps in (domain_caps or _DEFAULT_DOMAIN_CAPS).items()
+            domain: dict(caps) for domain, caps in (domain_caps or _DEFAULT_DOMAIN_CAPS).items()
         }
         # AUDIT-P0.4 -- ``_daily_spent`` is the running spend total
         # for *today only* (UTC). The companion :class:`ExposureStore`
@@ -89,9 +88,7 @@ class ComplianceValidator:
             return
         self._daily_iso = day_iso
         if self._store is not None:
-            self._daily_spent = dict(
-                self._store.load_daily(day_iso=day_iso)
-            )
+            self._daily_spent = dict(self._store.load_daily(day_iso=day_iso))
         else:
             self._daily_spent = {}
 
@@ -123,9 +120,7 @@ class ComplianceValidator:
 
         if domain not in self._domain_caps:
             violations.append(f"COMPLIANCE_UNKNOWN_DOMAIN:{domain}")
-            return ComplianceReport(
-                passed=False, violations=tuple(violations)
-            )
+            return ComplianceReport(passed=False, violations=tuple(violations))
 
         day_iso = day_iso_from_ns(ts_ns) if ts_ns >= 0 else "1970-01-01"
         self._ensure_today(day_iso=day_iso)
@@ -133,22 +128,16 @@ class ComplianceValidator:
         caps = self._domain_caps[domain]
         per_trade_cap = caps.get("max_per_trade_usd")
         if per_trade_cap is not None and notional_usd > per_trade_cap:
-            violations.append(
-                f"COMPLIANCE_PER_TRADE_CAP:{domain}:{per_trade_cap:g}"
-            )
+            violations.append(f"COMPLIANCE_PER_TRADE_CAP:{domain}:{per_trade_cap:g}")
 
         daily_cap = caps.get("max_daily_usd")
         if daily_cap is not None:
             spent = self._daily_spent.get(domain, 0.0)
             if spent + notional_usd > daily_cap:
-                violations.append(
-                    f"COMPLIANCE_DAILY_CAP:{domain}:{daily_cap:g}"
-                )
+                violations.append(f"COMPLIANCE_DAILY_CAP:{domain}:{daily_cap:g}")
 
         if not violations:
-            new_spent = (
-                self._daily_spent.get(domain, 0.0) + notional_usd
-            )
+            new_spent = self._daily_spent.get(domain, 0.0) + notional_usd
             self._daily_spent[domain] = new_spent
             if self._store is not None:
                 self._store.write_daily(
@@ -177,9 +166,7 @@ class ComplianceValidator:
             and mode is SystemMode.SAFE
             and plugin_path in tuple(forbidden_in_safe)
         ):
-            violations.append(
-                f"COMPLIANCE_LIFECYCLE_NOT_IN_SAFE:{plugin_path}"
-            )
+            violations.append(f"COMPLIANCE_LIFECYCLE_NOT_IN_SAFE:{plugin_path}")
         if not violations:
             return ComplianceReport(passed=True)
         return ComplianceReport(passed=False, violations=tuple(violations))

@@ -135,12 +135,7 @@ class LearningInterface:
         *,
         mark_price: float | None = None,
     ) -> tuple[FeedbackRecord, ...]:
-        return tuple(
-            self.record(
-                signal=s, execution=e, mark_price=mark_price
-            )
-            for s, e in pairs
-        )
+        return tuple(self.record(signal=s, execution=e, mark_price=mark_price) for s, e in pairs)
 
     # -- internals ---------------------------------------------------------
 

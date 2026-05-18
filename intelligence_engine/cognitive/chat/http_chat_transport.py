@@ -135,16 +135,10 @@ def _execute(
             body = _read_body(resp)
     except urllib.error.HTTPError as exc:
         if _is_transient_status(int(exc.code)):
-            raise TransientProviderError(
-                f"{provider_label}: HTTP {exc.code}"
-            ) from exc
-        raise RuntimeError(
-            f"{provider_label}: non-transient HTTP {exc.code}"
-        ) from exc
+            raise TransientProviderError(f"{provider_label}: HTTP {exc.code}") from exc
+        raise RuntimeError(f"{provider_label}: non-transient HTTP {exc.code}") from exc
     except TimeoutError as exc:
-        raise TransientProviderError(
-            f"{provider_label}: timed out after {timeout:.1f}s"
-        ) from exc
+        raise TransientProviderError(f"{provider_label}: timed out after {timeout:.1f}s") from exc
     except urllib.error.URLError as exc:
         if isinstance(exc.reason, (TimeoutError, socket.timeout)):
             raise TransientProviderError(
@@ -154,18 +148,12 @@ def _execute(
         # avoid leaking proxy URLs / DNS hints / anything
         # environmental.
         reason = type(exc.reason).__name__ if exc.reason else "URLError"
-        raise TransientProviderError(
-            f"{provider_label}: network error ({reason})"
-        ) from exc
+        raise TransientProviderError(f"{provider_label}: network error ({reason})") from exc
 
     if status < 200 or status >= 300:
         if _is_transient_status(status):
-            raise TransientProviderError(
-                f"{provider_label}: HTTP {status}"
-            )
-        raise RuntimeError(
-            f"{provider_label}: non-transient HTTP {status}"
-        )
+            raise TransientProviderError(f"{provider_label}: HTTP {status}")
+        raise RuntimeError(f"{provider_label}: non-transient HTTP {status}")
     return body
 
 
@@ -175,13 +163,9 @@ def _parse_json(body: bytes, *, provider_label: str) -> Mapping[str, Any]:
     try:
         decoded = json.loads(body.decode("utf-8"))
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-        raise RuntimeError(
-            f"{provider_label}: malformed JSON response"
-        ) from exc
+        raise RuntimeError(f"{provider_label}: malformed JSON response") from exc
     if not isinstance(decoded, Mapping):
-        raise RuntimeError(
-            f"{provider_label}: response root is not a JSON object"
-        )
+        raise RuntimeError(f"{provider_label}: response root is not a JSON object")
     return decoded
 
 
@@ -197,9 +181,7 @@ def _read_required_env(provider_label: str, env_var: str) -> str:
 
     raw = os.environ.get(env_var, "").strip()
     if not raw:
-        raise TransientProviderError(
-            f"{provider_label}: {env_var} is not set"
-        )
+        raise TransientProviderError(f"{provider_label}: {env_var} is not set")
     return raw
 
 
@@ -251,9 +233,7 @@ def _role_for(message: BaseMessage) -> str:
         return "assistant"
     if isinstance(message, HumanMessage):
         return "user"
-    raise RuntimeError(
-        f"unsupported LangChain message type: {type(message).__name__}"
-    )
+    raise RuntimeError(f"unsupported LangChain message type: {type(message).__name__}")
 
 
 def _coerce_text(content: Any) -> str:
@@ -365,19 +345,13 @@ def _extract_openai_compat_text(
 
     choices = decoded.get("choices")
     if not isinstance(choices, list) or not choices:
-        raise RuntimeError(
-            f"{provider_label}: response missing 'choices'"
-        )
+        raise RuntimeError(f"{provider_label}: response missing 'choices'")
     first = choices[0]
     if not isinstance(first, Mapping):
-        raise RuntimeError(
-            f"{provider_label}: response 'choices[0]' is not an object"
-        )
+        raise RuntimeError(f"{provider_label}: response 'choices[0]' is not an object")
     message = first.get("message")
     if not isinstance(message, Mapping):
-        raise RuntimeError(
-            f"{provider_label}: response missing 'choices[0].message'"
-        )
+        raise RuntimeError(f"{provider_label}: response missing 'choices[0].message'")
     content = message.get("content")
     if isinstance(content, str):
         return content
@@ -385,9 +359,7 @@ def _extract_openai_compat_text(
     # list of content parts. Flatten the same way LangChain does.
     if isinstance(content, list):
         return _coerce_text(content)
-    raise RuntimeError(
-        f"{provider_label}: 'choices[0].message.content' has unexpected type"
-    )
+    raise RuntimeError(f"{provider_label}: 'choices[0].message.content' has unexpected type")
 
 
 # --------------------------------------------------------------------
@@ -428,9 +400,7 @@ class GoogleGeminiChatTransport:
             return _read_required_env(label, self.ENV_VAR)
         raw = self._env.get(self.ENV_VAR, "").strip()
         if not raw:
-            raise TransientProviderError(
-                f"{label}: {self.ENV_VAR} is not set"
-            )
+            raise TransientProviderError(f"{label}: {self.ENV_VAR} is not set")
         return raw
 
     def invoke(
@@ -442,8 +412,7 @@ class GoogleGeminiChatTransport:
     ) -> str:
         if provider.provider != "google":
             raise RuntimeError(
-                f"GoogleGeminiChatTransport: refusing to dispatch"
-                f" provider {provider.provider!r}"
+                f"GoogleGeminiChatTransport: refusing to dispatch provider {provider.provider!r}"
             )
         label = f"{provider.id} ({provider.provider})"
         api_key = self._read_env(label)
@@ -464,9 +433,7 @@ class GoogleGeminiChatTransport:
             payload["generationConfig"] = generation
         stop = kwargs.get("stop")
         if stop:
-            payload.setdefault("generationConfig", {})["stopSequences"] = list(
-                stop
-            )
+            payload.setdefault("generationConfig", {})["stopSequences"] = list(stop)
 
         encoded_key = urllib.parse.quote(api_key, safe="")
         url = f"{self.BASE_URL}/models/{model}:generateContent?key={encoded_key}"
@@ -519,24 +486,16 @@ def _extract_gemini_text(
 
     candidates = decoded.get("candidates")
     if not isinstance(candidates, list) or not candidates:
-        raise RuntimeError(
-            f"{provider_label}: response missing 'candidates'"
-        )
+        raise RuntimeError(f"{provider_label}: response missing 'candidates'")
     first = candidates[0]
     if not isinstance(first, Mapping):
-        raise RuntimeError(
-            f"{provider_label}: 'candidates[0]' is not an object"
-        )
+        raise RuntimeError(f"{provider_label}: 'candidates[0]' is not an object")
     content = first.get("content")
     if not isinstance(content, Mapping):
-        raise RuntimeError(
-            f"{provider_label}: 'candidates[0].content' is not an object"
-        )
+        raise RuntimeError(f"{provider_label}: 'candidates[0].content' is not an object")
     parts = content.get("parts")
     if not isinstance(parts, list):
-        raise RuntimeError(
-            f"{provider_label}: 'candidates[0].content.parts' is not a list"
-        )
+        raise RuntimeError(f"{provider_label}: 'candidates[0].content.parts' is not a list")
     out: list[str] = []
     for part in parts:
         if isinstance(part, Mapping):
@@ -590,9 +549,7 @@ class CognitionDevinChatTransport:
             return _read_required_env(label, self.ENV_VAR)
         raw = self._env.get(self.ENV_VAR, "").strip()
         if not raw:
-            raise TransientProviderError(
-                f"{label}: {self.ENV_VAR} is not set"
-            )
+            raise TransientProviderError(f"{label}: {self.ENV_VAR} is not set")
         return raw
 
     def invoke(
@@ -604,8 +561,7 @@ class CognitionDevinChatTransport:
     ) -> str:
         if provider.provider != "cognition":
             raise RuntimeError(
-                f"CognitionDevinChatTransport: refusing to dispatch"
-                f" provider {provider.provider!r}"
+                f"CognitionDevinChatTransport: refusing to dispatch provider {provider.provider!r}"
             )
         label = f"{provider.id} ({provider.provider})"
         api_key = self._read_env(label)

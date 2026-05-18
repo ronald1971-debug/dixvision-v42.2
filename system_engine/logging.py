@@ -143,9 +143,7 @@ def _scrub(fields: Mapping[str, Any]) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for key, value in fields.items():
         if not isinstance(key, str):
-            raise LoggingError(
-                f"log field keys must be str (got {type(key).__name__!r})"
-            )
+            raise LoggingError(f"log field keys must be str (got {type(key).__name__!r})")
         lowered = key.lower()
         if lowered in _FORBIDDEN_KEYS:
             out[key] = _REDACTED_SENTINEL
@@ -180,17 +178,13 @@ def build_log_line(
     """
 
     if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
-        raise LoggingError(
-            f"ts_ns must be int (got {type(ts_ns).__name__!r})"
-        )
+        raise LoggingError(f"ts_ns must be int (got {type(ts_ns).__name__!r})")
     if ts_ns < 0:
         raise LoggingError(f"ts_ns must be non-negative (got {ts_ns})")
     if not isinstance(engine_id, str) or not engine_id:
         raise LoggingError("engine_id must be a non-empty string")
     if not isinstance(tier, str) or tier not in _ALLOWED_TIERS:
-        raise LoggingError(
-            f"tier must be one of {sorted(_ALLOWED_TIERS)} (got {tier!r})"
-        )
+        raise LoggingError(f"tier must be one of {sorted(_ALLOWED_TIERS)} (got {tier!r})")
     if not isinstance(event_kind, str) or not event_kind:
         raise LoggingError("event_kind must be a non-empty string")
 

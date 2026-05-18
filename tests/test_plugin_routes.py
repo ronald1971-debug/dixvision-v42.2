@@ -82,9 +82,7 @@ def test_cognitive_chat_disable_via_dashboard_overrides_env() -> None:
     assert res.json()["lifecycle"] == "DISABLED"
     assert toggle.cognitive_chat is False
     list_res = client.get("/api/plugins")
-    cognitive = next(
-        p for p in list_res.json()["plugins"] if p["id"] == "cognitive_chat"
-    )
+    cognitive = next(p for p in list_res.json()["plugins"] if p["id"] == "cognitive_chat")
     assert cognitive["lifecycle"] == "DISABLED"
 
 
@@ -175,14 +173,10 @@ def test_adapter_lifecycle_reflects_adapter_state() -> None:
 def test_cognitive_chat_default_lifecycle_follows_env_when_no_override() -> None:
     client_on, _, _, _, _ = _build_app(env_enabled=True)
     res = client_on.get("/api/plugins")
-    cognitive = next(
-        p for p in res.json()["plugins"] if p["id"] == "cognitive_chat"
-    )
+    cognitive = next(p for p in res.json()["plugins"] if p["id"] == "cognitive_chat")
     assert cognitive["lifecycle"] == "ACTIVE"
 
     client_off, _, _, _, _ = _build_app(env_enabled=False)
     res2 = client_off.get("/api/plugins")
-    cognitive2 = next(
-        p for p in res2.json()["plugins"] if p["id"] == "cognitive_chat"
-    )
+    cognitive2 = next(p for p in res2.json()["plugins"] if p["id"] == "cognitive_chat")
     assert cognitive2["lifecycle"] == "DISABLED"

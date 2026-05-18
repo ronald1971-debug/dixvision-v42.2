@@ -23,10 +23,7 @@ from learning_engine.analytics.pnl_attribution import (
 pl = pytest.importorskip("polars")  # noqa: F841
 
 _MODULE_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "learning_engine"
-    / "analytics"
-    / "pnl_attribution.py"
+    Path(__file__).resolve().parents[1] / "learning_engine" / "analytics" / "pnl_attribution.py"
 )
 
 _FORBIDDEN_TOPLEVEL_IMPORTS = (
@@ -125,9 +122,7 @@ def test_module_imports_without_polars_in_sys_modules() -> None:
     if "learning_engine.analytics.pnl_attribution" in sys.modules:
         del sys.modules["learning_engine.analytics.pnl_attribution"]
     try:
-        mod = importlib.import_module(
-            "learning_engine.analytics.pnl_attribution"
-        )
+        mod = importlib.import_module("learning_engine.analytics.pnl_attribution")
         assert mod.NEW_PIP_DEPENDENCIES == ("polars",)
         assert "polars" not in sys.modules, (
             "module import pulled polars in despite lazy-import contract"
@@ -462,15 +457,11 @@ def test_attribute_pnl_polars_totals_match_sum_of_groups() -> None:
     assert rep.total_realised_pnl_usd == pytest.approx(
         sum(s.realised_pnl_usd for s in rep.by_symbol)
     )
-    assert rep.total_signal_pnl_usd == pytest.approx(
-        sum(s.signal_pnl_usd for s in rep.by_symbol)
-    )
+    assert rep.total_signal_pnl_usd == pytest.approx(sum(s.signal_pnl_usd for s in rep.by_symbol))
     assert rep.total_slippage_pnl_usd == pytest.approx(
         sum(s.slippage_pnl_usd for s in rep.by_symbol)
     )
-    assert rep.total_fee_pnl_usd == pytest.approx(
-        sum(s.fee_pnl_usd for s in rep.by_symbol)
-    )
+    assert rep.total_fee_pnl_usd == pytest.approx(sum(s.fee_pnl_usd for s in rep.by_symbol))
 
 
 def test_attribute_pnl_polars_identity_holds_per_symbol() -> None:

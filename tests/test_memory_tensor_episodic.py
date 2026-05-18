@@ -69,8 +69,7 @@ def test_no_new_pip_dependencies() -> None:
 def test_episodic_has_adapted_from_header() -> None:
     src = _EPISODIC_PATH.read_text()
     assert src.startswith("# ADAPTED FROM: facebookresearch/faiss"), (
-        "S-08 spec requires '# ADAPTED FROM: facebookresearch/faiss "
-        "Python interface' header"
+        "S-08 spec requires '# ADAPTED FROM: facebookresearch/faiss Python interface' header"
     )
 
 
@@ -89,9 +88,7 @@ def test_episodic_has_no_clock_calls() -> None:
         "datetime.now(",
         "datetime.utcnow(",
     ):
-        assert needle not in src, (
-            f"episodic.py must not call {needle!r} (INV-15)"
-        )
+        assert needle not in src, f"episodic.py must not call {needle!r} (INV-15)"
 
 
 # ---------------------------------------------------------------------------
@@ -396,8 +393,14 @@ def _build_reference_store() -> EpisodicMemoryStore:
     s = EpisodicMemoryStore(dim=3, max_size=5)
     s.add(Episode(ts_ns=10, episode_id="alpha", embedding=(0.1, 0.2, 0.3)))
     s.add(Episode(ts_ns=20, episode_id="beta", embedding=(1.0, 0.0, 0.0)))
-    s.add(Episode(ts_ns=30, episode_id="gamma", embedding=(0.5, 0.5, 0.5),
-                  payload={"region": "us", "kind": "rebalance"}))
+    s.add(
+        Episode(
+            ts_ns=30,
+            episode_id="gamma",
+            embedding=(0.5, 0.5, 0.5),
+            payload={"region": "us", "kind": "rebalance"},
+        )
+    )
     return s
 
 

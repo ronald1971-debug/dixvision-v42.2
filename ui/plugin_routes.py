@@ -80,6 +80,7 @@ class _SensorArrayShape(Protocol):
     @property
     def sensors(self) -> tuple[Any, ...]: ...
 
+
 __all__ = [
     "PluginRecord",
     "PluginToggleState",
@@ -137,18 +138,14 @@ class PluginToggleState:
     """
 
     cognitive_chat: bool | None = None
-    _listeners: list[Callable[[str, bool | None], None]] = field(
-        default_factory=list
-    )
+    _listeners: list[Callable[[str, bool | None], None]] = field(default_factory=list)
 
     def set_cognitive_chat(self, enabled: bool | None) -> None:
         self.cognitive_chat = enabled
         for listener in tuple(self._listeners):
             listener("cognitive_chat", enabled)
 
-    def add_listener(
-        self, listener: Callable[[str, bool | None], None]
-    ) -> None:
+    def add_listener(self, listener: Callable[[str, bool | None], None]) -> None:
         self._listeners.append(listener)
 
 
@@ -283,8 +280,7 @@ class PluginRegistry:
                     lifecycle_options=list(_LIFECYCLE_VALUES),
                     description=_FEED_DESCRIPTIONS.get(
                         feed_id,
-                        f"{feed_id} feed runner. ACTIVE starts the "
-                        f"runner; DISABLED stops it.",
+                        f"{feed_id} feed runner. ACTIVE starts the runner; DISABLED stops it.",
                     ),
                 )
             )
@@ -303,16 +299,10 @@ class PluginRegistry:
                 # DEGRADED all count as "active" — only DISCONNECTED
                 # and HALTED render as DISABLED on the plugin grid.
                 state_value = getattr(status, "state", None)
-                state_str = (
-                    state_value.value
-                    if hasattr(state_value, "value")
-                    else str(state_value)
-                )
+                state_str = state_value.value if hasattr(state_value, "value") else str(state_value)
                 connected = state_str in ("READY", "CONNECTING", "DEGRADED")
                 lifecycle = (
-                    PluginLifecycle.ACTIVE.value
-                    if connected
-                    else PluginLifecycle.DISABLED.value
+                    PluginLifecycle.ACTIVE.value if connected else PluginLifecycle.DISABLED.value
                 )
                 out.append(
                     PluginRecord(
@@ -360,11 +350,7 @@ class PluginRegistry:
         except Exception:  # pragma: no cover - defensive
             return PluginLifecycle.DISABLED.value
         running = bool(getattr(status, "running", False))
-        return (
-            PluginLifecycle.ACTIVE.value
-            if running
-            else PluginLifecycle.DISABLED.value
-        )
+        return PluginLifecycle.ACTIVE.value if running else PluginLifecycle.DISABLED.value
 
     def _cognitive_chat_lifecycle(self) -> str:
         if self.toggle_state.cognitive_chat is True:
@@ -391,14 +377,11 @@ class PluginRegistry:
         normalized = lifecycle.strip().upper()
         if normalized not in _LIFECYCLE_VALUES:
             raise ValueError(
-                f"unknown lifecycle '{lifecycle}'. expected one of "
-                f"{_LIFECYCLE_VALUES}"
+                f"unknown lifecycle '{lifecycle}'. expected one of {_LIFECYCLE_VALUES}"
             )
 
         if plugin_id == "cognitive_chat":
-            self.toggle_state.set_cognitive_chat(
-                normalized == PluginLifecycle.ACTIVE.value
-            )
+            self.toggle_state.set_cognitive_chat(normalized == PluginLifecycle.ACTIVE.value)
             return self._record_for("cognitive_chat")
 
         if plugin_id.startswith("feed:"):
@@ -412,9 +395,7 @@ class PluginRegistry:
                 else:
                     runner.stop()
             except Exception as exc:  # pragma: no cover - propagated as 500
-                raise RuntimeError(
-                    f"feed lifecycle change failed for {feed_id}: {exc}"
-                ) from exc
+                raise RuntimeError(f"feed lifecycle change failed for {feed_id}: {exc}") from exc
             return self._record_for(plugin_id)
 
         if plugin_id.startswith("adapter:") or plugin_id.startswith("sensor:"):
@@ -424,9 +405,7 @@ class PluginRegistry:
             # against credentials), and sensors are wired at boot. The
             # registry refuses lifecycle writes here so the dashboard
             # cannot half-disable a sensor and silently mute a hazard.
-            raise PermissionError(
-                f"{plugin_id} is read-only on the plugin manager"
-            )
+            raise PermissionError(f"{plugin_id} is read-only on the plugin manager")
 
         for plugin in self.microstructure_plugins:
             if plugin.name == plugin_id:
@@ -494,16 +473,12 @@ def build_plugin_router(
         return PluginListResponse(plugins=registry.list())
 
     @router.post("/{plugin_id}/lifecycle", response_model=PluginRecord)
-    def set_lifecycle(
-        plugin_id: str, body: PluginLifecycleRequest
-    ) -> PluginRecord:
+    def set_lifecycle(plugin_id: str, body: PluginLifecycleRequest) -> PluginRecord:
         registry = registry_provider()
         try:
             record = registry.set_lifecycle(plugin_id, body.lifecycle)
         except KeyError as exc:
-            raise HTTPException(
-                status_code=404, detail=f"unknown plugin id: {plugin_id}"
-            ) from exc
+            raise HTTPException(status_code=404, detail=f"unknown plugin id: {plugin_id}") from exc
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         except PermissionError as exc:
@@ -528,6 +503,7 @@ def build_plugin_router(
 
 
 # Re-exported helpers ---------------------------------------------------
+
 
 def lifecycle_to_str(lifecycle: PluginLifecycle) -> str:
     return lifecycle.value

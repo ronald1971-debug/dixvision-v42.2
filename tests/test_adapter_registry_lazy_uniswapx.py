@@ -42,9 +42,7 @@ def _force_eth_account_missing(
         level: int = 0,
     ) -> object:
         if name == "eth_account" or name.startswith("eth_account."):
-            raise ModuleNotFoundError(
-                "No module named 'eth_account'", name="eth_account"
-            )
+            raise ModuleNotFoundError("No module named 'eth_account'", name="eth_account")
         return real_import(name, globals_, locals_, fromlist, level)
 
     # Drop any cached eth_account modules so the next import attempt

@@ -48,11 +48,7 @@ from tools.runtime_topology import (
     RuntimeTopology,
 )
 
-MODULE_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "tools"
-    / "runtime_activation.py"
-)
+MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "runtime_activation.py"
 
 
 # ---------------------------------------------------------------------------
@@ -66,9 +62,7 @@ class _RecordingSink:
     def __init__(self) -> None:
         self.events: list[tuple[str, dict[str, object]]] = []
 
-    def __call__(
-        self, kind: str, payload: Mapping[str, object]
-    ) -> None:
+    def __call__(self, kind: str, payload: Mapping[str, object]) -> None:
         self.events.append((kind, dict(payload)))
 
 
@@ -326,12 +320,8 @@ def test_register_creates_declared_node() -> None:
 
 def test_register_accepts_alternative_initial_state() -> None:
     registry = build_registry()
-    registry.register(
-        "execution_engine.gate", initial_state=LifecycleState.WIRED
-    )
-    assert (
-        registry.state_of("execution_engine.gate") is LifecycleState.WIRED
-    )
+    registry.register("execution_engine.gate", initial_state=LifecycleState.WIRED)
+    assert registry.state_of("execution_engine.gate") is LifecycleState.WIRED
 
 
 def test_register_is_idempotent_for_same_state() -> None:
@@ -340,9 +330,7 @@ def test_register_is_idempotent_for_same_state() -> None:
     registry.register("a")
     registry.register("a")
     assert registry.current_version() == 1
-    transition_events = [
-        e for e in sink.events if e[0] == AUDIT_KIND_TRANSITION
-    ]
+    transition_events = [e for e in sink.events if e[0] == AUDIT_KIND_TRANSITION]
     assert len(transition_events) == 1
 
 
@@ -420,9 +408,7 @@ def test_transition_advances_state() -> None:
     registry.register("a")
     registry.transition("a", LifecycleState.WIRED, reason="boot")
     assert registry.state_of("a") is LifecycleState.WIRED
-    transitions = [
-        e for e in sink.events if e[0] == AUDIT_KIND_TRANSITION
-    ]
+    transitions = [e for e in sink.events if e[0] == AUDIT_KIND_TRANSITION]
     assert len(transitions) == 2
 
 
@@ -470,9 +456,7 @@ def test_transition_rejects_oversize_reason() -> None:
     registry = build_registry()
     registry.register("a")
     with pytest.raises(ActivationError):
-        registry.transition(
-            "a", LifecycleState.WIRED, reason="x" * (MAX_REASON_LEN + 1)
-        )
+        registry.transition("a", LifecycleState.WIRED, reason="x" * (MAX_REASON_LEN + 1))
 
 
 def test_dormant_to_wired_is_legal() -> None:
@@ -657,9 +641,7 @@ def test_replay_rebuilds_equivalent_registry() -> None:
     original = _scripted_registry()
     history = original.transition_history()
     replayed = replay_transitions(history)
-    assert (
-        original.snapshot().digest() == replayed.snapshot().digest()
-    )
+    assert original.snapshot().digest() == replayed.snapshot().digest()
 
 
 def test_replay_rejects_non_sequence() -> None:
@@ -711,10 +693,7 @@ def test_topology_attached_registry_round_trip() -> None:
     registry.register("execution_engine.gate")
     registry.transition("execution_engine.gate", LifecycleState.WIRED)
     registry.transition("execution_engine.gate", LifecycleState.STARTED)
-    assert (
-        registry.state_of("execution_engine.gate")
-        is LifecycleState.STARTED
-    )
+    assert registry.state_of("execution_engine.gate") is LifecycleState.STARTED
     assert registry.state_of("execution_engine") is LifecycleState.DECLARED
 
 
@@ -769,8 +748,7 @@ def test_no_banned_top_level_imports() -> None:
     for imp in imports:
         root = imp.split(".")[0]
         assert root not in _BANNED_TOP_LEVEL_MODULES, (
-            f"banned top-level import {imp!r} (root {root!r}) found "
-            f"in tools/runtime_activation.py"
+            f"banned top-level import {imp!r} (root {root!r}) found in tools/runtime_activation.py"
         )
 
 

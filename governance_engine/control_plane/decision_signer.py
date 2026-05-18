@@ -152,10 +152,7 @@ class DecisionSigner:
         if not isinstance(secret, (bytes, bytearray)):
             raise TypeError("secret must be bytes")
         if len(secret) < DECISION_SIGNATURE_BYTE_LENGTH:
-            raise ValueError(
-                "secret must be at least "
-                f"{DECISION_SIGNATURE_BYTE_LENGTH} bytes"
-            )
+            raise ValueError(f"secret must be at least {DECISION_SIGNATURE_BYTE_LENGTH} bytes")
         # ``bytes(...)`` makes a defensive copy so the caller cannot
         # mutate a passed-in ``bytearray`` after construction.
         self._secret: bytes = bytes(secret)
@@ -220,9 +217,7 @@ class DecisionSigner:
             governance_decision_id=governance_decision_id,
             signature=signature,
         ):
-            raise SignatureMismatchError(
-                "decision signature failed HMAC verification"
-            )
+            raise SignatureMismatchError("decision signature failed HMAC verification")
 
 
 def make_decision_signer() -> DecisionSigner:

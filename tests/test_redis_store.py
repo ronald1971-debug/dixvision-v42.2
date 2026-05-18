@@ -120,7 +120,10 @@ def test_cache_entry_rejects_empty_key() -> None:
 def test_cache_entry_rejects_non_bytes_value() -> None:
     with pytest.raises(TypeError, match="bytes"):
         rs.CacheEntry(
-            key="k", value="not-bytes", ts_ns=0, ttl_ns=1  # type: ignore[arg-type]
+            key="k",
+            value="not-bytes",
+            ts_ns=0,
+            ttl_ns=1,  # type: ignore[arg-type]
         )
 
 
@@ -354,9 +357,7 @@ def test_store_live_entries_filters_expired() -> None:
 
 def test_store_mget_mset_ordering() -> None:
     s = rs.RedisStore()
-    entries = s.mset(
-        {"c": b"3", "a": b"1", "b": b"2"}, ts_ns=0, ttl_ns=100
-    )
+    entries = s.mset({"c": b"3", "a": b"1", "b": b"2"}, ts_ns=0, ttl_ns=100)
     # mset returns canonical-sorted order
     assert tuple(e.key for e in entries) == ("a", "b", "c")
     out = s.mget(["b", "a", "missing"], now_ns=0)
@@ -558,10 +559,7 @@ def test_no_forbidden_top_level_imports() -> None:
             root = (node.module or "").split(".")[0]
             if root in forbidden:
                 offenders.append(node.module or "")
-    assert offenders == [], (
-        "Forbidden top-level imports in state.cache.redis_store: "
-        f"{offenders}"
-    )
+    assert offenders == [], f"Forbidden top-level imports in state.cache.redis_store: {offenders}"
 
 
 def test_no_runtime_tier_imports() -> None:
@@ -585,8 +583,7 @@ def test_no_runtime_tier_imports() -> None:
             if root in forbidden_roots:
                 offenders.append(node.module or "")
     assert offenders == [], (
-        "Runtime-tier imports in state.cache.redis_store violate B1: "
-        f"{offenders}"
+        f"Runtime-tier imports in state.cache.redis_store violate B1: {offenders}"
     )
 
 
@@ -606,10 +603,7 @@ def test_no_typed_event_constructors_called() -> None:
             func = node.func
             if isinstance(func, ast.Name) and func.id in forbidden:
                 offenders.append(func.id)
-            elif (
-                isinstance(func, ast.Attribute)
-                and func.attr in forbidden
-            ):
+            elif isinstance(func, ast.Attribute) and func.attr in forbidden:
                 offenders.append(func.attr)
     assert offenders == [], (
         "Typed-event constructor calls in state.cache.redis_store "
@@ -626,16 +620,10 @@ def test_no_top_level_clock_calls() -> None:
         for sub in ast.walk(node):
             if isinstance(sub, ast.Call):
                 func = sub.func
-                if (
-                    isinstance(func, ast.Attribute)
-                    and func.attr in forbidden
-                ):
+                if isinstance(func, ast.Attribute) and func.attr in forbidden:
                     offenders.append(func.attr)
-                elif (
-                    isinstance(func, ast.Name) and func.id in forbidden
-                ):
+                elif isinstance(func, ast.Name) and func.id in forbidden:
                     offenders.append(func.id)
     assert offenders == [], (
-        "Top-level clock reads in state.cache.redis_store violate "
-        f"INV-15: {offenders}"
+        f"Top-level clock reads in state.cache.redis_store violate INV-15: {offenders}"
     )

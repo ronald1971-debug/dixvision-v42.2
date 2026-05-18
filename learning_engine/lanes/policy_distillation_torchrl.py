@@ -246,9 +246,7 @@ def compute_advantages(
 ) -> tuple[float, ...]:
     """GAE-Lambda advantage estimation — stable ``math.fsum`` accumulation."""
     if not (len(rewards) == len(values) == len(dones)):
-        raise TorchRLDistillationError(
-            "rewards / values / dones must have equal length"
-        )
+        raise TorchRLDistillationError("rewards / values / dones must have equal length")
     if not 0.0 <= gamma <= 1.0:
         raise TorchRLDistillationError("gamma must be in [0,1]")
     if not 0.0 <= gae_lambda <= 1.0:
@@ -263,12 +261,8 @@ def compute_advantages(
         else:
             next_value = values[t + 1]
             non_terminal = 0.0 if dones[t] else 1.0
-        delta = math.fsum(
-            (rewards[t], gamma * next_value * non_terminal, -values[t])
-        )
-        last_gae = math.fsum(
-            (delta, gamma * gae_lambda * non_terminal * last_gae)
-        )
+        delta = math.fsum((rewards[t], gamma * next_value * non_terminal, -values[t]))
+        last_gae = math.fsum((delta, gamma * gae_lambda * non_terminal * last_gae))
         advantages[t] = last_gae
     return tuple(advantages)
 
@@ -291,9 +285,7 @@ def _canonical_rollout(rollouts: tuple[CollectorRollout, ...]) -> str:
     pieces: list[str] = []
     for r in rollouts:
         steps = ";".join(_canonical_step(s) for s in r.steps)
-        pieces.append(
-            f"id={r.rollout_id};boot={r.bootstrap_value:.10g};steps=[{steps}]"
-        )
+        pieces.append(f"id={r.rollout_id};boot={r.bootstrap_value:.10g};steps=[{steps}]")
     return "||".join(pieces)
 
 
@@ -323,8 +315,7 @@ def _canonical_metrics(metrics: TrainingMetrics) -> str:
 
 def _canonical_artifact(art: TorchRLPolicyArtifact) -> str:
     return (
-        f"backend={art.backend};digest={art.content_digest};"
-        f"obs={art.obs_dim};act={art.action_dim}"
+        f"backend={art.backend};digest={art.content_digest};obs={art.obs_dim};act={art.action_dim}"
     )
 
 
@@ -369,13 +360,10 @@ def _validate_step(step: TensorDictStep, obs_dim: int, action_dim: int) -> None:
         )
     if len(step.action) != action_dim:
         raise TorchRLDistillationError(
-            f"action length {len(step.action)} != configured action_dim "
-            f"{action_dim}"
+            f"action length {len(step.action)} != configured action_dim {action_dim}"
         )
     if not (math.isfinite(step.sample_log_prob) and math.isfinite(step.state_value)):
-        raise TorchRLDistillationError(
-            "sample_log_prob and state_value must be finite floats"
-        )
+        raise TorchRLDistillationError("sample_log_prob and state_value must be finite floats")
     if not math.isfinite(step.reward):
         raise TorchRLDistillationError("reward must be finite")
 
@@ -387,26 +375,18 @@ def _validate_rollouts(
     if len(rollouts) == 0:
         raise TorchRLDistillationError("at least one rollout required")
     if len(rollouts) > MAX_TRAJECTORIES:
-        raise TorchRLDistillationError(
-            f"too many rollouts (>{MAX_TRAJECTORIES})"
-        )
+        raise TorchRLDistillationError(f"too many rollouts (>{MAX_TRAJECTORIES})")
     seen_ids: set[str] = set()
     for r in rollouts:
         if not isinstance(r.rollout_id, str) or not r.rollout_id:
             raise TorchRLDistillationError("rollout_id must be a non-empty str")
         if r.rollout_id in seen_ids:
-            raise TorchRLDistillationError(
-                f"duplicate rollout_id {r.rollout_id!r}"
-            )
+            raise TorchRLDistillationError(f"duplicate rollout_id {r.rollout_id!r}")
         seen_ids.add(r.rollout_id)
         if len(r.steps) == 0:
-            raise TorchRLDistillationError(
-                f"rollout {r.rollout_id!r} has zero steps"
-            )
+            raise TorchRLDistillationError(f"rollout {r.rollout_id!r} has zero steps")
         if len(r.steps) > MAX_STEPS_PER_TRAJECTORY:
-            raise TorchRLDistillationError(
-                f"rollout {r.rollout_id!r} too long"
-            )
+            raise TorchRLDistillationError(f"rollout {r.rollout_id!r} too long")
         for step in r.steps:
             _validate_step(step, config.obs_dim, config.action_dim)
 
@@ -418,9 +398,7 @@ def _validate_rollouts(
 class PolicyDistillationTorchRL:
     """Pure-Python coordinator over a caller-supplied :class:`TorchRLDistiller`."""
 
-    callback: TorchRLDistillationCallback = field(
-        default_factory=null_torchrl_callback
-    )
+    callback: TorchRLDistillationCallback = field(default_factory=null_torchrl_callback)
 
     def distill(
         self,
@@ -453,13 +431,8 @@ class PolicyDistillationTorchRL:
             seed=seed,
             callback=self.callback,
         )
-        if (
-            artifact.obs_dim != config.obs_dim
-            or artifact.action_dim != config.action_dim
-        ):
-            raise TorchRLDistillationError(
-                "artifact dims do not match config"
-            )
+        if artifact.obs_dim != config.obs_dim or artifact.action_dim != config.action_dim:
+            raise TorchRLDistillationError("artifact dims do not match config")
         self.callback.on_training_end(metrics)
         config_text = _canonical_config(config)
         rollout_text = _canonical_rollout(rollouts_tuple)
@@ -521,8 +494,7 @@ def torchrl_distiller_factory() -> TorchRLDistiller:  # pragma: no cover
         from tensordict import TensorDict  # noqa: F401, PLC0415
     except ImportError as exc:
         raise RuntimeError(
-            "torchrl / tensordict / torch is not installed; "
-            "see NEW_PIP_DEPENDENCIES"
+            "torchrl / tensordict / torch is not installed; see NEW_PIP_DEPENDENCIES"
         ) from exc
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False

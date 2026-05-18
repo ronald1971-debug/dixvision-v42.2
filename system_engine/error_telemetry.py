@@ -173,9 +173,7 @@ def _canonicalise_tags(
     if not isinstance(tags, Mapping):
         raise TypeError("tags must be a mapping")
     if len(tags) > MAX_TAG_COUNT:
-        raise ValueError(
-            f"tags must be ≤ {MAX_TAG_COUNT}, got {len(tags)}"
-        )
+        raise ValueError(f"tags must be ≤ {MAX_TAG_COUNT}, got {len(tags)}")
     pairs: list[tuple[str, str]] = []
     for key in sorted(tags):
         if not isinstance(key, str):
@@ -230,21 +228,15 @@ class ScrubbedTraceback:
         if not isinstance(self.exception_message_digest, str):
             raise TypeError("exception_message_digest must be a str")
         if len(self.exception_message_digest) != 16:
-            raise ValueError(
-                "exception_message_digest must be a 16-hex BLAKE2b-8 digest"
-            )
+            raise ValueError("exception_message_digest must be a 16-hex BLAKE2b-8 digest")
         try:
             int(self.exception_message_digest, 16)
         except ValueError as exc:
-            raise ValueError(
-                "exception_message_digest must be valid hex"
-            ) from exc
+            raise ValueError("exception_message_digest must be valid hex") from exc
         if not isinstance(self.frames, tuple):
             raise TypeError("frames must be a tuple")
         if len(self.frames) > MAX_FRAME_COUNT:
-            raise ValueError(
-                f"frames must be ≤ {MAX_FRAME_COUNT}, got {len(self.frames)}"
-            )
+            raise ValueError(f"frames must be ≤ {MAX_FRAME_COUNT}, got {len(self.frames)}")
         for f in self.frames:
             if not isinstance(f, Frame):
                 raise TypeError("frames must be Frame instances")
@@ -301,21 +293,15 @@ class ErrorEvent:
         if not isinstance(self.exception_message_digest, str):
             raise TypeError("exception_message_digest must be a str")
         if len(self.exception_message_digest) != 16:
-            raise ValueError(
-                "exception_message_digest must be a 16-hex BLAKE2b-8 digest"
-            )
+            raise ValueError("exception_message_digest must be a 16-hex BLAKE2b-8 digest")
         try:
             int(self.exception_message_digest, 16)
         except ValueError as exc:
-            raise ValueError(
-                "exception_message_digest must be valid hex"
-            ) from exc
+            raise ValueError("exception_message_digest must be valid hex") from exc
         if not isinstance(self.frames, tuple):
             raise TypeError("frames must be a tuple")
         if len(self.frames) > MAX_FRAME_COUNT:
-            raise ValueError(
-                f"frames must be ≤ {MAX_FRAME_COUNT}, got {len(self.frames)}"
-            )
+            raise ValueError(f"frames must be ≤ {MAX_FRAME_COUNT}, got {len(self.frames)}")
         for f in self.frames:
             if not isinstance(f, Frame):
                 raise TypeError("frames must be Frame instances")
@@ -333,9 +319,7 @@ class ErrorEvent:
             raise TypeError("breadcrumb_digests must be a tuple")
         for d in self.breadcrumb_digests:
             if not isinstance(d, str) or len(d) != 16:
-                raise ValueError(
-                    "breadcrumb_digests must be 16-hex BLAKE2b-8 digests"
-                )
+                raise ValueError("breadcrumb_digests must be 16-hex BLAKE2b-8 digests")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -370,9 +354,7 @@ class Breadcrumb:
         if not isinstance(self.category, str) or not self.category:
             raise ValueError("category must be non-empty")
         if _is_scrubbable_key(self.category):
-            raise ValueError(
-                f"category contains forbidden fragment: {self.category!r}"
-            )
+            raise ValueError(f"category contains forbidden fragment: {self.category!r}")
         if not isinstance(self.level, str) or self.level not in {
             "debug",
             "info",
@@ -380,15 +362,11 @@ class Breadcrumb:
             "error",
             "fatal",
         }:
-            raise ValueError(
-                "level must be one of debug/info/warning/error/fatal"
-            )
+            raise ValueError("level must be one of debug/info/warning/error/fatal")
         if not isinstance(self.message_digest, str):
             raise TypeError("message_digest must be a str")
         if len(self.message_digest) != 16:
-            raise ValueError(
-                "message_digest must be a 16-hex BLAKE2b-8 digest"
-            )
+            raise ValueError("message_digest must be a 16-hex BLAKE2b-8 digest")
         try:
             int(self.message_digest, 16)
         except ValueError as exc:
@@ -447,9 +425,7 @@ def scrub_event(
         if not isinstance(breadcrumbs, Sequence):
             raise TypeError("breadcrumbs must be a Sequence")
         if len(breadcrumbs) > MAX_BREADCRUMB_BUFFER:
-            raise ValueError(
-                f"breadcrumbs must be ≤ {MAX_BREADCRUMB_BUFFER}"
-            )
+            raise ValueError(f"breadcrumbs must be ≤ {MAX_BREADCRUMB_BUFFER}")
         digests: list[str] = []
         for crumb in breadcrumbs:
             if not isinstance(crumb, Breadcrumb):
@@ -545,10 +521,7 @@ class InProcessErrorTelemetry:
             raise ValueError("sample_ratio must be in [0.0, 1.0]")
         if not isinstance(event_buffer_size, int) or event_buffer_size <= 0:
             raise ValueError("event_buffer_size must be a positive int")
-        if (
-            not isinstance(breadcrumb_buffer_size, int)
-            or breadcrumb_buffer_size <= 0
-        ):
+        if not isinstance(breadcrumb_buffer_size, int) or breadcrumb_buffer_size <= 0:
             raise ValueError("breadcrumb_buffer_size must be a positive int")
         self._sample_ratio = sr
         self._event_buffer_size = event_buffer_size
@@ -660,8 +633,7 @@ def sentry_telemetry_factory(
         import sentry_sdk  # noqa: PLC0415
     except ImportError as exc:
         raise ErrorTelemetryError(
-            "sentry-sdk not installed; install sentry-sdk to use "
-            "sentry_telemetry_factory"
+            "sentry-sdk not installed; install sentry-sdk to use sentry_telemetry_factory"
         ) from exc
 
     def _before_send(
@@ -679,11 +651,7 @@ def sentry_telemetry_factory(
             if _is_scrubbable_key(key):
                 continue
             if isinstance(value, Mapping):
-                inner = {
-                    ik: iv
-                    for ik, iv in value.items()
-                    if not _is_scrubbable_key(str(ik))
-                }
+                inner = {ik: iv for ik, iv in value.items() if not _is_scrubbable_key(str(ik))}
                 cleaned[key] = inner
             else:
                 cleaned[key] = value
@@ -810,9 +778,7 @@ def project_frames(
             )
         )
         if len(projected) > MAX_FRAME_COUNT:
-            raise ValueError(
-                f"frames must be ≤ {MAX_FRAME_COUNT}, got > {len(projected)}"
-            )
+            raise ValueError(f"frames must be ≤ {MAX_FRAME_COUNT}, got > {len(projected)}")
     return tuple(projected)
 
 

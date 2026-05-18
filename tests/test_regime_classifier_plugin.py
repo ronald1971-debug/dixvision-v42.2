@@ -129,9 +129,7 @@ def test_invalid_book_drops() -> None:
 
 
 def test_replay_determinism() -> None:
-    seq = [
-        _tick(i, bid=99.0 + i * 0.05, ask=101.0 + i * 0.05) for i in range(8)
-    ]
+    seq = [_tick(i, bid=99.0 + i * 0.05, ask=101.0 + i * 0.05) for i in range(8)]
     p1 = RegimeClassifierV1(
         window_size=4,
         vol_low_threshold=1.0,

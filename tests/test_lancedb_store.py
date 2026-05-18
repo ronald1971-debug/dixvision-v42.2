@@ -26,9 +26,7 @@ from state.memory_tensor.lancedb_store import (
     lancedb_connect,
 )
 
-_THIS_MODULE = pathlib.Path(
-    "state/memory_tensor/lancedb_store.py"
-).resolve()
+_THIS_MODULE = pathlib.Path("state/memory_tensor/lancedb_store.py").resolve()
 
 
 # ---------------------------------------------------------------------------
@@ -179,9 +177,7 @@ def test_store_rejects_negative_max_size():
 
 def test_store_rejects_non_metric():
     with pytest.raises(TypeError):
-        LanceDBStore(
-            dim=4, max_size=10, metric_type="l2"
-        )  # type: ignore[arg-type]
+        LanceDBStore(dim=4, max_size=10, metric_type="l2")  # type: ignore[arg-type]
 
 
 def test_store_rejects_empty_table_name():
@@ -225,9 +221,7 @@ def test_add_rejects_non_episode():
 
 def test_add_rejects_wrong_dim():
     store = LanceDBStore(dim=2, max_size=4)
-    e = Episode(
-        ts_ns=1, episode_id="a", embedding=(1.0, 0.0, 0.0), payload={}
-    )
+    e = Episode(ts_ns=1, episode_id="a", embedding=(1.0, 0.0, 0.0), payload={})
     with pytest.raises(ValueError):
         store.add(e)
 
@@ -363,9 +357,7 @@ def test_create_index_rejects_non_index_params():
 
 
 def test_create_index_rejects_metric_mismatch():
-    store = LanceDBStore(
-        dim=2, max_size=4, metric_type=MetricType.COSINE
-    )
+    store = LanceDBStore(dim=2, max_size=4, metric_type=MetricType.COSINE)
     params = IndexParams(
         index_type=IndexType.IVF_PQ,
         metric_type=MetricType.L2,
@@ -380,9 +372,7 @@ def test_create_index_rejects_metric_mismatch():
 def test_search_cosine_identical_returns_zero_distance():
     store = LanceDBStore(dim=2, max_size=4)
     store.add(_ep("a", (1.0, 0.0)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=1
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=1)
     result = store.search(q)
     assert result.hits[0].distance == pytest.approx(0.0)
 
@@ -390,9 +380,7 @@ def test_search_cosine_identical_returns_zero_distance():
 def test_search_cosine_orthogonal_returns_one():
     store = LanceDBStore(dim=2, max_size=4)
     store.add(_ep("a", (1.0, 0.0)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(0.0, 1.0), k=1
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(0.0, 1.0), k=1)
     result = store.search(q)
     assert result.hits[0].distance == pytest.approx(1.0)
 
@@ -400,9 +388,7 @@ def test_search_cosine_orthogonal_returns_one():
 def test_search_cosine_zero_norm_falls_back():
     store = LanceDBStore(dim=2, max_size=4)
     store.add(_ep("a", (0.0, 0.0)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=1
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=1)
     result = store.search(q)
     assert result.hits[0].distance == pytest.approx(1.0)
 
@@ -411,25 +397,17 @@ def test_search_cosine_zero_norm_falls_back():
 # L2 search
 # ---------------------------------------------------------------------------
 def test_search_l2_zero_when_identical():
-    store = LanceDBStore(
-        dim=2, max_size=4, metric_type=MetricType.L2
-    )
+    store = LanceDBStore(dim=2, max_size=4, metric_type=MetricType.L2)
     store.add(_ep("a", (3.0, 4.0)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(3.0, 4.0), k=1
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(3.0, 4.0), k=1)
     result = store.search(q)
     assert result.hits[0].distance == pytest.approx(0.0)
 
 
 def test_search_l2_pythagoras():
-    store = LanceDBStore(
-        dim=2, max_size=4, metric_type=MetricType.L2
-    )
+    store = LanceDBStore(dim=2, max_size=4, metric_type=MetricType.L2)
     store.add(_ep("a", (0.0, 0.0)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(3.0, 4.0), k=1
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(3.0, 4.0), k=1)
     result = store.search(q)
     assert result.hits[0].distance == pytest.approx(5.0)
 
@@ -438,28 +416,20 @@ def test_search_l2_pythagoras():
 # DOT search
 # ---------------------------------------------------------------------------
 def test_search_dot_non_negative():
-    store = LanceDBStore(
-        dim=2, max_size=4, metric_type=MetricType.DOT
-    )
+    store = LanceDBStore(dim=2, max_size=4, metric_type=MetricType.DOT)
     store.add(_ep("a", (1.0, 0.0)))
     store.add(_ep("b", (0.5, 0.5)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2)
     result = store.search(q)
     for hit in result.hits:
         assert hit.distance >= 0.0
 
 
 def test_search_dot_picks_highest_ip():
-    store = LanceDBStore(
-        dim=2, max_size=4, metric_type=MetricType.DOT
-    )
+    store = LanceDBStore(dim=2, max_size=4, metric_type=MetricType.DOT)
     store.add(_ep("a", (1.0, 0.0)))
     store.add(_ep("b", (0.5, 0.5)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2)
     result = store.search(q)
     assert result.hits[0].episode_id == "a"
 
@@ -471,24 +441,16 @@ def test_filtered_search_equals_filters_out():
     store = LanceDBStore(dim=2, max_size=4)
     store.add(_ep("a", (1.0, 0.0), strategy="alpha"))
     store.add(_ep("b", (1.0, 0.0), strategy="beta"))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2
-    )
-    result = store.search_with_filter(
-        q, where=WhereClause(equals={"strategy": "alpha"})
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2)
+    result = store.search_with_filter(q, where=WhereClause(equals={"strategy": "alpha"}))
     assert [h.episode_id for h in result.hits] == ["a"]
 
 
 def test_filtered_search_returns_empty_when_no_match():
     store = LanceDBStore(dim=2, max_size=4)
     store.add(_ep("a", (1.0, 0.0), strategy="alpha"))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2
-    )
-    result = store.search_with_filter(
-        q, where=WhereClause(equals={"strategy": "missing"})
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2)
+    result = store.search_with_filter(q, where=WhereClause(equals={"strategy": "missing"}))
     assert result.hits == ()
 
 
@@ -496,9 +458,7 @@ def test_search_filter_none_returns_all():
     store = LanceDBStore(dim=2, max_size=4)
     store.add(_ep("a", (1.0, 0.0), strategy="alpha"))
     store.add(_ep("b", (0.0, 1.0), strategy="beta"))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2)
     result = store.search_with_filter(q, where=None)
     assert len(result.hits) == 2
 
@@ -511,22 +471,16 @@ def test_search_rejects_non_query():
 
 def test_search_rejects_dim_mismatch():
     store = LanceDBStore(dim=2, max_size=4)
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0, 0.0), k=1
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0, 0.0), k=1)
     with pytest.raises(ValueError):
         store.search(q)
 
 
 def test_search_rejects_non_where():
     store = LanceDBStore(dim=2, max_size=4)
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=1
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=1)
     with pytest.raises(TypeError):
-        store.search_with_filter(
-            q, where="strategy = alpha"
-        )  # type: ignore[arg-type]
+        store.search_with_filter(q, where="strategy = alpha")  # type: ignore[arg-type]
 
 
 # ---------------------------------------------------------------------------
@@ -537,9 +491,7 @@ def test_search_hits_sorted_by_distance_asc():
     store.add(_ep("a", (1.0, 0.0)))
     store.add(_ep("b", (0.5, 0.5)))
     store.add(_ep("c", (0.0, 1.0)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=3
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=3)
     result = store.search(q)
     distances = [h.distance for h in result.hits]
     assert distances == sorted(distances)
@@ -549,9 +501,7 @@ def test_search_k_limits():
     store = LanceDBStore(dim=2, max_size=4)
     for i, eid in enumerate(["a", "b", "c", "d"]):
         store.add(_ep(eid, (1.0 - i * 0.1, 0.0), ts=10 + i))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2)
     result = store.search(q)
     assert len(result.hits) == 2
 
@@ -561,9 +511,7 @@ def test_search_tie_breaks_by_ts_then_episode_id():
     store.add(_ep("z", (1.0, 0.0), ts=10))
     store.add(_ep("a", (1.0, 0.0), ts=10))
     store.add(_ep("m", (1.0, 0.0), ts=20))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=3
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=3)
     result = store.search(q)
     assert [h.episode_id for h in result.hits] == ["a", "z", "m"]
 
@@ -571,9 +519,7 @@ def test_search_tie_breaks_by_ts_then_episode_id():
 def test_search_result_echoes_ts_and_query_id():
     store = LanceDBStore(dim=2, max_size=4)
     store.add(_ep("a", (1.0, 0.0)))
-    q = MemoryQuery(
-        ts_ns=12345, query_id="qx", embedding=(1.0, 0.0), k=1
-    )
+    q = MemoryQuery(ts_ns=12345, query_id="qx", embedding=(1.0, 0.0), k=1)
     result = store.search(q)
     assert result.ts_ns == 12345
     assert result.query_id == "qx"
@@ -582,9 +528,7 @@ def test_search_result_echoes_ts_and_query_id():
 def test_search_result_type():
     store = LanceDBStore(dim=2, max_size=4)
     store.add(_ep("a", (1.0, 0.0)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=1
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=1)
     result = store.search(q)
     assert isinstance(result, MemoryResult)
     assert all(isinstance(h, MemoryHit) for h in result.hits)
@@ -592,9 +536,7 @@ def test_search_result_type():
 
 def test_search_empty_store_returns_no_hits():
     store = LanceDBStore(dim=2, max_size=4)
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=3
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=3)
     result = store.search(q)
     assert result.hits == ()
 
@@ -697,15 +639,9 @@ def test_replay_byte_identical_three_runs():
                 params={"num_partitions": 256},
             )
         )
-        q = MemoryQuery(
-            ts_ns=100, query_id="q1", embedding=(0.5, 0.5, 0.0), k=3
-        )
+        q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(0.5, 0.5, 0.0), k=3)
         result = store.search(q)
-        return (
-            store.serialize()
-            + b"||"
-            + repr(result.hits).encode("ascii")
-        )
+        return store.serialize() + b"||" + repr(result.hits).encode("ascii")
 
     b1 = run()
     b2 = run()
@@ -718,12 +654,8 @@ def test_replay_byte_identical_filtered():
         store = LanceDBStore(dim=2, max_size=4)
         store.add(_ep("a", (1.0, 0.0), ts=10, strategy="alpha"))
         store.add(_ep("b", (0.0, 1.0), ts=20, strategy="beta"))
-        q = MemoryQuery(
-            ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2
-        )
-        result = store.search_with_filter(
-            q, where=WhereClause(equals={"strategy": "alpha"})
-        )
+        q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2)
+        result = store.search_with_filter(q, where=WhereClause(equals={"strategy": "alpha"}))
         return repr(result.hits).encode("ascii")
 
     assert run() == run() == run()
@@ -813,10 +745,7 @@ def test_no_typed_event_constructions():
             func = node.func
             if isinstance(func, ast.Name) and func.id in forbidden_names:
                 pytest.fail(f"forbidden constructor call: {func.id}")
-            if (
-                isinstance(func, ast.Attribute)
-                and func.attr in forbidden_names
-            ):
+            if isinstance(func, ast.Attribute) and func.attr in forbidden_names:
                 pytest.fail(f"forbidden constructor call: {func.attr}")
 
 
@@ -829,10 +758,7 @@ def test_lancedb_import_confined_to_factory():
     tree = _parse()
     factory_fn: ast.FunctionDef | None = None
     for node in tree.body:
-        if (
-            isinstance(node, ast.FunctionDef)
-            and node.name == "lancedb_connect"
-        ):
+        if isinstance(node, ast.FunctionDef) and node.name == "lancedb_connect":
             factory_fn = node
             break
     assert factory_fn is not None

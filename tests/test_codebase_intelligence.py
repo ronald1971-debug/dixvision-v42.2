@@ -86,9 +86,7 @@ def small_repo(tmp_path: pathlib.Path) -> pathlib.Path:
 
 @pytest.fixture
 def ci(small_repo: pathlib.Path) -> CodebaseIntelligence:
-    return CodebaseIntelligence(
-        root=str(small_repo), exclude=("tests/",)
-    )
+    return CodebaseIntelligence(root=str(small_repo), exclude=("tests/",))
 
 
 # ---------------------------------------------------------------------------
@@ -233,18 +231,14 @@ def test_dependency_graph_returns_imports(
 def test_exclude_filter_drops_tests(
     small_repo: pathlib.Path,
 ) -> None:
-    ci = CodebaseIntelligence(
-        root=str(small_repo), exclude=("tests/",)
-    )
+    ci = CodebaseIntelligence(root=str(small_repo), exclude=("tests/",))
     assert all(not m.startswith("tests") for m in ci.modules)
 
 
 def test_include_filter_restricts_modules(
     small_repo: pathlib.Path,
 ) -> None:
-    ci = CodebaseIntelligence(
-        root=str(small_repo), include=("execution_engine/",)
-    )
+    ci = CodebaseIntelligence(root=str(small_repo), include=("execution_engine/",))
     assert all(m.startswith("execution_engine") for m in ci.modules)
 
 
@@ -295,9 +289,7 @@ def test_authority_violation_offline_calling_runtime_ok(
 def test_authority_violation_ignores_unmapped(
     ci: CodebaseIntelligence,
 ) -> None:
-    violations = ci.authority_violations(
-        tier_map={"fast_execute": "RUNTIME_SAFE"}
-    )
+    violations = ci.authority_violations(tier_map={"fast_execute": "RUNTIME_SAFE"})
     assert violations == ()
 
 
@@ -343,10 +335,7 @@ def test_authority_violation_results_sorted(
             "step": "RUNTIME_SAFE",
         }
     )
-    keys = [
-        (v.caller_module, v.caller_symbol, v.callee_symbol, v.location)
-        for v in violations
-    ]
+    keys = [(v.caller_module, v.caller_symbol, v.callee_symbol, v.location) for v in violations]
     assert keys == sorted(keys)
 
 
@@ -372,30 +361,21 @@ def test_authority_violation_to_dict(
 def test_three_run_byte_identical_calls(
     small_repo: pathlib.Path,
 ) -> None:
-    runs = [
-        CodebaseIntelligence(root=str(small_repo)).calls()
-        for _ in range(3)
-    ]
+    runs = [CodebaseIntelligence(root=str(small_repo)).calls() for _ in range(3)]
     assert runs[0] == runs[1] == runs[2]
 
 
 def test_three_run_byte_identical_symbols(
     small_repo: pathlib.Path,
 ) -> None:
-    runs = [
-        CodebaseIntelligence(root=str(small_repo)).symbols()
-        for _ in range(3)
-    ]
+    runs = [CodebaseIntelligence(root=str(small_repo)).symbols() for _ in range(3)]
     assert runs[0] == runs[1] == runs[2]
 
 
 def test_three_run_byte_identical_imports(
     small_repo: pathlib.Path,
 ) -> None:
-    runs = [
-        CodebaseIntelligence(root=str(small_repo)).imports()
-        for _ in range(3)
-    ]
+    runs = [CodebaseIntelligence(root=str(small_repo)).imports() for _ in range(3)]
     assert runs[0] == runs[1] == runs[2]
 
 
@@ -407,9 +387,7 @@ def test_three_run_byte_identical_authority(
         "create_execution_intent": "OFFLINE_ONLY",
     }
     runs = [
-        CodebaseIntelligence(root=str(small_repo)).authority_violations(
-            tier_map=tier_map
-        )
+        CodebaseIntelligence(root=str(small_repo)).authority_violations(tier_map=tier_map)
         for _ in range(3)
     ]
     assert runs[0] == runs[1] == runs[2]
@@ -419,9 +397,7 @@ def test_three_run_byte_identical_authority(
 # Value objects — frozen + slotted
 # ---------------------------------------------------------------------------
 def test_symbol_ref_is_frozen_and_slotted() -> None:
-    s = SymbolRef(
-        name="f", kind=SymbolKind.FUNCTION, module="m", location="1:0"
-    )
+    s = SymbolRef(name="f", kind=SymbolKind.FUNCTION, module="m", location="1:0")
     with pytest.raises(AttributeError):
         s.name = "g"  # type: ignore[misc]
     assert not hasattr(s, "__dict__")
@@ -478,6 +454,7 @@ def test_sg_binary_factory_finds_python(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import sys
+
     result = sg_binary_factory(binary=pathlib.Path(sys.executable).name)
     # Either it resolves on PATH or it raises — both are acceptable end states.
     # Where it resolves, the result is a dict with binary + path keys.
@@ -536,6 +513,7 @@ def test_module_has_no_subprocess_or_network_top_imports() -> None:
 
 def test_module_exports_canonical_symbols() -> None:
     from tools import codebase_intelligence as mod
+
     for symbol in (
         "CodebaseIntelligence",
         "SymbolRef",

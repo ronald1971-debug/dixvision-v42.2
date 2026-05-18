@@ -60,14 +60,10 @@ class AllocationCandidate:
             raise ValueError("AllocationCandidate.archetype_id must be non-empty")
         if not (0.0 <= self.confidence <= 1.0):
             raise ValueError(
-                "AllocationCandidate.confidence must be in [0, 1], "
-                f"got {self.confidence!r}"
+                f"AllocationCandidate.confidence must be in [0, 1], got {self.confidence!r}"
             )
         if self.side not in ("BUY", "SELL"):
-            raise ValueError(
-                f"AllocationCandidate.side must be 'BUY' or 'SELL', "
-                f"got {self.side!r}"
-            )
+            raise ValueError(f"AllocationCandidate.side must be 'BUY' or 'SELL', got {self.side!r}")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -89,9 +85,7 @@ class AllocationDecision:
         if not self.candidate_id:
             raise ValueError("AllocationDecision.candidate_id must be non-empty")
         if not (0.0 <= self.share <= 1.0):
-            raise ValueError(
-                f"AllocationDecision.share must be in [0, 1], got {self.share!r}"
-            )
+            raise ValueError(f"AllocationDecision.share must be in [0, 1], got {self.share!r}")
         if not self.rule_fired:
             raise ValueError("AllocationDecision.rule_fired must be non-empty")
 
@@ -113,13 +107,9 @@ class ExposureSnapshot:
             raise ValueError("ExposureSnapshot.ts_ns must be positive")
         for sym, notional in self.by_symbol.items():
             if not sym:
-                raise ValueError(
-                    "ExposureSnapshot.by_symbol contains empty symbol"
-                )
+                raise ValueError("ExposureSnapshot.by_symbol contains empty symbol")
             if notional != notional:  # NaN check
-                raise ValueError(
-                    f"ExposureSnapshot.by_symbol[{sym!r}] is NaN"
-                )
+                raise ValueError(f"ExposureSnapshot.by_symbol[{sym!r}] is NaN")
 
     def notional(self, symbol: str) -> float:
         return float(self.by_symbol.get(symbol, 0.0))

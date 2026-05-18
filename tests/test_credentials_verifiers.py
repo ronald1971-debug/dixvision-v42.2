@@ -103,9 +103,7 @@ def test_verify_unauthorized_on_400_for_fred(monkeypatch) -> None:
     # 401). The classifier groups 400 with 401/403 so the operator
     # sees an UNAUTHORIZED outcome, not a misleading NETWORK_ERROR.
     def behaviour(r, t):
-        raise urllib.error.HTTPError(
-            r.full_url, 400, "Bad Request", {}, None
-        )
+        raise urllib.error.HTTPError(r.full_url, 400, "Bad Request", {}, None)
 
     _patch_open(monkeypatch, behaviour)
     result = verify_provider("fred", {"FRED_API_KEY": "fred-bad"})
@@ -138,9 +136,7 @@ def test_verify_timeout_when_socket_times_out(monkeypatch) -> None:
         raise TimeoutError("connection timed out")
 
     _patch_open(monkeypatch, behaviour)
-    result = verify_provider(
-        "openai", {"OPENAI_API_KEY": "sk-x"}, timeout=2.5
-    )
+    result = verify_provider("openai", {"OPENAI_API_KEY": "sk-x"}, timeout=2.5)
     assert result.outcome is VerifyOutcome.TIMEOUT
     assert result.http_status is None
     assert "2.5" in result.detail
@@ -274,9 +270,7 @@ def test_bearer_auth_for_x_uses_users_by_username_endpoint(monkeypatch) -> None:
     headers = calls[0]["headers"]
     assert headers.get("Authorization") == "Bearer x-bearer-fake"
     # Endpoint pinning — free-tier compatible, no tweet-cap usage.
-    assert calls[0]["url"].startswith(
-        "https://api.x.com/2/users/by/username/"
-    )
+    assert calls[0]["url"].startswith("https://api.x.com/2/users/by/username/")
 
 
 def test_timeout_passed_through(monkeypatch) -> None:

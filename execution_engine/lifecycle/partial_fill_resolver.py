@@ -58,10 +58,7 @@ class PartialFillResolver:
             return PartialFillResolution.MARK_FILLED
         if venue_says_done:
             return PartialFillResolution.CANCEL_REMAINDER
-        if (
-            self._ctx.cancel_after_ratio > 0.0
-            and ratio >= self._ctx.cancel_after_ratio
-        ):
+        if self._ctx.cancel_after_ratio > 0.0 and ratio >= self._ctx.cancel_after_ratio:
             return PartialFillResolution.CANCEL_REMAINDER
         return PartialFillResolution.LEAVE_OPEN
 

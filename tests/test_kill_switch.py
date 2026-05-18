@@ -16,9 +16,7 @@ from system.kill_switch import KillReason, KillRequest, KillSwitch
 def _build(initial: SystemMode = SystemMode.LIVE) -> KillSwitch:
     ledger = LedgerAuthorityWriter()
     policy = PolicyEngine()
-    state = StateTransitionManager(
-        policy=policy, ledger=ledger, initial_mode=initial
-    )
+    state = StateTransitionManager(policy=policy, ledger=ledger, initial_mode=initial)
     return KillSwitch(state_transitions=state)
 
 
@@ -39,9 +37,7 @@ def test_engage_hazard_locks_with_sensor_requestor():
 
 def test_engage_external_locks_from_paper():
     ks = _build(initial=SystemMode.PAPER)
-    decision = ks.engage_external(
-        requestor="cockpit-pairing", reason="ops", ts_ns=44
-    )
+    decision = ks.engage_external(requestor="cockpit-pairing", reason="ops", ts_ns=44)
     assert decision.approved is True
     assert decision.kind is DecisionKind.KILL
 

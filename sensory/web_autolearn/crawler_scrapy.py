@@ -121,9 +121,7 @@ DEFAULT_DOWNLOAD_TIMEOUT_SEC: Final[float] = 10.0
 DEFAULT_CONCURRENT_REQUESTS: Final[int] = 1
 """Sequential by default — replays do not depend on completion order."""
 
-DEFAULT_USER_AGENT: Final[str] = (
-    "Mozilla/5.0 (compatible; DIXVision-WebAutolearn/1.0; +scrapy)"
-)
+DEFAULT_USER_AGENT: Final[str] = "Mozilla/5.0 (compatible; DIXVision-WebAutolearn/1.0; +scrapy)"
 """Stable UA string — replays observe identical headers."""
 
 
@@ -180,41 +178,23 @@ class ScrapyCrawlerConfig:
 
     def __post_init__(self) -> None:
         if not isinstance(self.download_delay_sec, (int, float)):
-            raise TypeError(
-                "ScrapyCrawlerConfig.download_delay_sec must be float"
-            )
+            raise TypeError("ScrapyCrawlerConfig.download_delay_sec must be float")
         if self.download_delay_sec < 0.0:
-            raise ValueError(
-                "ScrapyCrawlerConfig.download_delay_sec must be >= 0.0"
-            )
+            raise ValueError("ScrapyCrawlerConfig.download_delay_sec must be >= 0.0")
         if not isinstance(self.download_timeout_sec, (int, float)):
-            raise TypeError(
-                "ScrapyCrawlerConfig.download_timeout_sec must be float"
-            )
+            raise TypeError("ScrapyCrawlerConfig.download_timeout_sec must be float")
         if self.download_timeout_sec <= 0.0:
-            raise ValueError(
-                "ScrapyCrawlerConfig.download_timeout_sec must be > 0.0"
-            )
+            raise ValueError("ScrapyCrawlerConfig.download_timeout_sec must be > 0.0")
         if not isinstance(self.concurrent_requests, int):
-            raise TypeError(
-                "ScrapyCrawlerConfig.concurrent_requests must be int"
-            )
+            raise TypeError("ScrapyCrawlerConfig.concurrent_requests must be int")
         if self.concurrent_requests < 1:
-            raise ValueError(
-                "ScrapyCrawlerConfig.concurrent_requests must be >= 1"
-            )
+            raise ValueError("ScrapyCrawlerConfig.concurrent_requests must be >= 1")
         if not isinstance(self.user_agent, str):
-            raise TypeError(
-                "ScrapyCrawlerConfig.user_agent must be str"
-            )
+            raise TypeError("ScrapyCrawlerConfig.user_agent must be str")
         if not self.user_agent:
-            raise ValueError(
-                "ScrapyCrawlerConfig.user_agent must be non-empty"
-            )
+            raise ValueError("ScrapyCrawlerConfig.user_agent must be non-empty")
         if not isinstance(self.obey_robots_txt, bool):
-            raise TypeError(
-                "ScrapyCrawlerConfig.obey_robots_txt must be bool"
-            )
+            raise TypeError("ScrapyCrawlerConfig.obey_robots_txt must be bool")
 
 
 # --------------------------------------------------------------------
@@ -355,9 +335,7 @@ class ScrapyCrawler:
 
     _seed_urls: Mapping[str, str]
     _config: ScrapyCrawlerConfig
-    _runtime_factory: (
-        Callable[[ScrapyCrawlerConfig], _ScrapyRuntime] | None
-    )
+    _runtime_factory: Callable[[ScrapyCrawlerConfig], _ScrapyRuntime] | None
     _runtime: _ScrapyRuntime | None
     _status: CrawlerStatus
 
@@ -366,26 +344,17 @@ class ScrapyCrawler:
         seed_urls: Mapping[str, str],
         *,
         config: ScrapyCrawlerConfig | None = None,
-        runtime_factory: (
-            Callable[[ScrapyCrawlerConfig], _ScrapyRuntime] | None
-        ) = None,
+        runtime_factory: (Callable[[ScrapyCrawlerConfig], _ScrapyRuntime] | None) = None,
     ) -> None:
         if not seed_urls:
-            raise ValueError(
-                "ScrapyCrawler.seed_urls must be non-empty"
-            )
+            raise ValueError("ScrapyCrawler.seed_urls must be non-empty")
 
         validated: dict[str, str] = {}
         for seed_id, url in seed_urls.items():
             if not isinstance(seed_id, str) or not seed_id:
-                raise ValueError(
-                    "ScrapyCrawler.seed_urls keys must be non-empty str"
-                )
+                raise ValueError("ScrapyCrawler.seed_urls keys must be non-empty str")
             if not isinstance(url, str) or not url:
-                raise ValueError(
-                    f"ScrapyCrawler.seed_urls[{seed_id!r}]"
-                    " must be non-empty str"
-                )
+                raise ValueError(f"ScrapyCrawler.seed_urls[{seed_id!r}] must be non-empty str")
             validated[seed_id] = url
 
         self._seed_urls = MappingProxyType(validated)
@@ -412,10 +381,7 @@ class ScrapyCrawler:
 
     @property
     def is_ready(self) -> bool:
-        return (
-            self._status is CrawlerStatus.CONNECTED
-            and self._runtime is not None
-        )
+        return self._status is CrawlerStatus.CONNECTED and self._runtime is not None
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -485,13 +451,9 @@ class ScrapyCrawler:
         """
 
         if ts_ns <= 0:
-            raise ValueError(
-                "ScrapyCrawler.fetch ts_ns must be positive"
-            )
+            raise ValueError("ScrapyCrawler.fetch ts_ns must be positive")
         if not self.is_ready:
-            raise RuntimeError(
-                "ScrapyCrawler.fetch: adapter_not_ready"
-            )
+            raise RuntimeError("ScrapyCrawler.fetch: adapter_not_ready")
 
         runtime = self._runtime
         assert runtime is not None  # narrowed by is_ready
@@ -568,9 +530,7 @@ def _build_default_runtime(
             CrawlerProcess,
         )
     except ImportError as exc:
-        raise RuntimeError(
-            "ScrapyCrawler.connect: scrapy not installed"
-        ) from exc
+        raise RuntimeError("ScrapyCrawler.connect: scrapy not installed") from exc
 
     return _DefaultScrapyRuntime(
         config=config,

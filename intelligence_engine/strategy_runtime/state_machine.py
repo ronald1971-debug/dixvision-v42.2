@@ -169,8 +169,7 @@ class StrategyStateMachine:
         legal = LEGAL_STRATEGY_TRANSITIONS[record.state]
         if new_state not in legal:
             raise StrategyLifecycleError(
-                f"illegal transition for {strategy_id}: "
-                f"{record.state} → {new_state}"
+                f"illegal transition for {strategy_id}: {record.state} → {new_state}"
             )
         record.history.append(
             TransitionRecord(

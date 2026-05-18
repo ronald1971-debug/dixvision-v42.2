@@ -16,15 +16,9 @@ class _FakeEngine:
 
 def test_grid_buckets_health_states():
     engines = {
-        "execution": _FakeEngine(
-            HealthStatus(state=HealthState.OK, detail="all good")
-        ),
-        "intelligence": _FakeEngine(
-            HealthStatus(state=HealthState.DEGRADED, detail="lag")
-        ),
-        "system": _FakeEngine(
-            HealthStatus(state=HealthState.FAIL, detail="halted")
-        ),
+        "execution": _FakeEngine(HealthStatus(state=HealthState.OK, detail="all good")),
+        "intelligence": _FakeEngine(HealthStatus(state=HealthState.DEGRADED, detail="lag")),
+        "system": _FakeEngine(HealthStatus(state=HealthState.FAIL, detail="halted")),
     }
     grid = EngineStatusGrid(engines=engines)
     rows = grid.snapshot()

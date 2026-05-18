@@ -108,9 +108,7 @@ class FileChangeEvent:
         if self.kind is ChangeKind.DELETED and self.digest != "":
             raise FileWatcherError("DELETED events must carry an empty digest")
         if self.kind is not ChangeKind.DELETED and not self.digest:
-            raise FileWatcherError(
-                f"{self.kind.value} events require a non-empty digest"
-            )
+            raise FileWatcherError(f"{self.kind.value} events require a non-empty digest")
 
 
 @dataclass(frozen=True, slots=True)
@@ -238,9 +236,7 @@ def scan_directory(
             continue
         payload = loader(name)
         if not isinstance(payload, (bytes, bytearray)):
-            raise FileWatcherError(
-                f"file_loader must return bytes; got {type(payload).__name__}"
-            )
+            raise FileWatcherError(f"file_loader must return bytes; got {type(payload).__name__}")
         entries[name] = _blake2b16(bytes(payload))
     return DirectorySnapshot(root=root, entries=entries)
 
@@ -319,17 +315,11 @@ def diff_snapshots(
     all_paths = sorted(set(prev) | set(curr))
     for path in all_paths:
         if path in curr and path not in prev:
-            events.append(
-                FileChangeEvent(kind=ChangeKind.CREATED, path=path, digest=curr[path])
-            )
+            events.append(FileChangeEvent(kind=ChangeKind.CREATED, path=path, digest=curr[path]))
         elif path in prev and path not in curr:
-            events.append(
-                FileChangeEvent(kind=ChangeKind.DELETED, path=path, digest="")
-            )
+            events.append(FileChangeEvent(kind=ChangeKind.DELETED, path=path, digest=""))
         elif prev[path] != curr[path]:
-            events.append(
-                FileChangeEvent(kind=ChangeKind.MODIFIED, path=path, digest=curr[path])
-            )
+            events.append(FileChangeEvent(kind=ChangeKind.MODIFIED, path=path, digest=curr[path]))
     return tuple(events)
 
 

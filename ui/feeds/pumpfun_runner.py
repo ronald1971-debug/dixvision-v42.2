@@ -95,9 +95,7 @@ class PumpFunFeedRunner:
                         connect=self._connect,
                         url=self._url,
                         reconnect_delay_s=self._reconnect_delay_s,
-                        reconnect_delay_max_s=(
-                            self._reconnect_delay_max_s
-                        ),
+                        reconnect_delay_max_s=(self._reconnect_delay_max_s),
                     )
                     with self._lock:
                         self._loop = loop
@@ -138,9 +136,7 @@ class PumpFunFeedRunner:
         if thread is not None:
             thread.join(timeout=5.0)
         with self._lock:
-            if self._thread is thread and (
-                thread is None or not thread.is_alive()
-            ):
+            if self._thread is thread and (thread is None or not thread.is_alive()):
                 self._thread = None
         return self.status()
 

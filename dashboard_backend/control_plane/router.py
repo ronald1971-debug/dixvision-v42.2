@@ -71,9 +71,7 @@ class ControlPlaneRouter:
         return RouteOutcome(decision=decision, summary=summary)
 
     @staticmethod
-    def _render_summary(
-        request: OperatorRequest, decision: GovernanceDecision
-    ) -> str:
+    def _render_summary(request: OperatorRequest, decision: GovernanceDecision) -> str:
         if decision.approved:
             return f"{request.action.value} approved by Governance"
         suffix = decision.rejection_code or decision.summary or "no reason"

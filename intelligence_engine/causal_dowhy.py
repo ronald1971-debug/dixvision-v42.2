@@ -149,9 +149,7 @@ class CausalEstimatorKind(enum.Enum):
     """
 
     LINEAR_REGRESSION = "backdoor.linear_regression"
-    PROPENSITY_SCORE_STRATIFICATION = (
-        "backdoor.propensity_score_stratification"
-    )
+    PROPENSITY_SCORE_STRATIFICATION = "backdoor.propensity_score_stratification"
     INSTRUMENTAL_VARIABLE = "iv.instrumental_variable"
     REGRESSION_DISCONTINUITY = "iv.regression_discontinuity"
 
@@ -196,13 +194,9 @@ class CausalEstimand:
 
     def __post_init__(self) -> None:
         if not self.treatment:
-            raise ValueError(
-                "CausalEstimand.treatment must be non-empty"
-            )
+            raise ValueError("CausalEstimand.treatment must be non-empty")
         if not self.outcome:
-            raise ValueError(
-                "CausalEstimand.outcome must be non-empty"
-            )
+            raise ValueError("CausalEstimand.outcome must be non-empty")
         if not isinstance(self.common_causes, tuple):
             raise TypeError(
                 "CausalEstimand.common_causes must be a tuple, got "
@@ -211,13 +205,10 @@ class CausalEstimand:
         for cc in self.common_causes:
             if not isinstance(cc, str) or not cc:
                 raise ValueError(
-                    "CausalEstimand.common_causes entries must be "
-                    f"non-empty strings, got {cc!r}"
+                    f"CausalEstimand.common_causes entries must be non-empty strings, got {cc!r}"
                 )
         if not self.data_digest:
-            raise ValueError(
-                "CausalEstimand.data_digest must be non-empty"
-            )
+            raise ValueError("CausalEstimand.data_digest must be non-empty")
         if len(self.data_digest) > MAX_DATA_DIGEST_LEN:
             raise ValueError(
                 "CausalEstimand.data_digest must be <= "
@@ -251,8 +242,7 @@ class CausalArguments:
             )
         if not isinstance(self.refuters, tuple):
             raise TypeError(
-                "CausalArguments.refuters must be a tuple, got "
-                f"{type(self.refuters).__name__}"
+                f"CausalArguments.refuters must be a tuple, got {type(self.refuters).__name__}"
             )
         for r in self.refuters:
             if not isinstance(r, CausalRefuterKind):
@@ -260,35 +250,24 @@ class CausalArguments:
                     "CausalArguments.refuters entries must be "
                     f"CausalRefuterKind, got {type(r).__name__}"
                 )
-        if not isinstance(self.random_seed, int) or isinstance(
-            self.random_seed, bool
-        ):
+        if not isinstance(self.random_seed, int) or isinstance(self.random_seed, bool):
             raise TypeError(
-                "CausalArguments.random_seed must be int, got "
-                f"{type(self.random_seed).__name__}"
+                f"CausalArguments.random_seed must be int, got {type(self.random_seed).__name__}"
             )
         if self.random_seed < 0:
             raise ValueError(
-                "CausalArguments.random_seed must be non-negative, "
-                f"got {self.random_seed!r}"
+                f"CausalArguments.random_seed must be non-negative, got {self.random_seed!r}"
             )
         if self.n_samples < MIN_N_SAMPLES:
             raise ValueError(
-                f"CausalArguments.n_samples must be >= "
-                f"{MIN_N_SAMPLES!r}, got {self.n_samples!r}"
+                f"CausalArguments.n_samples must be >= {MIN_N_SAMPLES!r}, got {self.n_samples!r}"
             )
         if self.n_samples > MAX_N_SAMPLES:
             raise ValueError(
-                f"CausalArguments.n_samples must be <= "
-                f"{MAX_N_SAMPLES!r}, got {self.n_samples!r}"
+                f"CausalArguments.n_samples must be <= {MAX_N_SAMPLES!r}, got {self.n_samples!r}"
             )
-        if (
-            not math.isfinite(self.confidence_level)
-            or not (
-                MIN_CONFIDENCE_LEVEL
-                <= self.confidence_level
-                <= MAX_CONFIDENCE_LEVEL
-            )
+        if not math.isfinite(self.confidence_level) or not (
+            MIN_CONFIDENCE_LEVEL <= self.confidence_level <= MAX_CONFIDENCE_LEVEL
         ):
             raise ValueError(
                 "CausalArguments.confidence_level must be a finite "
@@ -337,18 +316,13 @@ class CausalRefutationResult:
             )
         if not math.isfinite(self.new_estimate):
             raise ValueError(
-                "CausalRefutationResult.new_estimate must be finite, "
-                f"got {self.new_estimate!r}"
+                f"CausalRefutationResult.new_estimate must be finite, got {self.new_estimate!r}"
             )
         if not math.isfinite(self.p_value):
-            raise ValueError(
-                "CausalRefutationResult.p_value must be finite, got "
-                f"{self.p_value!r}"
-            )
+            raise ValueError(f"CausalRefutationResult.p_value must be finite, got {self.p_value!r}")
         if not (0.0 <= self.p_value <= 1.0):
             raise ValueError(
-                "CausalRefutationResult.p_value must be in [0.0, 1.0], "
-                f"got {self.p_value!r}"
+                f"CausalRefutationResult.p_value must be in [0.0, 1.0], got {self.p_value!r}"
             )
 
 
@@ -372,19 +346,12 @@ class CausalEstimateResult:
         ):
             value = getattr(self, name)
             if not math.isfinite(value):
-                raise ValueError(
-                    f"CausalEstimateResult.{name} must be finite, "
-                    f"got {value!r}"
-                )
+                raise ValueError(f"CausalEstimateResult.{name} must be finite, got {value!r}")
         if self.std_error < 0.0:
             raise ValueError(
-                "CausalEstimateResult.std_error must be non-negative, "
-                f"got {self.std_error!r}"
+                f"CausalEstimateResult.std_error must be non-negative, got {self.std_error!r}"
             )
-        if (
-            self.confidence_interval_lower
-            > self.confidence_interval_upper
-        ):
+        if self.confidence_interval_lower > self.confidence_interval_upper:
             raise ValueError(
                 "CausalEstimateResult.confidence_interval_lower "
                 f"({self.confidence_interval_lower!r}) must be <= "
@@ -422,22 +389,14 @@ class CausalAnalysisRecord:
     meta: Mapping[str, str]
 
     def __post_init__(self) -> None:
-        if not isinstance(self.ts_ns, int) or isinstance(
-            self.ts_ns, bool
-        ):
+        if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
             raise TypeError(
-                "CausalAnalysisRecord.ts_ns must be int, got "
-                f"{type(self.ts_ns).__name__}"
+                f"CausalAnalysisRecord.ts_ns must be int, got {type(self.ts_ns).__name__}"
             )
         if self.ts_ns < 0:
-            raise ValueError(
-                "CausalAnalysisRecord.ts_ns must be non-negative, "
-                f"got {self.ts_ns!r}"
-            )
+            raise ValueError(f"CausalAnalysisRecord.ts_ns must be non-negative, got {self.ts_ns!r}")
         if not self.analysis_id:
-            raise ValueError(
-                "CausalAnalysisRecord.analysis_id must be non-empty"
-            )
+            raise ValueError("CausalAnalysisRecord.analysis_id must be non-empty")
         if len(self.analysis_id) > MAX_ANALYSIS_ID_LEN:
             raise ValueError(
                 "CausalAnalysisRecord.analysis_id must be <= "
@@ -445,9 +404,7 @@ class CausalAnalysisRecord:
                 f"{len(self.analysis_id)!r}"
             )
         if not self.source:
-            raise ValueError(
-                "CausalAnalysisRecord.source must be non-empty"
-            )
+            raise ValueError("CausalAnalysisRecord.source must be non-empty")
         if not isinstance(self.estimand, CausalEstimand):
             raise TypeError(
                 "CausalAnalysisRecord.estimand must be "
@@ -464,9 +421,7 @@ class CausalAnalysisRecord:
                 "CausalAnalysisRecord.analysis_digest must be a "
                 f"16-hex-char digest, got {self.analysis_digest!r}"
             )
-        if not all(
-            c in "0123456789abcdef" for c in self.analysis_digest
-        ):
+        if not all(c in "0123456789abcdef" for c in self.analysis_digest):
             raise ValueError(
                 "CausalAnalysisRecord.analysis_digest must be "
                 f"lowercase hex, got {self.analysis_digest!r}"
@@ -612,13 +567,10 @@ def _compute_analysis_digest(
     Deterministic across hosts (BLAKE2b / stdlib only).
     """
 
-    meta_pairs = "|".join(
-        f"{k}={v}" for k, v in sorted(arguments.meta.items())
-    )
+    meta_pairs = "|".join(f"{k}={v}" for k, v in sorted(arguments.meta.items()))
     refuters_str = ",".join(r.value for r in arguments.refuters)
     refutations_str = ";".join(
-        f"{r.refuter.value}:{r.new_estimate!r}:{r.p_value!r}:"
-        f"{int(r.passed)}"
+        f"{r.refuter.value}:{r.new_estimate!r}:{r.p_value!r}:{int(r.passed)}"
         for r in estimate.refutations
     )
     payload = "|".join(
@@ -695,18 +647,15 @@ class DoWhyCausalReasoner:
             )
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
             raise TypeError(
-                "DoWhyCausalReasoner.analyse.ts_ns must be int, got "
-                f"{type(ts_ns).__name__}"
+                f"DoWhyCausalReasoner.analyse.ts_ns must be int, got {type(ts_ns).__name__}"
             )
         if ts_ns < 0:
             raise CausalReasonerConfigError(
-                "DoWhyCausalReasoner.analyse.ts_ns must be "
-                f"non-negative, got {ts_ns!r}"
+                f"DoWhyCausalReasoner.analyse.ts_ns must be non-negative, got {ts_ns!r}"
             )
         if not analysis_id:
             raise CausalReasonerConfigError(
-                "DoWhyCausalReasoner.analyse.analysis_id must be "
-                "non-empty"
+                "DoWhyCausalReasoner.analyse.analysis_id must be non-empty"
             )
         if len(analysis_id) > MAX_ANALYSIS_ID_LEN:
             raise CausalReasonerConfigError(
@@ -715,10 +664,7 @@ class DoWhyCausalReasoner:
                 f"{len(analysis_id)!r}"
             )
 
-        cb = (
-            callback if callback is not None
-            else null_causal_analysis_callback()
-        )
+        cb = callback if callback is not None else null_causal_analysis_callback()
         if not isinstance(cb, CausalAnalysisCallback):
             raise TypeError(
                 "DoWhyCausalReasoner.analyse.callback must implement "

@@ -104,24 +104,15 @@ class EpisodicMemoryStore:
 
     def __init__(self, *, dim: int, max_size: int) -> None:
         if not isinstance(dim, int):
-            raise TypeError(
-                f"EpisodicMemoryStore.dim must be int, "
-                f"got {type(dim).__name__}"
-            )
+            raise TypeError(f"EpisodicMemoryStore.dim must be int, got {type(dim).__name__}")
         if dim <= 0:
-            raise ValueError(
-                f"EpisodicMemoryStore.dim must be positive, got {dim!r}"
-            )
+            raise ValueError(f"EpisodicMemoryStore.dim must be positive, got {dim!r}")
         if not isinstance(max_size, int):
             raise TypeError(
-                "EpisodicMemoryStore.max_size must be int, "
-                f"got {type(max_size).__name__}"
+                f"EpisodicMemoryStore.max_size must be int, got {type(max_size).__name__}"
             )
         if max_size <= 0:
-            raise ValueError(
-                "EpisodicMemoryStore.max_size must be positive, "
-                f"got {max_size!r}"
-            )
+            raise ValueError(f"EpisodicMemoryStore.max_size must be positive, got {max_size!r}")
         self._dim = dim
         self._max_size = max_size
         self._episodes: dict[str, Episode] = {}
@@ -167,8 +158,7 @@ class EpisodicMemoryStore:
 
         if not isinstance(episode, Episode):
             raise TypeError(
-                f"EpisodicMemoryStore.add expects Episode, "
-                f"got {type(episode).__name__}"
+                f"EpisodicMemoryStore.add expects Episode, got {type(episode).__name__}"
             )
         if episode.dim != self._dim:
             raise ValueError(
@@ -177,8 +167,7 @@ class EpisodicMemoryStore:
             )
         if episode.episode_id in self._episodes:
             raise ValueError(
-                "EpisodicMemoryStore.add: episode_id already present: "
-                f"{episode.episode_id!r}"
+                f"EpisodicMemoryStore.add: episode_id already present: {episode.episode_id!r}"
             )
 
         if len(self._episodes) >= self._max_size:
@@ -210,8 +199,7 @@ class EpisodicMemoryStore:
 
         if not isinstance(query, MemoryQuery):
             raise TypeError(
-                "EpisodicMemoryStore.search expects MemoryQuery, "
-                f"got {type(query).__name__}"
+                f"EpisodicMemoryStore.search expects MemoryQuery, got {type(query).__name__}"
             )
         if query.dim != self._dim:
             raise ValueError(
@@ -224,10 +212,7 @@ class EpisodicMemoryStore:
         scored: list[tuple[float, int, str, Episode]] = []
         q_emb = query.embedding
         for ep_id, ep in self._episodes.items():
-            d2 = math.fsum(
-                (a - b) * (a - b)
-                for a, b in zip(ep.embedding, q_emb, strict=True)
-            )
+            d2 = math.fsum((a - b) * (a - b) for a, b in zip(ep.embedding, q_emb, strict=True))
             d = math.sqrt(d2) if d2 > 0.0 else 0.0
             scored.append((d, ep.ts_ns, ep_id, ep))
 
@@ -297,9 +282,7 @@ class EpisodicMemoryStore:
             "max_size": self._max_size,
             "episodes": episodes_payload,
         }
-        return json.dumps(blob, sort_keys=True, separators=(",", ":")).encode(
-            "utf-8"
-        )
+        return json.dumps(blob, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
     @classmethod
     def deserialize(cls, blob: bytes) -> EpisodicMemoryStore:
@@ -312,20 +295,15 @@ class EpisodicMemoryStore:
 
         if not isinstance(blob, (bytes, bytearray)):
             raise TypeError(
-                "EpisodicMemoryStore.deserialize expects bytes, "
-                f"got {type(blob).__name__}"
+                f"EpisodicMemoryStore.deserialize expects bytes, got {type(blob).__name__}"
             )
         try:
             obj = json.loads(blob.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise ValueError(
-                f"EpisodicMemoryStore.deserialize: invalid blob: {exc}"
-            ) from exc
+            raise ValueError(f"EpisodicMemoryStore.deserialize: invalid blob: {exc}") from exc
 
         if not isinstance(obj, dict):
-            raise ValueError(
-                "EpisodicMemoryStore.deserialize: top-level must be object"
-            )
+            raise ValueError("EpisodicMemoryStore.deserialize: top-level must be object")
         version = obj.get("version")
         if version != _SERIALIZATION_VERSION:
             raise ValueError(
@@ -337,8 +315,7 @@ class EpisodicMemoryStore:
         episodes = obj.get("episodes")
         if not isinstance(dim, int):
             raise ValueError(
-                "EpisodicMemoryStore.deserialize: 'dim' must be int, "
-                f"got {type(dim).__name__}"
+                f"EpisodicMemoryStore.deserialize: 'dim' must be int, got {type(dim).__name__}"
             )
         if not isinstance(max_size, int):
             raise ValueError(
@@ -346,40 +323,28 @@ class EpisodicMemoryStore:
                 f"got {type(max_size).__name__}"
             )
         if not isinstance(episodes, list):
-            raise ValueError(
-                "EpisodicMemoryStore.deserialize: 'episodes' must be list"
-            )
+            raise ValueError("EpisodicMemoryStore.deserialize: 'episodes' must be list")
 
         store = cls(dim=dim, max_size=max_size)
         for i, row in enumerate(episodes):
             if not isinstance(row, dict):
-                raise ValueError(
-                    "EpisodicMemoryStore.deserialize: episodes["
-                    f"{i}] must be object"
-                )
+                raise ValueError(f"EpisodicMemoryStore.deserialize: episodes[{i}] must be object")
             ts_ns = row.get("ts_ns")
             episode_id = row.get("episode_id")
             embedding = row.get("embedding")
             payload = row.get("payload", {})
             if not isinstance(ts_ns, int):
-                raise ValueError(
-                    f"episodes[{i}].ts_ns must be int, got {type(ts_ns).__name__}"
-                )
+                raise ValueError(f"episodes[{i}].ts_ns must be int, got {type(ts_ns).__name__}")
             if not isinstance(episode_id, str):
                 raise ValueError(
-                    f"episodes[{i}].episode_id must be str, "
-                    f"got {type(episode_id).__name__}"
+                    f"episodes[{i}].episode_id must be str, got {type(episode_id).__name__}"
                 )
             if not isinstance(embedding, list):
-                raise ValueError(
-                    f"episodes[{i}].embedding must be list"
-                )
+                raise ValueError(f"episodes[{i}].embedding must be list")
             emb_tuple = tuple(float(x) for x in embedding)
             validate_embedding(emb_tuple, field=f"episodes[{i}].embedding")
             if not isinstance(payload, dict):
-                raise ValueError(
-                    f"episodes[{i}].payload must be object"
-                )
+                raise ValueError(f"episodes[{i}].payload must be object")
             ep = Episode(
                 ts_ns=ts_ns,
                 episode_id=episode_id,

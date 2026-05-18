@@ -116,17 +116,13 @@ class BenchmarkedFill:
 
     def __post_init__(self) -> None:
         if not isinstance(self.trade, BacktestTrade):
-            raise TypeError(
-                f"trade must be BacktestTrade; got {type(self.trade).__name__}"
-            )
+            raise TypeError(f"trade must be BacktestTrade; got {type(self.trade).__name__}")
         for name, value in (
             ("arrival_price", self.arrival_price),
             ("interval_vwap", self.interval_vwap),
         ):
             if not isinstance(value, (int, float)) or isinstance(value, bool):
-                raise TypeError(
-                    f"{name} must be float; got {type(value).__name__}"
-                )
+                raise TypeError(f"{name} must be float; got {type(value).__name__}")
             if not math.isfinite(float(value)):
                 raise ValueError(f"{name} must be finite; got {value}")
             if value <= 0.0:
@@ -135,17 +131,12 @@ class BenchmarkedFill:
             self.interval_volume, bool
         ):
             raise TypeError(
-                "interval_volume must be float; got "
-                f"{type(self.interval_volume).__name__}"
+                f"interval_volume must be float; got {type(self.interval_volume).__name__}"
             )
         if not math.isfinite(float(self.interval_volume)):
-            raise ValueError(
-                f"interval_volume must be finite; got {self.interval_volume}"
-            )
+            raise ValueError(f"interval_volume must be finite; got {self.interval_volume}")
         if self.interval_volume < 0.0:
-            raise ValueError(
-                f"interval_volume must be >= 0; got {self.interval_volume}"
-            )
+            raise ValueError(f"interval_volume must be >= 0; got {self.interval_volume}")
 
 
 # ---------------------------------------------------------------------------
@@ -206,14 +197,9 @@ class ExecutionQualityReport:
             if not math.isfinite(float(value)):
                 raise ValueError(f"{name} must be finite; got {value}")
         if self.notional_usd < 0.0:
-            raise ValueError(
-                f"notional_usd must be >= 0; got {self.notional_usd}"
-            )
+            raise ValueError(f"notional_usd must be >= 0; got {self.notional_usd}")
         if self.participation_rate < 0.0:
-            raise ValueError(
-                "participation_rate must be >= 0; got "
-                f"{self.participation_rate}"
-            )
+            raise ValueError(f"participation_rate must be >= 0; got {self.participation_rate}")
 
 
 # ---------------------------------------------------------------------------
@@ -302,10 +288,7 @@ def score_execution(
 
     for fill in fills:
         if not isinstance(fill, BenchmarkedFill):
-            raise TypeError(
-                "fills must contain BenchmarkedFill; got "
-                f"{type(fill).__name__}"
-            )
+            raise TypeError(f"fills must contain BenchmarkedFill; got {type(fill).__name__}")
         trade = fill.trade
         side_sign = _side_sign(trade.side)
         notional = trade.qty * trade.price
@@ -324,9 +307,7 @@ def score_execution(
 
     timing_cost_usd = is_cost_usd - vwap_deviation_usd
     participation_rate = (
-        weighted_participation / weighted_notional
-        if weighted_notional > 0.0
-        else 0.0
+        weighted_participation / weighted_notional if weighted_notional > 0.0 else 0.0
     )
 
     return ExecutionQualityReport(
@@ -351,10 +332,7 @@ def score_execution_by_symbol(
     grouped: dict[str, list[BenchmarkedFill]] = {}
     for fill in fills:
         if not isinstance(fill, BenchmarkedFill):
-            raise TypeError(
-                "fills must contain BenchmarkedFill; got "
-                f"{type(fill).__name__}"
-            )
+            raise TypeError(f"fills must contain BenchmarkedFill; got {type(fill).__name__}")
         grouped.setdefault(fill.trade.symbol, []).append(fill)
     return {sym: score_execution(rows) for sym, rows in grouped.items()}
 

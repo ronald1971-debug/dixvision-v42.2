@@ -126,12 +126,7 @@ def test_parser_rejects_empty_trader_id():
 
 
 def test_parser_rejects_unknown_observation_kind():
-    assert (
-        parse_tradingview_idea_payload(
-            _payload(observation_kind="WHIMSY"), ts_ns=1
-        )
-        is None
-    )
+    assert parse_tradingview_idea_payload(_payload(observation_kind="WHIMSY"), ts_ns=1) is None
 
 
 def test_parser_rejects_non_str_source_feed():
@@ -139,27 +134,18 @@ def test_parser_rejects_non_str_source_feed():
 
 
 def test_parser_rejects_non_str_in_strategy_signatures():
-    assert (
-        parse_tradingview_idea_payload(
-            _payload(strategy_signatures=["ok", 1]), ts_ns=1
-        )
-        is None
-    )
+    assert parse_tradingview_idea_payload(_payload(strategy_signatures=["ok", 1]), ts_ns=1) is None
 
 
 def test_parser_rejects_non_float_in_performance_metrics():
     assert (
-        parse_tradingview_idea_payload(
-            _payload(performance_metrics={"win_rate": "high"}), ts_ns=1
-        )
+        parse_tradingview_idea_payload(_payload(performance_metrics={"win_rate": "high"}), ts_ns=1)
         is None
     )
 
 
 def test_parser_rejects_non_str_in_meta():
-    assert (
-        parse_tradingview_idea_payload(_payload(meta={"k": 1}), ts_ns=1) is None
-    )
+    assert parse_tradingview_idea_payload(_payload(meta={"k": 1}), ts_ns=1) is None
 
 
 def test_parser_drops_malformed_philosophy_silently():

@@ -167,8 +167,7 @@ class STDPConfig:
         _check_positive(self.dt, "STDPConfig.dt")
         if self.w_min >= self.w_max:
             raise SNNGovernanceError(
-                "STDPConfig.w_min must be < w_max "
-                f"(got {self.w_min} >= {self.w_max})"
+                f"STDPConfig.w_min must be < w_max (got {self.w_min} >= {self.w_max})"
             )
 
 
@@ -193,15 +192,12 @@ class LIFParams:
         _check_positive(self.dt, "LIFParams.dt")
         if self.dt > self.tau_mem:
             raise SNNGovernanceError(
-                "LIFParams.dt must be <= tau_mem "
-                f"(got dt={self.dt}, tau_mem={self.tau_mem})"
+                f"LIFParams.dt must be <= tau_mem (got dt={self.dt}, tau_mem={self.tau_mem})"
             )
 
 
 # ===================================================================== weights
-def _canonical_weights(
-    weight: Sequence[Sequence[float]], input_dim: int, hidden_dim: int
-) -> bytes:
+def _canonical_weights(weight: Sequence[Sequence[float]], input_dim: int, hidden_dim: int) -> bytes:
     """Canonical fixed-precision text projection for BLAKE2b digest."""
     parts: list[str] = [f"in={input_dim};out={hidden_dim}"]
     for row in weight:
@@ -225,8 +221,7 @@ class FrozenSNNWeights:
     def __post_init__(self) -> None:
         if self.input_dim < 1 or self.input_dim > MAX_INPUT_DIM:
             raise SNNGovernanceError(
-                "FrozenSNNWeights.input_dim must be in "
-                f"[1, {MAX_INPUT_DIM}] (got {self.input_dim})"
+                f"FrozenSNNWeights.input_dim must be in [1, {MAX_INPUT_DIM}] (got {self.input_dim})"
             )
         if self.hidden_dim < 1 or self.hidden_dim > MAX_HIDDEN_DIM:
             raise SNNGovernanceError(
@@ -246,9 +241,7 @@ class FrozenSNNWeights:
                 )
             for j, v in enumerate(row):
                 if not math.isfinite(v):
-                    raise SNNGovernanceError(
-                        f"FrozenSNNWeights.weight[{i}][{j}] must be finite"
-                    )
+                    raise SNNGovernanceError(f"FrozenSNNWeights.weight[{i}][{j}] must be finite")
 
     def digest(self) -> str:
         """BLAKE2b-16 hex of canonical fixed-precision projection."""
@@ -282,9 +275,7 @@ def identity_governance_weights(input_dim: int, hidden_dim: int) -> FrozenSNNWei
         if i < hidden_dim:
             row[i] = 1.0
         rows.append(tuple(row))
-    return FrozenSNNWeights(
-        weight=tuple(rows), input_dim=input_dim, hidden_dim=hidden_dim
-    )
+    return FrozenSNNWeights(weight=tuple(rows), input_dim=input_dim, hidden_dim=hidden_dim)
 
 
 # ===================================================================== STDP
@@ -293,8 +284,7 @@ def _validate_spike_row(
 ) -> tuple[bool, ...]:
     if len(row) != expected_dim:
         raise SNNGovernanceError(
-            f"{kind} step {step} length mismatch "
-            f"(got {len(row)}, expected {expected_dim})"
+            f"{kind} step {step} length mismatch (got {len(row)}, expected {expected_dim})"
         )
     return tuple(bool(s) for s in row)
 
@@ -327,8 +317,7 @@ def stdp_train_offline(
     n_steps = len(pre_spikes)
     if n_steps < 1 or n_steps > MAX_TRAIN_STEPS:
         raise SNNGovernanceError(
-            f"stdp_train_offline.pre_spikes must have 1..{MAX_TRAIN_STEPS} "
-            f"steps (got {n_steps})"
+            f"stdp_train_offline.pre_spikes must have 1..{MAX_TRAIN_STEPS} steps (got {n_steps})"
         )
     if len(post_spikes) != n_steps:
         raise SNNGovernanceError(
@@ -408,8 +397,7 @@ def _lif_step(
 
     if len(input_current) != len(v):
         raise SNNGovernanceError(
-            f"_lif_step.input_current length mismatch "
-            f"(got {len(input_current)}, expected {len(v)})"
+            f"_lif_step.input_current length mismatch (got {len(input_current)}, expected {len(v)})"
         )
     next_v: list[float] = []
     spikes: list[bool] = []
@@ -417,9 +405,7 @@ def _lif_step(
     for k in range(len(v)):
         i_k = float(input_current[k])
         if not math.isfinite(i_k):
-            raise SNNGovernanceError(
-                f"_lif_step.input_current[{k}] must be finite"
-            )
+            raise SNNGovernanceError(f"_lif_step.input_current[{k}] must be finite")
         v_next = v[k] + leak_factor * (lif.v_leak - v[k] + i_k)
         if v_next >= lif.v_threshold:
             spikes.append(True)
@@ -448,9 +434,7 @@ class GovernanceRiskSNN:
 
     def __post_init__(self) -> None:
         if not self.risk_kind:
-            raise SNNGovernanceError(
-                "GovernanceRiskSNN.risk_kind must be non-empty"
-            )
+            raise SNNGovernanceError("GovernanceRiskSNN.risk_kind must be non-empty")
 
     def detect(
         self,
@@ -489,24 +473,17 @@ class GovernanceRiskSNN:
         """
 
         if ts_ns < 0:
-            raise SNNGovernanceError(
-                f"GovernanceRiskSNN.detect.ts_ns must be >= 0 (got {ts_ns})"
-            )
+            raise SNNGovernanceError(f"GovernanceRiskSNN.detect.ts_ns must be >= 0 (got {ts_ns})")
         if not source:
-            raise SNNGovernanceError(
-                "GovernanceRiskSNN.detect.source must be non-empty"
-            )
+            raise SNNGovernanceError("GovernanceRiskSNN.detect.source must be non-empty")
 
         rows: list[Sequence[float]] = list(window)
         n_steps = len(rows)
         if n_steps < 1:
-            raise SNNGovernanceError(
-                "GovernanceRiskSNN.detect.window must contain at least 1 step"
-            )
+            raise SNNGovernanceError("GovernanceRiskSNN.detect.window must contain at least 1 step")
         if n_steps > MAX_WINDOW:
             raise SNNGovernanceError(
-                f"GovernanceRiskSNN.detect.window length must be <= {MAX_WINDOW} "
-                f"(got {n_steps})"
+                f"GovernanceRiskSNN.detect.window length must be <= {MAX_WINDOW} (got {n_steps})"
             )
 
         input_dim = self.weights.input_dim
@@ -528,8 +505,7 @@ class GovernanceRiskSNN:
                 x_i = float(row[i])
                 if not math.isfinite(x_i):
                     raise SNNGovernanceError(
-                        f"GovernanceRiskSNN.detect.window[{t}][{i}] "
-                        "must be finite"
+                        f"GovernanceRiskSNN.detect.window[{t}][{i}] must be finite"
                     )
                 if x_i == 0.0:
                     continue
@@ -546,9 +522,7 @@ class GovernanceRiskSNN:
 
         emitted_kind = risk_kind if risk_kind is not None else self.risk_kind
         if not emitted_kind:
-            raise SNNGovernanceError(
-                "GovernanceRiskSNN.detect.risk_kind must be non-empty"
-            )
+            raise SNNGovernanceError("GovernanceRiskSNN.detect.risk_kind must be non-empty")
 
         merged_evidence: dict[str, str] = {}
         if evidence is not None:
@@ -624,6 +598,3 @@ __all__ = [
     "identity_governance_weights",
     "stdp_train_offline",
 ]
-
-
-

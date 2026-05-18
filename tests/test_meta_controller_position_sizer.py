@@ -313,9 +313,7 @@ def test_compute_is_replay_deterministic() -> None:
 
 
 def test_load_registry_yaml_round_trip() -> None:
-    cfg = load_position_sizer_config(
-        REPO_ROOT / "registry" / "position_sizer.yaml"
-    )
+    cfg = load_position_sizer_config(REPO_ROOT / "registry" / "position_sizer.yaml")
     assert cfg.base_fraction == pytest.approx(1.0)
     assert cfg.kelly_cap == pytest.approx(0.25)
     assert cfg.trend_multiplier == pytest.approx(1.0)

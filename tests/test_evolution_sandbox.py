@@ -277,9 +277,7 @@ class _LinearWalkDynamics:
     Mid-price walks +1.0 on BUY, -1.0 on SELL, 0.0 on HOLD; PnL is
     the same delta. Pure function of ``(seed, action sequence)``."""
 
-    def initial_mid_price(
-        self, *, seed: int, config: EpisodeConfig
-    ) -> float:
+    def initial_mid_price(self, *, seed: int, config: EpisodeConfig) -> float:
         return 100.0 + (seed % 10)
 
     def step(
@@ -344,9 +342,7 @@ class _DeterministicPolicyTrainer:
         best_reward = -math.inf
         steps_left = total_timesteps
         while steps_left > 0:
-            obs, reward, terminated, truncated, info = env.step(
-                TradeAction.BUY
-            )
+            obs, reward, terminated, truncated, info = env.step(TradeAction.BUY)
             assert isinstance(info, Mapping)
             ep_reward += reward
             ep_len += 1
@@ -404,12 +400,8 @@ class _RecordingCallback:
         self.episode_ends: list[Mapping[str, object]] = []
         self.training_ends: list[Mapping[str, object]] = []
 
-    def on_training_start(
-        self, *, ts_ns: int, total_timesteps: int
-    ) -> None:
-        self.training_starts.append(
-            {"ts_ns": ts_ns, "total_timesteps": total_timesteps}
-        )
+    def on_training_start(self, *, ts_ns: int, total_timesteps: int) -> None:
+        self.training_starts.append({"ts_ns": ts_ns, "total_timesteps": total_timesteps})
 
     def on_step(
         self,
@@ -445,9 +437,7 @@ class _RecordingCallback:
             }
         )
 
-    def on_training_end(
-        self, *, ts_ns: int, metrics: SandboxMetrics
-    ) -> None:
+    def on_training_end(self, *, ts_ns: int, metrics: SandboxMetrics) -> None:
         self.training_ends.append(
             {
                 "ts_ns": ts_ns,
@@ -473,9 +463,7 @@ def test_null_sandbox_callback_implements_protocol() -> None:
     )
     metrics = _good_metrics()
     cb.on_training_start(ts_ns=1, total_timesteps=100)
-    cb.on_step(
-        ts_ns=2, step_idx=1, observation=obs, action=TradeAction.HOLD, reward=0.0
-    )
+    cb.on_step(ts_ns=2, step_idx=1, observation=obs, action=TradeAction.HOLD, reward=0.0)
     cb.on_episode_end(ts_ns=3, episode_idx=1, episode_reward=0.0, episode_length=1)
     cb.on_training_end(ts_ns=4, metrics=metrics)
 
@@ -564,9 +552,7 @@ def test_train_proposal_meta_has_provenance_fields() -> None:
     assert meta["policy_digest"] == result.policy_digest
     assert meta["seed"] == "42"
     assert meta["total_timesteps"] == "64"
-    assert meta["episodes_completed"] == str(
-        result.metrics.episodes_completed
-    )
+    assert meta["episodes_completed"] == str(result.metrics.episodes_completed)
     assert "mean_episode_reward" in meta
     assert "best_episode_reward" in meta
 
@@ -996,10 +982,7 @@ def test_sb3_ppo_trainer_lazy_import_lives_inside_the_factory() -> None:
 
     factory_func: ast.FunctionDef | None = None
     for node in tree.body:
-        if (
-            isinstance(node, ast.FunctionDef)
-            and node.name == "sb3_ppo_trainer"
-        ):
+        if isinstance(node, ast.FunctionDef) and node.name == "sb3_ppo_trainer":
             factory_func = node
             break
     assert factory_func is not None
@@ -1012,14 +995,12 @@ def test_sb3_ppo_trainer_lazy_import_lives_inside_the_factory() -> None:
             continue
         if isinstance(node, ast.ImportFrom):
             assert node.module not in forbidden, (
-                f"{node.module!r} imported outside sb3_ppo_trainer "
-                f"at line {node.lineno}"
+                f"{node.module!r} imported outside sb3_ppo_trainer at line {node.lineno}"
             )
         if isinstance(node, ast.Import):
             for alias in node.names:
                 assert alias.name not in forbidden, (
-                    f"{alias.name!r} imported outside sb3_ppo_trainer "
-                    f"at line {node.lineno}"
+                    f"{alias.name!r} imported outside sb3_ppo_trainer at line {node.lineno}"
                 )
 
 

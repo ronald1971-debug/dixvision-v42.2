@@ -85,11 +85,9 @@ def _canonical_dumps(value: Any) -> bytes:
 
 def _canonical_loads(blob: bytes) -> Any:
     if not isinstance(blob, (bytes, bytearray, memoryview)):
-        raise TypeError(
-            "_canonical_loads requires bytes-like input "
-            f"(got {type(blob).__name__})"
-        )
+        raise TypeError(f"_canonical_loads requires bytes-like input (got {type(blob).__name__})")
     return json.loads(bytes(blob).decode("utf-8"))
+
 
 NEW_PIP_DEPENDENCIES: Final[tuple[str, ...]] = ("msgspec",)
 """Canonical declaration of the third-party packages this module would
@@ -102,9 +100,7 @@ FAST_STRUCT_VERSION: Final[str] = "1"
 changes — keeps the canonical-encode bytes byte-stable across releases."""
 
 _ALLOWED_SIDES: Final[frozenset[str]] = frozenset({s.value for s in Side})
-_ALLOWED_EXEC_STATUSES: Final[frozenset[str]] = frozenset(
-    {s.value for s in ExecutionStatus}
-)
+_ALLOWED_EXEC_STATUSES: Final[frozenset[str]] = frozenset({s.value for s in ExecutionStatus})
 
 
 # ---------------------------------------------------------------------------
@@ -139,21 +135,14 @@ class FastSignal:
 
     def __post_init__(self) -> None:
         if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
-            raise TypeError(
-                f"FastSignal.ts_ns must be int (got {type(self.ts_ns).__name__})"
-            )
+            raise TypeError(f"FastSignal.ts_ns must be int (got {type(self.ts_ns).__name__})")
         if self.ts_ns < 0:
             raise ValueError("FastSignal.ts_ns must be non-negative")
         if not isinstance(self.symbol, str) or not self.symbol:
             raise ValueError("FastSignal.symbol must be a non-empty str")
         if not isinstance(self.side, Side):
-            raise TypeError(
-                f"FastSignal.side must be Side enum (got {type(self.side).__name__})"
-            )
-        if (
-            not isinstance(self.confidence, (int, float))
-            or isinstance(self.confidence, bool)
-        ):
+            raise TypeError(f"FastSignal.side must be Side enum (got {type(self.side).__name__})")
+        if not isinstance(self.confidence, (int, float)) or isinstance(self.confidence, bool):
             raise TypeError("FastSignal.confidence must be a real number")
         if not 0.0 <= float(self.confidence) <= 1.0:
             raise ValueError("FastSignal.confidence must lie in [0.0, 1.0]")
@@ -161,9 +150,7 @@ class FastSignal:
             raise TypeError("FastSignal.plugin_chain must be a tuple")
         for entry in self.plugin_chain:
             if not isinstance(entry, str) or not entry:
-                raise ValueError(
-                    "FastSignal.plugin_chain entries must be non-empty strings"
-                )
+                raise ValueError("FastSignal.plugin_chain entries must be non-empty strings")
 
 
 # ---------------------------------------------------------------------------
@@ -197,9 +184,7 @@ class FastExecution:
 
     def __post_init__(self) -> None:
         if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
-            raise TypeError(
-                f"FastExecution.ts_ns must be int (got {type(self.ts_ns).__name__})"
-            )
+            raise TypeError(f"FastExecution.ts_ns must be int (got {type(self.ts_ns).__name__})")
         if self.ts_ns < 0:
             raise ValueError("FastExecution.ts_ns must be non-negative")
         if not isinstance(self.symbol, str) or not self.symbol:
@@ -212,9 +197,7 @@ class FastExecution:
         if float(self.qty) < 0.0:
             raise ValueError("FastExecution.qty must be non-negative")
         if not isinstance(self.status, ExecutionStatus):
-            raise TypeError(
-                "FastExecution.status must be ExecutionStatus enum"
-            )
+            raise TypeError("FastExecution.status must be ExecutionStatus enum")
 
 
 # ---------------------------------------------------------------------------
@@ -231,10 +214,7 @@ def fast_signal_from_event(event: SignalEvent) -> FastSignal:
     """
 
     if not isinstance(event, SignalEvent):
-        raise TypeError(
-            f"fast_signal_from_event requires SignalEvent (got "
-            f"{type(event).__name__})"
-        )
+        raise TypeError(f"fast_signal_from_event requires SignalEvent (got {type(event).__name__})")
     return FastSignal(
         ts_ns=event.ts_ns,
         symbol=event.symbol,
@@ -301,9 +281,7 @@ def canonical_encode_fast_signal(signal: FastSignal) -> bytes:
 
 def canonical_encode_fast_execution(execution: FastExecution) -> bytes:
     if not isinstance(execution, FastExecution):
-        raise TypeError(
-            "canonical_encode_fast_execution requires FastExecution"
-        )
+        raise TypeError("canonical_encode_fast_execution requires FastExecution")
     return _canonical_dumps(_execution_to_payload(execution))
 
 
@@ -322,8 +300,7 @@ def canonical_decode_fast_signal(blob: bytes) -> FastSignal:
         raise ValueError("canonical_decode_fast_signal expected an object")
     if payload.get("kind") != "fast_signal":
         raise ValueError(
-            f"canonical_decode_fast_signal expected kind=fast_signal "
-            f"(got {payload.get('kind')!r})"
+            f"canonical_decode_fast_signal expected kind=fast_signal (got {payload.get('kind')!r})"
         )
     if payload.get("fast_struct_version") != FAST_STRUCT_VERSION:
         raise ValueError(
@@ -336,9 +313,7 @@ def canonical_decode_fast_signal(blob: bytes) -> FastSignal:
         raise ValueError(f"canonical_decode_fast_signal got bad side={side_raw!r}")
     plugin_chain_raw = payload.get("plugin_chain", [])
     if not isinstance(plugin_chain_raw, list):
-        raise ValueError(
-            "canonical_decode_fast_signal expected plugin_chain to be a list"
-        )
+        raise ValueError("canonical_decode_fast_signal expected plugin_chain to be a list")
     return FastSignal(
         ts_ns=int(payload["ts_ns"]),
         symbol=str(payload["symbol"]),
@@ -365,14 +340,10 @@ def canonical_decode_fast_execution(blob: bytes) -> FastExecution:
         )
     side_raw = payload.get("side")
     if side_raw not in _ALLOWED_SIDES:
-        raise ValueError(
-            f"canonical_decode_fast_execution got bad side={side_raw!r}"
-        )
+        raise ValueError(f"canonical_decode_fast_execution got bad side={side_raw!r}")
     status_raw = payload.get("status")
     if status_raw not in _ALLOWED_EXEC_STATUSES:
-        raise ValueError(
-            f"canonical_decode_fast_execution got bad status={status_raw!r}"
-        )
+        raise ValueError(f"canonical_decode_fast_execution got bad status={status_raw!r}")
     return FastExecution(
         ts_ns=int(payload["ts_ns"]),
         symbol=str(payload["symbol"]),

@@ -106,11 +106,9 @@ class SimulatedClock(Protocol):
     rewinding raises :class:`ValueError`.
     """
 
-    def now_ns(self) -> int:
-        ...
+    def now_ns(self) -> int: ...
 
-    def advance_to(self, ts_ns: int) -> None:
-        ...
+    def advance_to(self, ts_ns: int) -> None: ...
 
 
 @dataclasses.dataclass(slots=True)
@@ -140,13 +138,11 @@ class TestClock:
     def __post_init__(self) -> None:
         if not isinstance(self.initial_ts_ns, int):
             raise TypeError(
-                "TestClock.initial_ts_ns must be int, "
-                f"got {type(self.initial_ts_ns).__name__}"
+                f"TestClock.initial_ts_ns must be int, got {type(self.initial_ts_ns).__name__}"
             )
         if self.initial_ts_ns < 0:
             raise ValueError(
-                "TestClock.initial_ts_ns must be non-negative, "
-                f"got {self.initial_ts_ns!r}"
+                f"TestClock.initial_ts_ns must be non-negative, got {self.initial_ts_ns!r}"
             )
         self._now_ns = self.initial_ts_ns
 
@@ -155,10 +151,7 @@ class TestClock:
 
     def advance_to(self, ts_ns: int) -> None:
         if not isinstance(ts_ns, int):
-            raise TypeError(
-                f"TestClock.advance_to ts_ns must be int, "
-                f"got {type(ts_ns).__name__}"
-            )
+            raise TypeError(f"TestClock.advance_to ts_ns must be int, got {type(ts_ns).__name__}")
         if ts_ns < self._now_ns:
             raise ValueError(
                 "TestClock.advance_to refuses backwards move: "
@@ -197,25 +190,15 @@ class ScheduledEvent:
 
     def __post_init__(self) -> None:
         if not isinstance(self.ts_ns, int):
-            raise TypeError(
-                "ScheduledEvent.ts_ns must be int, "
-                f"got {type(self.ts_ns).__name__}"
-            )
+            raise TypeError(f"ScheduledEvent.ts_ns must be int, got {type(self.ts_ns).__name__}")
         if self.ts_ns < 0:
-            raise ValueError(
-                "ScheduledEvent.ts_ns must be non-negative, "
-                f"got {self.ts_ns!r}"
-            )
+            raise ValueError(f"ScheduledEvent.ts_ns must be non-negative, got {self.ts_ns!r}")
         if not isinstance(self.sequence, int):
             raise TypeError(
-                "ScheduledEvent.sequence must be int, "
-                f"got {type(self.sequence).__name__}"
+                f"ScheduledEvent.sequence must be int, got {type(self.sequence).__name__}"
             )
         if self.sequence < 0:
-            raise ValueError(
-                "ScheduledEvent.sequence must be non-negative, "
-                f"got {self.sequence!r}"
-            )
+            raise ValueError(f"ScheduledEvent.sequence must be non-negative, got {self.sequence!r}")
 
 
 # ---------------------------------------------------------------------------
@@ -312,13 +295,11 @@ class DeterministicEventLoop:
 
         if not isinstance(ts_ns, int):
             raise TypeError(
-                "DeterministicEventLoop.schedule_at ts_ns must be int, "
-                f"got {type(ts_ns).__name__}"
+                f"DeterministicEventLoop.schedule_at ts_ns must be int, got {type(ts_ns).__name__}"
             )
         if ts_ns < 0:
             raise ValueError(
-                "DeterministicEventLoop.schedule_at ts_ns must be "
-                f"non-negative, got {ts_ns!r}"
+                f"DeterministicEventLoop.schedule_at ts_ns must be non-negative, got {ts_ns!r}"
             )
         now = self._clock.now_ns()
         if ts_ns < now:
@@ -332,9 +313,7 @@ class DeterministicEventLoop:
         heapq.heappush(self._heap, (ts_ns, seq, event))
         return event
 
-    def schedule_many(
-        self, events: Iterable[tuple[int, object]]
-    ) -> tuple[ScheduledEvent, ...]:
+    def schedule_many(self, events: Iterable[tuple[int, object]]) -> tuple[ScheduledEvent, ...]:
         """Convenience: schedule a list of ``(ts_ns, payload)`` pairs in
         order. Equivalent to repeated :meth:`schedule_at` calls and
         preserves the same insertion-order tie-breaking.
@@ -403,13 +382,11 @@ class DeterministicEventLoop:
 
         if not isinstance(ts_ns, int):
             raise TypeError(
-                "DeterministicEventLoop.run_until ts_ns must be int, "
-                f"got {type(ts_ns).__name__}"
+                f"DeterministicEventLoop.run_until ts_ns must be int, got {type(ts_ns).__name__}"
             )
         if ts_ns < 0:
             raise ValueError(
-                "DeterministicEventLoop.run_until ts_ns must be "
-                f"non-negative, got {ts_ns!r}"
+                f"DeterministicEventLoop.run_until ts_ns must be non-negative, got {ts_ns!r}"
             )
 
         dispatched: list[ScheduledEvent] = []
@@ -435,7 +412,8 @@ class DeterministicEventLoop:
         return self._heap[0][2]
 
     def drain(
-        self, _: Any = None  # noqa: ANN401 (intentional opaque sink)
+        self,
+        _: Any = None,  # noqa: ANN401 (intentional opaque sink)
     ) -> tuple[ScheduledEvent, ...]:
         """Clear the queue without dispatching. Returns the events in
         ``(ts_ns, sequence)`` order so the caller can audit what was

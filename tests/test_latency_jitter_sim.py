@@ -84,12 +84,8 @@ def test_high_jitter_increases_pnl_variance() -> None:
     s_low = _scenario(jitter_std_ms=0.0, price_volatility=0.001)
     s_high = _scenario(jitter_std_ms=20.0, price_volatility=0.001)
     runner = LatencyJitter()
-    pnls_low = [
-        runner.step(seed=seed, scenario=s_low).pnl_usd for seed in range(50)
-    ]
-    pnls_high = [
-        runner.step(seed=seed, scenario=s_high).pnl_usd for seed in range(50)
-    ]
+    pnls_low = [runner.step(seed=seed, scenario=s_low).pnl_usd for seed in range(50)]
+    pnls_high = [runner.step(seed=seed, scenario=s_high).pnl_usd for seed in range(50)]
     var_low = sum((p - sum(pnls_low) / 50) ** 2 for p in pnls_low) / 50
     var_high = sum((p - sum(pnls_high) / 50) ** 2 for p in pnls_high) / 50
     assert var_high > var_low
@@ -200,7 +196,5 @@ def test_drift_clamp_to_unit_interval() -> None:
 def test_distribution_over_seeds_varies() -> None:
     s = _scenario(jitter_std_ms=10.0, price_volatility=0.001)
     runner = LatencyJitter()
-    pnls = {
-        runner.step(seed=seed, scenario=s).pnl_usd for seed in range(50)
-    }
+    pnls = {runner.step(seed=seed, scenario=s).pnl_usd for seed in range(50)}
     assert len(pnls) > 1

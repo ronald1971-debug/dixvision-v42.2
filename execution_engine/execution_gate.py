@@ -93,9 +93,7 @@ class AuthorityViolation:
 # concrete runtime label the engine identifies itself with. Adding a
 # caller is a change here *and* in the matrix; the guard rejects any
 # string not present in both.
-DEFAULT_CALLER_ALLOWLIST: Final[frozenset[str]] = frozenset(
-    {"execution_engine"}
-)
+DEFAULT_CALLER_ALLOWLIST: Final[frozenset[str]] = frozenset({"execution_engine"})
 
 
 def _intelligence_origin_prefix(matrix: AuthorityMatrix) -> str:
@@ -175,11 +173,7 @@ class AuthorityGuard:
     @staticmethod
     def _default_matrix_path() -> Path:
         # execution_engine/execution_gate.py -> repo_root/registry/...
-        return (
-            Path(__file__).resolve().parent.parent
-            / "registry"
-            / "authority_matrix.yaml"
-        )
+        return Path(__file__).resolve().parent.parent / "registry" / "authority_matrix.yaml"
 
     def assert_can_execute(
         self, intent: ExecutionIntent, *, caller: str, ts_ns: int | None = None
@@ -197,9 +191,7 @@ class AuthorityGuard:
                 caller=caller,
                 reason="caller not in execution allowlist",
                 ts_ns=ts_ns,
-                extra=(
-                    ("allowlist", ",".join(sorted(self._caller_allowlist))),
-                ),
+                extra=(("allowlist", ",".join(sorted(self._caller_allowlist))),),
             )
 
         # 2) Intent type was already enforced by the type system; we
@@ -268,9 +260,7 @@ class AuthorityGuard:
         # production allowlist is free of fixture strings; the
         # caller-allowlist gate below is what actually authorises
         # the test bypass.
-        if intent.origin not in (
-            AUTHORISED_INTENT_ORIGINS | TEST_INTENT_ORIGINS
-        ):
+        if intent.origin not in (AUTHORISED_INTENT_ORIGINS | TEST_INTENT_ORIGINS):
             self._reject(
                 intent=intent,
                 caller=caller,
@@ -290,8 +280,7 @@ class AuthorityGuard:
                     intent=intent,
                     caller=caller,
                     reason=(
-                        f"{intent.origin} origin requires explicit "
-                        "test caller in caller_allowlist"
+                        f"{intent.origin} origin requires explicit test caller in caller_allowlist"
                     ),
                     ts_ns=ts_ns,
                 )
@@ -329,9 +318,7 @@ class AuthorityGuard:
         )
         raise UnauthorizedActorError(self._format(violation))
 
-    def _emit_hazard(
-        self, violation: AuthorityViolation, *, ts_ns: int
-    ) -> None:
+    def _emit_hazard(self, violation: AuthorityViolation, *, ts_ns: int) -> None:
         if self._hazard_sink is None:
             return
         meta = {

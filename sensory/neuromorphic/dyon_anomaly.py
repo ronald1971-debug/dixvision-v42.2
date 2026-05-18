@@ -68,19 +68,13 @@ def detect_anomaly(
             / non-finite.
     """
     if len(window) < 2:
-        raise ValueError(
-            "detect_anomaly.window must contain at least 2 samples"
-        )
+        raise ValueError("detect_anomaly.window must contain at least 2 samples")
     if not math.isfinite(saturation_z) or saturation_z <= 0.0:
-        raise ValueError(
-            "detect_anomaly.saturation_z must be finite and > 0"
-        )
+        raise ValueError("detect_anomaly.saturation_z must be finite and > 0")
 
     for value in window:
         if not math.isfinite(value):
-            raise ValueError(
-                "detect_anomaly.window samples must all be finite"
-            )
+            raise ValueError("detect_anomaly.window samples must all be finite")
 
     n = len(window)
     mu = sum(window) / n

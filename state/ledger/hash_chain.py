@@ -149,13 +149,10 @@ def canonical_payload(payload: Mapping[str, str]) -> str:
     for k in sorted(payload.keys()):
         v = payload[k]
         if not isinstance(k, str):
-            raise TypeError(
-                f"canonical_payload: key must be str, got {type(k).__name__}"
-            )
+            raise TypeError(f"canonical_payload: key must be str, got {type(k).__name__}")
         if not isinstance(v, str):
             raise TypeError(
-                f"canonical_payload: value for key {k!r} must be str, "
-                f"got {type(v).__name__}"
+                f"canonical_payload: value for key {k!r} must be str, got {type(v).__name__}"
             )
         items.append(f"{k}{PAYLOAD_KV_SEPARATOR}{v}")
     return PAYLOAD_SEPARATOR.join(items)
@@ -200,13 +197,10 @@ def canonical_row_bytes(
         all-zero form).
     """
     if not isinstance(kind, str):
-        raise TypeError(
-            f"canonical_row_bytes: kind must be str, got {type(kind).__name__}"
-        )
+        raise TypeError(f"canonical_row_bytes: kind must be str, got {type(kind).__name__}")
     if not isinstance(prev_hash, str):
         raise TypeError(
-            "canonical_row_bytes: prev_hash must be str, "
-            f"got {type(prev_hash).__name__}"
+            f"canonical_row_bytes: prev_hash must be str, got {type(prev_hash).__name__}"
         )
     if seq < 0:
         raise ValueError(f"canonical_row_bytes: seq must be >= 0, got {seq}")
@@ -250,8 +244,7 @@ def compute_chain_hash(prev_hash: str, row_bytes: bytes) -> str:
     """
     if not isinstance(row_bytes, bytes):
         raise TypeError(
-            "compute_chain_hash: row_bytes must be bytes, "
-            f"got {type(row_bytes).__name__}"
+            f"compute_chain_hash: row_bytes must be bytes, got {type(row_bytes).__name__}"
         )
     if not is_valid_hash_hex(prev_hash):
         raise ValueError(

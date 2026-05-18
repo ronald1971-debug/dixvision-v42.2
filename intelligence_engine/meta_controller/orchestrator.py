@@ -83,8 +83,7 @@ class MetaControllerConfig:
     def __post_init__(self) -> None:
         if self.latency_budget_ns <= 0:
             raise ValueError(
-                f"MetaControllerConfig.latency_budget_ns must be > 0: "
-                f"{self.latency_budget_ns}"
+                f"MetaControllerConfig.latency_budget_ns must be > 0: {self.latency_budget_ns}"
             )
 
 
@@ -159,9 +158,7 @@ def run_meta_controller_tick(
     and execution decide anything.
     """
     if elapsed_ns < 0:
-        raise ValueError(
-            f"run_meta_controller_tick: elapsed_ns must be >= 0: {elapsed_ns}"
-        )
+        raise ValueError(f"run_meta_controller_tick: elapsed_ns must be >= 0: {elapsed_ns}")
 
     new_router_state, regime_transitioned = step_regime_router(
         state=state.router_state,

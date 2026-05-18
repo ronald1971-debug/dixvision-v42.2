@@ -41,10 +41,7 @@ class FilterDecision:
 
     def __post_init__(self) -> None:
         if (self.item is None) == (self.drop_reason is None):
-            raise ValueError(
-                "FilterDecision: exactly one of item/drop_reason"
-                " must be set"
-            )
+            raise ValueError("FilterDecision: exactly one of item/drop_reason must be set")
 
     @property
     def passed(self) -> bool:
@@ -104,18 +101,14 @@ class KeywordAIFilter:
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.min_score <= 1.0:
-            raise ValueError(
-                "KeywordAIFilter.min_score must be in [0.0, 1.0]"
-            )
+            raise ValueError("KeywordAIFilter.min_score must be in [0.0, 1.0]")
 
     def evaluate(self, document: RawDocument) -> FilterDecision:
         """Score a single document; return a :class:`FilterDecision`."""
 
         if not document.fetched_ok:
             return FilterDecision(drop_reason="fetch_failed")
-        keywords = _normalize_keywords(
-            self.seed_keywords.get(document.seed_id, ())
-        )
+        keywords = _normalize_keywords(self.seed_keywords.get(document.seed_id, ()))
         if not keywords:
             return FilterDecision(drop_reason="no_keywords")
         haystack = f"{document.title} {document.body}".lower()

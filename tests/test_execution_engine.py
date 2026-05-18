@@ -33,9 +33,8 @@ def _intent_for(sig: SignalEvent, *, ts_ns: int | None = None):
     every test that wants a fill goes through the same
     ``execute(intent)`` chokepoint as production.
     """
-    return approve_signal_for_execution(
-        sig, ts_ns=ts_ns if ts_ns is not None else sig.ts_ns
-    )
+    return approve_signal_for_execution(sig, ts_ns=ts_ns if ts_ns is not None else sig.ts_ns)
+
 
 # ---------------------------------------------------------------------------
 # PaperBroker unit tests
@@ -133,9 +132,7 @@ def test_execution_engine_no_mark_returns_failed_event():
 
 def test_execution_engine_with_mark_fills_buy():
     engine = ExecutionEngine()
-    engine.on_market(
-        MarketTick(ts_ns=21, symbol="EURUSD", bid=1.0998, ask=1.1002, last=1.1)
-    )
+    engine.on_market(MarketTick(ts_ns=21, symbol="EURUSD", bid=1.0998, ask=1.1002, last=1.1))
     sig = SignalEvent(ts_ns=22, symbol="EURUSD", side=Side.BUY, confidence=0.7)
     out = engine.execute(_intent_for(sig))
     assert len(out) == 1
@@ -159,12 +156,8 @@ def test_execution_engine_legacy_process_hard_fails():
 
 def test_execution_engine_reset_mark_with_zero_last_is_ignored():
     engine = ExecutionEngine()
-    engine.on_market(
-        MarketTick(ts_ns=24, symbol="X", bid=1.0, ask=1.01, last=1.0)
-    )
-    engine.on_market(
-        MarketTick(ts_ns=25, symbol="X", bid=1.0, ask=1.01, last=0.0)
-    )
+    engine.on_market(MarketTick(ts_ns=24, symbol="X", bid=1.0, ask=1.01, last=1.0))
+    engine.on_market(MarketTick(ts_ns=25, symbol="X", bid=1.0, ask=1.01, last=0.0))
     sig = SignalEvent(ts_ns=26, symbol="X", side=Side.BUY, confidence=0.5)
     out = engine.execute(_intent_for(sig))
     assert out[0].status is ExecutionStatus.FILLED
@@ -219,9 +212,7 @@ def test_e2e_replay_is_deterministic():
         intelligence = IntelligenceEngine()
         execution = ExecutionEngine(adapter=PaperBroker(slippage_bps=2.5))
         execution.on_market(
-            MarketTick(
-                ts_ns=200, symbol="EURUSD", bid=1.0998, ask=1.1002, last=1.1
-            )
+            MarketTick(ts_ns=200, symbol="EURUSD", bid=1.0998, ask=1.1002, last=1.1)
         )
         signals = [
             SignalEvent(ts_ns=200 + i, symbol="EURUSD", side=Side.BUY, confidence=0.6)
@@ -249,9 +240,7 @@ def test_e2e_replay_is_deterministic():
 
 def test_execution_engine_latency_slo():
     engine = ExecutionEngine()
-    engine.on_market(
-        MarketTick(ts_ns=300, symbol="X", bid=99.5, ask=100.5, last=100.0)
-    )
+    engine.on_market(MarketTick(ts_ns=300, symbol="X", bid=99.5, ask=100.5, last=100.0))
     sig = SignalEvent(ts_ns=300, symbol="X", side=Side.BUY, confidence=0.7)
     intent = _intent_for(sig)
 
@@ -296,9 +285,7 @@ def test_execution_engine_latency_slo():
 def test_execute_suppresses_dispatch_when_mode_effect_blocks(mode):
     """SAFE/LOCKED skip broker dispatch via mode-effect table."""
     engine = ExecutionEngine()
-    engine.on_market(
-        MarketTick(ts_ns=400, symbol="X", bid=99.5, ask=100.5, last=100.0)
-    )
+    engine.on_market(MarketTick(ts_ns=400, symbol="X", bid=99.5, ask=100.5, last=100.0))
     sig = SignalEvent(ts_ns=400, symbol="X", side=Side.BUY, confidence=0.7)
     intent = _intent_for(sig)
 
@@ -328,9 +315,7 @@ def test_execute_suppresses_dispatch_when_mode_effect_blocks(mode):
 def test_execute_dispatches_when_mode_effect_allows(mode):
     """PAPER/CANARY/LIVE/AUTO route to the broker as before."""
     engine = ExecutionEngine()
-    engine.on_market(
-        MarketTick(ts_ns=401, symbol="X", bid=99.5, ask=100.5, last=100.0)
-    )
+    engine.on_market(MarketTick(ts_ns=401, symbol="X", bid=99.5, ask=100.5, last=100.0))
     sig = SignalEvent(ts_ns=401, symbol="X", side=Side.BUY, confidence=0.7)
     intent = _intent_for(sig)
 
@@ -352,9 +337,7 @@ def test_execute_without_mode_argument_preserves_legacy_behaviour():
     parameter must not regress them.
     """
     engine = ExecutionEngine()
-    engine.on_market(
-        MarketTick(ts_ns=402, symbol="X", bid=99.5, ask=100.5, last=100.0)
-    )
+    engine.on_market(MarketTick(ts_ns=402, symbol="X", bid=99.5, ask=100.5, last=100.0))
     sig = SignalEvent(ts_ns=402, symbol="X", side=Side.BUY, confidence=0.7)
     intent = _intent_for(sig)
 
@@ -417,9 +400,7 @@ def test_execute_canary_does_not_clamp_post_broker(mode):
     mode-driven mutation of ``ExecutionEvent.qty``.
     """
     engine = ExecutionEngine()
-    engine.on_market(
-        MarketTick(ts_ns=500, symbol="X", bid=99.5, ask=100.5, last=100.0)
-    )
+    engine.on_market(MarketTick(ts_ns=500, symbol="X", bid=99.5, ask=100.5, last=100.0))
     sig = SignalEvent(ts_ns=500, symbol="X", side=Side.BUY, confidence=0.7)
     intent = _intent_for(sig)
 
@@ -437,9 +418,7 @@ def test_equity_notional_cap_qty_canary_one_percent():
     """CANARY caps notional at 1% of equity → max_qty = equity * 0.01 / price."""
     from core.contracts.mode_effects import equity_notional_cap_qty
 
-    cap = equity_notional_cap_qty(
-        mode=SystemMode.CANARY, equity=100_000.0, price=100.0
-    )
+    cap = equity_notional_cap_qty(mode=SystemMode.CANARY, equity=100_000.0, price=100.0)
     # 100_000 * 0.01 / 100 = 10.0
     assert cap == pytest.approx(10.0)
 
@@ -452,10 +431,7 @@ def test_equity_notional_cap_qty_uncapped_modes_return_none(mode):
     """LIVE / AUTO have ``size_cap_pct=None`` → helper returns ``None``."""
     from core.contracts.mode_effects import equity_notional_cap_qty
 
-    assert (
-        equity_notional_cap_qty(mode=mode, equity=100_000.0, price=100.0)
-        is None
-    )
+    assert equity_notional_cap_qty(mode=mode, equity=100_000.0, price=100.0) is None
 
 
 @pytest.mark.parametrize(
@@ -475,29 +451,20 @@ def test_equity_notional_cap_qty_non_applicable_modes_return_none(mode):
     """
     from core.contracts.mode_effects import equity_notional_cap_qty
 
-    assert (
-        equity_notional_cap_qty(mode=mode, equity=100_000.0, price=100.0)
-        is None
-    )
+    assert equity_notional_cap_qty(mode=mode, equity=100_000.0, price=100.0) is None
 
 
 def test_equity_notional_cap_qty_rejects_negative_equity():
     from core.contracts.mode_effects import equity_notional_cap_qty
 
     with pytest.raises(ValueError):
-        equity_notional_cap_qty(
-            mode=SystemMode.CANARY, equity=-1.0, price=100.0
-        )
+        equity_notional_cap_qty(mode=SystemMode.CANARY, equity=-1.0, price=100.0)
 
 
 def test_equity_notional_cap_qty_rejects_non_positive_price():
     from core.contracts.mode_effects import equity_notional_cap_qty
 
     with pytest.raises(ValueError):
-        equity_notional_cap_qty(
-            mode=SystemMode.CANARY, equity=100_000.0, price=0.0
-        )
+        equity_notional_cap_qty(mode=SystemMode.CANARY, equity=100_000.0, price=0.0)
     with pytest.raises(ValueError):
-        equity_notional_cap_qty(
-            mode=SystemMode.CANARY, equity=100_000.0, price=-1.0
-        )
+        equity_notional_cap_qty(mode=SystemMode.CANARY, equity=100_000.0, price=-1.0)

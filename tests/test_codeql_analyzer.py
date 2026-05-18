@@ -191,9 +191,7 @@ def test_sanitizer_rejects_empty_pattern() -> None:
 # ---------------------------------------------------------------------------
 
 
-_USER_INPUT = TaintSource(
-    name="USER_INPUT", kind=PatternKind.NAME, pattern="user_input"
-)
+_USER_INPUT = TaintSource(name="USER_INPUT", kind=PatternKind.NAME, pattern="user_input")
 _REQUEST_ARGS = TaintSource(
     name="REQUEST_ARGS",
     kind=PatternKind.CALL,
@@ -331,12 +329,7 @@ def test_analyze_call_source_flow_emits_trace() -> None:
 
 
 def test_analyze_propagates_through_intermediate_assignment() -> None:
-    code = (
-        "u = request.args.get('x')\n"
-        "v = u\n"
-        "w = v\n"
-        "eval(w)\n"
-    )
+    code = "u = request.args.get('x')\nv = u\nw = v\neval(w)\n"
     result = analyze(_REQUEST_EVAL_QUERY, code)
     assert len(result.traces) == 1
     assert result.traces[0].tainted_var == "w"
@@ -349,11 +342,7 @@ def test_analyze_sanitizer_blocks_taint() -> None:
         sinks=(_EVAL_SINK,),
         sanitizers=(_HTML_ESCAPE,),
     )
-    code = (
-        "u = request.args.get('x')\n"
-        "v = html.escape(u)\n"
-        "eval(v)\n"
-    )
+    code = "u = request.args.get('x')\nv = html.escape(u)\neval(v)\n"
     result = analyze(query, code)
     assert result.is_clean()
 
@@ -364,11 +353,7 @@ def test_analyze_emits_multiple_traces_for_multiple_sinks() -> None:
         sources=(_REQUEST_ARGS,),
         sinks=(_EVAL_SINK, _EXEC_SINK),
     )
-    code = (
-        "u = request.args.get('x')\n"
-        "eval(u)\n"
-        "exec(u)\n"
-    )
+    code = "u = request.args.get('x')\neval(u)\nexec(u)\n"
     result = analyze(query, code)
     assert len(result.traces) == 2
     sinks = {t.sink_name for t in result.traces}
@@ -376,11 +361,7 @@ def test_analyze_emits_multiple_traces_for_multiple_sinks() -> None:
 
 
 def test_analyze_traces_sorted_by_sink_location() -> None:
-    code = (
-        "u = request.args.get('x')\n"
-        "exec(u)\n"
-        "eval(u)\n"
-    )
+    code = "u = request.args.get('x')\nexec(u)\neval(u)\n"
     query = DataFlowQuery(
         name="MULTI",
         sources=(_REQUEST_ARGS,),
@@ -393,12 +374,7 @@ def test_analyze_traces_sorted_by_sink_location() -> None:
 
 
 def test_analyze_is_deterministic_across_three_runs() -> None:
-    code = (
-        "u = request.args.get('a')\n"
-        "v = request.args.get('b')\n"
-        "eval(u)\n"
-        "exec(v)\n"
-    )
+    code = "u = request.args.get('a')\nv = request.args.get('b')\neval(u)\nexec(v)\n"
     query = DataFlowQuery(
         name="MULTI",
         sources=(_REQUEST_ARGS,),
@@ -487,10 +463,7 @@ def test_analyze_attribute_pattern_does_not_partial_match() -> None:
 def test_analyze_no_duplicate_trace_for_same_source_sink_pair() -> None:
     # Two name references to the same tainted variable in two
     # arguments collapse to one trace per (source-id, sink-loc).
-    code = (
-        "u = request.args.get('x')\n"
-        "eval(u + u)\n"
-    )
+    code = "u = request.args.get('x')\neval(u + u)\n"
     result = analyze(_REQUEST_EVAL_QUERY, code)
     assert len(result.traces) == 1
 
@@ -547,11 +520,7 @@ def test_analysis_result_by_sink_filters_traces() -> None:
         sources=(_REQUEST_ARGS,),
         sinks=(_EVAL_SINK, _EXEC_SINK),
     )
-    code = (
-        "u = request.args.get('x')\n"
-        "eval(u)\n"
-        "exec(u)\n"
-    )
+    code = "u = request.args.get('x')\neval(u)\nexec(u)\n"
     result = analyze(query, code)
     eval_traces = result.by_sink("EVAL")
     assert len(eval_traces) == 1
@@ -609,9 +578,7 @@ def test_enable_codeql_factory_skips_when_uninstalled() -> None:
     except ImportError:
         pytest.skip("codeql not installed")
     analyzer = enable_codeql_factory()
-    result = analyzer(
-        _BASIC_QUERY, "user_input='x'\neval(user_input)\n", "<test>"
-    )
+    result = analyzer(_BASIC_QUERY, "user_input='x'\neval(user_input)\n", "<test>")
     assert result.backend == "codeql"
     assert len(result.traces) == 1
 
@@ -630,9 +597,7 @@ def test_enable_codeql_factory_rejects_unknown_overrides() -> None:
 # ---------------------------------------------------------------------------
 
 
-_MODULE_PATH = (
-    Path(__file__).resolve().parents[1] / "tools" / "codeql_analyzer.py"
-)
+_MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "codeql_analyzer.py"
 
 
 def _module_ast() -> ast.Module:
@@ -652,10 +617,7 @@ def _top_level_imports(tree: ast.Module) -> list[str]:
 
 
 def test_no_top_level_codeql_import() -> None:
-    assert all(
-        not name.startswith("codeql")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("codeql") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_subprocess_import() -> None:
@@ -687,9 +649,7 @@ def test_no_top_level_engine_imports() -> None:
             assert not name.startswith(prefix), name
 
 
-def _find_enclosing_function(
-    tree: ast.Module, target: ast.AST
-) -> ast.FunctionDef | None:
+def _find_enclosing_function(tree: ast.Module, target: ast.AST) -> ast.FunctionDef | None:
     for func in ast.walk(tree):
         if isinstance(func, ast.FunctionDef):
             for descendant in ast.walk(func):
@@ -703,21 +663,15 @@ def test_codeql_import_only_inside_factory() -> None:
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             mod = node.module if isinstance(node, ast.ImportFrom) else None
-            names = (
-                [a.name for a in node.names]
-                if isinstance(node, ast.Import)
-                else [mod or ""]
-            )
+            names = [a.name for a in node.names] if isinstance(node, ast.Import) else [mod or ""]
             for name in names:
                 if name.startswith("codeql") or name == "subprocess":
                     parent = _find_enclosing_function(tree, node)
                     assert parent is not None, (
-                        f"top-level {name} import — must be inside "
-                        "enable_codeql_factory"
+                        f"top-level {name} import — must be inside enable_codeql_factory"
                     )
                     assert parent.name == "enable_codeql_factory", (
-                        f"{name} imported in {parent.name!r} — must be "
-                        "inside enable_codeql_factory"
+                        f"{name} imported in {parent.name!r} — must be inside enable_codeql_factory"
                     )
 
 

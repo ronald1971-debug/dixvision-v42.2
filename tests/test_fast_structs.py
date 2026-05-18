@@ -161,12 +161,8 @@ class TestFastSignal:
             )
 
     def test_equality_structural(self) -> None:
-        a = FastSignal(
-            ts_ns=1, symbol="BTC", side=Side.BUY, confidence=0.4, plugin_chain=("p",)
-        )
-        b = FastSignal(
-            ts_ns=1, symbol="BTC", side=Side.BUY, confidence=0.4, plugin_chain=("p",)
-        )
+        a = FastSignal(ts_ns=1, symbol="BTC", side=Side.BUY, confidence=0.4, plugin_chain=("p",))
+        b = FastSignal(ts_ns=1, symbol="BTC", side=Side.BUY, confidence=0.4, plugin_chain=("p",))
         assert a == b
         assert hash(a) == hash(b)
 
@@ -326,9 +322,7 @@ class TestFastSignalFromEvent:
         assert not hasattr(fast, "produced_by_engine")
 
     def test_pure_deterministic(self) -> None:
-        event = SignalEvent(
-            ts_ns=10, symbol="ETH", side=Side.SELL, confidence=0.25
-        )
+        event = SignalEvent(ts_ns=10, symbol="ETH", side=Side.SELL, confidence=0.25)
         first = fast_signal_from_event(event)
         second = fast_signal_from_event(event)
         third = fast_signal_from_event(event)
@@ -368,9 +362,7 @@ class TestCanonicalEncodeSignal:
         assert b'"kind":"fast_signal"' in blob
 
     def test_byte_stable_same_input(self) -> None:
-        s = FastSignal(
-            ts_ns=1, symbol="BTC", side=Side.BUY, confidence=0.5, plugin_chain=("p",)
-        )
+        s = FastSignal(ts_ns=1, symbol="BTC", side=Side.BUY, confidence=0.5, plugin_chain=("p",))
         assert (
             canonical_encode_fast_signal(s)
             == canonical_encode_fast_signal(s)
@@ -413,9 +405,7 @@ class TestCanonicalEncodeExecution:
             price=100.0,
             status=ExecutionStatus.FILLED,
         )
-        assert canonical_encode_fast_execution(x) == canonical_encode_fast_execution(
-            x
-        )
+        assert canonical_encode_fast_execution(x) == canonical_encode_fast_execution(x)
 
     def test_rejects_non_fast_execution(self) -> None:
         with pytest.raises(TypeError):
@@ -550,9 +540,7 @@ class TestReplayDigest:
     def test_digest_changes_with_input(self) -> None:
         base = FastSignal(ts_ns=1, symbol="A", side=Side.BUY, confidence=0.5)
         d_a = replay_digest([base], [])
-        d_b = replay_digest(
-            [FastSignal(ts_ns=1, symbol="A", side=Side.SELL, confidence=0.5)], []
-        )
+        d_b = replay_digest([FastSignal(ts_ns=1, symbol="A", side=Side.SELL, confidence=0.5)], [])
         assert d_a != d_b
 
 
@@ -566,9 +554,7 @@ class TestFactories:
         backend = stdlib_fast_struct_factory()
         assert isinstance(backend, FastStructBackend)
         assert backend.name == "stdlib"
-        s = backend.signal_factory(
-            ts_ns=1, symbol="BTC", side=Side.BUY, confidence=0.5
-        )
+        s = backend.signal_factory(ts_ns=1, symbol="BTC", side=Side.BUY, confidence=0.5)
         assert isinstance(s, FastSignal)
 
     def test_msgspec_seam_returns_none_or_backend(self) -> None:
@@ -580,13 +566,9 @@ class TestFactories:
             return
         assert isinstance(result, FastStructBackend)
         assert result.name == "msgspec"
-        s_msg = result.signal_factory(
-            ts_ns=1, symbol="BTC", side=Side.BUY, confidence=0.5
-        )
+        s_msg = result.signal_factory(ts_ns=1, symbol="BTC", side=Side.BUY, confidence=0.5)
         s_std = FastSignal(ts_ns=1, symbol="BTC", side=Side.BUY, confidence=0.5)
-        assert canonical_encode_fast_signal(s_msg) == canonical_encode_fast_signal(
-            s_std
-        )
+        assert canonical_encode_fast_signal(s_msg) == canonical_encode_fast_signal(s_std)
 
     def test_factory_immutable(self) -> None:
         b = stdlib_fast_struct_factory()
@@ -630,8 +612,7 @@ class TestAstGuardrails:
         }
         names = _toplevel_imports(_load_module_ast())
         assert forbidden.isdisjoint(names), (
-            f"Forbidden top-level imports in fast_structs: "
-            f"{forbidden & names}"
+            f"Forbidden top-level imports in fast_structs: {forbidden & names}"
         )
 
     def test_msgspec_only_inside_lazy_seam_body(self) -> None:
@@ -689,8 +670,7 @@ class TestAstGuardrails:
         }
         names = _toplevel_imports(_load_module_ast())
         assert forbidden.isdisjoint(names), (
-            f"fast_structs MUST NOT import runtime tiers: "
-            f"{forbidden & names}"
+            f"fast_structs MUST NOT import runtime tiers: {forbidden & names}"
         )
 
     def test_no_wallclock_reads(self) -> None:
@@ -703,9 +683,7 @@ class TestAstGuardrails:
             "datetime.now(",
             "datetime.utcnow(",
         ):
-            assert forbidden not in source, (
-                f"fast_structs MUST NOT call {forbidden} — INV-15"
-            )
+            assert forbidden not in source, f"fast_structs MUST NOT call {forbidden} — INV-15"
 
     def test_module_imports_clean(self) -> None:
         # Importing the module twice yields the same globals — replay

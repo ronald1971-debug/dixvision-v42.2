@@ -61,9 +61,7 @@ class StrategyLifecycle(StrEnum):
 
 # Forward-only edges; ``RETIRED`` is the single terminal state.
 LEGAL_LIFECYCLE_TRANSITIONS: dict[StrategyLifecycle, frozenset[StrategyLifecycle]] = {
-    StrategyLifecycle.DRAFT: frozenset(
-        {StrategyLifecycle.VALIDATING, StrategyLifecycle.RETIRED}
-    ),
+    StrategyLifecycle.DRAFT: frozenset({StrategyLifecycle.VALIDATING, StrategyLifecycle.RETIRED}),
     StrategyLifecycle.VALIDATING: frozenset(
         {StrategyLifecycle.APPROVED, StrategyLifecycle.RETIRED}
     ),
@@ -127,14 +125,10 @@ class StrategyRecord:
     created_ts_ns: int = 0
     last_transition_ts_ns: int = 0
     mutable_parameters: tuple[str, ...] = ()
-    parameter_bounds: Mapping[str, tuple[float, float]] = field(
-        default_factory=dict
-    )
+    parameter_bounds: Mapping[str, tuple[float, float]] = field(default_factory=dict)
 
 
-def is_legal_transition(
-    *, prev: StrategyLifecycle, new: StrategyLifecycle
-) -> bool:
+def is_legal_transition(*, prev: StrategyLifecycle, new: StrategyLifecycle) -> bool:
     """Return whether ``prev → new`` is in :data:`LEGAL_LIFECYCLE_TRANSITIONS`.
 
     Pure — used by the registry adapter as a single, testable

@@ -80,9 +80,7 @@ def test_meme_available_matches_index_existence() -> None:
 def test_meme_mount_only_when_available() -> None:
     """The Starlette mount under ``/meme`` exists iff ``_MEME_AVAILABLE``."""
     server = _reload_server()
-    mount_paths = {
-        getattr(r, "path", None) for r in server.app.routes
-    }
+    mount_paths = {getattr(r, "path", None) for r in server.app.routes}
     if server._MEME_AVAILABLE:
         assert "/meme" in mount_paths
     else:

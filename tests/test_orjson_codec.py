@@ -188,7 +188,7 @@ def test_loads_parses_bytes() -> None:
 
 
 def test_loads_accepts_bytearray_and_memoryview() -> None:
-    assert canonical_loads(bytearray(b'[1,2,3]')) == [1, 2, 3]
+    assert canonical_loads(bytearray(b"[1,2,3]")) == [1, 2, 3]
     assert canonical_loads(memoryview(b'{"a":1}')) == {"a": 1}
 
 
@@ -251,8 +251,7 @@ def test_enable_orjson_factory_is_lazy_seam() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 assert alias.name != "orjson", (
-                    "orjson must only be imported lazily inside "
-                    "enable_orjson_factory()"
+                    "orjson must only be imported lazily inside enable_orjson_factory()"
                 )
         if isinstance(node, ast.ImportFrom):
             assert node.module != "orjson"
@@ -397,9 +396,7 @@ def test_b27_b28_inv71_no_typed_event_constructors() -> None:
             elif isinstance(target, ast.Attribute):
                 name = target.attr
             if name in _FORBIDDEN_EVENT_CTORS:
-                raise AssertionError(
-                    f"forbidden typed-event constructor call: {name!r}"
-                )
+                raise AssertionError(f"forbidden typed-event constructor call: {name!r}")
 
 
 def test_codec_matches_stdlib_json_dumps_sort_keys_shape() -> None:

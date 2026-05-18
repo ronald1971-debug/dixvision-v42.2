@@ -108,8 +108,7 @@ _TOOLS: tuple[_Tool, ...] = (
     _Tool(
         name="index_stats",
         description=(
-            "Snapshot of the index: size, max_items, version, "
-            "unique_tokens, unique_sources."
+            "Snapshot of the index: size, max_items, version, unique_tokens, unique_sources."
         ),
         input_schema={"type": "object", "properties": {}},
     ),
@@ -120,9 +119,7 @@ _TOOLS: tuple[_Tool, ...] = (
     ),
     _Tool(
         name="drop_news",
-        description=(
-            "Drop one (source, guid) row. Returns {dropped: bool}."
-        ),
+        description=("Drop one (source, guid) row. Returns {dropped: bool}."),
         input_schema={
             "type": "object",
             "required": ["source", "guid"],
@@ -160,14 +157,9 @@ def _news_item_from_params(params: Mapping[str, Any]) -> NewsItem:
         url=str(params.get("url", "")),
         summary=str(params.get("summary", "")),
         published_ts_ns=(
-            int(params["published_ts_ns"])
-            if params.get("published_ts_ns") is not None
-            else None
+            int(params["published_ts_ns"]) if params.get("published_ts_ns") is not None else None
         ),
-        meta={
-            str(k): str(v)
-            for k, v in (params.get("meta") or {}).items()
-        },
+        meta={str(k): str(v) for k, v in (params.get("meta") or {}).items()},
     )
 
 
@@ -194,9 +186,7 @@ class OpenNewsServer:
 
     # -- public dispatch ---------------------------------------------------
 
-    def handle_request(
-        self, request: Mapping[str, Any]
-    ) -> dict[str, Any]:
+    def handle_request(self, request: Mapping[str, Any]) -> dict[str, Any]:
         """Dispatch one JSON-RPC request, return one JSON-RPC response."""
 
         if not isinstance(request, Mapping):
@@ -248,9 +238,7 @@ class OpenNewsServer:
 
     # -- internal ----------------------------------------------------------
 
-    def _dispatch(
-        self, method: str, params: Mapping[str, Any]
-    ) -> Any:
+    def _dispatch(self, method: str, params: Mapping[str, Any]) -> Any:
         if method == "initialize":
             return {
                 "protocolVersion": OPENNEWS_PROTOCOL_VERSION,
@@ -275,9 +263,7 @@ class OpenNewsServer:
             name = params.get("name")
             arguments = params.get("arguments") or {}
             if not isinstance(name, str):
-                raise _ToolError(
-                    _INVALID_PARAMS, "tools/call.name must be string"
-                )
+                raise _ToolError(_INVALID_PARAMS, "tools/call.name must be string")
             if not isinstance(arguments, Mapping):
                 raise _ToolError(
                     _INVALID_PARAMS,
@@ -286,9 +272,7 @@ class OpenNewsServer:
             return self._call_tool(name, arguments)
         raise _ToolError(_METHOD_NOT_FOUND, f"unknown method: {method!r}")
 
-    def _call_tool(
-        self, name: str, args: Mapping[str, Any]
-    ) -> Any:
+    def _call_tool(self, name: str, args: Mapping[str, Any]) -> Any:
         if name == "ingest_news":
             try:
                 item = _news_item_from_params(args)
@@ -302,15 +286,11 @@ class OpenNewsServer:
         if name == "query_similar":
             text = args.get("text")
             if not isinstance(text, str):
-                raise _ToolError(
-                    _INVALID_PARAMS, "query_similar.text must be string"
-                )
+                raise _ToolError(_INVALID_PARAMS, "query_similar.text must be string")
             top_k = int(args.get("top_k", 5))
             min_score = float(args.get("min_score", 0.0))
             source_arg = args.get("source")
-            source = (
-                str(source_arg) if source_arg is not None else None
-            )
+            source = str(source_arg) if source_arg is not None else None
             try:
                 hits = self._index.query(
                     text,
@@ -344,9 +324,7 @@ class OpenNewsServer:
             source = str(args.get("source", ""))
             guid = str(args.get("guid", ""))
             return {"dropped": self._index.drop(source, guid)}
-        raise _ToolError(
-            _METHOD_NOT_FOUND, f"unknown tool: {name!r}"
-        )
+        raise _ToolError(_METHOD_NOT_FOUND, f"unknown tool: {name!r}")
 
 
 class _ToolError(Exception):

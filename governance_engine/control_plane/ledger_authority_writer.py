@@ -52,10 +52,7 @@ def _canonical_payload(payload: Mapping[str, str]) -> str:
 def _row_bytes(
     seq: int, ts_ns: int, kind: str, payload: Mapping[str, str], prev_hash: str
 ) -> bytes:
-    canonical = (
-        f"{seq}\x1e{ts_ns}\x1e{kind}\x1e{_canonical_payload(payload)}"
-        f"\x1e{prev_hash}"
-    )
+    canonical = f"{seq}\x1e{ts_ns}\x1e{kind}\x1e{_canonical_payload(payload)}\x1e{prev_hash}"
     return canonical.encode("utf-8")
 
 
@@ -186,9 +183,7 @@ class LedgerAuthorityWriter:
 
         with self._lock:
             seq = len(self._rows)
-            prev_hash = (
-                self._rows[-1].hash_chain if self._rows else GENESIS_PREV_HASH
-            )
+            prev_hash = self._rows[-1].hash_chain if self._rows else GENESIS_PREV_HASH
             row_bytes = _row_bytes(seq, ts_ns, kind, payload, prev_hash)
             chain = hashlib.sha256(prev_hash.encode("ascii") + row_bytes).hexdigest()
             entry = LedgerEntry(
@@ -240,12 +235,8 @@ class LedgerAuthorityWriter:
     def _verify_locked(self) -> bool:
         prev = GENESIS_PREV_HASH
         for entry in self._rows:
-            row_bytes = _row_bytes(
-                entry.seq, entry.ts_ns, entry.kind, entry.payload, prev
-            )
-            expected = hashlib.sha256(
-                prev.encode("ascii") + row_bytes
-            ).hexdigest()
+            row_bytes = _row_bytes(entry.seq, entry.ts_ns, entry.kind, entry.payload, prev)
+            expected = hashlib.sha256(prev.encode("ascii") + row_bytes).hexdigest()
             if expected != entry.hash_chain or entry.prev_hash != prev:
                 return False
             prev = entry.hash_chain

@@ -165,17 +165,11 @@ class DevelopmentModePolicy:
         from core.contracts.events import SystemEvent, SystemEventKind
 
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
-            raise TypeError(
-                "DevelopmentModePolicy.to_system_event requires non-bool int ts_ns"
-            )
+            raise TypeError("DevelopmentModePolicy.to_system_event requires non-bool int ts_ns")
         if ts_ns < 0:
-            raise ValueError(
-                "DevelopmentModePolicy.to_system_event requires non-negative ts_ns"
-            )
+            raise ValueError("DevelopmentModePolicy.to_system_event requires non-negative ts_ns")
         if not isinstance(source, str) or not source:
-            raise ValueError(
-                "DevelopmentModePolicy.to_system_event requires non-empty source"
-            )
+            raise ValueError("DevelopmentModePolicy.to_system_event requires non-empty source")
 
         return SystemEvent(
             ts_ns=ts_ns,
@@ -184,19 +178,11 @@ class DevelopmentModePolicy:
             payload={
                 "policy": "DevelopmentModePolicy",
                 "version": POLICY_VERSION,
-                "development_enabled": (
-                    "true" if self.development_enabled else "false"
-                ),
-                "trading_allowed": (
-                    "true" if self.trading_allowed else "false"
-                ),
+                "development_enabled": ("true" if self.development_enabled else "false"),
+                "trading_allowed": ("true" if self.trading_allowed else "false"),
                 "mode": self.mode.name if self.mode is not None else "",
-                "learning_unblocked": (
-                    "true" if self.is_learning_unblocked() else "false"
-                ),
-                "trading_unblocked": (
-                    "true" if self.is_trading_unblocked() else "false"
-                ),
+                "learning_unblocked": ("true" if self.is_learning_unblocked() else "false"),
+                "trading_unblocked": ("true" if self.is_trading_unblocked() else "false"),
             },
             produced_by_engine="governance",
             proposed=False,

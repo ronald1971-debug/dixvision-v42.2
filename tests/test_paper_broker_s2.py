@@ -131,8 +131,11 @@ def test_initial_cash_starts_at_zero_unless_configured():
 def test_buy_decrements_cash_and_grows_position():
     broker = PaperBroker(initial_cash=10_000.0)
     sig = SignalEvent(
-        ts_ns=1, symbol="BTCUSDT", side=Side.BUY,
-        confidence=0.8, meta={"qty": "0.5"},
+        ts_ns=1,
+        symbol="BTCUSDT",
+        side=Side.BUY,
+        confidence=0.8,
+        meta={"qty": "0.5"},
     )
     out = broker.submit(sig, mark_price=200.0)
     assert out.status is ExecutionStatus.FILLED
@@ -146,16 +149,22 @@ def test_sell_increments_cash_and_shrinks_position():
     # Build an inventory first.
     broker.submit(
         SignalEvent(
-            ts_ns=1, symbol="BTCUSDT", side=Side.BUY,
-            confidence=0.8, meta={"qty": "1.0"},
+            ts_ns=1,
+            symbol="BTCUSDT",
+            side=Side.BUY,
+            confidence=0.8,
+            meta={"qty": "1.0"},
         ),
         mark_price=200.0,
     )
     assert broker.position("BTCUSDT") == pytest.approx(1.0)
     out = broker.submit(
         SignalEvent(
-            ts_ns=2, symbol="BTCUSDT", side=Side.SELL,
-            confidence=0.8, meta={"qty": "0.4"},
+            ts_ns=2,
+            symbol="BTCUSDT",
+            side=Side.SELL,
+            confidence=0.8,
+            meta={"qty": "0.4"},
         ),
         mark_price=210.0,
     )
@@ -184,18 +193,15 @@ def test_failed_does_not_move_ledger():
 def test_positions_returns_only_nonzero():
     broker = PaperBroker(initial_cash=10_000.0)
     broker.submit(
-        SignalEvent(ts_ns=1, symbol="A", side=Side.BUY, confidence=0.7,
-                    meta={"qty": "1.0"}),
+        SignalEvent(ts_ns=1, symbol="A", side=Side.BUY, confidence=0.7, meta={"qty": "1.0"}),
         mark_price=10.0,
     )
     broker.submit(
-        SignalEvent(ts_ns=2, symbol="B", side=Side.BUY, confidence=0.7,
-                    meta={"qty": "2.0"}),
+        SignalEvent(ts_ns=2, symbol="B", side=Side.BUY, confidence=0.7, meta={"qty": "2.0"}),
         mark_price=20.0,
     )
     broker.submit(
-        SignalEvent(ts_ns=3, symbol="A", side=Side.SELL, confidence=0.7,
-                    meta={"qty": "1.0"}),
+        SignalEvent(ts_ns=3, symbol="A", side=Side.SELL, confidence=0.7, meta={"qty": "1.0"}),
         mark_price=10.0,
     )
     snap = broker.positions()
@@ -211,7 +217,10 @@ def test_positions_returns_only_nonzero():
 def test_partial_fill_when_max_fill_qty_below_default():
     broker = PaperBroker(default_qty=10.0)
     sig = SignalEvent(
-        ts_ns=1, symbol="X", side=Side.BUY, confidence=0.7,
+        ts_ns=1,
+        symbol="X",
+        side=Side.BUY,
+        confidence=0.7,
         meta={"max_fill_qty": "3.0"},
     )
     out = broker.submit(sig, mark_price=100.0)
@@ -225,7 +234,10 @@ def test_partial_fill_when_max_fill_qty_below_default():
 def test_partial_fill_uses_qty_meta_as_requested():
     broker = PaperBroker(default_qty=1.0)
     sig = SignalEvent(
-        ts_ns=1, symbol="X", side=Side.BUY, confidence=0.7,
+        ts_ns=1,
+        symbol="X",
+        side=Side.BUY,
+        confidence=0.7,
         meta={"qty": "10.0", "max_fill_qty": "4.0"},
     )
     out = broker.submit(sig, mark_price=50.0)
@@ -238,7 +250,10 @@ def test_partial_fill_uses_qty_meta_as_requested():
 def test_no_partial_when_cap_above_requested():
     broker = PaperBroker(default_qty=2.0)
     sig = SignalEvent(
-        ts_ns=1, symbol="X", side=Side.BUY, confidence=0.7,
+        ts_ns=1,
+        symbol="X",
+        side=Side.BUY,
+        confidence=0.7,
         meta={"max_fill_qty": "100.0"},
     )
     out = broker.submit(sig, mark_price=10.0)
@@ -249,7 +264,10 @@ def test_no_partial_when_cap_above_requested():
 def test_zero_max_fill_qty_rejects_without_ledger_change():
     broker = PaperBroker(initial_cash=1_000.0)
     sig = SignalEvent(
-        ts_ns=1, symbol="X", side=Side.BUY, confidence=0.7,
+        ts_ns=1,
+        symbol="X",
+        side=Side.BUY,
+        confidence=0.7,
         meta={"max_fill_qty": "0.0"},
     )
     out = broker.submit(sig, mark_price=100.0)
@@ -261,7 +279,10 @@ def test_zero_max_fill_qty_rejects_without_ledger_change():
 def test_invalid_max_fill_qty_falls_back_to_full_fill():
     broker = PaperBroker(default_qty=2.0)
     sig = SignalEvent(
-        ts_ns=1, symbol="X", side=Side.BUY, confidence=0.7,
+        ts_ns=1,
+        symbol="X",
+        side=Side.BUY,
+        confidence=0.7,
         meta={"max_fill_qty": "not-a-number"},
     )
     out = broker.submit(sig, mark_price=10.0)
@@ -312,8 +333,8 @@ def test_fill_ring_disabled_when_size_zero():
 def test_fill_ring_excludes_rejected_and_failed():
     broker = PaperBroker()
     broker.submit(_signal(1, Side.HOLD), mark_price=100.0)  # REJECTED
-    broker.submit(_signal(2), mark_price=0.0)               # FAILED
-    broker.submit(_signal(3), mark_price=100.0)             # FILLED
+    broker.submit(_signal(2), mark_price=0.0)  # FAILED
+    broker.submit(_signal(3), mark_price=100.0)  # FILLED
     fills = broker.recent_fills()
     assert len(fills) == 1
     assert fills[0].status is ExecutionStatus.FILLED
@@ -322,7 +343,10 @@ def test_fill_ring_excludes_rejected_and_failed():
 def test_fill_ring_includes_partial_fills():
     broker = PaperBroker(default_qty=10.0)
     sig = SignalEvent(
-        ts_ns=1, symbol="X", side=Side.BUY, confidence=0.7,
+        ts_ns=1,
+        symbol="X",
+        side=Side.BUY,
+        confidence=0.7,
         meta={"max_fill_qty": "3.0"},
     )
     broker.submit(sig, mark_price=100.0)
@@ -354,10 +378,13 @@ def test_two_brokers_same_inputs_produce_identical_outputs():
     a = PaperBroker(**cfg)
     b = PaperBroker(**cfg)
     sigs = [
-        SignalEvent(ts_ns=10 * i, symbol="BTCUSDT",
-                    side=Side.BUY if i % 2 else Side.SELL,
-                    confidence=0.5 + 0.05 * i,
-                    meta={"qty": str(0.1 * (i + 1))})
+        SignalEvent(
+            ts_ns=10 * i,
+            symbol="BTCUSDT",
+            side=Side.BUY if i % 2 else Side.SELL,
+            confidence=0.5 + 0.05 * i,
+            meta={"qty": str(0.1 * (i + 1))},
+        )
         for i in range(20)
     ]
     out_a = [a.submit(s, mark_price=50_000.0 + s.ts_ns) for s in sigs]

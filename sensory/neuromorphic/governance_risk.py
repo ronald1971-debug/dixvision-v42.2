@@ -96,9 +96,7 @@ def assess_risk(
     """
     n = len(window)
     if n < 1:
-        raise ValueError(
-            "assess_risk.window must contain at least 1 observation"
-        )
+        raise ValueError("assess_risk.window must contain at least 1 observation")
 
     if risk_kind == RISK_REJECT_RATE:
         hits = sum(1 for o in window if not o.approved)

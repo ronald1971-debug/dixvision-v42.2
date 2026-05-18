@@ -86,6 +86,7 @@ NEW_PIP_DEPENDENCIES: tuple[str, ...] = ("firecrawl-py",)
 # Status
 # --------------------------------------------------------------------
 
+
 class CrawlerStatus(enum.StrEnum):
     """Lifecycle state for the live Firecrawl crawler."""
 
@@ -100,6 +101,7 @@ class CrawlerStatus(enum.StrEnum):
 # Credentials value object
 # --------------------------------------------------------------------
 
+
 @dataclasses.dataclass(frozen=True, slots=True)
 class FirecrawlCredentials:
     """Firecrawl API credentials, sourced from
@@ -113,18 +115,15 @@ class FirecrawlCredentials:
 
     def __post_init__(self) -> None:
         if not isinstance(self.api_key, str):
-            raise TypeError(
-                "FirecrawlCredentials.api_key must be str"
-            )
+            raise TypeError("FirecrawlCredentials.api_key must be str")
         if not self.api_key:
-            raise ValueError(
-                "FirecrawlCredentials.api_key must be non-empty"
-            )
+            raise ValueError("FirecrawlCredentials.api_key must be non-empty")
 
 
 # --------------------------------------------------------------------
 # Helpers — pure response normalisation
 # --------------------------------------------------------------------
+
 
 def _coerce_text(value: Any) -> str:
     """Coerce an arbitrary SDK field to a clean ``str``.
@@ -227,6 +226,7 @@ def _parse_payload(
 # Crawler
 # --------------------------------------------------------------------
 
+
 class FirecrawlCrawler:
     """Production :class:`Crawler` backed by the Firecrawl SDK.
 
@@ -267,39 +267,25 @@ class FirecrawlCrawler:
         *,
         credentials: FirecrawlCredentials | None = None,
         request_formats: Sequence[str] = ("markdown",),
-        client_factory: (
-            Callable[[FirecrawlCredentials], Any] | None
-        ) = None,
+        client_factory: (Callable[[FirecrawlCredentials], Any] | None) = None,
     ) -> None:
         if not seed_urls:
-            raise ValueError(
-                "FirecrawlCrawler.seed_urls must be non-empty"
-            )
+            raise ValueError("FirecrawlCrawler.seed_urls must be non-empty")
 
         validated: dict[str, str] = {}
         for seed_id, url in seed_urls.items():
             if not isinstance(seed_id, str) or not seed_id:
-                raise ValueError(
-                    "FirecrawlCrawler.seed_urls keys must be non-empty str"
-                )
+                raise ValueError("FirecrawlCrawler.seed_urls keys must be non-empty str")
             if not isinstance(url, str) or not url:
-                raise ValueError(
-                    f"FirecrawlCrawler.seed_urls[{seed_id!r}]"
-                    " must be non-empty str"
-                )
+                raise ValueError(f"FirecrawlCrawler.seed_urls[{seed_id!r}] must be non-empty str")
             validated[seed_id] = url
 
         formats_tuple = tuple(request_formats)
         if not formats_tuple:
-            raise ValueError(
-                "FirecrawlCrawler.request_formats must be non-empty"
-            )
+            raise ValueError("FirecrawlCrawler.request_formats must be non-empty")
         for fmt in formats_tuple:
             if not isinstance(fmt, str) or not fmt:
-                raise ValueError(
-                    "FirecrawlCrawler.request_formats entries"
-                    " must be non-empty str"
-                )
+                raise ValueError("FirecrawlCrawler.request_formats entries must be non-empty str")
 
         self._seed_urls = MappingProxyType(validated)
         self._credentials = credentials
@@ -326,10 +312,7 @@ class FirecrawlCrawler:
 
     @property
     def is_ready(self) -> bool:
-        return (
-            self._status is CrawlerStatus.CONNECTED
-            and self._client is not None
-        )
+        return self._status is CrawlerStatus.CONNECTED and self._client is not None
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -345,10 +328,7 @@ class FirecrawlCrawler:
         """
 
         if self._credentials is None:
-            raise RuntimeError(
-                "FirecrawlCrawler.connect: scaffold mode"
-                " (no credentials wired)"
-            )
+            raise RuntimeError("FirecrawlCrawler.connect: scaffold mode (no credentials wired)")
 
         if self._client_factory is not None:
             self._client = self._client_factory(self._credentials)
@@ -356,9 +336,7 @@ class FirecrawlCrawler:
             try:
                 from firecrawl import FirecrawlApp  # type: ignore[import-not-found]
             except ImportError as exc:
-                raise RuntimeError(
-                    "FirecrawlCrawler.connect: firecrawl-py not installed"
-                ) from exc
+                raise RuntimeError("FirecrawlCrawler.connect: firecrawl-py not installed") from exc
             self._client = FirecrawlApp(api_key=self._credentials.api_key)
 
         self._status = CrawlerStatus.CONNECTED
@@ -393,13 +371,9 @@ class FirecrawlCrawler:
         """
 
         if ts_ns <= 0:
-            raise ValueError(
-                "FirecrawlCrawler.fetch ts_ns must be positive"
-            )
+            raise ValueError("FirecrawlCrawler.fetch ts_ns must be positive")
         if not self.is_ready:
-            raise RuntimeError(
-                "FirecrawlCrawler.fetch: adapter_not_ready"
-            )
+            raise RuntimeError("FirecrawlCrawler.fetch: adapter_not_ready")
 
         client = self._client
         assert client is not None  # narrowed by is_ready

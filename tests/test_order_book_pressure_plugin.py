@@ -125,7 +125,7 @@ def test_min_confidence_floor() -> None:
     p = OrderBookPressureV1(
         window_size=4,
         pressure_threshold=0.05,  # very low → fires
-        confidence_scale=10.0,    # very large → tiny confidence
+        confidence_scale=10.0,  # very large → tiny confidence
         min_confidence=0.5,
     )
     out: tuple = ()

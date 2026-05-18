@@ -57,14 +57,10 @@ class TradeSample:
 
     def __post_init__(self) -> None:
         if self.side not in (_SIDE_BUY, _SIDE_SELL):
-            raise ValueError(
-                "TradeSample.side must be 'BUY' or 'SELL'"
-            )
+            raise ValueError("TradeSample.side must be 'BUY' or 'SELL'")
         # Reject NaN, +inf, -inf, 0 and negatives in one branch.
         if not (self.size > 0 and self.size < float("inf")):
-            raise ValueError(
-                "TradeSample.size must be finite and > 0"
-            )
+            raise ValueError("TradeSample.size must be finite and > 0")
 
 
 def extract_pulse(

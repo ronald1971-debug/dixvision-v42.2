@@ -71,9 +71,7 @@ def enabled_ai_providers(
     """
 
     return tuple(
-        _to_public(s)
-        for s in registry.sources
-        if s.category is SourceCategory.AI and s.enabled
+        _to_public(s) for s in registry.sources if s.category is SourceCategory.AI and s.enabled
     )
 
 
@@ -96,11 +94,7 @@ def select_providers(
     """
 
     needed = frozenset(required_capabilities(task))
-    return tuple(
-        p
-        for p in enabled_ai_providers(registry)
-        if needed.issubset(p.capabilities)
-    )
+    return tuple(p for p in enabled_ai_providers(registry) if needed.issubset(p.capabilities))
 
 
 __all__ = [

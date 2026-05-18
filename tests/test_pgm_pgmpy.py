@@ -69,19 +69,10 @@ def test_bounds_constants() -> None:
 
 
 def test_inference_kind_values() -> None:
-    assert (
-        BayesianInferenceKind.VARIABLE_ELIMINATION.value
-        == "VariableElimination"
-    )
-    assert (
-        BayesianInferenceKind.BELIEF_PROPAGATION.value
-        == "BeliefPropagation"
-    )
+    assert BayesianInferenceKind.VARIABLE_ELIMINATION.value == "VariableElimination"
+    assert BayesianInferenceKind.BELIEF_PROPAGATION.value == "BeliefPropagation"
     assert BayesianInferenceKind.GIBBS_SAMPLING.value == "GibbsSampling"
-    assert (
-        BayesianInferenceKind.LIKELIHOOD_WEIGHTING.value
-        == "LikelihoodWeighting"
-    )
+    assert BayesianInferenceKind.LIKELIHOOD_WEIGHTING.value == "LikelihoodWeighting"
 
 
 def test_inference_kind_count() -> None:
@@ -308,18 +299,14 @@ def test_marginal_rejects_duplicate_states() -> None:
 
 def test_marginal_rejects_above_max_states() -> None:
     states = tuple(f"s{i}" for i in range(MAX_STATES + 1))
-    probs = tuple(
-        [1.0 / (MAX_STATES + 1)] * (MAX_STATES + 1)
-    )
+    probs = tuple([1.0 / (MAX_STATES + 1)] * (MAX_STATES + 1))
     with pytest.raises(ValueError):
         _valid_marginal(states=states, probabilities=probs)
 
 
 def test_marginal_rejects_states_probability_length_mismatch() -> None:
     with pytest.raises(ValueError):
-        _valid_marginal(
-            states=("a", "b"), probabilities=(1.0,)
-        )
+        _valid_marginal(states=("a", "b"), probabilities=(1.0,))
 
 
 def test_marginal_rejects_nan_probability() -> None:
@@ -486,9 +473,7 @@ class _FakeEngine:
         ts_ns: int,
         callback: BayesianInferenceCallback,
     ) -> BayesianInferenceResult:
-        callback.on_inference_start(
-            ts_ns=ts_ns, network=network, arguments=arguments
-        )
+        callback.on_inference_start(ts_ns=ts_ns, network=network, arguments=arguments)
         for m in self._result.marginals:
             callback.on_marginal_ready(ts_ns=ts_ns, marginal=m)
         return self._result
@@ -499,9 +484,7 @@ class _FakeEngine:
 # ---------------------------------------------------------------------------
 
 
-def _analyser_inputs() -> tuple[
-    BayesianNetworkSpec, BayesianInferenceArguments, _FakeEngine
-]:
+def _analyser_inputs() -> tuple[BayesianNetworkSpec, BayesianInferenceArguments, _FakeEngine]:
     return (
         _valid_network(),
         _valid_arguments(),
@@ -549,9 +532,7 @@ def test_analyse_meta_includes_provenance() -> None:
     assert record.meta["analysis_digest"] == record.analysis_digest
     assert record.meta["inference_kind"] == "VariableElimination"
     assert record.meta["random_seed"] == "0"
-    assert record.meta["marginal_count"] == str(
-        len(record.result.marginals)
-    )
+    assert record.meta["marginal_count"] == str(len(record.result.marginals))
     assert record.meta["node_count"] == str(len(network.nodes))
     assert record.meta["edge_count"] == str(len(network.edges))
 
@@ -787,12 +768,8 @@ def test_inv15_digest_changes_when_seed_changes() -> None:
 
 def test_inv15_digest_changes_when_inference_kind_changes() -> None:
     network = _valid_network()
-    args_a = _valid_arguments(
-        inference_kind=BayesianInferenceKind.VARIABLE_ELIMINATION
-    )
-    args_b = _valid_arguments(
-        inference_kind=BayesianInferenceKind.GIBBS_SAMPLING
-    )
+    args_a = _valid_arguments(inference_kind=BayesianInferenceKind.VARIABLE_ELIMINATION)
+    args_b = _valid_arguments(inference_kind=BayesianInferenceKind.GIBBS_SAMPLING)
     analyser = PgmpyBayesianAnalyser(
         engine=_FakeEngine(result=_valid_result()),
     )
@@ -834,16 +811,8 @@ def test_null_callback_methods_return_none() -> None:
     network = _valid_network()
     args = _valid_arguments()
     result = _valid_result()
-    assert (
-        cb.on_inference_start(
-            ts_ns=0, network=network, arguments=args
-        )
-        is None
-    )
-    assert (
-        cb.on_marginal_ready(ts_ns=0, marginal=_valid_marginal())
-        is None
-    )
+    assert cb.on_inference_start(ts_ns=0, network=network, arguments=args) is None
+    assert cb.on_marginal_ready(ts_ns=0, marginal=_valid_marginal()) is None
     assert cb.on_inference_end(ts_ns=0, result=result) is None
 
 
@@ -867,11 +836,7 @@ def test_pgmpy_engine_factory_raises_when_dep_missing() -> None:
 # ---------------------------------------------------------------------------
 
 
-_MODULE_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "intelligence_engine"
-    / "pgm_pgmpy.py"
-)
+_MODULE_PATH = Path(__file__).resolve().parents[1] / "intelligence_engine" / "pgm_pgmpy.py"
 
 
 def _module_ast() -> ast.Module:
@@ -891,36 +856,29 @@ def _top_level_imports(tree: ast.Module) -> list[str]:
 
 
 def test_no_top_level_pgmpy_import() -> None:
-    assert all(
-        not name.startswith("pgmpy")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("pgmpy") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_numpy_import() -> None:
-    assert all(
-        not name.startswith("numpy")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("numpy") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_pandas_import() -> None:
-    assert all(
-        not name.startswith("pandas")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("pandas") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_networkx_import() -> None:
-    assert all(
-        not name.startswith("networkx")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("networkx") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_io_imports() -> None:
     banned = {
-        "subprocess", "socket", "urllib", "requests", "httpx", "aiohttp",
+        "subprocess",
+        "socket",
+        "urllib",
+        "requests",
+        "httpx",
+        "aiohttp",
     }
     assert not (banned & set(_top_level_imports(_module_ast())))
 
@@ -942,9 +900,7 @@ def test_no_engine_cross_imports_in_code() -> None:
     tree = _module_ast()
     code_only_segments: list[str] = []
     for node in ast.walk(tree):
-        if isinstance(
-            node, (ast.Import, ast.ImportFrom, ast.Attribute, ast.Name)
-        ):
+        if isinstance(node, (ast.Import, ast.ImportFrom, ast.Attribute, ast.Name)):
             code_only_segments.append(ast.dump(node))
     blob = "\n".join(code_only_segments)
     for needle in (
@@ -956,9 +912,7 @@ def test_no_engine_cross_imports_in_code() -> None:
         assert needle not in blob, needle
 
 
-def _find_enclosing_function(
-    tree: ast.Module, target: ast.AST
-) -> ast.FunctionDef | None:
+def _find_enclosing_function(tree: ast.Module, target: ast.AST) -> ast.FunctionDef | None:
     for func in ast.walk(tree):
         if isinstance(func, ast.FunctionDef):
             for descendant in ast.walk(func):
@@ -972,23 +926,15 @@ def test_pgmpy_import_only_inside_factory() -> None:
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             mod = node.module if isinstance(node, ast.ImportFrom) else None
-            names = (
-                [a.name for a in node.names]
-                if isinstance(node, ast.Import)
-                else [mod or ""]
-            )
+            names = [a.name for a in node.names] if isinstance(node, ast.Import) else [mod or ""]
             for name in names:
-                if name.startswith(
-                    ("pgmpy", "networkx", "numpy", "pandas")
-                ):
+                if name.startswith(("pgmpy", "networkx", "numpy", "pandas")):
                     parent = _find_enclosing_function(tree, node)
                     assert parent is not None, (
                         f"top-level {name} import — must be inside "
                         "pgmpy_variable_elimination_engine factory"
                     )
-                    assert parent.name == (
-                        "pgmpy_variable_elimination_engine"
-                    ), (
+                    assert parent.name == ("pgmpy_variable_elimination_engine"), (
                         f"{name} imported in {parent.name!r} — must "
                         "be inside pgmpy_variable_elimination_engine"
                     )

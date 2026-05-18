@@ -86,9 +86,7 @@ def _side_from_api(side: ApprovalSideApi) -> Side:
         return Side.BUY
     if side is ApprovalSideApi.SELL:
         return Side.SELL
-    raise ValueError(
-        f"approval edge cannot emit a SignalEvent for side={side!r}"
-    )
+    raise ValueError(f"approval edge cannot emit a SignalEvent for side={side!r}")
 
 
 @dataclass
@@ -138,8 +136,7 @@ class ApprovalEdge:
         pending = self.queue.get(request_id)
         if pending.status is not ApprovalStatusApi.PENDING:
             raise ApprovalAlreadyDecidedError(
-                f"approval {request_id!r} is already "
-                f"{pending.status.value}"
+                f"approval {request_id!r} is already {pending.status.value}"
             )
 
         decided = self.queue.decide(
@@ -177,11 +174,7 @@ class ApprovalEdge:
         # :mod:`approval_projection` reads this field straight back
         # into ``decided_at_ts_ns`` on rehydrate. Using the edge's
         # counter here would corrupt the field across restarts.
-        decided_ts = (
-            decided.decided_at_ts_ns
-            if decided.decided_at_ts_ns is not None
-            else ts
-        )
+        decided_ts = decided.decided_at_ts_ns if decided.decided_at_ts_ns is not None else ts
         self.ledger_append(
             "OPERATOR_APPROVED_SIGNAL",
             {
@@ -213,8 +206,7 @@ class ApprovalEdge:
         pending = self.queue.get(request_id)
         if pending.status is not ApprovalStatusApi.PENDING:
             raise ApprovalAlreadyDecidedError(
-                f"approval {request_id!r} is already "
-                f"{pending.status.value}"
+                f"approval {request_id!r} is already {pending.status.value}"
             )
         decided = self.queue.decide(
             request_id=request_id,
@@ -228,9 +220,7 @@ class ApprovalEdge:
         # that expect a per-call edge timestamp; the rejection path
         # has no emitter so ``ts`` is unused here.
         decided_ts = (
-            decided.decided_at_ts_ns
-            if decided.decided_at_ts_ns is not None
-            else self.ts_ns()
+            decided.decided_at_ts_ns if decided.decided_at_ts_ns is not None else self.ts_ns()
         )
         payload: dict[str, str] = {
             "approval_id": request_id,

@@ -159,13 +159,9 @@ def test_invalid_fill_ratio_rejected() -> None:
 
 def test_invalid_drift_rejected() -> None:
     with pytest.raises(ValueError):
-        PartialFillChaos().step(
-            seed=0, scenario=_scenario(adverse_drift_per_attempt=1.5)
-        )
+        PartialFillChaos().step(seed=0, scenario=_scenario(adverse_drift_per_attempt=1.5))
     with pytest.raises(ValueError):
-        PartialFillChaos().step(
-            seed=0, scenario=_scenario(adverse_drift_per_attempt=-0.1)
-        )
+        PartialFillChaos().step(seed=0, scenario=_scenario(adverse_drift_per_attempt=-0.1))
 
 
 def test_invalid_entry_or_size_rejected() -> None:
@@ -206,9 +202,7 @@ def test_invalid_config_rejected() -> None:
 def test_distribution_over_seeds_varies() -> None:
     s = _scenario(fill_ratio_std=0.2, adverse_drift_per_attempt=0.001)
     runner = PartialFillChaos()
-    pnls = {
-        runner.step(seed=seed, scenario=s).pnl_usd for seed in range(50)
-    }
+    pnls = {runner.step(seed=seed, scenario=s).pnl_usd for seed in range(50)}
     assert len(pnls) > 1
 
 

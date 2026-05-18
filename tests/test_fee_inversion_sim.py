@@ -193,7 +193,7 @@ def test_burn_equals_gross_minus_net() -> None:
         ),
     )
     # Recompute the gross from the deterministic walk.
-    final_price = 100.0 * (1.001 ** 50)
+    final_price = 100.0 * (1.001**50)
     gross = 10_000.0 * (final_price - 100.0) / 100.0
     expected_burn = max(0.0, gross - out.pnl_usd)
     assert pytest.approx(out.terminal_drawdown_usd, rel=1e-9) == expected_burn
@@ -267,53 +267,37 @@ def test_taker_fee_bps_bounds_enforced() -> None:
 
 def test_funding_rate_bounds_enforced() -> None:
     with pytest.raises(ValueError, match=r"funding_rate_bps_per_step"):
-        FeeInversion().step(
-            seed=0, scenario=_scenario(funding_rate_bps_per_step=-200.0)
-        )
+        FeeInversion().step(seed=0, scenario=_scenario(funding_rate_bps_per_step=-200.0))
     with pytest.raises(ValueError, match=r"funding_rate_bps_per_step"):
-        FeeInversion().step(
-            seed=0, scenario=_scenario(funding_rate_bps_per_step=200.0)
-        )
+        FeeInversion().step(seed=0, scenario=_scenario(funding_rate_bps_per_step=200.0))
 
 
 def test_exit_slippage_bps_bounds_enforced() -> None:
     with pytest.raises(ValueError, match=r"exit_slippage_bps"):
-        FeeInversion().step(
-            seed=0, scenario=_scenario(exit_slippage_bps=-1.0)
-        )
+        FeeInversion().step(seed=0, scenario=_scenario(exit_slippage_bps=-1.0))
     with pytest.raises(ValueError, match=r"exit_slippage_bps"):
-        FeeInversion().step(
-            seed=0, scenario=_scenario(exit_slippage_bps=600.0)
-        )
+        FeeInversion().step(seed=0, scenario=_scenario(exit_slippage_bps=600.0))
 
 
 def test_entry_price_must_be_positive_and_finite() -> None:
     with pytest.raises(ValueError, match=r"entry_price"):
         FeeInversion().step(seed=0, scenario=_scenario(entry_price=0.0))
     with pytest.raises(ValueError, match=r"entry_price"):
-        FeeInversion().step(
-            seed=0, scenario=_scenario(entry_price=float("nan"))
-        )
+        FeeInversion().step(seed=0, scenario=_scenario(entry_price=float("nan")))
     with pytest.raises(ValueError, match=r"entry_price"):
-        FeeInversion().step(
-            seed=0, scenario=_scenario(entry_price=float("inf"))
-        )
+        FeeInversion().step(seed=0, scenario=_scenario(entry_price=float("inf")))
 
 
 def test_size_usd_must_be_positive_and_finite() -> None:
     with pytest.raises(ValueError, match=r"order_size_usd"):
         FeeInversion().step(seed=0, scenario=_scenario(order_size_usd=0.0))
     with pytest.raises(ValueError, match=r"order_size_usd"):
-        FeeInversion().step(
-            seed=0, scenario=_scenario(order_size_usd=float("nan"))
-        )
+        FeeInversion().step(seed=0, scenario=_scenario(order_size_usd=float("nan")))
 
 
 def test_per_step_drift_nan_rejected() -> None:
     with pytest.raises(ValueError, match=r"per_step_drift.*finite"):
-        FeeInversion().step(
-            seed=0, scenario=_scenario(per_step_drift=float("nan"))
-        )
+        FeeInversion().step(seed=0, scenario=_scenario(per_step_drift=float("nan")))
 
 
 def test_missing_meta_key_rejected() -> None:

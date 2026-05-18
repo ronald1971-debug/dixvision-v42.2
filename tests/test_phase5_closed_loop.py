@@ -419,9 +419,7 @@ def test_mutation_proposer_replay_determinism():
         mp = MutationProposer()
         out: list[PatchProposal] = []
         for i, w in enumerate((0.10, 0.10, 0.80, 0.10)):
-            r = mp.evaluate(
-                _stats(ts_ns=i, win_rate=w, mean_pnl=-1.0)
-            )
+            r = mp.evaluate(_stats(ts_ns=i, win_rate=w, mean_pnl=-1.0))
             out.extend(r)
         return tuple(out)
 
@@ -460,9 +458,7 @@ def test_bridge_advance_runs_full_pipeline():
         patch_id="P1",
         new_stage=PatchStage.SANDBOX,
         ts_ns=2,
-        verdict=StageVerdict(
-            ts_ns=2, stage=PatchStage.SANDBOX, passed=True
-        ),
+        verdict=StageVerdict(ts_ns=2, stage=PatchStage.SANDBOX, passed=True),
     )
     assert rec.stage is PatchStage.SANDBOX
     assert len(rec.verdicts) == 1
@@ -509,9 +505,7 @@ def test_bridge_rollback_after_approval():
     ):
         bridge.advance(patch_id="P1", new_stage=stage, ts_ns=2)
     bridge.approve(patch_id="P1", ts_ns=3)
-    decision = bridge.rollback(
-        patch_id="P1", ts_ns=4, reason="canary_regression"
-    )
+    decision = bridge.rollback(patch_id="P1", ts_ns=4, reason="canary_regression")
     assert decision.decision == "ROLLED_BACK"
     assert decision.final_stage is PatchStage.ROLLED_BACK
 
@@ -547,9 +541,7 @@ def test_bridge_replay_determinism():
         bridge = PatchApprovalBridge(pipeline=pp)
         bridge.receive_proposal(_proposal())
         bridge.reject(patch_id="P1", ts_ns=2, reason="static_failed")
-        return tuple(
-            (d.ts_ns, d.decision, d.final_stage) for d in bridge.decisions
-        )
+        return tuple((d.ts_ns, d.decision, d.final_stage) for d in bridge.decisions)
 
     assert run() == run()
 
@@ -594,9 +586,7 @@ def test_closed_loop_end_to_end_emits_proposal_and_approves():
     rejected = proposals[1]
     bridge.receive_proposal(approved)
     bridge.receive_proposal(rejected)
-    bridge.reject(
-        patch_id=rejected.patch_id, ts_ns=100, reason="duplicate_breach"
-    )
+    bridge.reject(patch_id=rejected.patch_id, ts_ns=100, reason="duplicate_breach")
     for stage in (
         PatchStage.SANDBOX,
         PatchStage.STATIC_ANALYSIS,
@@ -605,9 +595,7 @@ def test_closed_loop_end_to_end_emits_proposal_and_approves():
         PatchStage.CANARY,
     ):
         bridge.advance(patch_id=approved.patch_id, new_stage=stage, ts_ns=101)
-    decision = bridge.approve(
-        patch_id=approved.patch_id, ts_ns=102, reason="canary_clean"
-    )
+    decision = bridge.approve(patch_id=approved.patch_id, ts_ns=102, reason="canary_clean")
     assert decision.decision == "APPROVED"
     assert {d.decision for d in bridge.decisions} == {"APPROVED", "REJECTED"}
 

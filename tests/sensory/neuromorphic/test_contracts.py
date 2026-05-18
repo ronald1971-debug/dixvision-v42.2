@@ -62,9 +62,7 @@ def test_pulse_validation_rejects(field: str, value: object) -> None:
         _ok_pulse(**{field: value})
 
 
-@pytest.mark.parametrize(
-    "bad", [float("nan"), float("inf"), float("-inf")]
-)
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
 def test_pulse_intensity_rejects_nan_and_infinity(bad: float) -> None:
     """intensity must be finite — INV-15.
 
@@ -123,17 +121,13 @@ def test_anomaly_validation_rejects(field: str, value: object) -> None:
         _ok_anomaly(**{field: value})
 
 
-@pytest.mark.parametrize(
-    "bad", [float("nan"), float("inf"), float("-inf")]
-)
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
 def test_anomaly_z_score_rejects_non_finite(bad: float) -> None:
     with pytest.raises(ValueError, match="z_score"):
         _ok_anomaly(z_score=bad)
 
 
-@pytest.mark.parametrize(
-    "bad", [float("nan"), float("inf"), float("-inf")]
-)
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
 def test_anomaly_severity_rejects_non_finite(bad: float) -> None:
     with pytest.raises(ValueError, match="severity"):
         _ok_anomaly(severity=bad)
@@ -183,9 +177,7 @@ def test_risk_validation_rejects(field: str, value: object) -> None:
         _ok_risk(**{field: value})
 
 
-@pytest.mark.parametrize(
-    "bad", [float("nan"), float("inf"), float("-inf")]
-)
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
 def test_risk_score_rejects_non_finite(bad: float) -> None:
     with pytest.raises(ValueError, match="risk_score"):
         _ok_risk(risk_score=bad)

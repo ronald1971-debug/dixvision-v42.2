@@ -78,9 +78,7 @@ def _full_breakdown() -> tuple[ConfidenceContribution, ...]:
 
 
 def _pressure() -> PressureSummary:
-    return PressureSummary(
-        perf=0.6, risk=0.3, drift=0.1, latency=0.05, uncertainty=0.2
-    )
+    return PressureSummary(perf=0.6, risk=0.3, drift=0.1, latency=0.05, uncertainty=0.2)
 
 
 def _hazards() -> tuple[HazardInfluence, ...]:
@@ -123,15 +121,11 @@ def _execution() -> ExecutionOutcome:
     [
         (ConfidenceContribution("c", 0.5, 0.5, 0.25), "value"),
         (
-            PressureSummary(
-                perf=0.0, risk=0.0, drift=0.0, latency=0.0, uncertainty=0.0
-            ),
+            PressureSummary(perf=0.0, risk=0.0, drift=0.0, latency=0.0, uncertainty=0.0),
             "perf",
         ),
         (
-            HazardInfluence(
-                code="HAZ-01", severity=HazardSeverity.LOW, source="x", ts_ns=1
-            ),
+            HazardInfluence(code="HAZ-01", severity=HazardSeverity.LOW, source="x", ts_ns=1),
             "code",
         ),
         (
@@ -204,23 +198,17 @@ def test_pressure_summary_unit_interval() -> None:
 
 def test_hazard_influence_requires_code() -> None:
     with pytest.raises(ValueError, match="code"):
-        HazardInfluence(
-            code="", severity=HazardSeverity.LOW, source="x", ts_ns=1
-        )
+        HazardInfluence(code="", severity=HazardSeverity.LOW, source="x", ts_ns=1)
 
 
 def test_hazard_influence_requires_source() -> None:
     with pytest.raises(ValueError, match="source"):
-        HazardInfluence(
-            code="HAZ-01", severity=HazardSeverity.LOW, source="", ts_ns=1
-        )
+        HazardInfluence(code="HAZ-01", severity=HazardSeverity.LOW, source="", ts_ns=1)
 
 
 def test_hazard_influence_rejects_negative_ts_ns() -> None:
     with pytest.raises(ValueError, match="ts_ns"):
-        HazardInfluence(
-            code="HAZ-01", severity=HazardSeverity.LOW, source="x", ts_ns=-1
-        )
+        HazardInfluence(code="HAZ-01", severity=HazardSeverity.LOW, source="x", ts_ns=-1)
 
 
 def test_throttle_influence_unit_interval() -> None:
@@ -287,12 +275,8 @@ def test_compute_trace_id_separator_is_unambiguous() -> None:
     # ("a", "b") and ("a|b",) hashed to the same id. The current
     # implementation uses ASCII control bytes that cannot appear in
     # plugin names, so these must be distinct.
-    two_plugins = compute_trace_id(
-        symbol="BTCUSDT", ts_ns=1, plugin_chain=("a", "b")
-    )
-    one_pipe_plugin = compute_trace_id(
-        symbol="BTCUSDT", ts_ns=1, plugin_chain=("a|b",)
-    )
+    two_plugins = compute_trace_id(symbol="BTCUSDT", ts_ns=1, plugin_chain=("a", "b"))
+    one_pipe_plugin = compute_trace_id(symbol="BTCUSDT", ts_ns=1, plugin_chain=("a|b",))
     assert two_plugins != one_pipe_plugin
 
 
@@ -301,9 +285,7 @@ def test_compute_trace_id_distinguishes_empty_chain_from_empty_entry() -> None:
     # used to hash to the same id because both flatten to the empty
     # string under "|".join. They must now be distinct.
     no_plugins = compute_trace_id(symbol="BTCUSDT", ts_ns=1, plugin_chain=())
-    one_empty_plugin = compute_trace_id(
-        symbol="BTCUSDT", ts_ns=1, plugin_chain=("",)
-    )
+    one_empty_plugin = compute_trace_id(symbol="BTCUSDT", ts_ns=1, plugin_chain=("",))
     assert no_plugins != one_empty_plugin
 
 
@@ -372,9 +354,7 @@ def test_build_decision_trace_partial_breakdown_allowed() -> None:
     # Sum of weighted contributions = 0.4, signal confidence = 0.8 → OK.
     trace = build_decision_trace(
         signal=_signal(confidence=0.8),
-        confidence_breakdown=(
-            ConfidenceContribution("consensus", 0.8, 0.5, 0.4),
-        ),
+        confidence_breakdown=(ConfidenceContribution("consensus", 0.8, 0.5, 0.4),),
     )
     assert trace.final_confidence == pytest.approx(0.8)
 
@@ -384,9 +364,7 @@ def test_build_decision_trace_overstating_breakdown_rejected() -> None:
     with pytest.raises(ValueError, match="weighted-sum"):
         build_decision_trace(
             signal=_signal(confidence=0.5),
-            confidence_breakdown=(
-                ConfidenceContribution("consensus", 0.9, 1.0, 0.9),
-            ),
+            confidence_breakdown=(ConfidenceContribution("consensus", 0.9, 1.0, 0.9),),
         )
 
 

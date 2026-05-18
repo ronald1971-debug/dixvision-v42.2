@@ -92,8 +92,7 @@ class StopHunterConfig:
             )
         if not 0.0 <= self.cluster_jitter <= 1.0:
             raise ValueError(
-                "StopHunterConfig.cluster_jitter must be in [0, 1], "
-                f"got {self.cluster_jitter!r}"
+                f"StopHunterConfig.cluster_jitter must be in [0, 1], got {self.cluster_jitter!r}"
             )
 
 

@@ -40,12 +40,7 @@ from intelligence_engine.strategy_runtime.archetype_lifecycle import (
 )
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
-MODULE_PATH = (
-    REPO_ROOT
-    / "intelligence_engine"
-    / "strategy_runtime"
-    / "archetype_lifecycle.py"
-)
+MODULE_PATH = REPO_ROOT / "intelligence_engine" / "strategy_runtime" / "archetype_lifecycle.py"
 MODULE_SRC = MODULE_PATH.read_text(encoding="utf-8")
 MODULE_TREE = ast.parse(MODULE_SRC)
 
@@ -72,9 +67,7 @@ def _call_names(tree: ast.AST) -> set[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
             names.add(node.func.id)
-        if isinstance(node, ast.Call) and isinstance(
-            node.func, ast.Attribute
-        ):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
             names.add(node.func.attr)
     return names
 
@@ -95,8 +88,7 @@ def test_authority_no_typed_event_construction() -> None:
         "GovernanceDecision",
     }
     assert not (forbidden & names), (
-        "archetype_lifecycle must not construct typed bus events; "
-        f"found: {forbidden & names}"
+        f"archetype_lifecycle must not construct typed bus events; found: {forbidden & names}"
     )
 
 
@@ -126,9 +118,7 @@ def test_authority_no_clock_or_random() -> None:
         "secrets",
         "uuid",
     }
-    assert not (forbidden & mods), (
-        f"archetype_lifecycle must not import: {forbidden & mods}"
-    )
+    assert not (forbidden & mods), f"archetype_lifecycle must not import: {forbidden & mods}"
 
 
 def test_authority_no_numpy_torch_pandas() -> None:
@@ -243,24 +233,18 @@ def test_position_snapshot_frozen() -> None:
 
 
 def test_pending_entry_long_ok() -> None:
-    p = PendingEntry(
-        side=Side.LONG, qty=1.0, limit_price=100.0, bars_pending=0
-    )
+    p = PendingEntry(side=Side.LONG, qty=1.0, limit_price=100.0, bars_pending=0)
     assert p.side is Side.LONG
 
 
 def test_pending_entry_flat_rejected() -> None:
     with pytest.raises(ArchetypeLifecycleError):
-        PendingEntry(
-            side=Side.FLAT, qty=1.0, limit_price=100.0, bars_pending=0
-        )
+        PendingEntry(side=Side.FLAT, qty=1.0, limit_price=100.0, bars_pending=0)
 
 
 def test_pending_entry_zero_qty_rejected() -> None:
     with pytest.raises(ArchetypeLifecycleError):
-        PendingEntry(
-            side=Side.LONG, qty=0.0, limit_price=100.0, bars_pending=0
-        )
+        PendingEntry(side=Side.LONG, qty=0.0, limit_price=100.0, bars_pending=0)
 
 
 def test_entry_decision_long_ok() -> None:
@@ -431,14 +415,10 @@ class _HoldStrategy:
     def go_short(self, ctx: ArchetypeContext) -> EntryDecision | None:
         return None
 
-    def should_cancel_entry(
-        self, ctx: ArchetypeContext, pending: PendingEntry
-    ) -> bool:
+    def should_cancel_entry(self, ctx: ArchetypeContext, pending: PendingEntry) -> bool:
         return False
 
-    def update_position(
-        self, ctx: ArchetypeContext, position: PositionSnapshot
-    ) -> PositionUpdate:
+    def update_position(self, ctx: ArchetypeContext, position: PositionSnapshot) -> PositionUpdate:
         return PositionUpdate(action=PositionAction.HOLD)
 
     def after(self, ctx: ArchetypeContext) -> None:
@@ -470,16 +450,12 @@ class _ShortStrategy(_HoldStrategy):
 
 
 class _AlwaysCancelStrategy(_HoldStrategy):
-    def should_cancel_entry(
-        self, ctx: ArchetypeContext, pending: PendingEntry
-    ) -> bool:
+    def should_cancel_entry(self, ctx: ArchetypeContext, pending: PendingEntry) -> bool:
         return True
 
 
 class _CloseStrategy(_HoldStrategy):
-    def update_position(
-        self, ctx: ArchetypeContext, position: PositionSnapshot
-    ) -> PositionUpdate:
+    def update_position(self, ctx: ArchetypeContext, position: PositionSnapshot) -> PositionUpdate:
         return PositionUpdate(
             action=PositionAction.CLOSE,
             rationale_tags=("tp_hit",),
@@ -488,9 +464,7 @@ class _CloseStrategy(_HoldStrategy):
 
 
 class _AdjustStopsStrategy(_HoldStrategy):
-    def update_position(
-        self, ctx: ArchetypeContext, position: PositionSnapshot
-    ) -> PositionUpdate:
+    def update_position(self, ctx: ArchetypeContext, position: PositionSnapshot) -> PositionUpdate:
         return PositionUpdate(
             action=PositionAction.ADJUST_STOPS,
             new_stop_loss_price=ctx.last_price * 0.97,
@@ -622,9 +596,7 @@ def test_pending_long_no_cancel_stays() -> None:
             bars_pending=1,
         ),
     )
-    nxt, dec = advance_lifecycle(
-        lifecycle=lifecycle, strategy=_HoldStrategy(), ctx=ctx
-    )
+    nxt, dec = advance_lifecycle(lifecycle=lifecycle, strategy=_HoldStrategy(), ctx=ctx)
     assert dec.kind is DecisionKind.NO_OP
     assert nxt.state is LifecycleState.PENDING_LONG
 
@@ -644,9 +616,7 @@ def test_pending_long_cancel_transitions_to_idle() -> None:
             bars_pending=5,
         ),
     )
-    nxt, dec = advance_lifecycle(
-        lifecycle=lifecycle, strategy=_AlwaysCancelStrategy(), ctx=ctx
-    )
+    nxt, dec = advance_lifecycle(lifecycle=lifecycle, strategy=_AlwaysCancelStrategy(), ctx=ctx)
     assert dec.kind is DecisionKind.CANCEL_ENTRY
     assert nxt.state is LifecycleState.IDLE
 
@@ -654,9 +624,7 @@ def test_pending_long_cancel_transitions_to_idle() -> None:
 def test_pending_long_without_pending_raises() -> None:
     lifecycle = replace(_idle_lifecycle(), state=LifecycleState.PENDING_LONG)
     with pytest.raises(ArchetypeStateError):
-        advance_lifecycle(
-            lifecycle=lifecycle, strategy=_HoldStrategy(), ctx=_idle_ctx()
-        )
+        advance_lifecycle(lifecycle=lifecycle, strategy=_HoldStrategy(), ctx=_idle_ctx())
 
 
 def test_pending_long_with_wrong_side_raises() -> None:
@@ -675,9 +643,7 @@ def test_pending_long_with_wrong_side_raises() -> None:
         ),
     )
     with pytest.raises(ArchetypeStateError):
-        advance_lifecycle(
-            lifecycle=lifecycle, strategy=_HoldStrategy(), ctx=ctx
-        )
+        advance_lifecycle(lifecycle=lifecycle, strategy=_HoldStrategy(), ctx=ctx)
 
 
 def test_open_long_hold_keeps_state() -> None:
@@ -696,9 +662,7 @@ def test_open_long_hold_keeps_state() -> None:
             bars_held=2,
         ),
     )
-    nxt, dec = advance_lifecycle(
-        lifecycle=lifecycle, strategy=_HoldStrategy(), ctx=ctx
-    )
+    nxt, dec = advance_lifecycle(lifecycle=lifecycle, strategy=_HoldStrategy(), ctx=ctx)
     assert dec.kind is DecisionKind.HOLD_POSITION
     assert nxt.state is LifecycleState.OPEN_LONG
 
@@ -719,9 +683,7 @@ def test_open_long_close_transitions_to_idle() -> None:
             bars_held=10,
         ),
     )
-    nxt, dec = advance_lifecycle(
-        lifecycle=lifecycle, strategy=_CloseStrategy(), ctx=ctx
-    )
+    nxt, dec = advance_lifecycle(lifecycle=lifecycle, strategy=_CloseStrategy(), ctx=ctx)
     assert dec.kind is DecisionKind.CLOSE_POSITION
     assert nxt.state is LifecycleState.IDLE
     assert dec.rationale_tags == ("tp_hit",)
@@ -743,9 +705,7 @@ def test_open_long_adjust_stops_keeps_state() -> None:
             bars_held=5,
         ),
     )
-    nxt, dec = advance_lifecycle(
-        lifecycle=lifecycle, strategy=_AdjustStopsStrategy(), ctx=ctx
-    )
+    nxt, dec = advance_lifecycle(lifecycle=lifecycle, strategy=_AdjustStopsStrategy(), ctx=ctx)
     assert dec.kind is DecisionKind.ADJUST_STOPS
     assert nxt.state is LifecycleState.OPEN_LONG
     assert dec.update is not None
@@ -768,9 +728,7 @@ def test_open_short_close_transitions_to_idle() -> None:
             bars_held=4,
         ),
     )
-    nxt, dec = advance_lifecycle(
-        lifecycle=lifecycle, strategy=_CloseStrategy(), ctx=ctx
-    )
+    nxt, dec = advance_lifecycle(lifecycle=lifecycle, strategy=_CloseStrategy(), ctx=ctx)
     assert dec.kind is DecisionKind.CLOSE_POSITION
     assert nxt.state is LifecycleState.IDLE
 
@@ -778,9 +736,7 @@ def test_open_short_close_transitions_to_idle() -> None:
 def test_open_long_without_position_raises() -> None:
     lifecycle = replace(_idle_lifecycle(), state=LifecycleState.OPEN_LONG)
     with pytest.raises(ArchetypeStateError):
-        advance_lifecycle(
-            lifecycle=lifecycle, strategy=_HoldStrategy(), ctx=_idle_ctx()
-        )
+        advance_lifecycle(lifecycle=lifecycle, strategy=_HoldStrategy(), ctx=_idle_ctx())
 
 
 def test_open_long_with_wrong_side_position_raises() -> None:
@@ -800,9 +756,7 @@ def test_open_long_with_wrong_side_position_raises() -> None:
         ),
     )
     with pytest.raises(ArchetypeStateError):
-        advance_lifecycle(
-            lifecycle=lifecycle, strategy=_HoldStrategy(), ctx=ctx
-        )
+        advance_lifecycle(lifecycle=lifecycle, strategy=_HoldStrategy(), ctx=ctx)
 
 
 def test_ctx_archetype_id_mismatch_raises() -> None:
@@ -814,9 +768,7 @@ def test_ctx_archetype_id_mismatch_raises() -> None:
         last_price=100.0,
     )
     with pytest.raises(ArchetypeLifecycleError):
-        advance_lifecycle(
-            lifecycle=_idle_lifecycle(), strategy=_HoldStrategy(), ctx=ctx
-        )
+        advance_lifecycle(lifecycle=_idle_lifecycle(), strategy=_HoldStrategy(), ctx=ctx)
 
 
 def test_ctx_symbol_mismatch_raises() -> None:
@@ -828,9 +780,7 @@ def test_ctx_symbol_mismatch_raises() -> None:
         last_price=100.0,
     )
     with pytest.raises(ArchetypeLifecycleError):
-        advance_lifecycle(
-            lifecycle=_idle_lifecycle(), strategy=_HoldStrategy(), ctx=ctx
-        )
+        advance_lifecycle(lifecycle=_idle_lifecycle(), strategy=_HoldStrategy(), ctx=ctx)
 
 
 # ---------------------------------------------------------------------------
@@ -856,9 +806,7 @@ def test_non_protocol_object_rejected() -> None:
 
 def test_should_cancel_must_return_bool() -> None:
     class _BadCancel(_HoldStrategy):
-        def should_cancel_entry(
-            self, ctx: ArchetypeContext, pending: PendingEntry
-        ) -> bool:
+        def should_cancel_entry(self, ctx: ArchetypeContext, pending: PendingEntry) -> bool:
             return "yes"  # type: ignore[return-value]
 
     lifecycle = replace(_idle_lifecycle(), state=LifecycleState.PENDING_LONG)
@@ -868,9 +816,7 @@ def test_should_cancel_must_return_bool() -> None:
         symbol="BTC-USD",
         bar_index=1,
         last_price=100.0,
-        pending=PendingEntry(
-            side=Side.LONG, qty=1.0, limit_price=100.0, bars_pending=1
-        ),
+        pending=PendingEntry(side=Side.LONG, qty=1.0, limit_price=100.0, bars_pending=1),
     )
     with pytest.raises(ArchetypeLifecycleError):
         advance_lifecycle(lifecycle=lifecycle, strategy=_BadCancel(), ctx=ctx)
@@ -986,9 +932,7 @@ def _run_three_bars(
         bar_index=0,
         last_price=100.0,
     )
-    lifecycle, dec = advance_lifecycle(
-        lifecycle=lifecycle, strategy=strat, ctx=ctx0
-    )
+    lifecycle, dec = advance_lifecycle(lifecycle=lifecycle, strategy=strat, ctx=ctx0)
     decs.append(dec)
     # bar 1: PENDING_LONG → still pending (simulate not filled)
     ctx1 = ArchetypeContext(
@@ -997,13 +941,9 @@ def _run_three_bars(
         symbol="BTC-USD",
         bar_index=1,
         last_price=101.0,
-        pending=PendingEntry(
-            side=Side.LONG, qty=1.0, limit_price=100.0, bars_pending=1
-        ),
+        pending=PendingEntry(side=Side.LONG, qty=1.0, limit_price=100.0, bars_pending=1),
     )
-    lifecycle, dec = advance_lifecycle(
-        lifecycle=lifecycle, strategy=strat, ctx=ctx1
-    )
+    lifecycle, dec = advance_lifecycle(lifecycle=lifecycle, strategy=strat, ctx=ctx1)
     decs.append(dec)
     # bar 2: PENDING_LONG → cancel
     ctx2 = ArchetypeContext(
@@ -1012,13 +952,9 @@ def _run_three_bars(
         symbol="BTC-USD",
         bar_index=2,
         last_price=99.0,
-        pending=PendingEntry(
-            side=Side.LONG, qty=1.0, limit_price=100.0, bars_pending=2
-        ),
+        pending=PendingEntry(side=Side.LONG, qty=1.0, limit_price=100.0, bars_pending=2),
     )
-    lifecycle, dec = advance_lifecycle(
-        lifecycle=lifecycle, strategy=strat, ctx=ctx2
-    )
+    lifecycle, dec = advance_lifecycle(lifecycle=lifecycle, strategy=strat, ctx=ctx2)
     decs.append(dec)
     return decs[0], decs[1], decs[2]
 
@@ -1036,9 +972,7 @@ class _ReplayStrategy(_HoldStrategy):
             take_profit_price=ctx.last_price * 1.10,
         )
 
-    def should_cancel_entry(
-        self, ctx: ArchetypeContext, pending: PendingEntry
-    ) -> bool:
+    def should_cancel_entry(self, ctx: ArchetypeContext, pending: PendingEntry) -> bool:
         return pending.bars_pending >= 2
 
 
@@ -1076,12 +1010,8 @@ def test_features_dict_order_independence() -> None:
         last_price=100.0,
         features={"c": 3.0, "a": 1.0, "b": 2.0},
     )
-    _, dec_a = advance_lifecycle(
-        lifecycle=_idle_lifecycle(), strategy=_LongStrategy(), ctx=ctx_a
-    )
-    _, dec_b = advance_lifecycle(
-        lifecycle=_idle_lifecycle(), strategy=_LongStrategy(), ctx=ctx_b
-    )
+    _, dec_a = advance_lifecycle(lifecycle=_idle_lifecycle(), strategy=_LongStrategy(), ctx=ctx_a)
+    _, dec_b = advance_lifecycle(lifecycle=_idle_lifecycle(), strategy=_LongStrategy(), ctx=ctx_b)
     assert dec_a == dec_b
 
 
@@ -1125,7 +1055,5 @@ def test_features_mapping_accepted_via_dict() -> None:
         last_price=100.0,
         features=_ReadOnlyMap({"x": 1.0}),
     )
-    _, dec = advance_lifecycle(
-        lifecycle=_idle_lifecycle(), strategy=_HoldStrategy(), ctx=ctx
-    )
+    _, dec = advance_lifecycle(lifecycle=_idle_lifecycle(), strategy=_HoldStrategy(), ctx=ctx)
     assert dec.kind is DecisionKind.NO_OP

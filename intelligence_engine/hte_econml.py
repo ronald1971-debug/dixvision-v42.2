@@ -187,18 +187,14 @@ class HteEstimand:
     def __post_init__(self) -> None:
         if not isinstance(self.features, tuple):
             raise TypeError(
-                "HteEstimand.features must be a tuple, got "
-                f"{type(self.features).__name__}"
+                f"HteEstimand.features must be a tuple, got {type(self.features).__name__}"
             )
         if not self.features:
-            raise ValueError(
-                "HteEstimand.features must be non-empty"
-            )
+            raise ValueError("HteEstimand.features must be non-empty")
         for f in self.features:
             if not isinstance(f, str) or not f:
                 raise ValueError(
-                    "HteEstimand.features entries must be non-empty "
-                    f"strings, got {f!r}"
+                    f"HteEstimand.features entries must be non-empty strings, got {f!r}"
                 )
         if not self.treatment:
             raise ValueError("HteEstimand.treatment must be non-empty")
@@ -212,8 +208,7 @@ class HteEstimand:
         for m in self.effect_modifiers:
             if not isinstance(m, str) or not m:
                 raise ValueError(
-                    "HteEstimand.effect_modifiers entries must be "
-                    f"non-empty strings, got {m!r}"
+                    f"HteEstimand.effect_modifiers entries must be non-empty strings, got {m!r}"
                 )
         if not self.data_digest:
             raise ValueError("HteEstimand.data_digest must be non-empty")
@@ -243,32 +238,25 @@ class HteArguments:
                 f"HteEstimatorKind, got "
                 f"{type(self.estimator_kind).__name__}"
             )
-        if not isinstance(self.random_seed, int) or isinstance(
-            self.random_seed, bool
-        ):
+        if not isinstance(self.random_seed, int) or isinstance(self.random_seed, bool):
             raise TypeError(
-                "HteArguments.random_seed must be int, got "
-                f"{type(self.random_seed).__name__}"
+                f"HteArguments.random_seed must be int, got {type(self.random_seed).__name__}"
             )
         if self.random_seed < 0:
             raise ValueError(
-                "HteArguments.random_seed must be non-negative, got "
-                f"{self.random_seed!r}"
+                f"HteArguments.random_seed must be non-negative, got {self.random_seed!r}"
             )
         if self.n_samples < MIN_N_SAMPLES:
             raise ValueError(
-                f"HteArguments.n_samples must be >= "
-                f"{MIN_N_SAMPLES!r}, got {self.n_samples!r}"
+                f"HteArguments.n_samples must be >= {MIN_N_SAMPLES!r}, got {self.n_samples!r}"
             )
         if self.n_samples > MAX_N_SAMPLES:
             raise ValueError(
-                f"HteArguments.n_samples must be <= "
-                f"{MAX_N_SAMPLES!r}, got {self.n_samples!r}"
+                f"HteArguments.n_samples must be <= {MAX_N_SAMPLES!r}, got {self.n_samples!r}"
             )
         if not math.isfinite(self.confidence_level):
             raise ValueError(
-                "HteArguments.confidence_level must be finite, got "
-                f"{self.confidence_level!r}"
+                f"HteArguments.confidence_level must be finite, got {self.confidence_level!r}"
             )
         if (
             self.confidence_level < MIN_CONFIDENCE_LEVEL
@@ -280,14 +268,10 @@ class HteArguments:
                 f"got {self.confidence_level!r}"
             )
         if self.n_points < 1:
-            raise ValueError(
-                "HteArguments.n_points must be >= 1, got "
-                f"{self.n_points!r}"
-            )
+            raise ValueError(f"HteArguments.n_points must be >= 1, got {self.n_points!r}")
         if self.n_points > MAX_POINTS:
             raise ValueError(
-                f"HteArguments.n_points must be <= {MAX_POINTS!r}, "
-                f"got {self.n_points!r}"
+                f"HteArguments.n_points must be <= {MAX_POINTS!r}, got {self.n_points!r}"
             )
 
 
@@ -302,47 +286,30 @@ class HteEffectPoint:
     std_error: float
 
     def __post_init__(self) -> None:
-        if not isinstance(self.point_id, int) or isinstance(
-            self.point_id, bool
-        ):
+        if not isinstance(self.point_id, int) or isinstance(self.point_id, bool):
             raise TypeError(
-                "HteEffectPoint.point_id must be int, got "
-                f"{type(self.point_id).__name__}"
+                f"HteEffectPoint.point_id must be int, got {type(self.point_id).__name__}"
             )
         if self.point_id < 0:
-            raise ValueError(
-                "HteEffectPoint.point_id must be non-negative, got "
-                f"{self.point_id!r}"
-            )
+            raise ValueError(f"HteEffectPoint.point_id must be non-negative, got {self.point_id!r}")
         if not math.isfinite(self.point_estimate):
             raise ValueError(
-                "HteEffectPoint.point_estimate must be finite, got "
-                f"{self.point_estimate!r}"
+                f"HteEffectPoint.point_estimate must be finite, got {self.point_estimate!r}"
             )
         if not math.isfinite(self.ci_lower):
-            raise ValueError(
-                "HteEffectPoint.ci_lower must be finite, got "
-                f"{self.ci_lower!r}"
-            )
+            raise ValueError(f"HteEffectPoint.ci_lower must be finite, got {self.ci_lower!r}")
         if not math.isfinite(self.ci_upper):
-            raise ValueError(
-                "HteEffectPoint.ci_upper must be finite, got "
-                f"{self.ci_upper!r}"
-            )
+            raise ValueError(f"HteEffectPoint.ci_upper must be finite, got {self.ci_upper!r}")
         if self.ci_lower > self.ci_upper:
             raise ValueError(
                 "HteEffectPoint.ci_lower must be <= ci_upper, got "
                 f"({self.ci_lower!r}, {self.ci_upper!r})"
             )
         if not math.isfinite(self.std_error):
-            raise ValueError(
-                "HteEffectPoint.std_error must be finite, got "
-                f"{self.std_error!r}"
-            )
+            raise ValueError(f"HteEffectPoint.std_error must be finite, got {self.std_error!r}")
         if self.std_error < 0.0:
             raise ValueError(
-                "HteEffectPoint.std_error must be non-negative, got "
-                f"{self.std_error!r}"
+                f"HteEffectPoint.std_error must be non-negative, got {self.std_error!r}"
             )
 
 
@@ -362,18 +329,15 @@ class HteAnalysisResult:
             )
         if not math.isfinite(self.ate_std_error):
             raise ValueError(
-                "HteAnalysisResult.ate_std_error must be finite, got "
-                f"{self.ate_std_error!r}"
+                f"HteAnalysisResult.ate_std_error must be finite, got {self.ate_std_error!r}"
             )
         if self.ate_std_error < 0.0:
             raise ValueError(
-                "HteAnalysisResult.ate_std_error must be "
-                f"non-negative, got {self.ate_std_error!r}"
+                f"HteAnalysisResult.ate_std_error must be non-negative, got {self.ate_std_error!r}"
             )
         if not isinstance(self.points, tuple):
             raise TypeError(
-                "HteAnalysisResult.points must be a tuple, got "
-                f"{type(self.points).__name__}"
+                f"HteAnalysisResult.points must be a tuple, got {type(self.points).__name__}"
             )
         if len(self.points) > MAX_POINTS:
             raise ValueError(
@@ -401,22 +365,12 @@ class HteAnalysisRecord:
     meta: Mapping[str, str]
 
     def __post_init__(self) -> None:
-        if not isinstance(self.ts_ns, int) or isinstance(
-            self.ts_ns, bool
-        ):
-            raise TypeError(
-                "HteAnalysisRecord.ts_ns must be int, got "
-                f"{type(self.ts_ns).__name__}"
-            )
+        if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
+            raise TypeError(f"HteAnalysisRecord.ts_ns must be int, got {type(self.ts_ns).__name__}")
         if self.ts_ns < 0:
-            raise ValueError(
-                "HteAnalysisRecord.ts_ns must be non-negative, got "
-                f"{self.ts_ns!r}"
-            )
+            raise ValueError(f"HteAnalysisRecord.ts_ns must be non-negative, got {self.ts_ns!r}")
         if not self.analysis_id:
-            raise ValueError(
-                "HteAnalysisRecord.analysis_id must be non-empty"
-            )
+            raise ValueError("HteAnalysisRecord.analysis_id must be non-empty")
         if len(self.analysis_id) > MAX_ANALYSIS_ID_LEN:
             raise ValueError(
                 "HteAnalysisRecord.analysis_id must be <= "
@@ -424,9 +378,7 @@ class HteAnalysisRecord:
                 f"{len(self.analysis_id)!r}"
             )
         if not self.source:
-            raise ValueError(
-                "HteAnalysisRecord.source must be non-empty"
-            )
+            raise ValueError("HteAnalysisRecord.source must be non-empty")
         if not isinstance(self.estimand, HteEstimand):
             raise TypeError(
                 "HteAnalysisRecord.estimand must be HteEstimand, got "
@@ -442,9 +394,7 @@ class HteAnalysisRecord:
                 "HteAnalysisRecord.analysis_digest must be a "
                 f"16-hex-char digest, got {self.analysis_digest!r}"
             )
-        if not all(
-            c in "0123456789abcdef" for c in self.analysis_digest
-        ):
+        if not all(c in "0123456789abcdef" for c in self.analysis_digest):
             raise ValueError(
                 "HteAnalysisRecord.analysis_digest must be "
                 f"lowercase hex, got {self.analysis_digest!r}"
@@ -567,12 +517,9 @@ def _compute_analysis_digest(
 ) -> str:
     """16-hex-char content hash of the canonical analysis summary."""
 
-    meta_pairs = "|".join(
-        f"{k}={v}" for k, v in sorted(arguments.meta.items())
-    )
+    meta_pairs = "|".join(f"{k}={v}" for k, v in sorted(arguments.meta.items()))
     points_str = ";".join(
-        f"{p.point_id}:{p.point_estimate!r}:{p.ci_lower!r}:"
-        f"{p.ci_upper!r}:{p.std_error!r}"
+        f"{p.point_id}:{p.point_estimate!r}:{p.ci_lower!r}:{p.ci_upper!r}:{p.std_error!r}"
         for p in result.points
     )
     payload = "|".join(
@@ -642,19 +589,14 @@ class EconMLHteAnalyser:
             )
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
             raise TypeError(
-                "EconMLHteAnalyser.analyse.ts_ns must be int, got "
-                f"{type(ts_ns).__name__}"
+                f"EconMLHteAnalyser.analyse.ts_ns must be int, got {type(ts_ns).__name__}"
             )
         if ts_ns < 0:
             raise HteAnalyserConfigError(
-                "EconMLHteAnalyser.analyse.ts_ns must be "
-                f"non-negative, got {ts_ns!r}"
+                f"EconMLHteAnalyser.analyse.ts_ns must be non-negative, got {ts_ns!r}"
             )
         if not analysis_id:
-            raise HteAnalyserConfigError(
-                "EconMLHteAnalyser.analyse.analysis_id must be "
-                "non-empty"
-            )
+            raise HteAnalyserConfigError("EconMLHteAnalyser.analyse.analysis_id must be non-empty")
         if len(analysis_id) > MAX_ANALYSIS_ID_LEN:
             raise HteAnalyserConfigError(
                 "EconMLHteAnalyser.analyse.analysis_id must be <= "
@@ -662,10 +604,7 @@ class EconMLHteAnalyser:
                 f"{len(analysis_id)!r}"
             )
 
-        cb = (
-            callback if callback is not None
-            else null_hte_analysis_callback()
-        )
+        cb = callback if callback is not None else null_hte_analysis_callback()
         if not isinstance(cb, HteAnalysisCallback):
             raise TypeError(
                 "EconMLHteAnalyser.analyse.callback must implement "
@@ -706,9 +645,7 @@ class EconMLHteAnalyser:
             "n_samples": str(arguments.n_samples),
             "confidence_level": repr(arguments.confidence_level),
             "n_points": str(arguments.n_points),
-            "average_treatment_effect": repr(
-                result.average_treatment_effect
-            ),
+            "average_treatment_effect": repr(result.average_treatment_effect),
             "ate_std_error": repr(result.ate_std_error),
             "point_count": str(len(result.points)),
         }

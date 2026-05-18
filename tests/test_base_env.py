@@ -251,9 +251,7 @@ class _CountingEnv(DIXBaseEnv):
         self._max_steps = max_steps
         self._counter = 0
 
-    def _reset_payload(
-        self, *, options: dict[str, Any] | None
-    ) -> tuple[float, ...]:
+    def _reset_payload(self, *, options: dict[str, Any] | None) -> tuple[float, ...]:
         self._counter = 0
         return (float(self._counter),)
 

@@ -102,8 +102,7 @@ class NewsShockSimConfig:
     def __post_init__(self) -> None:
         if not 0 < self.max_steps <= 1_000_000:
             raise ValueError(
-                "NewsShockSimConfig.max_steps must be in "
-                f"(0, 1_000_000], got {self.max_steps!r}"
+                f"NewsShockSimConfig.max_steps must be in (0, 1_000_000], got {self.max_steps!r}"
             )
 
 
@@ -135,9 +134,7 @@ def _require_positive_int(meta: dict[str, Any], key: str) -> int:
     return raw
 
 
-def _require_bounded_float(
-    meta: dict[str, Any], key: str, low: float, high: float
-) -> float:
+def _require_bounded_float(meta: dict[str, Any], key: str, low: float, high: float) -> float:
     if key not in meta:
         raise ValueError(f"RealityScenario.meta missing required key {key!r}")
     raw = meta[key]
@@ -146,9 +143,7 @@ def _require_bounded_float(
     except (TypeError, ValueError) as exc:
         raise ValueError(f"meta[{key!r}] must be numeric, got {raw!r}") from exc
     if not low <= v <= high:
-        raise ValueError(
-            f"meta[{key!r}] must be in [{low}, {high}], got {v!r}"
-        )
+        raise ValueError(f"meta[{key!r}] must be in [{low}, {high}], got {v!r}")
     return v
 
 
@@ -157,9 +152,7 @@ def _require_side(meta: dict[str, Any]) -> str:
         raise ValueError("RealityScenario.meta missing required key 'side'")
     side = meta["side"]
     if side not in (_BUY, _SELL):
-        raise ValueError(
-            f"meta['side'] must be 'buy' or 'sell', got {side!r}"
-        )
+        raise ValueError(f"meta['side'] must be 'buy' or 'sell', got {side!r}")
     return side
 
 
@@ -184,28 +177,13 @@ class NewsShockSim:
         size_usd = _require_positive_float(meta, "order_size_usd")
         num_steps = _require_positive_int(meta, "num_steps")
         if num_steps > cfg.max_steps:
-            raise ValueError(
-                f"meta['num_steps'] {num_steps} exceeds "
-                f"max_steps {cfg.max_steps}"
-            )
-        shock_p = _require_bounded_float(
-            meta, "shock_probability_per_step", 0.0, 1.0
-        )
-        shock_mag_bps = _require_bounded_float(
-            meta, "shock_magnitude_bps", 0.0, 10_000.0
-        )
-        bullish_p = _require_bounded_float(
-            meta, "shock_bullish_probability", 0.0, 1.0
-        )
-        baseline_drift = _require_bounded_float(
-            meta, "baseline_drift", -0.005, 0.005
-        )
-        baseline_std = _require_bounded_float(
-            meta, "baseline_std", 0.0, 0.1
-        )
-        aftershock_decay = _require_bounded_float(
-            meta, "aftershock_decay", 0.0, 5.0
-        )
+            raise ValueError(f"meta['num_steps'] {num_steps} exceeds max_steps {cfg.max_steps}")
+        shock_p = _require_bounded_float(meta, "shock_probability_per_step", 0.0, 1.0)
+        shock_mag_bps = _require_bounded_float(meta, "shock_magnitude_bps", 0.0, 10_000.0)
+        bullish_p = _require_bounded_float(meta, "shock_bullish_probability", 0.0, 1.0)
+        baseline_drift = _require_bounded_float(meta, "baseline_drift", -0.005, 0.005)
+        baseline_std = _require_bounded_float(meta, "baseline_std", 0.0, 0.1)
+        aftershock_decay = _require_bounded_float(meta, "aftershock_decay", 0.0, 5.0)
         side = _require_side(meta)
 
         rng = random.Random(f"{seed}:{scenario.scenario_id}")
@@ -228,9 +206,7 @@ class NewsShockSim:
                 # contribution falls toward zero (Devin Review).
                 std = max(
                     baseline_std,
-                    shock_mag_frac * math.exp(
-                        -aftershock_decay * (i - shock_step)
-                    ),
+                    shock_mag_frac * math.exp(-aftershock_decay * (i - shock_step)),
                 )
             else:
                 std = baseline_std

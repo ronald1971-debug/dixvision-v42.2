@@ -153,12 +153,8 @@ def test_constant_bps_rejects_nan_at_construction() -> None:
 
 def test_constant_bps_ignores_qty_and_book() -> None:
     m = ConstantBpsSlippage(bps=5.0)
-    book = BookSnapshot(
-        bids=(BookLevel(99.0, 1.0),), asks=(BookLevel(101.0, 1.0),)
-    )
-    assert m.apply(Side.BUY, 0.0001, 100.0, book) == m.apply(
-        Side.BUY, 1_000_000.0, 100.0, None
-    )
+    book = BookSnapshot(bids=(BookLevel(99.0, 1.0),), asks=(BookLevel(101.0, 1.0),))
+    assert m.apply(Side.BUY, 0.0001, 100.0, book) == m.apply(Side.BUY, 1_000_000.0, 100.0, None)
 
 
 # ---------------------------------------------------------------------------
@@ -317,9 +313,7 @@ def test_sqrt_impact_hold_passes_mark_through() -> None:
 def test_sqrt_impact_ignores_book() -> None:
     m = SquareRootImpactSlippage(eta=0.1, adv=4.0)
     book = _make_book()
-    assert m.apply(Side.BUY, 4.0, 100.0, book) == m.apply(
-        Side.BUY, 4.0, 100.0, None
-    )
+    assert m.apply(Side.BUY, 4.0, 100.0, book) == m.apply(Side.BUY, 4.0, 100.0, None)
 
 
 # ---------------------------------------------------------------------------

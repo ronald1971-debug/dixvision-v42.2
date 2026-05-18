@@ -178,9 +178,7 @@ def test_feature_view_is_frozen() -> None:
 
 
 def test_feature_record_minimal() -> None:
-    r = FeatureRecord(
-        ts_ns=10, view_name="v", entity_key="BTC", values={"vol": 1.0}
-    )
+    r = FeatureRecord(ts_ns=10, view_name="v", entity_key="BTC", values={"vol": 1.0})
     assert r.values == {"vol": 1.0}
 
 
@@ -235,17 +233,13 @@ def test_feature_record_rejects_empty_entity_key() -> None:
 
 
 def test_feature_request_minimal() -> None:
-    q = FeatureRequest(
-        ts_ns=5, view_name="v", entity_key="BTC", feature_names=("vol",)
-    )
+    q = FeatureRequest(ts_ns=5, view_name="v", entity_key="BTC", feature_names=("vol",))
     assert q.feature_names == ("vol",)
 
 
 def test_feature_request_rejects_empty_feature_names() -> None:
     with pytest.raises(ValueError):
-        FeatureRequest(
-            ts_ns=1, view_name="v", entity_key="BTC", feature_names=()
-        )
+        FeatureRequest(ts_ns=1, view_name="v", entity_key="BTC", feature_names=())
 
 
 def test_feature_request_rejects_non_tuple_feature_names() -> None:
@@ -373,12 +367,8 @@ def test_store_register_view_rejects_non_view() -> None:
 
 def test_store_list_views_sorted_by_name() -> None:
     s = FeatureStore()
-    s.register_view(
-        FeatureView(name="b", entity_keys=("e",), feature_names=("f",), ts_ns=1)
-    )
-    s.register_view(
-        FeatureView(name="a", entity_keys=("e",), feature_names=("f",), ts_ns=1)
-    )
+    s.register_view(FeatureView(name="b", entity_keys=("e",), feature_names=("f",), ts_ns=1))
+    s.register_view(FeatureView(name="a", entity_keys=("e",), feature_names=("f",), ts_ns=1))
     names = [v.name for v in s.list_views()]
     assert names == ["a", "b"]
     s.close()
@@ -392,11 +382,7 @@ def test_store_list_views_sorted_by_name() -> None:
 def test_store_ingest_rejects_unknown_view() -> None:
     s = FeatureStore()
     with pytest.raises(ValueError):
-        s.ingest(
-            FeatureRecord(
-                ts_ns=1, view_name="missing", entity_key="BTC", values={"vol": 1.0}
-            )
-        )
+        s.ingest(FeatureRecord(ts_ns=1, view_name="missing", entity_key="BTC", values={"vol": 1.0}))
     s.close()
 
 
@@ -426,20 +412,10 @@ def test_store_ingest_rejects_non_record() -> None:
 def test_store_ingest_upserts_same_ts_ns() -> None:
     s = FeatureStore()
     s.register_view(_view())
-    s.ingest(
-        FeatureRecord(
-            ts_ns=10, view_name="v", entity_key="BTC", values={"vol": 1.0}
-        )
-    )
-    s.ingest(
-        FeatureRecord(
-            ts_ns=10, view_name="v", entity_key="BTC", values={"vol": 2.0}
-        )
-    )
+    s.ingest(FeatureRecord(ts_ns=10, view_name="v", entity_key="BTC", values={"vol": 1.0}))
+    s.ingest(FeatureRecord(ts_ns=10, view_name="v", entity_key="BTC", values={"vol": 2.0}))
     snap = s.get_online_features(
-        FeatureRequest(
-            ts_ns=11, view_name="v", entity_key="BTC", feature_names=("vol",)
-        )
+        FeatureRequest(ts_ns=11, view_name="v", entity_key="BTC", feature_names=("vol",))
     )
     assert snap.values["vol"] == 2.0
     s.close()
@@ -512,9 +488,7 @@ def test_store_get_online_features_skips_future_ts() -> None:
 def test_store_get_online_features_returns_empty_if_no_history() -> None:
     s = _seeded_store()
     snap = s.get_online_features(
-        FeatureRequest(
-            ts_ns=4, view_name="v", entity_key="BTC", feature_names=("vol",)
-        )
+        FeatureRequest(ts_ns=4, view_name="v", entity_key="BTC", feature_names=("vol",))
     )
     assert snap.values == {}
     assert snap.observed_ts_ns_per_feature == {}
@@ -524,9 +498,7 @@ def test_store_get_online_features_returns_empty_if_no_history() -> None:
 def test_store_get_online_features_unknown_entity_returns_empty() -> None:
     s = _seeded_store()
     snap = s.get_online_features(
-        FeatureRequest(
-            ts_ns=20, view_name="v", entity_key="ETH", feature_names=("vol",)
-        )
+        FeatureRequest(ts_ns=20, view_name="v", entity_key="ETH", feature_names=("vol",))
     )
     assert snap.values == {}
     s.close()
@@ -694,10 +666,7 @@ def test_get_online_features_deterministic_across_runs() -> None:
 
 
 def test_get_historical_features_deterministic_across_runs() -> None:
-    rows = tuple(
-        HistoricalRow(ts_ns=20 + i, view_name="v", entity_key="BTC")
-        for i in range(5)
-    )
+    rows = tuple(HistoricalRow(ts_ns=20 + i, view_name="v", entity_key="BTC") for i in range(5))
     outs = []
     for _ in range(3):
         s = _seed_independent()
@@ -733,18 +702,12 @@ def test_store_persists_across_connections_on_file_backend(tmp_path) -> None:
     path = str(tmp_path / "features.db")
     s1 = FeatureStore(path=path)
     s1.register_view(_view())
-    s1.ingest(
-        FeatureRecord(
-            ts_ns=10, view_name="v", entity_key="BTC", values={"vol": 1.5}
-        )
-    )
+    s1.ingest(FeatureRecord(ts_ns=10, view_name="v", entity_key="BTC", values={"vol": 1.5}))
     s1.close()
 
     s2 = FeatureStore(path=path)
     snap = s2.get_online_features(
-        FeatureRequest(
-            ts_ns=20, view_name="v", entity_key="BTC", feature_names=("vol",)
-        )
+        FeatureRequest(ts_ns=20, view_name="v", entity_key="BTC", feature_names=("vol",))
     )
     assert snap.values == {"vol": 1.5}
     s2.close()
@@ -797,15 +760,9 @@ def test_feature_store_satisfies_base_protocol() -> None:
 def test_full_round_trip_via_protocol_facade() -> None:
     backend: FeatureStoreBase = FeatureStore()
     backend.register_view(_view())
-    backend.ingest(
-        FeatureRecord(
-            ts_ns=10, view_name="v", entity_key="BTC", values={"vol": 1.0}
-        )
-    )
+    backend.ingest(FeatureRecord(ts_ns=10, view_name="v", entity_key="BTC", values={"vol": 1.0}))
     snap = backend.get_online_features(
-        FeatureRequest(
-            ts_ns=11, view_name="v", entity_key="BTC", feature_names=("vol",)
-        )
+        FeatureRequest(ts_ns=11, view_name="v", entity_key="BTC", feature_names=("vol",))
     )
     assert snap.values == {"vol": 1.0}
     backend.close()  # type: ignore[attr-defined]
@@ -817,12 +774,7 @@ def test_full_round_trip_via_protocol_facade() -> None:
 
 
 def test_registry_yaml_exists_and_pins_sqlite() -> None:
-    yaml_path = (
-        Path(__file__).resolve().parents[1]
-        / "registry"
-        / "feast"
-        / "feature_store.yaml"
-    )
+    yaml_path = Path(__file__).resolve().parents[1] / "registry" / "feast" / "feature_store.yaml"
     assert yaml_path.is_file()
     text = yaml_path.read_text(encoding="utf-8")
     # Pin the choices we adapted away from feast — provider must be local
@@ -853,13 +805,9 @@ def test_feature_record_rejects_empty_view_name() -> None:
 
 def test_feature_request_rejects_empty_view_name() -> None:
     with pytest.raises(ValueError):
-        FeatureRequest(
-            ts_ns=1, view_name="", entity_key="BTC", feature_names=("f",)
-        )
+        FeatureRequest(ts_ns=1, view_name="", entity_key="BTC", feature_names=("f",))
 
 
 def test_feature_request_rejects_zero_ts_ns() -> None:
     with pytest.raises(ValueError):
-        FeatureRequest(
-            ts_ns=0, view_name="v", entity_key="BTC", feature_names=("f",)
-        )
+        FeatureRequest(ts_ns=0, view_name="v", entity_key="BTC", feature_names=("f",))

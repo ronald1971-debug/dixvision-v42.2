@@ -80,17 +80,12 @@ class EmbedderSpec:
 
     def __post_init__(self) -> None:
         if not isinstance(self.dim, int) or isinstance(self.dim, bool):
-            raise EmbedderError(
-                f"EmbedderSpec.dim must be int, got {type(self.dim).__name__}"
-            )
+            raise EmbedderError(f"EmbedderSpec.dim must be int, got {type(self.dim).__name__}")
         if self.dim <= 0:
-            raise EmbedderError(
-                f"EmbedderSpec.dim must be positive, got {self.dim!r}"
-            )
+            raise EmbedderError(f"EmbedderSpec.dim must be positive, got {self.dim!r}")
         if not isinstance(self.ngram_range, tuple) or len(self.ngram_range) != 2:
             raise EmbedderError(
-                "EmbedderSpec.ngram_range must be a 2-tuple, "
-                f"got {self.ngram_range!r}"
+                f"EmbedderSpec.ngram_range must be a 2-tuple, got {self.ngram_range!r}"
             )
         lo, hi = self.ngram_range
         if not isinstance(lo, int) or not isinstance(hi, int):
@@ -100,8 +95,7 @@ class EmbedderSpec:
             )
         if lo < 1 or hi < lo:
             raise EmbedderError(
-                "EmbedderSpec.ngram_range must satisfy 1 <= lo <= hi, "
-                f"got {self.ngram_range!r}"
+                f"EmbedderSpec.ngram_range must satisfy 1 <= lo <= hi, got {self.ngram_range!r}"
             )
 
 
@@ -114,9 +108,7 @@ def _tokenise(text: str) -> tuple[str, ...]:
     """Whitespace-split, lower-cased, punctuation-stripped tokens."""
 
     if not isinstance(text, str):
-        raise EmbedderError(
-            f"embedder input must be str, got {type(text).__name__}"
-        )
+        raise EmbedderError(f"embedder input must be str, got {type(text).__name__}")
     tokens: list[str] = []
     for raw in text.split():
         cleaned = raw.strip().strip(",.;:!?'\"()[]{}").lower()
@@ -165,9 +157,7 @@ def embed_text(
     """
 
     if not isinstance(spec, EmbedderSpec):
-        raise EmbedderError(
-            f"embed_text spec must be EmbedderSpec, got {type(spec).__name__}"
-        )
+        raise EmbedderError(f"embed_text spec must be EmbedderSpec, got {type(spec).__name__}")
     tokens = _tokenise(text)
     lo, hi = spec.ngram_range
     buckets = [0.0] * spec.dim
@@ -189,8 +179,7 @@ def embed_batch(
 
     if isinstance(texts, (str, bytes, bytearray)):
         raise EmbedderError(
-            "embed_batch input must be a sequence of strings, "
-            f"got {type(texts).__name__}"
+            f"embed_batch input must be a sequence of strings, got {type(texts).__name__}"
         )
     return tuple(embed_text(t, spec) for t in texts)
 
@@ -216,9 +205,7 @@ def enable_sentence_transformer_factory(
     """
 
     if not isinstance(model_name, str) or not model_name:
-        raise EmbedderError(
-            f"model_name must be a non-empty str, got {model_name!r}"
-        )
+        raise EmbedderError(f"model_name must be a non-empty str, got {model_name!r}")
     from sentence_transformers import (
         SentenceTransformer,  # type: ignore[import-not-found]  # noqa: F401 - lazy seam
     )

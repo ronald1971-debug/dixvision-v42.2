@@ -228,17 +228,13 @@ class ElegantArguments:
                 "ElegantArguments.agent_kind must be ElegantAgentKind, "
                 f"got {type(self.agent_kind).__name__}"
             )
-        if not isinstance(self.random_seed, int) or isinstance(
-            self.random_seed, bool
-        ):
+        if not isinstance(self.random_seed, int) or isinstance(self.random_seed, bool):
             raise TypeError(
-                "ElegantArguments.random_seed must be int, got "
-                f"{type(self.random_seed).__name__}"
+                f"ElegantArguments.random_seed must be int, got {type(self.random_seed).__name__}"
             )
         if self.random_seed < 0:
             raise ValueError(
-                "ElegantArguments.random_seed must be non-negative, "
-                f"got {self.random_seed!r}"
+                f"ElegantArguments.random_seed must be non-negative, got {self.random_seed!r}"
             )
         if self.target_step < MIN_TARGET_STEP:
             raise ValueError(
@@ -252,44 +248,31 @@ class ElegantArguments:
             )
         if self.max_step < MIN_MAX_STEP:
             raise ValueError(
-                f"ElegantArguments.max_step must be >= "
-                f"{MIN_MAX_STEP!r}, got {self.max_step!r}"
+                f"ElegantArguments.max_step must be >= {MIN_MAX_STEP!r}, got {self.max_step!r}"
             )
         if self.max_step > MAX_MAX_STEP:
             raise ValueError(
-                f"ElegantArguments.max_step must be <= "
-                f"{MAX_MAX_STEP!r}, got {self.max_step!r}"
+                f"ElegantArguments.max_step must be <= {MAX_MAX_STEP!r}, got {self.max_step!r}"
             )
-        if (
-            not math.isfinite(self.gamma)
-            or not (0.0 < self.gamma <= 1.0)
-        ):
+        if not math.isfinite(self.gamma) or not (0.0 < self.gamma <= 1.0):
             raise ValueError(
-                "ElegantArguments.gamma must be a finite number in "
-                f"(0.0, 1.0], got {self.gamma!r}"
+                f"ElegantArguments.gamma must be a finite number in (0.0, 1.0], got {self.gamma!r}"
             )
-        if (
-            not math.isfinite(self.learning_rate)
-            or self.learning_rate <= 0.0
-        ):
+        if not math.isfinite(self.learning_rate) or self.learning_rate <= 0.0:
             raise ValueError(
                 "ElegantArguments.learning_rate must be a positive "
                 f"finite number, got {self.learning_rate!r}"
             )
         if self.batch_size <= 0:
             raise ValueError(
-                "ElegantArguments.batch_size must be positive, got "
-                f"{self.batch_size!r}"
+                f"ElegantArguments.batch_size must be positive, got {self.batch_size!r}"
             )
         if self.repeat_times <= 0:
             raise ValueError(
-                "ElegantArguments.repeat_times must be positive, got "
-                f"{self.repeat_times!r}"
+                f"ElegantArguments.repeat_times must be positive, got {self.repeat_times!r}"
             )
         if not self.target_strategy_id:
-            raise ValueError(
-                "ElegantArguments.target_strategy_id must be non-empty"
-            )
+            raise ValueError("ElegantArguments.target_strategy_id must be non-empty")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -329,10 +312,7 @@ class ElegantSandboxMetrics:
         ):
             value = getattr(self, name)
             if not math.isfinite(value):
-                raise ValueError(
-                    f"ElegantSandboxMetrics.{name} must be finite, "
-                    f"got {value!r}"
-                )
+                raise ValueError(f"ElegantSandboxMetrics.{name} must be finite, got {value!r}")
         if self.mean_episode_length < 0.0:
             raise ValueError(
                 "ElegantSandboxMetrics.mean_episode_length must be "
@@ -389,9 +369,7 @@ class ElegantSandboxCallback(Protocol):
     """ElegantRL-shape lifecycle callback (collapsed into one Protocol
     so the AST tests can pin "no top-level elegantrl import")."""
 
-    def on_training_start(
-        self, *, ts_ns: int, target_step: int
-    ) -> None: ...
+    def on_training_start(self, *, ts_ns: int, target_step: int) -> None: ...
 
     def on_step(
         self,
@@ -412,9 +390,7 @@ class ElegantSandboxCallback(Protocol):
         episode_length: int,
     ) -> None: ...
 
-    def on_training_end(
-        self, *, ts_ns: int, metrics: ElegantSandboxMetrics
-    ) -> None: ...
+    def on_training_end(self, *, ts_ns: int, metrics: ElegantSandboxMetrics) -> None: ...
 
 
 @runtime_checkable
@@ -474,9 +450,7 @@ class _NullElegantCallback:
     ) -> None:
         return None
 
-    def on_training_end(
-        self, *, ts_ns: int, metrics: ElegantSandboxMetrics
-    ) -> None:
+    def on_training_end(self, *, ts_ns: int, metrics: ElegantSandboxMetrics) -> None:
         return None
 
 
@@ -514,9 +488,7 @@ def _compute_policy_digest(
     those inputs reproduces it byte-for-byte under the same trainer.
     """
 
-    meta_pairs = "|".join(
-        f"{k}={v}" for k, v in sorted(arguments.meta.items())
-    )
+    meta_pairs = "|".join(f"{k}={v}" for k, v in sorted(arguments.meta.items()))
     payload = "|".join(
         (
             f"proposal_id={proposal_id}",
@@ -599,19 +571,13 @@ class ElegantSandbox:
                 f"EpisodeConfig, got {type(episode_config).__name__}"
             )
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
-            raise TypeError(
-                "ElegantSandbox.train.ts_ns must be int, got "
-                f"{type(ts_ns).__name__}"
-            )
+            raise TypeError(f"ElegantSandbox.train.ts_ns must be int, got {type(ts_ns).__name__}")
         if ts_ns < 0:
             raise ElegantSandboxConfigError(
-                f"ElegantSandbox.train.ts_ns must be non-negative, "
-                f"got {ts_ns!r}"
+                f"ElegantSandbox.train.ts_ns must be non-negative, got {ts_ns!r}"
             )
         if not proposal_id:
-            raise ElegantSandboxConfigError(
-                "ElegantSandbox.train.proposal_id must be non-empty"
-            )
+            raise ElegantSandboxConfigError("ElegantSandbox.train.proposal_id must be non-empty")
         if len(proposal_id) > MAX_PROPOSAL_ID_LEN:
             raise ElegantSandboxConfigError(
                 "ElegantSandbox.train.proposal_id must be <= "

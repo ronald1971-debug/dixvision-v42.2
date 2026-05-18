@@ -379,22 +379,18 @@ class DecisionTrace:
                     f"original={self.original_confidence}"
                 )
         if self.confidence_cap_value is not None:
-            _check_unit(
-                "DecisionTrace.confidence_cap_value", self.confidence_cap_value
-            )
+            _check_unit("DecisionTrace.confidence_cap_value", self.confidence_cap_value)
         if self.confidence_cap_applied:
             # ``applied=True`` is only meaningful when both the
             # pre-cap value and the cap itself are recorded; otherwise
             # the audit cannot answer "by how much was it clamped?".
             if self.original_confidence is None:
                 raise ValueError(
-                    "DecisionTrace.confidence_cap_applied is True but "
-                    "original_confidence is None"
+                    "DecisionTrace.confidence_cap_applied is True but original_confidence is None"
                 )
             if self.confidence_cap_value is None:
                 raise ValueError(
-                    "DecisionTrace.confidence_cap_applied is True but "
-                    "confidence_cap_value is None"
+                    "DecisionTrace.confidence_cap_applied is True but confidence_cap_value is None"
                 )
 
 

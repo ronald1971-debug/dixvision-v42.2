@@ -461,9 +461,7 @@ def test_no_cross_tier_imports() -> None:
                 for alias in node.names:
                     module = alias.name
             top = module.split(".")[0]
-            assert top not in forbidden, (
-                f"B1 violation: imports from {module}"
-            )
+            assert top not in forbidden, f"B1 violation: imports from {module}"
 
 
 def test_no_typed_event_constructors() -> None:

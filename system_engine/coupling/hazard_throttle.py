@@ -165,21 +165,15 @@ class HazardThrottleConfig:
         seen: set[HazardSeverity] = set()
         for severity, _rule in self.severity_rules:
             if severity in seen:
-                raise ValueError(
-                    f"duplicate severity rule for {severity.name}"
-                )
+                raise ValueError(f"duplicate severity rule for {severity.name}")
             seen.add(severity)
         for required in HazardSeverity:
             if required not in seen:
-                raise ValueError(
-                    f"missing severity rule for {required.name}"
-                )
+                raise ValueError(f"missing severity rule for {required.name}")
         codes: set[str] = set()
         for override in self.code_overrides:
             if override.code in codes:
-                raise ValueError(
-                    f"duplicate code override for {override.code}"
-                )
+                raise ValueError(f"duplicate code override for {override.code}")
             codes.add(override.code)
 
     def rule_for(self, severity: HazardSeverity) -> HazardSeverityRule:
@@ -198,9 +192,7 @@ class HazardThrottleConfig:
     @classmethod
     def default(cls) -> HazardThrottleConfig:
         return cls(
-            severity_rules=tuple(
-                (s, _DEFAULT_RULES[s]) for s in HazardSeverity
-            ),
+            severity_rules=tuple((s, _DEFAULT_RULES[s]) for s in HazardSeverity),
         )
 
 
@@ -272,11 +264,7 @@ class ThrottleDecision:
 
     @property
     def is_throttled(self) -> bool:
-        return (
-            self.block
-            or self.qty_multiplier < 1.0
-            or self.confidence_floor > 0.0
-        )
+        return self.block or self.qty_multiplier < 1.0 or self.confidence_floor > 0.0
 
 
 _NEUTRAL_DECISION_TEMPLATE = ThrottleDecision(
@@ -370,9 +358,7 @@ def _effective_rule(
         return base
     return HazardSeverityRule(
         qty_multiplier=(
-            override.qty_multiplier
-            if override.qty_multiplier is not None
-            else base.qty_multiplier
+            override.qty_multiplier if override.qty_multiplier is not None else base.qty_multiplier
         ),
         confidence_floor=(
             override.confidence_floor
@@ -410,9 +396,7 @@ class HazardObserver:
     active window long before the buffer fills.
     """
 
-    config: HazardThrottleConfig = field(
-        default_factory=HazardThrottleConfig.default
-    )
+    config: HazardThrottleConfig = field(default_factory=HazardThrottleConfig.default)
     capacity: int = 1024
     _buffer: deque[HazardObservation] = field(init=False)
 
@@ -426,9 +410,7 @@ class HazardObserver:
             obs = HazardObservation.from_event(obs)
         self._buffer.append(obs)
 
-    def observe_many(
-        self, items: Iterable[HazardObservation | HazardEvent]
-    ) -> None:
+    def observe_many(self, items: Iterable[HazardObservation | HazardEvent]) -> None:
         for item in items:
             self.observe(item)
 
@@ -439,9 +421,7 @@ class HazardObserver:
             config=self.config,
         )
 
-    def active_observations(
-        self, *, now_ns: int
-    ) -> tuple[HazardObservation, ...]:
+    def active_observations(self, *, now_ns: int) -> tuple[HazardObservation, ...]:
         """Return observations still inside their active window.
 
         Useful for telemetry / decision-trace callers (BEHAVIOR-P4).

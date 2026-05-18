@@ -56,9 +56,7 @@ def _rule_codes(violations) -> list[str]:
 
 def test_real_repo_passes_zero_violations():
     violations = lint_repo(REPO_ROOT)
-    assert violations == [], "\n".join(
-        v.format(REPO_ROOT) for v in violations
-    )
+    assert violations == [], "\n".join(v.format(REPO_ROOT) for v in violations)
 
 
 # ---------------------------------------------------------------------------
@@ -304,8 +302,7 @@ def test_b7_allows_strategy_lifecycle_fsm(fake_repo: Path):
     _write(
         fake_repo,
         "dashboard_backend/control_plane/ok.py",
-        "from intelligence_engine.strategy_runtime.state_machine "
-        "import StrategyState\n",
+        "from intelligence_engine.strategy_runtime.state_machine import StrategyState\n",
     )
     assert "B7" not in _rule_codes(lint_repo(fake_repo))
 
@@ -522,8 +519,7 @@ def test_b31_allows_tests(fake_repo: Path):
     _write(
         fake_repo,
         "tests/test_modes.py",
-        "from core.contracts.governance import SystemMode\n"
-        "assert SystemMode.LIVE\n",
+        "from core.contracts.governance import SystemMode\nassert SystemMode.LIVE\n",
     )
     assert "B31" not in _rule_codes(lint_repo(fake_repo))
 
@@ -558,8 +554,7 @@ def test_b_clock_fires_on_runtime_datetime_now(fake_repo: Path):
     _write(
         fake_repo,
         "execution_engine/bar.py",
-        "import datetime\n\n"
-        "def stamp():\n    return datetime.now()\n",
+        "import datetime\n\ndef stamp():\n    return datetime.now()\n",
     )
     assert "B-CLOCK" in _rule_codes(lint_repo(fake_repo))
 
@@ -591,8 +586,7 @@ def test_b_clock_passes_when_callsite_uses_authority(fake_repo: Path):
     _write(
         fake_repo,
         "intelligence_engine/foo.py",
-        "from system.time_source import wall_ns\n\n"
-        "def now() -> int:\n    return wall_ns()\n",
+        "from system.time_source import wall_ns\n\ndef now() -> int:\n    return wall_ns()\n",
     )
     assert "B-CLOCK" not in _rule_codes(lint_repo(fake_repo))
 
@@ -667,9 +661,7 @@ def test_b32_allows_non_systemmode_rhs(fake_repo: Path):
     _write(
         fake_repo,
         "ui/widget.py",
-        "class W:\n"
-        "    def render(self) -> None:\n"
-        "        self.mode = 'compact'\n",
+        "class W:\n    def render(self) -> None:\n        self.mode = 'compact'\n",
     )
     assert "B32" not in _rule_codes(lint_repo(fake_repo))
 

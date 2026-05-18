@@ -363,9 +363,7 @@ class CodebaseIntelligence:
             self._index_imports(module, tree, imports)
         symbols.sort(key=lambda s: (s.module, s.name, s.location))
         calls.sort(key=lambda c: (c.module, c.caller, c.callee, c.location))
-        imports.sort(
-            key=lambda i: (i.from_module, i.to_module, i.location)
-        )
+        imports.sort(key=lambda i: (i.from_module, i.to_module, i.location))
         modules.sort()
         self._symbols = tuple(symbols)
         self._calls = tuple(calls)
@@ -399,17 +397,13 @@ class CodebaseIntelligence:
                     )
                 )
                 for child in node.body:
-                    if isinstance(
-                        child, (ast.FunctionDef, ast.AsyncFunctionDef)
-                    ):
+                    if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
                         out.append(
                             SymbolRef(
                                 name=child.name,
                                 kind=_symbol_kind(child, in_class=True),
                                 module=module,
-                                location=(
-                                    f"{child.lineno}:{child.col_offset}"
-                                ),
+                                location=(f"{child.lineno}:{child.col_offset}"),
                             )
                         )
 
@@ -424,12 +418,8 @@ class CodebaseIntelligence:
                 self._index_calls_in_fn(module, node.name, node, out)
             elif isinstance(node, ast.ClassDef):
                 for child in node.body:
-                    if isinstance(
-                        child, (ast.FunctionDef, ast.AsyncFunctionDef)
-                    ):
-                        self._index_calls_in_fn(
-                            module, child.name, child, out
-                        )
+                    if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                        self._index_calls_in_fn(module, child.name, child, out)
 
     @staticmethod
     def _index_calls_in_fn(
@@ -449,8 +439,7 @@ class CodebaseIntelligence:
                         callee=callee,
                         module=module,
                         location=(
-                            f"{getattr(child, 'lineno', 0)}:"
-                            f"{getattr(child, 'col_offset', 0)}"
+                            f"{getattr(child, 'lineno', 0)}:{getattr(child, 'col_offset', 0)}"
                         ),
                     )
                 )
@@ -469,8 +458,7 @@ class CodebaseIntelligence:
                             from_module=module,
                             to_module=alias.name,
                             location=(
-                                f"{getattr(node, 'lineno', 0)}:"
-                                f"{getattr(node, 'col_offset', 0)}"
+                                f"{getattr(node, 'lineno', 0)}:{getattr(node, 'col_offset', 0)}"
                             ),
                         )
                     )
@@ -479,10 +467,7 @@ class CodebaseIntelligence:
                     ImportEdge(
                         from_module=module,
                         to_module=node.module,
-                        location=(
-                            f"{getattr(node, 'lineno', 0)}:"
-                            f"{getattr(node, 'col_offset', 0)}"
-                        ),
+                        location=(f"{getattr(node, 'lineno', 0)}:{getattr(node, 'col_offset', 0)}"),
                     )
                 )
 

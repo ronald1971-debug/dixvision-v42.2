@@ -36,9 +36,7 @@ from governance_engine.control_plane.ledger_authority_writer import (
 LEDGER_KIND_PROMOTION_GATES_BOUND = "PROMOTION_GATES_BOUND"
 
 # Forward modes that require a matching bound hash to enter.
-_GATED_FORWARD_TARGETS: frozenset[str] = frozenset(
-    {"CANARY", "LIVE", "AUTO"}
-)
+_GATED_FORWARD_TARGETS: frozenset[str] = frozenset({"CANARY", "LIVE", "AUTO"})
 
 
 # Default location of the promotion-gates yaml relative to the repo

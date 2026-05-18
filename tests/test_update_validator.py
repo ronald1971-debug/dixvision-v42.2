@@ -87,23 +87,17 @@ def _learning_update(**overrides) -> ProposedUpdate:
 )
 def test_validator_rejects_when_mode_disables_learning(mode):
     reg = _approved_strategy()
-    decision = UpdateValidator(registry=reg).validate(
-        update=_learning_update(), mode=mode
-    )
+    decision = UpdateValidator(registry=reg).validate(update=_learning_update(), mode=mode)
     assert decision.verdict is UpdateVerdict.REJECT
     assert decision.code is UpdateRejectCode.MODE_LEARNING_DISABLED
 
 
-@pytest.mark.parametrize(
-    "mode", [SystemMode.CANARY, SystemMode.LIVE, SystemMode.AUTO]
-)
+@pytest.mark.parametrize("mode", [SystemMode.CANARY, SystemMode.LIVE, SystemMode.AUTO])
 def test_validator_admits_modes_that_enable_learning(mode):
     reg = _approved_strategy(
         bounds={"alpha": (0.1, 0.9)},
     )
-    decision = UpdateValidator(registry=reg).validate(
-        update=_learning_update(), mode=mode
-    )
+    decision = UpdateValidator(registry=reg).validate(update=_learning_update(), mode=mode)
     assert decision.verdict is UpdateVerdict.RATIFY
     assert decision.code is None
 
@@ -176,9 +170,7 @@ def test_validator_rejects_non_approved_lifecycle(lifecycle):
 def test_validator_rejects_immutable_parameter():
     reg = _approved_strategy(mutable=("alpha",))
     update = _learning_update(parameter="beta")
-    decision = UpdateValidator(registry=reg).validate(
-        update=update, mode=SystemMode.LIVE
-    )
+    decision = UpdateValidator(registry=reg).validate(update=update, mode=SystemMode.LIVE)
     assert decision.verdict is UpdateVerdict.REJECT
     assert decision.code is UpdateRejectCode.PARAMETER_NOT_MUTABLE
 
@@ -311,9 +303,7 @@ def test_apply_parameter_update_writes_ledger_row():
         reason="winrate-up",
     )
     rows = ledger.read()
-    update_rows = [
-        r for r in rows if r.kind == LEDGER_KIND_STRATEGY_PARAMETER_UPDATE
-    ]
+    update_rows = [r for r in rows if r.kind == LEDGER_KIND_STRATEGY_PARAMETER_UPDATE]
     assert len(update_rows) == 1
     payload = update_rows[0].payload
     assert payload["strategy_id"] == "s1"
@@ -482,10 +472,7 @@ def test_governance_engine_rejects_in_paper_mode():
     rows = eng.ledger.read()
     rejected = [r for r in rows if r.kind == "UPDATE_REJECTED"]
     assert len(rejected) == 1
-    assert (
-        rejected[0].payload["code"]
-        == UpdateRejectCode.MODE_LEARNING_DISABLED.value
-    )
+    assert rejected[0].payload["code"] == UpdateRejectCode.MODE_LEARNING_DISABLED.value
     # parameter must NOT have changed
     assert eng.strategy_registry.get("s1").parameters["alpha"] == "0.5"
 
@@ -540,9 +527,7 @@ def test_golden_trace_paper_then_canary_then_live():
     # 2) Transition to CANARY (forward-chain via SAFE→PAPER→CANARY)
     from core.contracts.governance import ModeTransitionRequest
 
-    for next_mode in (
-        SystemMode.CANARY,
-    ):
+    for next_mode in (SystemMode.CANARY,):
         eng.state_transitions.propose(
             ModeTransitionRequest(
                 ts_ns=200,

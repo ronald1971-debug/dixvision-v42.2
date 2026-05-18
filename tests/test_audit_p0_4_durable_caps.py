@@ -90,10 +90,7 @@ def test_compliance_daily_persists_across_restarts(
         ts_ns=ts,
     )
     assert breach.passed is False
-    assert any(
-        v.startswith("COMPLIANCE_DAILY_CAP:MEMECOIN")
-        for v in breach.violations
-    )
+    assert any(v.startswith("COMPLIANCE_DAILY_CAP:MEMECOIN") for v in breach.violations)
     store_b.close()
 
 
@@ -135,15 +132,8 @@ def test_compliance_daily_rolls_over_on_new_day(
 
     # Both days are persisted — the audit trail is durable.
     snapshot = dict(store.snapshot_daily())
-    assert (
-        snapshot.get(("MEMECOIN", day_iso_from_ns(day_n_ns))) == 800.0
-    )
-    assert (
-        snapshot.get(
-            ("MEMECOIN", day_iso_from_ns(day_n_plus_1_ns))
-        )
-        == 200.0
-    )
+    assert snapshot.get(("MEMECOIN", day_iso_from_ns(day_n_ns))) == 800.0
+    assert snapshot.get(("MEMECOIN", day_iso_from_ns(day_n_plus_1_ns))) == 200.0
     store.close()
 
 
@@ -236,8 +226,7 @@ def test_risk_evaluator_commit_propagates_ts_ns(
     conn = sqlite3.connect(str(store_path))
     try:
         row = conn.execute(
-            "SELECT symbol, qty, updated_ns FROM exposure_book "
-            "WHERE symbol = ?",
+            "SELECT symbol, qty, updated_ns FROM exposure_book WHERE symbol = ?",
             ("BTC-USD",),
         ).fetchone()
     finally:

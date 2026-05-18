@@ -282,9 +282,7 @@ def test_openai_compat_error_messages_do_not_leak_api_key(monkeypatch) -> None:
     """Mirrors the verifiers contract — no key value or prefix in errors."""
 
     _patch_open(monkeypatch, _http_error(401))
-    transport = OpenAICompatChatTransport(
-        env={"OPENAI_API_KEY": "sk-supersecret-1234567890"}
-    )
+    transport = OpenAICompatChatTransport(env={"OPENAI_API_KEY": "sk-supersecret-1234567890"})
     with pytest.raises(RuntimeError) as exc_info:
         transport.invoke(
             _provider("SRC-AI-OPENAI-001", "openai"),
@@ -300,11 +298,7 @@ def test_openai_compat_error_messages_do_not_leak_api_key(monkeypatch) -> None:
 
 
 def _gemini_ok_body(reply: str = "gemini reply") -> dict[str, Any]:
-    return {
-        "candidates": [
-            {"content": {"parts": [{"text": reply}], "role": "model"}}
-        ]
-    }
+    return {"candidates": [{"content": {"parts": [{"text": reply}], "role": "model"}}]}
 
 
 def test_gemini_happy_path_returns_reply(monkeypatch) -> None:
@@ -585,9 +579,7 @@ def test_http_chat_transport_does_not_import_governance_or_system_engine() -> No
     import ast
     import importlib
 
-    module = importlib.import_module(
-        "intelligence_engine.cognitive.chat.http_chat_transport"
-    )
+    module = importlib.import_module("intelligence_engine.cognitive.chat.http_chat_transport")
     source = open(module.__file__).read()
     tree = ast.parse(source)
     forbidden_prefixes = ("governance_engine", "system_engine")

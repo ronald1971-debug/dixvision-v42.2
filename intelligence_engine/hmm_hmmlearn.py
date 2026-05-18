@@ -1,5 +1,5 @@
 # ADAPTED FROM: hmmlearn/hmmlearn
-# (hmmlearn/base.py — _BaseHMM.decode / .predict_proba / .score; 
+# (hmmlearn/base.py — _BaseHMM.decode / .predict_proba / .score;
 #  hmmlearn/hmm.py — GaussianHMM / GMMHMM / MultinomialHMM /
 #  CategoricalHMM; hmmlearn/_kl_divergence.py — forward-backward
 #  inference.)
@@ -186,44 +186,30 @@ class HMMSpec:
     model_digest: str
 
     def __post_init__(self) -> None:
-        if not isinstance(self.n_components, int) or isinstance(
-            self.n_components, bool
-        ):
+        if not isinstance(self.n_components, int) or isinstance(self.n_components, bool):
             raise TypeError(
-                "HMMSpec.n_components must be int, got "
-                f"{type(self.n_components).__name__}"
+                f"HMMSpec.n_components must be int, got {type(self.n_components).__name__}"
             )
         if self.n_components < MIN_N_COMPONENTS:
             raise ValueError(
-                "HMMSpec.n_components must be >= "
-                f"{MIN_N_COMPONENTS!r}, got {self.n_components!r}"
+                f"HMMSpec.n_components must be >= {MIN_N_COMPONENTS!r}, got {self.n_components!r}"
             )
         if self.n_components > MAX_N_COMPONENTS:
             raise ValueError(
-                "HMMSpec.n_components must be <= "
-                f"{MAX_N_COMPONENTS!r}, got {self.n_components!r}"
+                f"HMMSpec.n_components must be <= {MAX_N_COMPONENTS!r}, got {self.n_components!r}"
             )
-        if not isinstance(self.n_features, int) or isinstance(
-            self.n_features, bool
-        ):
-            raise TypeError(
-                "HMMSpec.n_features must be int, got "
-                f"{type(self.n_features).__name__}"
-            )
+        if not isinstance(self.n_features, int) or isinstance(self.n_features, bool):
+            raise TypeError(f"HMMSpec.n_features must be int, got {type(self.n_features).__name__}")
         if self.n_features < MIN_N_FEATURES:
             raise ValueError(
-                "HMMSpec.n_features must be >= "
-                f"{MIN_N_FEATURES!r}, got {self.n_features!r}"
+                f"HMMSpec.n_features must be >= {MIN_N_FEATURES!r}, got {self.n_features!r}"
             )
         if self.n_features > MAX_N_FEATURES:
             raise ValueError(
-                "HMMSpec.n_features must be <= "
-                f"{MAX_N_FEATURES!r}, got {self.n_features!r}"
+                f"HMMSpec.n_features must be <= {MAX_N_FEATURES!r}, got {self.n_features!r}"
             )
         if not self.model_digest:
-            raise ValueError(
-                "HMMSpec.model_digest must be non-empty"
-            )
+            raise ValueError("HMMSpec.model_digest must be non-empty")
         if len(self.model_digest) > MAX_MODEL_DIGEST_LEN:
             raise ValueError(
                 "HMMSpec.model_digest must be <= "
@@ -248,17 +234,14 @@ class HMMInferenceArguments:
                 f"HMMModelKind, got "
                 f"{type(self.model_kind).__name__}"
             )
-        if not isinstance(self.random_seed, int) or isinstance(
-            self.random_seed, bool
-        ):
+        if not isinstance(self.random_seed, int) or isinstance(self.random_seed, bool):
             raise TypeError(
                 "HMMInferenceArguments.random_seed must be "
                 f"int, got {type(self.random_seed).__name__}"
             )
         if self.random_seed < 0:
             raise ValueError(
-                "HMMInferenceArguments.random_seed must be "
-                f"non-negative, got {self.random_seed!r}"
+                f"HMMInferenceArguments.random_seed must be non-negative, got {self.random_seed!r}"
             )
         if not isinstance(self.observations, tuple):
             raise TypeError(
@@ -299,9 +282,7 @@ class HMMInferenceArguments:
                     f"step {i!r} vs {feature_count!r}"
                 )
             for j, x in enumerate(step):
-                if not isinstance(x, (int, float)) or isinstance(
-                    x, bool
-                ):
+                if not isinstance(x, (int, float)) or isinstance(x, bool):
                     raise TypeError(
                         "HMMInferenceArguments.observations "
                         f"values must be float, got "
@@ -317,13 +298,11 @@ class HMMInferenceArguments:
         for k, v in self.meta.items():
             if not isinstance(k, str) or not k:
                 raise ValueError(
-                    "HMMInferenceArguments.meta keys must be "
-                    f"non-empty strings, got {k!r}"
+                    f"HMMInferenceArguments.meta keys must be non-empty strings, got {k!r}"
                 )
             if not isinstance(v, str) or not v:
                 raise ValueError(
-                    "HMMInferenceArguments.meta values must be "
-                    f"non-empty strings, got {v!r}"
+                    f"HMMInferenceArguments.meta values must be non-empty strings, got {v!r}"
                 )
 
 
@@ -335,17 +314,13 @@ class HMMStatePosterior:
     state_probabilities: tuple[float, ...]
 
     def __post_init__(self) -> None:
-        if not isinstance(self.step_index, int) or isinstance(
-            self.step_index, bool
-        ):
+        if not isinstance(self.step_index, int) or isinstance(self.step_index, bool):
             raise TypeError(
-                "HMMStatePosterior.step_index must be int, got "
-                f"{type(self.step_index).__name__}"
+                f"HMMStatePosterior.step_index must be int, got {type(self.step_index).__name__}"
             )
         if self.step_index < 0:
             raise ValueError(
-                "HMMStatePosterior.step_index must be "
-                f"non-negative, got {self.step_index!r}"
+                f"HMMStatePosterior.step_index must be non-negative, got {self.step_index!r}"
             )
         if not isinstance(self.state_probabilities, tuple):
             raise TypeError(
@@ -354,10 +329,7 @@ class HMMStatePosterior:
                 f"{type(self.state_probabilities).__name__}"
             )
         if not self.state_probabilities:
-            raise ValueError(
-                "HMMStatePosterior.state_probabilities must be "
-                "non-empty"
-            )
+            raise ValueError("HMMStatePosterior.state_probabilities must be non-empty")
         if len(self.state_probabilities) > MAX_N_COMPONENTS:
             raise ValueError(
                 "HMMStatePosterior.state_probabilities must have "
@@ -372,8 +344,7 @@ class HMMStatePosterior:
                 )
             if not math.isfinite(p):
                 raise ValueError(
-                    "HMMStatePosterior.state_probabilities entries "
-                    f"must be finite, got {p!r}"
+                    f"HMMStatePosterior.state_probabilities entries must be finite, got {p!r}"
                 )
             if not (0.0 <= p <= 1.0):
                 raise ValueError(
@@ -383,8 +354,7 @@ class HMMStatePosterior:
         total = math.fsum(self.state_probabilities)
         if not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-6):
             raise ValueError(
-                "HMMStatePosterior.state_probabilities must sum "
-                f"to 1.0, got {total!r}"
+                f"HMMStatePosterior.state_probabilities must sum to 1.0, got {total!r}"
             )
 
 
@@ -403,9 +373,7 @@ class HMMInferenceResult:
                 f"tuple, got {type(self.viterbi_path).__name__}"
             )
         if not self.viterbi_path:
-            raise ValueError(
-                "HMMInferenceResult.viterbi_path must be non-empty"
-            )
+            raise ValueError("HMMInferenceResult.viterbi_path must be non-empty")
         if len(self.viterbi_path) > MAX_OBSERVATION_LEN:
             raise ValueError(
                 "HMMInferenceResult.viterbi_path must have <= "
@@ -480,8 +448,7 @@ class HMMInferenceResult:
             )
         if not math.isfinite(self.log_likelihood):
             raise ValueError(
-                "HMMInferenceResult.log_likelihood must be "
-                f"finite, got {self.log_likelihood!r}"
+                f"HMMInferenceResult.log_likelihood must be finite, got {self.log_likelihood!r}"
             )
         if self.log_likelihood > 0.0:
             raise ValueError(
@@ -503,22 +470,14 @@ class HMMInferenceRecord:
     meta: Mapping[str, str]
 
     def __post_init__(self) -> None:
-        if not isinstance(self.ts_ns, int) or isinstance(
-            self.ts_ns, bool
-        ):
+        if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
             raise TypeError(
-                "HMMInferenceRecord.ts_ns must be int, got "
-                f"{type(self.ts_ns).__name__}"
+                f"HMMInferenceRecord.ts_ns must be int, got {type(self.ts_ns).__name__}"
             )
         if self.ts_ns < 0:
-            raise ValueError(
-                "HMMInferenceRecord.ts_ns must be non-negative, "
-                f"got {self.ts_ns!r}"
-            )
+            raise ValueError(f"HMMInferenceRecord.ts_ns must be non-negative, got {self.ts_ns!r}")
         if not self.analysis_id:
-            raise ValueError(
-                "HMMInferenceRecord.analysis_id must be non-empty"
-            )
+            raise ValueError("HMMInferenceRecord.analysis_id must be non-empty")
         if len(self.analysis_id) > MAX_ANALYSIS_ID_LEN:
             raise ValueError(
                 "HMMInferenceRecord.analysis_id must be <= "
@@ -526,13 +485,10 @@ class HMMInferenceRecord:
                 f"{len(self.analysis_id)!r}"
             )
         if not self.source:
-            raise ValueError(
-                "HMMInferenceRecord.source must be non-empty"
-            )
+            raise ValueError("HMMInferenceRecord.source must be non-empty")
         if not isinstance(self.spec, HMMSpec):
             raise TypeError(
-                "HMMInferenceRecord.spec must be HMMSpec, got "
-                f"{type(self.spec).__name__}"
+                f"HMMInferenceRecord.spec must be HMMSpec, got {type(self.spec).__name__}"
             )
         if not isinstance(self.result, HMMInferenceResult):
             raise TypeError(
@@ -545,9 +501,7 @@ class HMMInferenceRecord:
                 "HMMInferenceRecord.analysis_digest must be a "
                 f"16-hex-char digest, got {self.analysis_digest!r}"
             )
-        if not all(
-            c in "0123456789abcdef" for c in self.analysis_digest
-        ):
+        if not all(c in "0123456789abcdef" for c in self.analysis_digest):
             raise ValueError(
                 "HMMInferenceRecord.analysis_digest must be "
                 f"lowercase hex, got {self.analysis_digest!r}"
@@ -671,17 +625,11 @@ def _compute_analysis_digest(
 ) -> str:
     """16-hex-char content hash of the canonical inference summary."""
 
-    observations_str = ";".join(
-        ",".join(f"{x!r}" for x in step)
-        for step in arguments.observations
-    )
-    meta_pairs = "|".join(
-        f"{k}={v}" for k, v in sorted(arguments.meta.items())
-    )
+    observations_str = ";".join(",".join(f"{x!r}" for x in step) for step in arguments.observations)
+    meta_pairs = "|".join(f"{k}={v}" for k, v in sorted(arguments.meta.items()))
     viterbi_str = ",".join(str(s) for s in result.viterbi_path)
     posteriors_str = ";".join(
-        f"{post.step_index}:"
-        + ",".join(f"{p!r}" for p in post.state_probabilities)
+        f"{post.step_index}:" + ",".join(f"{p!r}" for p in post.state_probabilities)
         for post in result.posteriors
     )
     payload = "|".join(
@@ -737,8 +685,7 @@ class HmmlearnAnalyser:
 
         if not isinstance(spec, HMMSpec):
             raise TypeError(
-                "HmmlearnAnalyser.analyse.spec must be HMMSpec, "
-                f"got {type(spec).__name__}"
+                f"HmmlearnAnalyser.analyse.spec must be HMMSpec, got {type(spec).__name__}"
             )
         if not isinstance(arguments, HMMInferenceArguments):
             raise TypeError(
@@ -748,19 +695,14 @@ class HmmlearnAnalyser:
             )
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
             raise TypeError(
-                "HmmlearnAnalyser.analyse.ts_ns must be int, got "
-                f"{type(ts_ns).__name__}"
+                f"HmmlearnAnalyser.analyse.ts_ns must be int, got {type(ts_ns).__name__}"
             )
         if ts_ns < 0:
             raise HMMAnalyserConfigError(
-                "HmmlearnAnalyser.analyse.ts_ns must be "
-                f"non-negative, got {ts_ns!r}"
+                f"HmmlearnAnalyser.analyse.ts_ns must be non-negative, got {ts_ns!r}"
             )
         if not analysis_id:
-            raise HMMAnalyserConfigError(
-                "HmmlearnAnalyser.analyse.analysis_id must be "
-                "non-empty"
-            )
+            raise HMMAnalyserConfigError("HmmlearnAnalyser.analyse.analysis_id must be non-empty")
         if len(analysis_id) > MAX_ANALYSIS_ID_LEN:
             raise HMMAnalyserConfigError(
                 "HmmlearnAnalyser.analyse.analysis_id must be "
@@ -777,10 +719,7 @@ class HmmlearnAnalyser:
                     f"spec.n_features {spec.n_features!r}"
                 )
 
-        cb = (
-            callback if callback is not None
-            else null_hmm_inference_callback()
-        )
+        cb = callback if callback is not None else null_hmm_inference_callback()
         if not isinstance(cb, HMMInferenceCallback):
             raise TypeError(
                 "HmmlearnAnalyser.analyse.callback must "
@@ -813,9 +752,7 @@ class HmmlearnAnalyser:
                 f"{len(arguments.observations)!r}"
             )
         if result.posteriors:
-            inferred_n_components = len(
-                result.posteriors[0].state_probabilities
-            )
+            inferred_n_components = len(result.posteriors[0].state_probabilities)
             if inferred_n_components != spec.n_components:
                 raise HMMAnalyserConfigError(
                     "HMMInferenceEngine.infer: posterior state "

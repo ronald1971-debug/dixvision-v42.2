@@ -141,9 +141,7 @@ def test_drawdown_above_ceiling_rejected() -> None:
 def test_is_oos_divergence_rejected_in_sigma_units() -> None:
     # |0.20 - 0.10| / 0.05 == 2σ, > 0.5σ.
     ev = QuantitativeEvaluator()
-    v = ev.evaluate(
-        _passing_metrics(is_score=0.20, oos_score=0.10, is_std=0.05)
-    )
+    v = ev.evaluate(_passing_metrics(is_score=0.20, oos_score=0.10, is_std=0.05))
     assert v.kind is QuantitativeVerdictKind.REJECTED
     assert REJECTION_CODE_IS_OOS_DIVERGENCE in v.rejection_codes
 
@@ -151,9 +149,7 @@ def test_is_oos_divergence_rejected_in_sigma_units() -> None:
 def test_is_oos_divergence_when_is_std_zero_uses_absolute() -> None:
     ev = QuantitativeEvaluator()
     # is_std == 0 → absolute divergence is compared; 0.6 > 0.5.
-    v = ev.evaluate(
-        _passing_metrics(is_score=0.6, oos_score=0.0, is_std=0.0)
-    )
+    v = ev.evaluate(_passing_metrics(is_score=0.6, oos_score=0.0, is_std=0.0))
     assert v.kind is QuantitativeVerdictKind.REJECTED
     assert REJECTION_CODE_IS_OOS_DIVERGENCE in v.rejection_codes
 

@@ -96,15 +96,9 @@ class ModelStage(StrEnum):
 # Legal stage transitions — gated by governance approval on the
 # evolution-engine side. The recommendation builder enforces this map.
 _LEGAL_STAGE_TRANSITIONS: dict[ModelStage, frozenset[ModelStage]] = {
-    ModelStage.NONE: frozenset(
-        {ModelStage.STAGING, ModelStage.ARCHIVED}
-    ),
-    ModelStage.STAGING: frozenset(
-        {ModelStage.PRODUCTION, ModelStage.ARCHIVED, ModelStage.NONE}
-    ),
-    ModelStage.PRODUCTION: frozenset(
-        {ModelStage.ARCHIVED, ModelStage.STAGING}
-    ),
+    ModelStage.NONE: frozenset({ModelStage.STAGING, ModelStage.ARCHIVED}),
+    ModelStage.STAGING: frozenset({ModelStage.PRODUCTION, ModelStage.ARCHIVED, ModelStage.NONE}),
+    ModelStage.PRODUCTION: frozenset({ModelStage.ARCHIVED, ModelStage.STAGING}),
     ModelStage.ARCHIVED: frozenset(),
 }
 
@@ -128,9 +122,7 @@ def _validate_name(name: str, *, kind: str) -> None:
     if not isinstance(name, str) or not name:
         raise ExperimentTrackingError(f"{kind} name must be a non-empty str")
     if len(name) > MAX_NAME_LEN:
-        raise ExperimentTrackingError(
-            f"{kind} name exceeds {MAX_NAME_LEN} chars"
-        )
+        raise ExperimentTrackingError(f"{kind} name exceeds {MAX_NAME_LEN} chars")
     if "\n" in name or "\r" in name:
         raise ExperimentTrackingError(f"{kind} name must be single-line")
 
@@ -139,9 +131,7 @@ def _validate_value(value: str, *, kind: str) -> None:
     if not isinstance(value, str):
         raise ExperimentTrackingError(f"{kind} value must be str")
     if len(value) > MAX_VALUE_LEN:
-        raise ExperimentTrackingError(
-            f"{kind} value exceeds {MAX_VALUE_LEN} chars"
-        )
+        raise ExperimentTrackingError(f"{kind} value exceeds {MAX_VALUE_LEN} chars")
 
 
 def _validate_finite(value: float, *, kind: str) -> None:
@@ -209,14 +199,10 @@ class ExperimentArtifact:
         if not isinstance(self.content, str):
             raise ExperimentTrackingError("artifact content must be str")
         if len(self.content.encode("utf-8")) > MAX_ARTIFACT_BYTES:
-            raise ExperimentTrackingError(
-                f"artifact content exceeds {MAX_ARTIFACT_BYTES} bytes"
-            )
+            raise ExperimentTrackingError(f"artifact content exceeds {MAX_ARTIFACT_BYTES} bytes")
         expected = _digest(self.content)
         if self.digest != expected:
-            raise ExperimentTrackingError(
-                "artifact digest does not match BLAKE2b-16(content)"
-            )
+            raise ExperimentTrackingError("artifact digest does not match BLAKE2b-16(content)")
 
 
 def build_artifact(*, name: str, content: str) -> ExperimentArtifact:
@@ -333,9 +319,7 @@ def _normalise_metrics(
     for m in rows:
         key = (m.name, m.step)
         if key in seen:
-            raise ExperimentTrackingError(
-                f"duplicate metric row: name={m.name}, step={m.step}"
-            )
+            raise ExperimentTrackingError(f"duplicate metric row: name={m.name}, step={m.step}")
         seen.add(key)
     rows.sort(key=lambda m: (m.name, m.step))
     out = tuple(rows)
@@ -353,9 +337,7 @@ def _normalise_artifacts(
     seen: set[str] = set()
     for a in rows:
         if a.name in seen:
-            raise ExperimentTrackingError(
-                f"duplicate artifact name: {a.name}"
-            )
+            raise ExperimentTrackingError(f"duplicate artifact name: {a.name}")
         seen.add(a.name)
     rows.sort(key=lambda a: a.name)
     out = tuple(rows)
@@ -574,9 +556,7 @@ class TrackingBackend(Protocol):
 
     def record_run(self, run: ExperimentRun) -> None: ...
     def record_model_version(self, version: ModelVersion) -> None: ...
-    def record_stage_recommendation(
-        self, rec: StageTransitionRecommendation
-    ) -> None: ...
+    def record_stage_recommendation(self, rec: StageTransitionRecommendation) -> None: ...
 
 
 @dataclass
@@ -590,24 +570,17 @@ class InMemoryTrackingBackend:
 
     runs: tuple[ExperimentRun, ...] = field(default_factory=tuple)
     model_versions: tuple[ModelVersion, ...] = field(default_factory=tuple)
-    recommendations: tuple[StageTransitionRecommendation, ...] = field(
-        default_factory=tuple
-    )
+    recommendations: tuple[StageTransitionRecommendation, ...] = field(default_factory=tuple)
 
     def record_run(self, run: ExperimentRun) -> None:
         if any(r.run_id == run.run_id for r in self.runs):
-            raise ExperimentTrackingError(
-                f"duplicate run_id: {run.run_id}"
-            )
+            raise ExperimentTrackingError(f"duplicate run_id: {run.run_id}")
         rows = sorted(self.runs + (run,), key=lambda r: r.run_id)
         self.runs = tuple(rows)
 
     def record_model_version(self, version: ModelVersion) -> None:
         for existing in self.model_versions:
-            if (
-                existing.model_name == version.model_name
-                and existing.version == version.version
-            ):
+            if existing.model_name == version.model_name and existing.version == version.version:
                 raise ExperimentTrackingError(
                     f"duplicate model version: {version.model_name}@{version.version}"
                 )
@@ -617,16 +590,9 @@ class InMemoryTrackingBackend:
         )
         self.model_versions = tuple(rows)
 
-    def record_stage_recommendation(
-        self, rec: StageTransitionRecommendation
-    ) -> None:
-        if any(
-            r.recommendation_id == rec.recommendation_id
-            for r in self.recommendations
-        ):
-            raise ExperimentTrackingError(
-                f"duplicate recommendation_id: {rec.recommendation_id}"
-            )
+    def record_stage_recommendation(self, rec: StageTransitionRecommendation) -> None:
+        if any(r.recommendation_id == rec.recommendation_id for r in self.recommendations):
+            raise ExperimentTrackingError(f"duplicate recommendation_id: {rec.recommendation_id}")
         rows = sorted(
             self.recommendations + (rec,),
             key=lambda r: r.recommendation_id,
@@ -637,9 +603,7 @@ class InMemoryTrackingBackend:
 # ----------------------------------------------------- production seam
 
 
-def mlflow_backend_factory(
-    *, tracking_uri: str = "file:./mlruns"
-) -> TrackingBackend:
+def mlflow_backend_factory(*, tracking_uri: str = "file:./mlruns") -> TrackingBackend:
     """Construct an mlflow-backed :class:`TrackingBackend`.
 
     Lazy-imports ``mlflow`` so that test environments without mlflow

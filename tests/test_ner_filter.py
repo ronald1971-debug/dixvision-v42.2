@@ -36,9 +36,7 @@ from intelligence_engine.news.ner_filter import (  # noqa: E402
     extract_entities_batch,
 )
 
-SOURCE_PATH = (
-    REPO_ROOT / "intelligence_engine" / "news" / "ner_filter.py"
-).resolve()
+SOURCE_PATH = (REPO_ROOT / "intelligence_engine" / "news" / "ner_filter.py").resolve()
 SOURCE_TEXT = SOURCE_PATH.read_text(encoding="utf-8")
 SOURCE_TREE = ast.parse(SOURCE_TEXT)
 
@@ -100,10 +98,7 @@ def test_no_typed_event_ctors() -> None:
             target = node.func
             if isinstance(target, ast.Name) and target.id in forbidden_names:
                 pytest.fail(f"forbidden ctor: {target.id}")
-            if (
-                isinstance(target, ast.Attribute)
-                and target.attr in forbidden_names
-            ):
+            if isinstance(target, ast.Attribute) and target.attr in forbidden_names:
                 pytest.fail(f"forbidden ctor: {target.attr}")
 
 
@@ -217,9 +212,7 @@ def test_extract_org_apple() -> None:
 
 
 def test_extract_org_coinbase() -> None:
-    assert "Coinbase" in _texts(
-        "Coinbase reported record revenue.", EntityLabel.ORG
-    )
+    assert "Coinbase" in _texts("Coinbase reported record revenue.", EntityLabel.ORG)
 
 
 def test_extract_gpe_us() -> None:
@@ -227,9 +220,7 @@ def test_extract_gpe_us() -> None:
 
 
 def test_extract_gpe_two_word() -> None:
-    assert "Hong Kong" in _texts(
-        "Hong Kong regulators approved the listing.", EntityLabel.GPE
-    )
+    assert "Hong Kong" in _texts("Hong Kong regulators approved the listing.", EntityLabel.GPE)
 
 
 def test_extract_money_dollar() -> None:
@@ -237,9 +228,7 @@ def test_extract_money_dollar() -> None:
 
 
 def test_extract_money_with_magnitude() -> None:
-    assert "$1.5M" in _texts(
-        "The fund raised $1.5M in seed.", EntityLabel.MONEY
-    )
+    assert "$1.5M" in _texts("The fund raised $1.5M in seed.", EntityLabel.MONEY)
 
 
 def test_extract_money_usd_prefix() -> None:
@@ -251,21 +240,15 @@ def test_extract_percent_basic() -> None:
 
 
 def test_extract_percent_negative() -> None:
-    assert "-2.3%" in _texts(
-        "Stocks fell -2.3% on the day.", EntityLabel.PERCENT
-    )
+    assert "-2.3%" in _texts("Stocks fell -2.3% on the day.", EntityLabel.PERCENT)
 
 
 def test_extract_date_iso() -> None:
-    assert "2024-01-15" in _texts(
-        "The vote was on 2024-01-15.", EntityLabel.DATE
-    )
+    assert "2024-01-15" in _texts("The vote was on 2024-01-15.", EntityLabel.DATE)
 
 
 def test_extract_date_quarter() -> None:
-    assert "Q1 2024" in _texts(
-        "Earnings beat in Q1 2024.", EntityLabel.DATE
-    )
+    assert "Q1 2024" in _texts("Earnings beat in Q1 2024.", EntityLabel.DATE)
 
 
 def test_extract_date_short_year() -> None:
@@ -273,21 +256,15 @@ def test_extract_date_short_year() -> None:
 
 
 def test_extract_product_bitcoin() -> None:
-    assert "Bitcoin" in _texts(
-        "Bitcoin price hit a new high.", EntityLabel.PRODUCT
-    )
+    assert "Bitcoin" in _texts("Bitcoin price hit a new high.", EntityLabel.PRODUCT)
 
 
 def test_extract_product_ethereum() -> None:
-    assert "Ethereum" in _texts(
-        "Ethereum upgrade complete.", EntityLabel.PRODUCT
-    )
+    assert "Ethereum" in _texts("Ethereum upgrade complete.", EntityLabel.PRODUCT)
 
 
 def test_extract_ticker_dollar_btc() -> None:
-    assert "$BTC" in _texts(
-        "$BTC traded sideways today.", EntityLabel.TICKER
-    )
+    assert "$BTC" in _texts("$BTC traded sideways today.", EntityLabel.TICKER)
 
 
 def test_extract_ticker_aapl() -> None:

@@ -186,9 +186,7 @@ MAX_LANGUAGE_LEN: Final[int] = 16
 
 SANDBOX_VERSION: Final[str] = "1"
 
-_ACTION_ID_RE: Final[re.Pattern[str]] = re.compile(
-    r"[A-Za-z_][A-Za-z0-9_.-]*"
-)
+_ACTION_ID_RE: Final[re.Pattern[str]] = re.compile(r"[A-Za-z_][A-Za-z0-9_.-]*")
 
 # Code-language whitelist mirrors OpenHands' supported runtimes.
 _ALLOWED_LANGUAGES: Final[frozenset[str]] = frozenset(("python",))
@@ -296,9 +294,7 @@ def _validate_id(name: str, value: str, max_len: int) -> None:
     if len(value) > max_len:
         raise ActionError(f"{name} length > {max_len}")
     if not _ACTION_ID_RE.fullmatch(value):
-        raise ActionError(
-            f"{name} must match [A-Za-z_][A-Za-z0-9_.-]*"
-        )
+        raise ActionError(f"{name} must match [A-Za-z_][A-Za-z0-9_.-]*")
 
 
 def _validate_ts_ns(value: int) -> None:
@@ -316,19 +312,12 @@ def _freeze_meta(
     out: dict[str, str] = {}
     for k in sorted(meta.keys()):
         if not isinstance(k, str) or not k:
-            raise ActionError(
-                f"meta key must be a non-empty str, got {k!r}"
-            )
+            raise ActionError(f"meta key must be a non-empty str, got {k!r}")
         v = meta[k]
         if not isinstance(v, str):
-            raise ActionError(
-                f"meta[{k!r}] must be str, got "
-                f"{type(v).__name__}"
-            )
+            raise ActionError(f"meta[{k!r}] must be str, got {type(v).__name__}")
         if len(k) > MAX_ARG_LEN or len(v) > MAX_ARG_LEN:
-            raise ActionError(
-                f"meta entry too long: {k!r}"
-            )
+            raise ActionError(f"meta entry too long: {k!r}")
         out[k] = v
     return MappingProxyType(out)
 
@@ -362,10 +351,7 @@ class BaseAction:
         _validate_id("Action.id", self.id, MAX_ACTION_ID_LEN)
         _validate_ts_ns(self.ts_ns)
         if not isinstance(self.KIND, ActionKind):
-            raise ActionError(
-                "Action.KIND must be ActionKind, got "
-                f"{type(self.KIND).__name__}"
-            )
+            raise ActionError(f"Action.KIND must be ActionKind, got {type(self.KIND).__name__}")
 
     @property
     def kind(self) -> ActionKind:
@@ -384,28 +370,15 @@ class CodeAction(BaseAction):
     def __post_init__(self) -> None:
         BaseAction.__post_init__(self)
         if not isinstance(self.language, str) or not self.language:
-            raise ActionError(
-                "CodeAction.language must be a non-empty str"
-            )
+            raise ActionError("CodeAction.language must be a non-empty str")
         if len(self.language) > MAX_LANGUAGE_LEN:
-            raise ActionError(
-                f"CodeAction.language length > {MAX_LANGUAGE_LEN}"
-            )
+            raise ActionError(f"CodeAction.language length > {MAX_LANGUAGE_LEN}")
         if self.language not in _ALLOWED_LANGUAGES:
-            raise ActionError(
-                f"CodeAction.language not allowed: "
-                f"{self.language!r}"
-            )
+            raise ActionError(f"CodeAction.language not allowed: {self.language!r}")
         if not isinstance(self.source, str):
-            raise ActionError(
-                "CodeAction.source must be str, got "
-                f"{type(self.source).__name__}"
-            )
+            raise ActionError(f"CodeAction.source must be str, got {type(self.source).__name__}")
         if len(self.source) > MAX_CODE_SOURCE_LEN:
-            raise ActionError(
-                f"CodeAction.source length > "
-                f"{MAX_CODE_SOURCE_LEN}"
-            )
+            raise ActionError(f"CodeAction.source length > {MAX_CODE_SOURCE_LEN}")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -420,39 +393,22 @@ class BashAction(BaseAction):
     def __post_init__(self) -> None:
         BaseAction.__post_init__(self)
         if not isinstance(self.command, str) or not self.command:
-            raise ActionError(
-                "BashAction.command must be a non-empty str"
-            )
+            raise ActionError("BashAction.command must be a non-empty str")
         if len(self.command) > MAX_BASH_COMMAND_LEN:
-            raise ActionError(
-                f"BashAction.command length > "
-                f"{MAX_BASH_COMMAND_LEN}"
-            )
+            raise ActionError(f"BashAction.command length > {MAX_BASH_COMMAND_LEN}")
         # Disallow shell metacharacters in the head; arguments are
         # validated separately by the boundary check.
         if any(c in self.command for c in (";", "|", "&", "`", "$")):
-            raise ActionError(
-                "BashAction.command must not contain shell "
-                "metacharacters"
-            )
+            raise ActionError("BashAction.command must not contain shell metacharacters")
         if not isinstance(self.args, tuple):
-            raise ActionError(
-                "BashAction.args must be a tuple[str, ...]"
-            )
+            raise ActionError("BashAction.args must be a tuple[str, ...]")
         if len(self.args) > MAX_ARG_COUNT:
-            raise ActionError(
-                f"BashAction.args length > {MAX_ARG_COUNT}"
-            )
+            raise ActionError(f"BashAction.args length > {MAX_ARG_COUNT}")
         for a in self.args:
             if not isinstance(a, str):
-                raise ActionError(
-                    "BashAction.args must be all str, got "
-                    f"{type(a).__name__}"
-                )
+                raise ActionError(f"BashAction.args must be all str, got {type(a).__name__}")
             if len(a) > MAX_ARG_LEN:
-                raise ActionError(
-                    f"BashAction.args entry length > {MAX_ARG_LEN}"
-                )
+                raise ActionError(f"BashAction.args entry length > {MAX_ARG_LEN}")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -468,23 +424,15 @@ class FileWriteAction(BaseAction):
     def __post_init__(self) -> None:
         BaseAction.__post_init__(self)
         if not isinstance(self.path, str) or not self.path:
-            raise ActionError(
-                "FileWriteAction.path must be a non-empty str"
-            )
+            raise ActionError("FileWriteAction.path must be a non-empty str")
         if len(self.path) > MAX_PATH_LEN:
-            raise ActionError(
-                f"FileWriteAction.path length > {MAX_PATH_LEN}"
-            )
+            raise ActionError(f"FileWriteAction.path length > {MAX_PATH_LEN}")
         if not isinstance(self.content, str):
             raise ActionError(
-                "FileWriteAction.content must be str, got "
-                f"{type(self.content).__name__}"
+                f"FileWriteAction.content must be str, got {type(self.content).__name__}"
             )
         if len(self.content) > MAX_FILE_CONTENT_LEN:
-            raise ActionError(
-                f"FileWriteAction.content length > "
-                f"{MAX_FILE_CONTENT_LEN}"
-            )
+            raise ActionError(f"FileWriteAction.content length > {MAX_FILE_CONTENT_LEN}")
 
 
 # ---------------------------------------------------------------------------
@@ -505,9 +453,7 @@ class Observation:
     ts_ns: int
 
     def __post_init__(self) -> None:
-        _validate_id(
-            "Observation.action_id", self.action_id, MAX_ACTION_ID_LEN
-        )
+        _validate_id("Observation.action_id", self.action_id, MAX_ACTION_ID_LEN)
         _validate_ts_ns(self.ts_ns)
 
 
@@ -523,23 +469,13 @@ class CommandObservation(Observation):
     def __post_init__(self) -> None:
         Observation.__post_init__(self)
         if not isinstance(self.stdout, str):
-            raise ActionError(
-                "CommandObservation.stdout must be str"
-            )
+            raise ActionError("CommandObservation.stdout must be str")
         if not isinstance(self.stderr, str):
-            raise ActionError(
-                "CommandObservation.stderr must be str"
-            )
-        if not isinstance(self.exit_code, int) or isinstance(
-            self.exit_code, bool
-        ):
-            raise ActionError(
-                "CommandObservation.exit_code must be int"
-            )
+            raise ActionError("CommandObservation.stderr must be str")
+        if not isinstance(self.exit_code, int) or isinstance(self.exit_code, bool):
+            raise ActionError("CommandObservation.exit_code must be int")
         if not isinstance(self.truncated, bool):
-            raise ActionError(
-                "CommandObservation.truncated must be bool"
-            )
+            raise ActionError("CommandObservation.truncated must be bool")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -553,24 +489,13 @@ class FileWriteObservation(Observation):
     def __post_init__(self) -> None:
         Observation.__post_init__(self)
         if not isinstance(self.path, str) or not self.path:
-            raise ActionError(
-                "FileWriteObservation.path must be a non-empty str"
-            )
-        if not isinstance(self.bytes_written, int) or isinstance(
-            self.bytes_written, bool
-        ):
-            raise ActionError(
-                "FileWriteObservation.bytes_written must be int"
-            )
+            raise ActionError("FileWriteObservation.path must be a non-empty str")
+        if not isinstance(self.bytes_written, int) or isinstance(self.bytes_written, bool):
+            raise ActionError("FileWriteObservation.bytes_written must be int")
         if self.bytes_written < 0:
-            raise ActionError(
-                "FileWriteObservation.bytes_written must be "
-                "non-negative"
-            )
+            raise ActionError("FileWriteObservation.bytes_written must be non-negative")
         if not isinstance(self.ok, bool):
-            raise ActionError(
-                "FileWriteObservation.ok must be bool"
-            )
+            raise ActionError("FileWriteObservation.ok must be bool")
 
 
 # ---------------------------------------------------------------------------
@@ -599,50 +524,32 @@ class SandboxBoundary:
             raise BoundaryError("root must be a non-empty str")
         if not self.root.endswith("/"):
             raise BoundaryError(
-                "root must end with '/' to be a directory prefix, "
-                f"got {self.root!r}"
+                f"root must end with '/' to be a directory prefix, got {self.root!r}"
             )
         if ".." in self.root or "~" in self.root:
-            raise BoundaryError(
-                "root must not contain '..' or '~'"
-            )
+            raise BoundaryError("root must not contain '..' or '~'")
         # The directive constrains writes to /tmp/dix_sandbox/ —
         # custom roots are allowed for tests but they must still
         # live under /tmp/ to keep the production guarantee.
         if not self.root.startswith("/tmp/"):
-            raise BoundaryError(
-                "root must live under /tmp/ (directive constraint)"
-            )
+            raise BoundaryError("root must live under /tmp/ (directive constraint)")
         if not isinstance(self.forbidden_commands, tuple):
-            raise BoundaryError(
-                "forbidden_commands must be a tuple"
-            )
+            raise BoundaryError("forbidden_commands must be a tuple")
         for c in self.forbidden_commands:
             if not isinstance(c, str) or not c:
-                raise BoundaryError(
-                    "forbidden_commands entries must be non-empty "
-                    "str"
-                )
+                raise BoundaryError("forbidden_commands entries must be non-empty str")
         if not isinstance(self.forbidden_modules, tuple):
-            raise BoundaryError(
-                "forbidden_modules must be a tuple"
-            )
+            raise BoundaryError("forbidden_modules must be a tuple")
         for m in self.forbidden_modules:
             if not isinstance(m, str) or not m:
-                raise BoundaryError(
-                    "forbidden_modules entries must be non-empty "
-                    "str"
-                )
+                raise BoundaryError("forbidden_modules entries must be non-empty str")
         if (
             not isinstance(self.max_actions, int)
             or isinstance(self.max_actions, bool)
             or self.max_actions < 1
             or self.max_actions > MAX_ACTIONS_PER_PLAN
         ):
-            raise BoundaryError(
-                "max_actions must be int in "
-                f"[1, {MAX_ACTIONS_PER_PLAN}]"
-            )
+            raise BoundaryError(f"max_actions must be int in [1, {MAX_ACTIONS_PER_PLAN}]")
 
     def accept_path(self, path: str) -> bool:
         """Return True iff ``path`` is syntactically inside the
@@ -686,7 +593,7 @@ class SandboxBoundary:
             for prefix in ("import ", "from "):
                 if not stripped.startswith(prefix):
                     continue
-                rest = stripped[len(prefix):].strip()
+                rest = stripped[len(prefix) :].strip()
                 head = rest.split()[0] if rest else ""
                 head = head.split(".")[0]
                 if head in forbidden:
@@ -715,17 +622,11 @@ class SandboxActionResult:
             MAX_ACTION_ID_LEN,
         )
         if not isinstance(self.kind, ActionKind):
-            raise PlanError(
-                "SandboxActionResult.kind must be ActionKind"
-            )
+            raise PlanError("SandboxActionResult.kind must be ActionKind")
         if not isinstance(self.verdict, ActionVerdict):
-            raise PlanError(
-                "SandboxActionResult.verdict must be ActionVerdict"
-            )
+            raise PlanError("SandboxActionResult.verdict must be ActionVerdict")
         if not isinstance(self.reason, str):
-            raise PlanError(
-                "SandboxActionResult.reason must be str"
-            )
+            raise PlanError("SandboxActionResult.reason must be str")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -760,46 +661,23 @@ class SandboxPlan:
                 "SandboxPlan.actions / results length mismatch: "
                 f"{len(self.actions)} vs {len(self.results)}"
             )
-        for action, result in zip(
-            self.actions, self.results, strict=True
-        ):
+        for action, result in zip(self.actions, self.results, strict=True):
             if action.id != result.action_id:
-                raise PlanError(
-                    "SandboxPlan.results[i].action_id must equal "
-                    "actions[i].id"
-                )
+                raise PlanError("SandboxPlan.results[i].action_id must equal actions[i].id")
             if action.kind is not result.kind:
-                raise PlanError(
-                    "SandboxPlan.results[i].kind must equal "
-                    "actions[i].kind"
-                )
+                raise PlanError("SandboxPlan.results[i].kind must equal actions[i].kind")
         if not isinstance(self.digest, bytes) or len(self.digest) != 16:
-            raise PlanError(
-                "SandboxPlan.digest must be 16 bytes"
-            )
+            raise PlanError("SandboxPlan.digest must be 16 bytes")
         for name in (
             "accepted_count",
             "review_count",
             "rejected_count",
         ):
             value = getattr(self, name)
-            if (
-                not isinstance(value, int)
-                or isinstance(value, bool)
-                or value < 0
-            ):
-                raise PlanError(
-                    f"SandboxPlan.{name} must be non-negative int"
-                )
-        if (
-            self.accepted_count
-            + self.review_count
-            + self.rejected_count
-            != len(self.results)
-        ):
-            raise PlanError(
-                "SandboxPlan counters must sum to len(results)"
-            )
+            if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                raise PlanError(f"SandboxPlan.{name} must be non-negative int")
+        if self.accepted_count + self.review_count + self.rejected_count != len(self.results):
+            raise PlanError("SandboxPlan counters must sum to len(results)")
 
     @property
     def requires_governance_review(self) -> bool:
@@ -846,10 +724,7 @@ class SandboxPlanValidator:
 
     def __init__(self, *, boundary: SandboxBoundary) -> None:
         if not isinstance(boundary, SandboxBoundary):
-            raise BoundaryError(
-                "SandboxPlanValidator: boundary must be a "
-                "SandboxBoundary"
-            )
+            raise BoundaryError("SandboxPlanValidator: boundary must be a SandboxBoundary")
         self._boundary = boundary
 
     @property
@@ -875,13 +750,10 @@ class SandboxPlanValidator:
         for action in actions_tuple:
             if not isinstance(action, BaseAction):
                 raise ActionError(
-                    "SandboxPlanValidator.validate: every entry "
-                    "must be a BaseAction subclass"
+                    "SandboxPlanValidator.validate: every entry must be a BaseAction subclass"
                 )
             if action.id in seen_ids:
-                raise PlanError(
-                    f"duplicate action id: {action.id!r}"
-                )
+                raise PlanError(f"duplicate action id: {action.id!r}")
             seen_ids.add(action.id)
             verdict, reason = self._classify(action)
             if verdict is ActionVerdict.ACCEPTED:
@@ -914,9 +786,7 @@ class SandboxPlanValidator:
         action: BaseAction,
     ) -> tuple[ActionVerdict, str]:
         if isinstance(action, CodeAction):
-            if self._boundary.code_imports_forbidden_module(
-                action.source
-            ):
+            if self._boundary.code_imports_forbidden_module(action.source):
                 return (
                     ActionVerdict.REJECTED,
                     "code imports forbidden module",
@@ -939,8 +809,7 @@ class SandboxPlanValidator:
                     if not self._boundary.accept_path(arg):
                         return (
                             ActionVerdict.REVIEW_REQUIRED,
-                            "argument touches path outside "
-                            f"sandbox: {arg!r}",
+                            f"argument touches path outside sandbox: {arg!r}",
                         )
             return (ActionVerdict.ACCEPTED, "bash clean")
         if isinstance(action, FileWriteAction):
@@ -1032,8 +901,7 @@ class _StageEvaluator(Protocol):
         *,
         ts_ns: int,
         plan: SandboxPlan,
-    ) -> tuple[SandboxPlan, StageVerdict]:
-        ...
+    ) -> tuple[SandboxPlan, StageVerdict]: ...
 
 
 class OpenHandsSandboxStage:
@@ -1055,10 +923,7 @@ class OpenHandsSandboxStage:
 
     def __init__(self, *, validator: SandboxPlanValidator) -> None:
         if not isinstance(validator, SandboxPlanValidator):
-            raise BoundaryError(
-                "OpenHandsSandboxStage: validator must be a "
-                "SandboxPlanValidator"
-            )
+            raise BoundaryError("OpenHandsSandboxStage: validator must be a SandboxPlanValidator")
         self._validator = validator
 
     @property
@@ -1075,15 +940,9 @@ class OpenHandsSandboxStage:
         plan = self._validator.validate(actions)
         passed = plan.passed
         if plan.rejected_count > 0:
-            detail = (
-                f"openhands sandbox: {plan.rejected_count} actions "
-                "rejected"
-            )
+            detail = f"openhands sandbox: {plan.rejected_count} actions rejected"
         elif plan.review_count > 0:
-            detail = (
-                f"openhands sandbox: {plan.review_count} actions "
-                "require governance review"
-            )
+            detail = f"openhands sandbox: {plan.review_count} actions require governance review"
         else:
             detail = "openhands sandbox clean"
         verdict = StageVerdict(

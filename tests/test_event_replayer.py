@@ -190,9 +190,7 @@ def test_constructor_rejects_decreasing_ts_order() -> None:
 
 def test_constructor_accepts_equal_ts_order() -> None:
     # Equal timestamps are fine (loop tie-breaks by insertion order).
-    r = EventReplayer.from_pairs(
-        [(1_000, "a"), (1_000, "b"), (1_000, "c")]
-    )
+    r = EventReplayer.from_pairs([(1_000, "a"), (1_000, "b"), (1_000, "c")])
     assert len(r) == 3
 
 
@@ -232,9 +230,7 @@ def test_entries_property_returns_frozen_tuple() -> None:
 
 
 def test_slice_inclusive_on_both_ends() -> None:
-    r = EventReplayer.from_pairs(
-        [(1_000, "a"), (2_000, "b"), (3_000, "c"), (4_000, "d")]
-    )
+    r = EventReplayer.from_pairs([(1_000, "a"), (2_000, "b"), (3_000, "c"), (4_000, "d")])
     sub = r.slice(2_000, 3_000)
     assert tuple(e.payload for e in sub) == ("b", "c")
 
@@ -269,9 +265,7 @@ def test_slice_rejects_non_int() -> None:
 
 
 def test_replay_dispatches_in_log_order() -> None:
-    r = EventReplayer.from_pairs(
-        [(1_000, "a"), (2_000, "b"), (3_000, "c")]
-    )
+    r = EventReplayer.from_pairs([(1_000, "a"), (2_000, "b"), (3_000, "c")])
     result, dispatched = r.replay(scenario_id="sc")
     assert tuple(e.payload for e in dispatched) == ("a", "b", "c")
     assert result.events_dispatched == 3
@@ -281,9 +275,7 @@ def test_replay_dispatches_in_log_order() -> None:
 
 
 def test_replay_calls_handler_once_per_event() -> None:
-    r = EventReplayer.from_pairs(
-        [(1, "a"), (2, "b"), (3, "c")]
-    )
+    r = EventReplayer.from_pairs([(1, "a"), (2, "b"), (3, "c")])
     seen: list[str] = []
     r.replay(
         scenario_id="sc",
@@ -368,12 +360,8 @@ def test_replay_rejects_non_int_seed() -> None:
 
 
 def test_replay_until_inclusive() -> None:
-    r = EventReplayer.from_pairs(
-        [(1_000, "a"), (2_000, "b"), (3_000, "c")]
-    )
-    result, dispatched = r.replay_until(
-        scenario_id="sc", until_ts_ns=2_000
-    )
+    r = EventReplayer.from_pairs([(1_000, "a"), (2_000, "b"), (3_000, "c")])
+    result, dispatched = r.replay_until(scenario_id="sc", until_ts_ns=2_000)
     assert tuple(e.payload for e in dispatched) == ("a", "b")
     assert result.events_dispatched == 2
     assert result.end_ts_ns == 2_000
@@ -381,9 +369,7 @@ def test_replay_until_inclusive() -> None:
 
 def test_replay_until_zero_drops_everything() -> None:
     r = EventReplayer.from_pairs([(1_000, "a"), (2_000, "b")])
-    result, dispatched = r.replay_until(
-        scenario_id="sc", until_ts_ns=0
-    )
+    result, dispatched = r.replay_until(scenario_id="sc", until_ts_ns=0)
     assert dispatched == ()
     assert result.events_dispatched == 0
 

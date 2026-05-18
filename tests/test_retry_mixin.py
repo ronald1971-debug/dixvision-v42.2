@@ -43,10 +43,7 @@ from execution_engine.adapters._retry_mixin import (
 )
 
 _MODULE_PATH = (
-    Path(__file__).resolve().parent.parent
-    / "execution_engine"
-    / "adapters"
-    / "_retry_mixin.py"
+    Path(__file__).resolve().parent.parent / "execution_engine" / "adapters" / "_retry_mixin.py"
 )
 
 
@@ -450,9 +447,7 @@ def test_different_seeds_give_different_delays() -> None:
 
 def test_meta_keys_are_sorted() -> None:
     exec_ = RetryExecutor(sleep_fn=lambda _: None)
-    _, record = exec_.run(
-        lambda: 1, meta={"z": "1", "a": "2", "m": "3"}
-    )
+    _, record = exec_.run(lambda: 1, meta={"z": "1", "a": "2", "m": "3"})
     assert list(record.meta.keys()) == ["a", "m", "z"]
 
 
@@ -596,9 +591,7 @@ def _import_names() -> set[str]:
 def test_no_top_level_random_or_asyncio_imports() -> None:
     imports = _import_names()
     forbidden = {"random", "asyncio", "os", "datetime"}
-    assert imports.isdisjoint(forbidden), (
-        f"forbidden imports present: {imports & forbidden}"
-    )
+    assert imports.isdisjoint(forbidden), f"forbidden imports present: {imports & forbidden}"
 
 
 def test_no_numpy_or_torch_imports() -> None:
@@ -616,9 +609,7 @@ def test_no_engine_cross_imports() -> None:
             "intelligence_engine",
             "evolution_engine",
         ):
-            assert not mod.startswith(forbidden_prefix), (
-                f"forbidden engine import: {mod}"
-            )
+            assert not mod.startswith(forbidden_prefix), f"forbidden engine import: {mod}"
 
 
 def test_no_typed_bus_event_construction() -> None:
@@ -641,9 +632,7 @@ def test_no_typed_bus_event_construction() -> None:
                 name = func.attr
             else:
                 name = None
-            assert name not in forbidden, (
-                f"typed bus event constructed: {name}"
-            )
+            assert name not in forbidden, f"typed bus event constructed: {name}"
 
 
 def test_no_clock_reads_b_clock() -> None:
@@ -671,9 +660,7 @@ def test_no_clock_reads_b_clock() -> None:
 def test_module_does_not_import_external_freqtrade() -> None:
     imports = _import_names()
     for mod in imports:
-        assert not mod.startswith("freqtrade"), (
-            f"freqtrade import leaked: {mod}"
-        )
+        assert not mod.startswith("freqtrade"), f"freqtrade import leaked: {mod}"
 
 
 def test_adapted_from_header_present() -> None:

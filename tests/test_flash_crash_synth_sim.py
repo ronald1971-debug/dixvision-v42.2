@@ -33,9 +33,9 @@ def test_replay_determinism() -> None:
 
 
 def test_long_flash_crash_full_recovery_zero_pnl() -> None:
-    out = FlashCrashSynth(
-        FlashCrashConfig(drop_jitter=0.0, recovery_jitter=0.0)
-    ).step(seed=0, scenario=_scenario(recovery_pct=1.0))
+    out = FlashCrashSynth(FlashCrashConfig(drop_jitter=0.0, recovery_jitter=0.0)).step(
+        seed=0, scenario=_scenario(recovery_pct=1.0)
+    )
     # Full recovery means terminal == entry: pnl == 0.
     assert out.pnl_usd == pytest.approx(0.0)
     # But drawdown is still the trough distance: 15% * 10_000 = 1500.
@@ -43,18 +43,16 @@ def test_long_flash_crash_full_recovery_zero_pnl() -> None:
 
 
 def test_long_flash_crash_no_recovery_max_loss() -> None:
-    out = FlashCrashSynth(
-        FlashCrashConfig(drop_jitter=0.0, recovery_jitter=0.0)
-    ).step(seed=0, scenario=_scenario(recovery_pct=0.0))
+    out = FlashCrashSynth(FlashCrashConfig(drop_jitter=0.0, recovery_jitter=0.0)).step(
+        seed=0, scenario=_scenario(recovery_pct=0.0)
+    )
     # No recovery: terminal == trough; pnl == -drawdown.
     assert out.pnl_usd == pytest.approx(-1500.0)
     assert out.terminal_drawdown_usd == pytest.approx(1500.0)
 
 
 def test_short_flash_spike_full_recovery_zero_pnl() -> None:
-    out = FlashCrashSynth(
-        FlashCrashConfig(drop_jitter=0.0, recovery_jitter=0.0)
-    ).step(
+    out = FlashCrashSynth(FlashCrashConfig(drop_jitter=0.0, recovery_jitter=0.0)).step(
         seed=0,
         scenario=_scenario(side="short", recovery_pct=1.0),
     )
@@ -64,9 +62,7 @@ def test_short_flash_spike_full_recovery_zero_pnl() -> None:
 
 
 def test_short_flash_spike_no_recovery_max_loss() -> None:
-    out = FlashCrashSynth(
-        FlashCrashConfig(drop_jitter=0.0, recovery_jitter=0.0)
-    ).step(
+    out = FlashCrashSynth(FlashCrashConfig(drop_jitter=0.0, recovery_jitter=0.0)).step(
         seed=0,
         scenario=_scenario(side="short", recovery_pct=0.0),
     )
@@ -145,9 +141,7 @@ def test_long_loss_scales_with_position_size() -> None:
     out_s = FlashCrashSynth(cfg).step(seed=0, scenario=s_small)
     out_b = FlashCrashSynth(cfg).step(seed=0, scenario=s_big)
     assert out_b.pnl_usd == pytest.approx(out_s.pnl_usd * 100.0)
-    assert out_b.terminal_drawdown_usd == pytest.approx(
-        out_s.terminal_drawdown_usd * 100.0
-    )
+    assert out_b.terminal_drawdown_usd == pytest.approx(out_s.terminal_drawdown_usd * 100.0)
 
 
 def test_drop_jitter_perturbs_trough_only() -> None:

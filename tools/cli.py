@@ -118,9 +118,7 @@ class CliCommand:
         seen: set[str] = set()
         for opt in self.options:
             if opt.name in seen:
-                raise CliError(
-                    f"CliCommand {self.name!r}: duplicate option {opt.name!r}"
-                )
+                raise CliError(f"CliCommand {self.name!r}: duplicate option {opt.name!r}")
             seen.add(opt.name)
 
 
@@ -150,9 +148,7 @@ class CliApp:
 def _format_plan(action: str, params: Mapping[str, Any]) -> str:
     """Render a deterministic ``key=value`` plan line per option (sorted)."""
 
-    body = "\n".join(
-        f"  {key}={params[key]!r}" for key in sorted(params)
-    )
+    body = "\n".join(f"  {key}={params[key]!r}" for key in sorted(params))
     if not body:
         return f"plan: {action}\n"
     return f"plan: {action}\n{body}\n"
@@ -230,25 +226,19 @@ CANONICAL_APP: Final[CliApp] = CliApp(
         CliCommand(
             name="status",
             help="System status snapshot summary.",
-            options=(
-                CliOption("verbose", bool, False, "Emit verbose snapshot."),
-            ),
+            options=(CliOption("verbose", bool, False, "Emit verbose snapshot."),),
             handler=_handle_status,
         ),
         CliCommand(
             name="validate",
             help="Run tools.enforce regression-floor checks.",
-            options=(
-                CliOption("strict", bool, False, "Pass --strict to enforce."),
-            ),
+            options=(CliOption("strict", bool, False, "Pass --strict to enforce."),),
             handler=_handle_validate,
         ),
         CliCommand(
             name="replay",
             help="Emit a ledger replay plan.",
-            options=(
-                CliOption("path", str, "", "Path to the authority ledger."),
-            ),
+            options=(CliOption("path", str, "", "Path to the authority ledger."),),
             handler=_handle_replay,
         ),
     ),
@@ -300,9 +290,7 @@ def dispatch(app: CliApp, argv: Sequence[str]) -> CliResult:
             stderr=f"{app.name}: argparse exit {exc.code!r}\n",
         )
     cmd = next(c for c in app.commands if c.name == ns.command)
-    parsed: dict[str, Any] = {
-        opt.name: getattr(ns, opt.name) for opt in cmd.options
-    }
+    parsed: dict[str, Any] = {opt.name: getattr(ns, opt.name) for opt in cmd.options}
     return cmd.handler(parsed)
 
 
@@ -327,8 +315,10 @@ def format_table(headers: Sequence[str], rows: Sequence[Sequence[Any]]) -> str:
         for i in range(len(columns))
     ]
     sep = "+" + "+".join("-" * (w + 2) for w in widths) + "+"
+
     def _line(cells: Sequence[str]) -> str:
         return "|" + "|".join(f" {cells[i].ljust(widths[i])} " for i in range(len(widths))) + "|"
+
     out = [sep, _line(columns), sep]
     for row in body:
         out.append(_line(row))

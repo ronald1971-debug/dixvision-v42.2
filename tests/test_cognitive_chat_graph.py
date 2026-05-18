@@ -72,9 +72,7 @@ class _RecordingTransport:
 
     def __init__(self, *, reply: str = "fake-reply") -> None:
         self._reply = reply
-        self.calls: list[
-            tuple[AIProvider, tuple[BaseMessage, ...], dict[str, Any]]
-        ] = []
+        self.calls: list[tuple[AIProvider, tuple[BaseMessage, ...], dict[str, Any]]] = []
 
     def invoke(
         self,
@@ -139,9 +137,7 @@ def test_feature_flag_default_on(monkeypatch: pytest.MonkeyPatch) -> None:
     assert flag.enabled is True
 
 
-@pytest.mark.parametrize(
-    "value", ["1", "true", "TRUE", "yes", "on", "", "maybe"]
-)
+@pytest.mark.parametrize("value", ["1", "true", "TRUE", "yes", "on", "", "maybe"])
 def test_feature_flag_truthy_or_unknown_values_enable(
     monkeypatch: pytest.MonkeyPatch, value: str
 ) -> None:
@@ -150,9 +146,7 @@ def test_feature_flag_truthy_or_unknown_values_enable(
 
 
 @pytest.mark.parametrize("value", ["0", "false", "no", "off", "FALSE", "Off"])
-def test_feature_flag_falsy_values_disable(
-    monkeypatch: pytest.MonkeyPatch, value: str
-) -> None:
+def test_feature_flag_falsy_values_disable(monkeypatch: pytest.MonkeyPatch, value: str) -> None:
     monkeypatch.setenv(FEATURE_FLAG_ENV_VAR, value)
     assert CognitiveChatFeatureFlag().enabled is False
 
@@ -231,9 +225,9 @@ def test_assemble_returns_bundle_when_enabled(
 # ---------------------------------------------------------------------------
 
 
-def _build_bundle(monkeypatch: pytest.MonkeyPatch) -> tuple[
-    CognitiveChatBundle, _RecordingTransport, _RecordingLedger
-]:
+def _build_bundle(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[CognitiveChatBundle, _RecordingTransport, _RecordingLedger]:
     _enable_flag(monkeypatch)
     transport = _RecordingTransport(reply="hello")
     ledger = _RecordingLedger()
@@ -268,12 +262,8 @@ def test_graph_appends_messages_across_turns(
     bundle, transport, _ledger = _build_bundle(monkeypatch)
     config = {"configurable": {"thread_id": "t1"}}
 
-    bundle.graph.invoke(
-        {"messages": [HumanMessage(content="turn-1")]}, config=config
-    )
-    bundle.graph.invoke(
-        {"messages": [HumanMessage(content="turn-2")]}, config=config
-    )
+    bundle.graph.invoke({"messages": [HumanMessage(content="turn-1")]}, config=config)
+    bundle.graph.invoke({"messages": [HumanMessage(content="turn-2")]}, config=config)
 
     assert len(transport.calls) == 2
     # The second call must see the persisted history from the first turn —
@@ -291,13 +281,9 @@ def test_saver_receives_checkpoint_rows_per_turn(
     bundle, _transport, ledger = _build_bundle(monkeypatch)
     config = {"configurable": {"thread_id": "t1"}}
 
-    bundle.graph.invoke(
-        {"messages": [HumanMessage(content="hi")]}, config=config
-    )
+    bundle.graph.invoke({"messages": [HumanMessage(content="hi")]}, config=config)
 
-    checkpoint_rows = [
-        payload for kind, payload in ledger.rows if kind == CHECKPOINT_KIND
-    ]
+    checkpoint_rows = [payload for kind, payload in ledger.rows if kind == CHECKPOINT_KIND]
     assert checkpoint_rows, "expected at least one COGNITIVE_CHECKPOINT row"
     assert all(row["thread_id"] == "t1" for row in checkpoint_rows)
 
@@ -320,11 +306,7 @@ def test_threads_are_isolated(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "A1" not in b_contents
     assert "B1" in b_contents
 
-    threads = {
-        payload["thread_id"]
-        for kind, payload in ledger.rows
-        if kind == CHECKPOINT_KIND
-    }
+    threads = {payload["thread_id"] for kind, payload in ledger.rows if kind == CHECKPOINT_KIND}
     assert threads == {"thread-A", "thread-B"}
 
 
@@ -370,13 +352,7 @@ def test_chat_graph_module_does_not_import_governance_or_system_engine() -> None
     has zero direct cross-engine imports."""
 
     here = Path(__file__).resolve().parent.parent
-    target = (
-        here
-        / "intelligence_engine"
-        / "cognitive"
-        / "chat"
-        / "cognitive_chat_graph.py"
-    )
+    target = here / "intelligence_engine" / "cognitive" / "chat" / "cognitive_chat_graph.py"
     tree = ast.parse(target.read_text(encoding="utf-8"))
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom):

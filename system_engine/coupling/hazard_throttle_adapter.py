@@ -62,16 +62,12 @@ class HazardThrottleAdapter:
             window long before that fills under steady state.
     """
 
-    config: HazardThrottleConfig = field(
-        default_factory=HazardThrottleConfig.default
-    )
+    config: HazardThrottleConfig = field(default_factory=HazardThrottleConfig.default)
     capacity: int = 1024
     _observer: HazardObserver = field(init=False)
 
     def __post_init__(self) -> None:
-        self._observer = HazardObserver(
-            config=self.config, capacity=self.capacity
-        )
+        self._observer = HazardObserver(config=self.config, capacity=self.capacity)
 
     # ------------------------------------------------------------------
     # Observation intake
@@ -121,9 +117,7 @@ class HazardThrottleAdapter:
     # Telemetry passthroughs
     # ------------------------------------------------------------------
 
-    def active_observations(
-        self, *, now_ns: int
-    ) -> tuple[HazardObservation, ...]:
+    def active_observations(self, *, now_ns: int) -> tuple[HazardObservation, ...]:
         """Return the observations still inside their active window."""
 
         return self._observer.active_observations(now_ns=now_ns)

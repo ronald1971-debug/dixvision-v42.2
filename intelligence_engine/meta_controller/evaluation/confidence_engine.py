@@ -66,14 +66,9 @@ class ConfidenceComponents:
         for name in ("consensus", "strength", "coverage", "composite"):
             v = getattr(self, name)
             if not (0.0 <= v <= 1.0):
-                raise ValueError(
-                    f"ConfidenceComponents.{name} must be in [0, 1]: {v}"
-                )
+                raise ValueError(f"ConfidenceComponents.{name} must be in [0, 1]: {v}")
         if self.signal_count < 0:
-            raise ValueError(
-                f"ConfidenceComponents.signal_count must be >= 0: "
-                f"{self.signal_count}"
-            )
+            raise ValueError(f"ConfidenceComponents.signal_count must be >= 0: {self.signal_count}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,22 +93,13 @@ class ConfidenceEngineConfig:
         ):
             v = getattr(self, name)
             if v < 0.0:
-                raise ValueError(
-                    f"ConfidenceEngineConfig.{name} must be >= 0: {v}"
-                )
-        total = (
-            self.consensus_weight
-            + self.strength_weight
-            + self.coverage_weight
-        )
+                raise ValueError(f"ConfidenceEngineConfig.{name} must be >= 0: {v}")
+        total = self.consensus_weight + self.strength_weight + self.coverage_weight
         if total <= 0.0:
-            raise ValueError(
-                "ConfidenceEngineConfig: at least one weight must be > 0"
-            )
+            raise ValueError("ConfidenceEngineConfig: at least one weight must be > 0")
         if self.saturation_count <= 0:
             raise ValueError(
-                f"ConfidenceEngineConfig.saturation_count must be > 0: "
-                f"{self.saturation_count}"
+                f"ConfidenceEngineConfig.saturation_count must be > 0: {self.saturation_count}"
             )
 
 
@@ -132,8 +118,7 @@ def load_confidence_engine_config(path: str | Path) -> ConfidenceEngineConfig:
     raw: Any = yaml.safe_load(Path(path).read_text())
     if not isinstance(raw, dict):
         raise ValueError(
-            f"confidence engine config must be a YAML mapping, got "
-            f"{type(raw).__name__}"
+            f"confidence engine config must be a YAML mapping, got {type(raw).__name__}"
         )
     required = {
         "consensus_weight",
@@ -143,14 +128,10 @@ def load_confidence_engine_config(path: str | Path) -> ConfidenceEngineConfig:
     }
     missing = required - raw.keys()
     if missing:
-        raise ValueError(
-            f"confidence engine config missing keys: {sorted(missing)}"
-        )
+        raise ValueError(f"confidence engine config missing keys: {sorted(missing)}")
     extra = raw.keys() - (required | {"version"})
     if extra:
-        raise ValueError(
-            f"confidence engine config has unknown keys: {sorted(extra)}"
-        )
+        raise ValueError(f"confidence engine config has unknown keys: {sorted(extra)}")
     kwargs: dict[str, Any] = {
         "consensus_weight": float(raw["consensus_weight"]),
         "strength_weight": float(raw["strength_weight"]),
@@ -242,17 +223,11 @@ def compute_confidence(
 
     relevant = [s for s in signals if s.side is consensus_side]
     # consensus_side has > 0 entries because buy != sell here.
-    strength = _clamp01(
-        sum(_clamp01(s.confidence) for s in relevant) / len(relevant)
-    )
+    strength = _clamp01(sum(_clamp01(s.confidence) for s in relevant) / len(relevant))
 
     coverage = _clamp01(total / config.saturation_count)
 
-    weight_sum = (
-        config.consensus_weight
-        + config.strength_weight
-        + config.coverage_weight
-    )
+    weight_sum = config.consensus_weight + config.strength_weight + config.coverage_weight
     composite = _clamp01(
         (
             config.consensus_weight * consensus

@@ -370,9 +370,7 @@ def extract_entities(text: str) -> tuple[NamedEntity, ...]:
     if not isinstance(text, str):
         raise NERFilterError("extract_entities: text must be str")
     if len(text) > MAX_TEXT_LENGTH:
-        raise NERFilterError(
-            f"extract_entities: text exceeds MAX_TEXT_LENGTH ({MAX_TEXT_LENGTH})"
-        )
+        raise NERFilterError(f"extract_entities: text exceeds MAX_TEXT_LENGTH ({MAX_TEXT_LENGTH})")
     if not text:
         return ()
 
@@ -442,9 +440,7 @@ def extract_entities_batch(
     out: list[EnrichedNewsItem] = []
     for item in items:
         if not isinstance(item, NewsItem):
-            raise NERFilterError(
-                "extract_entities_batch: every element must be NewsItem"
-            )
+            raise NERFilterError("extract_entities_batch: every element must be NewsItem")
         out.append(enrich_news_item(item))
     return tuple(out)
 

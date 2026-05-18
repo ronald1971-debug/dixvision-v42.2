@@ -161,9 +161,7 @@ _MODE_EFFECTS_RAW: dict[SystemMode, ModeEffect] = {
 }
 
 
-MODE_EFFECTS: Final[Mapping[SystemMode, ModeEffect]] = MappingProxyType(
-    _MODE_EFFECTS_RAW
-)
+MODE_EFFECTS: Final[Mapping[SystemMode, ModeEffect]] = MappingProxyType(_MODE_EFFECTS_RAW)
 """Read-only canonical view; mutate via release-time edit, never at runtime."""
 
 

@@ -29,9 +29,7 @@ from governance_engine.control_plane.invariant_verifier import (
     z3_backend_factory,
 )
 
-_MODULE_PATH = Path(
-    "governance_engine/control_plane/invariant_verifier.py"
-)
+_MODULE_PATH = Path("governance_engine/control_plane/invariant_verifier.py")
 
 
 # ----------------------------------------------------------------------
@@ -444,19 +442,13 @@ class TestInvariantVerifier:
 
     def test_unknown_verdict_maps_to_unknown(self) -> None:
         class _StubBackend:
-            def check_position_limit(
-                self, problem: PositionLimitProblem
-            ) -> SolverResult:
+            def check_position_limit(self, problem: PositionLimitProblem) -> SolverResult:
                 return SolverResult(verdict=SolverVerdict.UNKNOWN)
 
-            def check_autonomy_escalation(
-                self, problem: AutonomyEscalationProblem
-            ) -> SolverResult:
+            def check_autonomy_escalation(self, problem: AutonomyEscalationProblem) -> SolverResult:
                 return SolverResult(verdict=SolverVerdict.UNKNOWN)
 
-            def check_governance_bypass(
-                self, problem: GovernanceBypassProblem
-            ) -> SolverResult:
+            def check_governance_bypass(self, problem: GovernanceBypassProblem) -> SolverResult:
                 return SolverResult(verdict=SolverVerdict.UNKNOWN)
 
         verifier = InvariantVerifier(backend=_StubBackend())
@@ -563,9 +555,7 @@ class TestZ3BackendFactory:
         with pytest.raises(ValueError):
             z3_backend_factory(random_seed=True)  # type: ignore[arg-type]
 
-    def test_raises_without_z3(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_raises_without_z3(self, monkeypatch: pytest.MonkeyPatch) -> None:
         import builtins
 
         real_import = builtins.__import__
@@ -641,9 +631,7 @@ def test_no_clock_or_random_imports() -> None:
         "secrets",
         "time",
     }
-    assert names.isdisjoint(forbidden), (
-        f"forbidden imports found: {names & forbidden}"
-    )
+    assert names.isdisjoint(forbidden), f"forbidden imports found: {names & forbidden}"
 
 
 def test_no_typed_event_construction() -> None:
@@ -659,17 +647,9 @@ def test_no_typed_event_construction() -> None:
         if isinstance(node, ast.Call):
             func = node.func
             if isinstance(func, ast.Name) and func.id in forbidden:
-                raise AssertionError(
-                    f"verifier constructs forbidden typed event: {func.id}"
-                )
-            if (
-                isinstance(func, ast.Attribute)
-                and func.attr in forbidden
-            ):
-                raise AssertionError(
-                    f"verifier constructs forbidden typed event:"
-                    f" .{func.attr}"
-                )
+                raise AssertionError(f"verifier constructs forbidden typed event: {func.id}")
+            if isinstance(func, ast.Attribute) and func.attr in forbidden:
+                raise AssertionError(f"verifier constructs forbidden typed event: .{func.attr}")
 
 
 def test_lazy_z3_import_is_inside_factory() -> None:
@@ -677,10 +657,7 @@ def test_lazy_z3_import_is_inside_factory() -> None:
     tree = _module_tree()
     factory: ast.FunctionDef | None = None
     for node in tree.body:
-        if (
-            isinstance(node, ast.FunctionDef)
-            and node.name == "z3_backend_factory"
-        ):
+        if isinstance(node, ast.FunctionDef) and node.name == "z3_backend_factory":
             factory = node
             break
     assert factory is not None, "z3_backend_factory not found"

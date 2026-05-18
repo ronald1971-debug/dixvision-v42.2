@@ -64,9 +64,7 @@ class CanaryStage:
             ts_ns=ts_ns,
             stage=PatchStage.CANARY,
             passed=passed,
-            detail=(
-                f"orders={orders} rejects={rejects} pnl={realised_pnl:.4f}"
-            ),
+            detail=(f"orders={orders} rejects={rejects} pnl={realised_pnl:.4f}"),
             meta={
                 "orders": str(orders),
                 "rejects": str(rejects),

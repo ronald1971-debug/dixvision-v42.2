@@ -187,17 +187,13 @@ class TypedAIRequest(Generic[_ResultT]):
         if not isinstance(self.schema_class, type) or not issubclass(
             self.schema_class, TypedAIResult
         ):
-            raise TypeError(
-                "TypedAIRequest.schema_class must be a TypedAIResult subclass"
-            )
+            raise TypeError("TypedAIRequest.schema_class must be a TypedAIResult subclass")
         if self.schema_class is TypedAIResult:
             raise ValueError(
                 "TypedAIRequest.schema_class must be a *concrete* subclass of"
                 " TypedAIResult; the base class itself has no fields"
             )
-        if not isinstance(self.max_retries, int) or isinstance(
-            self.max_retries, bool
-        ):
+        if not isinstance(self.max_retries, int) or isinstance(self.max_retries, bool):
             raise TypeError("TypedAIRequest.max_retries must be int")
         if self.max_retries < 0:
             raise ValueError("TypedAIRequest.max_retries must be >= 0")
@@ -244,18 +240,11 @@ submit`. The agent itself never imports ``governance_engine``.
         if self.ts_ns <= 0:
             raise ValueError("TypedAIProposal.ts_ns must be positive")
         if not isinstance(self.provider_id, str) or not self.provider_id:
-            raise ValueError(
-                "TypedAIProposal.provider_id must be non-empty str"
-            )
+            raise ValueError("TypedAIProposal.provider_id must be non-empty str")
         if not isinstance(self.schema_name, str) or not self.schema_name:
-            raise ValueError(
-                "TypedAIProposal.schema_name must be non-empty str"
-            )
+            raise ValueError("TypedAIProposal.schema_name must be non-empty str")
         if not isinstance(self.validated_result, TypedAIResult):
-            raise TypeError(
-                "TypedAIProposal.validated_result must be a TypedAIResult"
-                " instance"
-            )
+            raise TypeError("TypedAIProposal.validated_result must be a TypedAIResult instance")
 
 
 # ---------------------------------------------------------------------------
@@ -382,22 +371,15 @@ class TypedAIAgent:
 
     provider_resolver: ProviderResolver
     transport: TypedAITransport
-    submit_proposal: ProposalSubmitter = dataclasses.field(
-        default=_noop_submit
-    )
-    fallback_audit: FallbackAuditSink = dataclasses.field(
-        default=_noop_audit
-    )
+    submit_proposal: ProposalSubmitter = dataclasses.field(default=_noop_submit)
+    fallback_audit: FallbackAuditSink = dataclasses.field(default=_noop_audit)
     id_factory: _IdFactory = dataclasses.field(default=default_id_factory)
 
     def __post_init__(self) -> None:
         if not callable(self.provider_resolver):
             raise TypeError("TypedAIAgent.provider_resolver must be callable")
         if not isinstance(self.transport, TypedAITransport):
-            raise TypeError(
-                "TypedAIAgent.transport must implement the TypedAITransport"
-                " Protocol"
-            )
+            raise TypeError("TypedAIAgent.transport must implement the TypedAITransport Protocol")
         if not callable(self.submit_proposal):
             raise TypeError("TypedAIAgent.submit_proposal must be callable")
         if not callable(self.fallback_audit):
@@ -432,9 +414,7 @@ class TypedAIAgent:
         """
 
         if not isinstance(request, TypedAIRequest):
-            raise TypeError(
-                "TypedAIAgent.run_typed: request must be TypedAIRequest"
-            )
+            raise TypeError("TypedAIAgent.run_typed: request must be TypedAIRequest")
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
             raise TypeError("TypedAIAgent.run_typed: ts_ns must be int")
         if ts_ns <= 0:
@@ -494,8 +474,7 @@ class TypedAIAgent:
             )
             if not isinstance(raw, str):
                 raise TypeError(
-                    "TypedAIAgent: transport.invoke must return str,"
-                    f" got {type(raw).__name__}"
+                    f"TypedAIAgent: transport.invoke must return str, got {type(raw).__name__}"
                 )
             try:
                 validated = request.schema_class.model_validate_json(raw)

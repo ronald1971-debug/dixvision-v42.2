@@ -122,9 +122,7 @@ class Bar:
         if not self.symbol:
             raise FinRLEnvError("symbol must be non-empty")
         if not (self.close > 0.0 and math.isfinite(self.close)):
-            raise FinRLEnvError(
-                f"close must be > 0 and finite; got {self.close}"
-            )
+            raise FinRLEnvError(f"close must be > 0 and finite; got {self.close}")
         for name in ("open_", "high", "low", "volume"):
             value = getattr(self, name)
             if not isinstance(value, float):
@@ -166,20 +164,13 @@ class EpisodeConfig:
         if not self.symbols:
             raise FinRLEnvError("symbols must be non-empty")
         if len(self.symbols) > MAX_ASSETS:
-            raise FinRLEnvError(
-                f"too many assets: {len(self.symbols)} > {MAX_ASSETS}"
-            )
+            raise FinRLEnvError(f"too many assets: {len(self.symbols)} > {MAX_ASSETS}")
         if len(self.symbols) != len(set(self.symbols)):
             raise FinRLEnvError("symbols must be unique")
         if tuple(sorted(self.symbols)) != tuple(self.symbols):
-            raise FinRLEnvError(
-                "symbols must be sorted ascending; got "
-                f"{self.symbols!r}"
-            )
+            raise FinRLEnvError(f"symbols must be sorted ascending; got {self.symbols!r}")
         if not (self.initial_cash > 0.0 and math.isfinite(self.initial_cash)):
-            raise FinRLEnvError(
-                f"initial_cash must be > 0 and finite; got {self.initial_cash}"
-            )
+            raise FinRLEnvError(f"initial_cash must be > 0 and finite; got {self.initial_cash}")
         if not isinstance(self.hmax, int) or isinstance(self.hmax, bool):
             raise TypeError(f"hmax must be int; got {type(self.hmax)!r}")
         if self.hmax <= 0:
@@ -191,24 +182,14 @@ class EpisodeConfig:
             if not (0.0 <= value < 1.0):
                 raise FinRLEnvError(f"{name} must be in [0, 1); got {value}")
         if not isinstance(self.reward_scaling, float):
-            raise TypeError(
-                f"reward_scaling must be float; got {type(self.reward_scaling)!r}"
-            )
+            raise TypeError(f"reward_scaling must be float; got {type(self.reward_scaling)!r}")
         if not math.isfinite(self.reward_scaling):
-            raise FinRLEnvError(
-                f"reward_scaling must be finite; got {self.reward_scaling}"
-            )
+            raise FinRLEnvError(f"reward_scaling must be finite; got {self.reward_scaling}")
         if self.max_steps is not None:
-            if not isinstance(self.max_steps, int) or isinstance(
-                self.max_steps, bool
-            ):
-                raise TypeError(
-                    f"max_steps must be int|None; got {type(self.max_steps)!r}"
-                )
+            if not isinstance(self.max_steps, int) or isinstance(self.max_steps, bool):
+                raise TypeError(f"max_steps must be int|None; got {type(self.max_steps)!r}")
             if self.max_steps <= 0:
-                raise FinRLEnvError(
-                    f"max_steps must be > 0; got {self.max_steps}"
-                )
+                raise FinRLEnvError(f"max_steps must be > 0; got {self.max_steps}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -228,17 +209,11 @@ class PortfolioAction:
             raise FinRLEnvError("targets must be non-empty")
         for i, value in enumerate(self.targets):
             if not isinstance(value, float):
-                raise TypeError(
-                    f"targets[{i}] must be float; got {type(value)!r}"
-                )
+                raise TypeError(f"targets[{i}] must be float; got {type(value)!r}")
             if not math.isfinite(value):
-                raise FinRLEnvError(
-                    f"targets[{i}] must be finite; got {value}"
-                )
+                raise FinRLEnvError(f"targets[{i}] must be finite; got {value}")
             if not (-1.0 - _FLOAT_EPSILON <= value <= 1.0 + _FLOAT_EPSILON):
-                raise FinRLEnvError(
-                    f"targets[{i}] must be in [-1, 1]; got {value}"
-                )
+                raise FinRLEnvError(f"targets[{i}] must be in [-1, 1]; got {value}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -267,23 +242,18 @@ class PortfolioObservation:
             raise FinRLEnvError("cash / portfolio_value must be finite")
         if len(self.holdings) != len(self.prices):
             raise FinRLEnvError(
-                f"holdings ({len(self.holdings)}) / prices "
-                f"({len(self.prices)}) length mismatch"
+                f"holdings ({len(self.holdings)}) / prices ({len(self.prices)}) length mismatch"
             )
         for i, h in enumerate(self.holdings):
             if not isinstance(h, int) or isinstance(h, bool):
-                raise TypeError(
-                    f"holdings[{i}] must be int; got {type(h)!r}"
-                )
+                raise TypeError(f"holdings[{i}] must be int; got {type(h)!r}")
             if h < 0:
                 raise FinRLEnvError(f"holdings[{i}] must be >= 0; got {h}")
         for i, p in enumerate(self.prices):
             if not isinstance(p, float):
                 raise TypeError(f"prices[{i}] must be float; got {type(p)!r}")
             if not (p > 0.0 and math.isfinite(p)):
-                raise FinRLEnvError(
-                    f"prices[{i}] must be > 0 and finite; got {p}"
-                )
+                raise FinRLEnvError(f"prices[{i}] must be > 0 and finite; got {p}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -341,30 +311,22 @@ def _validate_bars(
     if not bars:
         raise FinRLEnvError("bars must be non-empty")
     if len(bars) > MAX_BARS_PER_EPISODE:
-        raise FinRLEnvError(
-            f"too many bars: {len(bars)} > {MAX_BARS_PER_EPISODE}"
-        )
+        raise FinRLEnvError(f"too many bars: {len(bars)} > {MAX_BARS_PER_EPISODE}")
     symbol_set = set(symbols)
     grouped: dict[int, dict[str, float]] = {}
     for bar in bars:
         if not isinstance(bar, Bar):
             raise TypeError(f"bars entry must be Bar; got {type(bar)!r}")
         if bar.symbol not in symbol_set:
-            raise FinRLEnvError(
-                f"bar.symbol {bar.symbol!r} not in episode symbols {symbols!r}"
-            )
+            raise FinRLEnvError(f"bar.symbol {bar.symbol!r} not in episode symbols {symbols!r}")
         per_ts = grouped.setdefault(bar.ts_ns, {})
         if bar.symbol in per_ts:
-            raise FinRLEnvError(
-                f"duplicate bar for ({bar.ts_ns}, {bar.symbol!r})"
-            )
+            raise FinRLEnvError(f"duplicate bar for ({bar.ts_ns}, {bar.symbol!r})")
         per_ts[bar.symbol] = bar.close
     for ts, per_ts in grouped.items():
         if set(per_ts.keys()) != symbol_set:
             missing = symbol_set - per_ts.keys()
-            raise FinRLEnvError(
-                f"timestamp {ts} missing close for {sorted(missing)!r}"
-            )
+            raise FinRLEnvError(f"timestamp {ts} missing close for {sorted(missing)!r}")
     return tuple((ts, grouped[ts]) for ts in sorted(grouped.keys()))
 
 
@@ -403,9 +365,7 @@ class FinRLPortfolioEnv:
         config: EpisodeConfig,
     ) -> None:
         if not isinstance(config, EpisodeConfig):
-            raise TypeError(
-                f"config must be EpisodeConfig; got {type(config)!r}"
-            )
+            raise TypeError(f"config must be EpisodeConfig; got {type(config)!r}")
         self._bars = _validate_bars(bars, config.symbols)
         self._config = config
         self._n_assets = len(config.symbols)
@@ -433,9 +393,7 @@ class FinRLPortfolioEnv:
         return tuple(prices[s] for s in self._config.symbols)
 
     def _portfolio_value(self, prices: tuple[float, ...]) -> float:
-        notional = math.fsum(
-            h * p for h, p in zip(self._holdings, prices, strict=True)
-        )
+        notional = math.fsum(h * p for h, p in zip(self._holdings, prices, strict=True))
         return self._cash + notional
 
     def _build_observation(self) -> PortfolioObservation:
@@ -536,13 +494,10 @@ class FinRLPortfolioEnv:
         if not self._started:
             raise EpisodeNotStartedError("reset() must be called before step()")
         if not isinstance(action, PortfolioAction):
-            raise TypeError(
-                f"action must be PortfolioAction; got {type(action)!r}"
-            )
+            raise TypeError(f"action must be PortfolioAction; got {type(action)!r}")
         if len(action.targets) != self._n_assets:
             raise FinRLEnvError(
-                f"action.targets length ({len(action.targets)}) != n_assets "
-                f"({self._n_assets})"
+                f"action.targets length ({len(action.targets)}) != n_assets ({self._n_assets})"
             )
         prices_at_action = self._current_prices()
         # FinRL canonical ordering: sells first to free cash, then buys.
@@ -556,10 +511,7 @@ class FinRLPortfolioEnv:
             terminated = True
         else:
             self._step_idx += 1
-            if (
-                self._config.max_steps is not None
-                and self._step_idx >= self._config.max_steps
-            ):
+            if self._config.max_steps is not None and self._step_idx >= self._config.max_steps:
                 truncated = True
 
         new_prices = self._current_prices()

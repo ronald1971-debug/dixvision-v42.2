@@ -134,9 +134,7 @@ def test_buffer_thread_safety_smoke() -> None:
         for i in range(20):
             buf.add(_curated(url=f"https://{prefix}/{i}"))
 
-    threads = [
-        threading.Thread(target=worker, args=(p,)) for p in range(8)
-    ]
+    threads = [threading.Thread(target=worker, args=(p,)) for p in range(8)]
     for t in threads:
         t.start()
     for t in threads:

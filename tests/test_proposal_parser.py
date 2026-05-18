@@ -44,10 +44,7 @@ def test_extract_returns_none_when_body_is_list_not_object() -> None:
 
 
 def test_extract_happy_path_buy() -> None:
-    body = (
-        '{"symbol": "EURUSD", "side": "BUY", '
-        '"confidence": 0.62, "rationale": "macro setup"}'
-    )
+    body = '{"symbol": "EURUSD", "side": "BUY", "confidence": 0.62, "rationale": "macro setup"}'
     proposal = extract_proposal(_wrap(body))
     assert proposal == ProposedSignalApi(
         symbol="EURUSD",
@@ -68,63 +65,40 @@ def test_extract_happy_path_buy() -> None:
         ("short", ApprovalSideApi.SELL),
     ],
 )
-def test_extract_coerces_llm_side_strings(
-    raw_side: str, expected: ApprovalSideApi
-) -> None:
-    body = (
-        f'{{"symbol": "EURUSD", "side": "{raw_side}", '
-        '"confidence": 0.5, "rationale": "x"}'
-    )
+def test_extract_coerces_llm_side_strings(raw_side: str, expected: ApprovalSideApi) -> None:
+    body = f'{{"symbol": "EURUSD", "side": "{raw_side}", "confidence": 0.5, "rationale": "x"}}'
     proposal = extract_proposal(_wrap(body))
     assert proposal is not None
     assert proposal.side is expected
 
 
 def test_extract_rejects_hold_side() -> None:
-    body = (
-        '{"symbol": "EURUSD", "side": "HOLD", '
-        '"confidence": 0.5, "rationale": "no edge"}'
-    )
+    body = '{"symbol": "EURUSD", "side": "HOLD", "confidence": 0.5, "rationale": "no edge"}'
     assert extract_proposal(_wrap(body)) is None
 
 
 def test_extract_rejects_unknown_side() -> None:
-    body = (
-        '{"symbol": "EURUSD", "side": "fly", '
-        '"confidence": 0.5, "rationale": "x"}'
-    )
+    body = '{"symbol": "EURUSD", "side": "fly", "confidence": 0.5, "rationale": "x"}'
     assert extract_proposal(_wrap(body)) is None
 
 
 def test_extract_rejects_non_string_side() -> None:
-    body = (
-        '{"symbol": "EURUSD", "side": 1, '
-        '"confidence": 0.5, "rationale": "x"}'
-    )
+    body = '{"symbol": "EURUSD", "side": 1, "confidence": 0.5, "rationale": "x"}'
     assert extract_proposal(_wrap(body)) is None
 
 
 def test_extract_rejects_out_of_range_confidence() -> None:
-    body = (
-        '{"symbol": "EURUSD", "side": "BUY", '
-        '"confidence": 1.5, "rationale": "x"}'
-    )
+    body = '{"symbol": "EURUSD", "side": "BUY", "confidence": 1.5, "rationale": "x"}'
     assert extract_proposal(_wrap(body)) is None
 
 
 def test_extract_rejects_blank_symbol() -> None:
-    body = (
-        '{"symbol": "", "side": "BUY", '
-        '"confidence": 0.5, "rationale": "x"}'
-    )
+    body = '{"symbol": "", "side": "BUY", "confidence": 0.5, "rationale": "x"}'
     assert extract_proposal(_wrap(body)) is None
 
 
 def test_extract_handles_leading_whitespace_on_fence() -> None:
-    body = (
-        '{"symbol": "EURUSD", "side": "BUY", '
-        '"confidence": 0.5, "rationale": "x"}'
-    )
+    body = '{"symbol": "EURUSD", "side": "BUY", "confidence": 0.5, "rationale": "x"}'
     text = "    ```propose\n" + body + "\n    ```\n"
     proposal = extract_proposal(text)
     assert proposal is not None

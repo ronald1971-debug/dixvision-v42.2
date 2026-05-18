@@ -45,9 +45,7 @@ from learning_engine.trader_abstraction.extractor import (  # noqa: E402
     extract_features,
 )
 
-SOURCE_PATH = (
-    REPO_ROOT / "learning_engine" / "trader_abstraction" / "extractor.py"
-).resolve()
+SOURCE_PATH = (REPO_ROOT / "learning_engine" / "trader_abstraction" / "extractor.py").resolve()
 SOURCE_TEXT = SOURCE_PATH.read_text(encoding="utf-8")
 SOURCE_TREE = ast.parse(SOURCE_TEXT)
 
@@ -107,10 +105,7 @@ def test_no_typed_event_ctors() -> None:
             target = node.func
             if isinstance(target, ast.Name) and target.id in forbidden_names:
                 pytest.fail(f"forbidden ctor: {target.id}")
-            if (
-                isinstance(target, ast.Attribute)
-                and target.attr in forbidden_names
-            ):
+            if isinstance(target, ast.Attribute) and target.attr in forbidden_names:
                 pytest.fail(f"forbidden ctor: {target.attr}")
 
 
@@ -463,7 +458,8 @@ def test_extract_features_with_quantiles() -> None:
     spec = FeatureSpec(series_name="close", quantile_levels=(0.25, 0.75))
     fv = extract_features(_FIVE, spec)
     expected = set(MINIMAL_FEATURE_NAMES) | {
-        f"quantile_{repr(0.25)}", f"quantile_{repr(0.75)}",
+        f"quantile_{repr(0.25)}",
+        f"quantile_{repr(0.75)}",
     }
     assert set(fv.values) == expected
 

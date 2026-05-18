@@ -116,9 +116,7 @@ class Bar:
         if not self.symbol:
             raise BacktesterError("Bar.symbol must be non-empty")
         if len(self.symbol) > _MAX_SYMBOL_LEN:
-            raise BacktesterError(
-                f"Bar.symbol must be <= {_MAX_SYMBOL_LEN} chars"
-            )
+            raise BacktesterError(f"Bar.symbol must be <= {_MAX_SYMBOL_LEN} chars")
         for name, value in (
             ("open", self.open),
             ("high", self.high),
@@ -131,9 +129,7 @@ class Bar:
             if value < 0.0:
                 raise BacktesterError(f"Bar.{name} must be >= 0; got {value!r}")
         if self.high < self.low:
-            raise BacktesterError(
-                f"Bar.high ({self.high}) must be >= Bar.low ({self.low})"
-            )
+            raise BacktesterError(f"Bar.high ({self.high}) must be >= Bar.low ({self.low})")
         if not (self.low <= self.open <= self.high):
             raise BacktesterError("Bar.open must lie inside [low, high]")
         if not (self.low <= self.close <= self.high):
@@ -163,19 +159,13 @@ class OrderRequest:
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.qty):
-            raise BacktesterError(
-                f"OrderRequest.qty must be finite; got {self.qty!r}"
-            )
+            raise BacktesterError(f"OrderRequest.qty must be finite; got {self.qty!r}")
         if self.qty < 0.0:
-            raise BacktesterError(
-                f"OrderRequest.qty must be >= 0; got {self.qty!r}"
-            )
+            raise BacktesterError(f"OrderRequest.qty must be >= 0; got {self.qty!r}")
         if self.action is OrderAction.HOLD and self.qty != 0.0:
             raise BacktesterError("HOLD orders must carry qty=0")
         if self.action is not OrderAction.HOLD and self.qty <= 0.0:
-            raise BacktesterError(
-                f"{self.action.value} orders must carry qty>0; got {self.qty}"
-            )
+            raise BacktesterError(f"{self.action.value} orders must carry qty>0; got {self.qty}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -204,13 +194,9 @@ class StrategyContext:
         if not math.isfinite(self.position_qty):
             raise BacktesterError("StrategyContext.position_qty must be finite")
         if not math.isfinite(self.position_avg_price):
-            raise BacktesterError(
-                "StrategyContext.position_avg_price must be finite"
-            )
+            raise BacktesterError("StrategyContext.position_avg_price must be finite")
         if self.position_avg_price < 0.0:
-            raise BacktesterError(
-                "StrategyContext.position_avg_price must be >= 0"
-            )
+            raise BacktesterError("StrategyContext.position_avg_price must be >= 0")
         if not math.isfinite(self.equity_usd):
             raise BacktesterError("StrategyContext.equity_usd must be finite")
 
@@ -251,30 +237,20 @@ class BrokerConfig:
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.initial_cash_usd):
-            raise BacktesterError(
-                "BrokerConfig.initial_cash_usd must be finite"
-            )
+            raise BacktesterError("BrokerConfig.initial_cash_usd must be finite")
         if self.initial_cash_usd <= 0.0:
-            raise BacktesterError(
-                "BrokerConfig.initial_cash_usd must be > 0"
-            )
+            raise BacktesterError("BrokerConfig.initial_cash_usd must be > 0")
         if not math.isfinite(self.commission_rate):
-            raise BacktesterError(
-                "BrokerConfig.commission_rate must be finite"
-            )
+            raise BacktesterError("BrokerConfig.commission_rate must be finite")
         if not (0.0 <= self.commission_rate <= 0.1):
             raise BacktesterError(
-                "BrokerConfig.commission_rate must lie in [0, 0.1]; "
-                f"got {self.commission_rate}"
+                f"BrokerConfig.commission_rate must lie in [0, 0.1]; got {self.commission_rate}"
             )
         if not math.isfinite(self.slippage_perc):
-            raise BacktesterError(
-                "BrokerConfig.slippage_perc must be finite"
-            )
+            raise BacktesterError("BrokerConfig.slippage_perc must be finite")
         if not (0.0 <= self.slippage_perc <= 0.1):
             raise BacktesterError(
-                "BrokerConfig.slippage_perc must lie in [0, 0.1]; "
-                f"got {self.slippage_perc}"
+                f"BrokerConfig.slippage_perc must lie in [0, 0.1]; got {self.slippage_perc}"
             )
 
 
@@ -317,22 +293,16 @@ class BacktestConfig:
         if not self.symbol:
             raise BacktesterError("BacktestConfig.symbol must be non-empty")
         if len(self.symbol) > _MAX_SYMBOL_LEN:
-            raise BacktesterError(
-                f"BacktestConfig.symbol must be <= {_MAX_SYMBOL_LEN} chars"
-            )
+            raise BacktesterError(f"BacktestConfig.symbol must be <= {_MAX_SYMBOL_LEN} chars")
         if self.seed < 0:
             raise BacktesterError("BacktestConfig.seed must be >= 0")
         if self.history_window < 0:
             raise BacktesterError("BacktestConfig.history_window must be >= 0")
         if self.history_window > 1024:
-            raise BacktesterError(
-                "BacktestConfig.history_window must be <= 1024"
-            )
+            raise BacktesterError("BacktestConfig.history_window must be <= 1024")
         for key, value in self.meta.items():
             if not isinstance(key, str) or not isinstance(value, str):
-                raise BacktesterError(
-                    "BacktestConfig.meta keys and values must be str"
-                )
+                raise BacktesterError("BacktestConfig.meta keys and values must be str")
 
 
 # ---------------------------------------------------------------------------
@@ -400,9 +370,7 @@ def _settle_fill(
     if action is OrderAction.BUY:
         new_qty = pos.qty + qty
         if new_qty > 0.0:
-            pos.avg_price = (
-                (pos.avg_price * pos.qty + fill_price * qty) / new_qty
-            )
+            pos.avg_price = (pos.avg_price * pos.qty + fill_price * qty) / new_qty
         pos.qty = new_qty
         cash = cash - notional - commission
     else:
@@ -431,9 +399,7 @@ def _settle_fill(
     return cash, realised_pnl, trade
 
 
-def _equity(
-    cash: float, pos: _Position, mark_price: float
-) -> float:
+def _equity(cash: float, pos: _Position, mark_price: float) -> float:
     return cash + pos.qty * mark_price
 
 
@@ -563,8 +529,7 @@ def run_backtest(
     """
     if not isinstance(strategy, Strategy):
         raise BacktesterError(
-            "strategy must implement the Strategy Protocol "
-            "(`def next(self, ctx) -> OrderRequest`)"
+            "strategy must implement the Strategy Protocol (`def next(self, ctx) -> OrderRequest`)"
         )
     if result_ts_ns < 0:
         raise BacktesterError("result_ts_ns must be >= 0")
@@ -572,21 +537,15 @@ def run_backtest(
     if not bar_tuple:
         raise BacktesterError("bars must be non-empty")
     if len(bar_tuple) > _MAX_BARS:
-        raise BacktesterError(
-            f"bars must be <= {_MAX_BARS}; got {len(bar_tuple)}"
-        )
+        raise BacktesterError(f"bars must be <= {_MAX_BARS}; got {len(bar_tuple)}")
     last_ts: int | None = None
     for bar in bar_tuple:
         if not isinstance(bar, Bar):
             raise BacktesterError("bars must be Bar instances")
         if bar.symbol != config.symbol:
-            raise BacktesterError(
-                f"bar symbol {bar.symbol!r} != config.symbol {config.symbol!r}"
-            )
+            raise BacktesterError(f"bar symbol {bar.symbol!r} != config.symbol {config.symbol!r}")
         if last_ts is not None and bar.ts_ns < last_ts:
-            raise BacktesterError(
-                "bars must be monotonic non-decreasing in ts_ns"
-            )
+            raise BacktesterError("bars must be monotonic non-decreasing in ts_ns")
         last_ts = bar.ts_ns
 
     cash = config.broker.initial_cash_usd
@@ -603,7 +562,7 @@ def run_backtest(
         if config.history_window <= 0:
             history_view = ()
         else:
-            window = history[-config.history_window:]
+            window = history[-config.history_window :]
             history_view = tuple(window)
         equity = _equity(cash, pos, bar.close)
         ctx = StrategyContext(
@@ -618,8 +577,7 @@ def run_backtest(
         decision = strategy.next(ctx)
         if not isinstance(decision, OrderRequest):
             raise BacktesterError(
-                "Strategy.next must return an OrderRequest; "
-                f"got {type(decision).__name__}"
+                f"Strategy.next must return an OrderRequest; got {type(decision).__name__}"
             )
         if decision.action is not OrderAction.HOLD:
             if i + 1 < n:
@@ -641,9 +599,7 @@ def run_backtest(
             trades.append(trade)
             fill_idx += 1
             if fill_idx > _MAX_TRADES:
-                raise BacktesterError(
-                    f"trade count exceeded {_MAX_TRADES}"
-                )
+                raise BacktesterError(f"trade count exceeded {_MAX_TRADES}")
         # Mark equity *after* any same-bar fill on the final bar so the
         # closing equity reflects exits.
         mark = bar.close
@@ -651,13 +607,9 @@ def run_backtest(
         # Equity points are sorted ascending by ts_ns; bars with
         # repeated ts_ns collapse to the latest equity (last write wins).
         if last_eq_ts is not None and bar.ts_ns == last_eq_ts:
-            equity_curve[-1] = EquityPoint(
-                ts_ns=bar.ts_ns, equity_usd=_round_pos(equity)
-            )
+            equity_curve[-1] = EquityPoint(ts_ns=bar.ts_ns, equity_usd=_round_pos(equity))
         else:
-            equity_curve.append(
-                EquityPoint(ts_ns=bar.ts_ns, equity_usd=_round_pos(equity))
-            )
+            equity_curve.append(EquityPoint(ts_ns=bar.ts_ns, equity_usd=_round_pos(equity)))
             last_eq_ts = bar.ts_ns
         history.append(bar)
 
@@ -667,9 +619,7 @@ def run_backtest(
         # Result ingestion ts must be at-or-after the last bar so the
         # contract round-trips cleanly through downstream ingesters.
         result_ts_ns = period_end
-    metrics = _compute_metrics(
-        config.broker.initial_cash_usd, equity_curve, trades
-    )
+    metrics = _compute_metrics(config.broker.initial_cash_usd, equity_curve, trades)
     # Trades must lie inside [period_start, period_end] — the final-bar
     # fill ts (bar.ts_ns) is the same as period_end, so this holds by
     # construction. We still enforce an explicit guard for callers that
@@ -677,8 +627,7 @@ def run_backtest(
     for trade in trades:
         if not (period_start <= trade.ts_ns <= period_end):
             raise BacktesterError(
-                f"trade ts_ns {trade.ts_ns} outside period window "
-                f"[{period_start}, {period_end}]"
+                f"trade ts_ns {trade.ts_ns} outside period window [{period_start}, {period_end}]"
             )
     meta_dict: dict[str, str] = {str(k): str(v) for k, v in config.meta.items()}
     meta_dict.setdefault("seed", str(config.seed))

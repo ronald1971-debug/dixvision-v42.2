@@ -198,9 +198,7 @@ def move_std(
     """
 
     if not isinstance(ddof, int) or ddof < 0:
-        raise RollingStatsError(
-            f"move_std.ddof must be int >= 0, got {ddof!r}"
-        )
+        raise RollingStatsError(f"move_std.ddof must be int >= 0, got {ddof!r}")
     arr, spec = _normalize(values, window, min_count)
 
     def _std(window_values: tuple[float, ...]) -> float:

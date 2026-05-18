@@ -52,12 +52,7 @@ from ui.harness.runtime_registrar import (
     declared_topology,
 )
 
-MODULE_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "ui"
-    / "harness"
-    / "runtime_registrar.py"
-)
+MODULE_PATH = Path(__file__).resolve().parents[1] / "ui" / "harness" / "runtime_registrar.py"
 
 
 # ---------------------------------------------------------------------------
@@ -285,9 +280,7 @@ def test_register_at_boot_sparse_state_partitions_active_vs_dormant() -> None:
     reg.register_at_boot(_SparseState(present=present))
     snap = reg.snapshot()
     assert snap.active_node_ids() == frozenset(present)
-    assert snap.dormant_node_ids() == frozenset(declared_node_ids()) - frozenset(
-        present
-    )
+    assert snap.dormant_node_ids() == frozenset(declared_node_ids()) - frozenset(present)
 
 
 def test_register_at_boot_is_idempotent_for_same_state() -> None:
@@ -344,9 +337,7 @@ def test_declared_topology_view_is_byte_stable() -> None:
 
     def _serialize() -> bytes:
         view = HarnessRuntimeRegistrar().declared_topology_view()
-        return json.dumps(view, sort_keys=True, separators=(",", ":")).encode(
-            "utf-8"
-        )
+        return json.dumps(view, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
     s1 = _serialize()
     s2 = _serialize()
@@ -367,9 +358,7 @@ def test_active_view_shape() -> None:
 
 def test_active_view_against_sparse_state() -> None:
     reg = HarnessRuntimeRegistrar()
-    reg.register_at_boot(
-        _SparseState(present={"intelligence_engine", "execution_engine"})
-    )
+    reg.register_at_boot(_SparseState(present={"intelligence_engine", "execution_engine"}))
     view = reg.active_view()
     assert view["active_node_ids"] == ["execution_engine", "intelligence_engine"]
 
@@ -388,9 +377,7 @@ def test_dormant_view_shape() -> None:
 
 def test_dormant_view_surfaces_silent_drift() -> None:
     reg = HarnessRuntimeRegistrar()
-    reg.register_at_boot(
-        _SparseState(present={"intelligence_engine", "execution_engine"})
-    )
+    reg.register_at_boot(_SparseState(present={"intelligence_engine", "execution_engine"}))
     view = reg.dormant_view()
     dormant = set(view["dormant_node_ids"])
     assert "closed_learning_loop" in dormant
@@ -418,9 +405,7 @@ def test_capability_view_dormant_provider() -> None:
     reported as ``is_dormant=True`` and ``is_resolved=False``."""
 
     reg = HarnessRuntimeRegistrar()
-    reg.register_at_boot(
-        _SparseState(present={"intelligence_engine", "execution_engine"})
-    )
+    reg.register_at_boot(_SparseState(present={"intelligence_engine", "execution_engine"}))
     view = reg.capability_view("learning.closed_loop")
     assert view["declared"] == ["closed_learning_loop"]
     assert view["active"] == []
@@ -529,9 +514,7 @@ def test_route_dormant_returns_200(_test_client: Any) -> None:
 
 
 def test_route_capability_returns_200(_test_client: Any) -> None:
-    resp = _test_client.get(
-        "/api/operator/runtime/capability/intelligence.signal"
-    )
+    resp = _test_client.get("/api/operator/runtime/capability/intelligence.signal")
     assert resp.status_code == 200
     body = resp.json()
     assert body["version"] == REGISTRAR_VERSION
@@ -539,9 +522,7 @@ def test_route_capability_returns_200(_test_client: Any) -> None:
 
 
 def test_route_capability_unknown_resolves_missing(_test_client: Any) -> None:
-    resp = _test_client.get(
-        "/api/operator/runtime/capability/does.not.exist"
-    )
+    resp = _test_client.get("/api/operator/runtime/capability/does.not.exist")
     assert resp.status_code == 200
     body = resp.json()
     assert body["is_missing"] is True

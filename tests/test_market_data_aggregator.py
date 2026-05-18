@@ -82,8 +82,13 @@ def test_module_does_not_import_asyncio_or_websockets() -> None:
 
 def test_trade_frozen_and_slotted() -> None:
     t = Trade(
-        ts_ns=1, symbol="BTCUSDT", side="BUY",
-        price=1.0, qty=2.0, trade_id="x", venue="BINANCE",
+        ts_ns=1,
+        symbol="BTCUSDT",
+        side="BUY",
+        price=1.0,
+        qty=2.0,
+        trade_id="x",
+        venue="BINANCE",
     )
     with pytest.raises((AttributeError, TypeError)):
         t.price = 99.0  # type: ignore[misc]
@@ -93,8 +98,13 @@ def test_trade_frozen_and_slotted() -> None:
 def test_trade_rejects_invalid_side(side: str) -> None:
     with pytest.raises(ValueError, match="side"):
         Trade(
-            ts_ns=1, symbol="BTCUSDT", side=side,
-            price=1.0, qty=1.0, trade_id="x", venue="BINANCE",
+            ts_ns=1,
+            symbol="BTCUSDT",
+            side=side,
+            price=1.0,
+            qty=1.0,
+            trade_id="x",
+            venue="BINANCE",
         )
 
 
@@ -102,8 +112,13 @@ def test_trade_rejects_invalid_side(side: str) -> None:
 def test_trade_rejects_non_positive_price(price: float) -> None:
     with pytest.raises(ValueError, match="price"):
         Trade(
-            ts_ns=1, symbol="BTCUSDT", side="BUY",
-            price=price, qty=1.0, trade_id="x", venue="BINANCE",
+            ts_ns=1,
+            symbol="BTCUSDT",
+            side="BUY",
+            price=price,
+            qty=1.0,
+            trade_id="x",
+            venue="BINANCE",
         )
 
 
@@ -111,21 +126,36 @@ def test_trade_rejects_non_positive_price(price: float) -> None:
 def test_trade_rejects_non_positive_qty(qty: float) -> None:
     with pytest.raises(ValueError, match="qty"):
         Trade(
-            ts_ns=1, symbol="BTCUSDT", side="BUY",
-            price=1.0, qty=qty, trade_id="x", venue="BINANCE",
+            ts_ns=1,
+            symbol="BTCUSDT",
+            side="BUY",
+            price=1.0,
+            qty=qty,
+            trade_id="x",
+            venue="BINANCE",
         )
 
 
 def test_trade_rejects_empty_symbol_and_trade_id() -> None:
     with pytest.raises(ValueError, match="symbol"):
         Trade(
-            ts_ns=1, symbol="", side="BUY",
-            price=1.0, qty=1.0, trade_id="x", venue="BINANCE",
+            ts_ns=1,
+            symbol="",
+            side="BUY",
+            price=1.0,
+            qty=1.0,
+            trade_id="x",
+            venue="BINANCE",
         )
     with pytest.raises(ValueError, match="trade_id"):
         Trade(
-            ts_ns=1, symbol="BTCUSDT", side="BUY",
-            price=1.0, qty=1.0, trade_id="", venue="BINANCE",
+            ts_ns=1,
+            symbol="BTCUSDT",
+            side="BUY",
+            price=1.0,
+            qty=1.0,
+            trade_id="",
+            venue="BINANCE",
         )
 
 
@@ -146,7 +176,10 @@ def test_order_book_level_allows_zero_qty_for_removal() -> None:
 def test_order_book_snapshot_rejects_unsorted_bids() -> None:
     with pytest.raises(ValueError, match="bids must be sorted"):
         OrderBookSnapshot(
-            ts_ns=1, symbol="BTCUSDT", last_update_id=1, venue="BINANCE",
+            ts_ns=1,
+            symbol="BTCUSDT",
+            last_update_id=1,
+            venue="BINANCE",
             bids=(
                 OrderBookLevel(price=10.0, qty=1.0),
                 OrderBookLevel(price=11.0, qty=1.0),  # ascending — illegal for bids
@@ -158,7 +191,10 @@ def test_order_book_snapshot_rejects_unsorted_bids() -> None:
 def test_order_book_snapshot_rejects_unsorted_asks() -> None:
     with pytest.raises(ValueError, match="asks must be sorted"):
         OrderBookSnapshot(
-            ts_ns=1, symbol="BTCUSDT", last_update_id=1, venue="BINANCE",
+            ts_ns=1,
+            symbol="BTCUSDT",
+            last_update_id=1,
+            venue="BINANCE",
             bids=(),
             asks=(
                 OrderBookLevel(price=11.0, qty=1.0),
@@ -169,7 +205,10 @@ def test_order_book_snapshot_rejects_unsorted_asks() -> None:
 
 def test_order_book_snapshot_top_of_book_helpers() -> None:
     snap = OrderBookSnapshot(
-        ts_ns=1, symbol="BTCUSDT", last_update_id=1, venue="BINANCE",
+        ts_ns=1,
+        symbol="BTCUSDT",
+        last_update_id=1,
+        venue="BINANCE",
         bids=(
             OrderBookLevel(price=100.0, qty=1.0),
             OrderBookLevel(price=99.0, qty=2.0),
@@ -186,8 +225,12 @@ def test_order_book_snapshot_top_of_book_helpers() -> None:
 
 def test_order_book_snapshot_mid_none_on_empty_side() -> None:
     snap = OrderBookSnapshot(
-        ts_ns=1, symbol="BTCUSDT", last_update_id=1, venue="BINANCE",
-        bids=(), asks=(OrderBookLevel(price=101.0, qty=1.0),),
+        ts_ns=1,
+        symbol="BTCUSDT",
+        last_update_id=1,
+        venue="BINANCE",
+        bids=(),
+        asks=(OrderBookLevel(price=101.0, qty=1.0),),
     )
     assert snap.best_bid() is None
     assert snap.mid() is None
@@ -201,9 +244,13 @@ def test_order_book_snapshot_mid_none_on_empty_side() -> None:
 def test_book_delta_rejects_inverted_window() -> None:
     with pytest.raises(ValueError, match="final_update_id"):
         BookDelta(
-            ts_ns=1, symbol="BTCUSDT", venue="BINANCE",
-            first_update_id=10, final_update_id=5,
-            bid_updates=(), ask_updates=(),
+            ts_ns=1,
+            symbol="BTCUSDT",
+            venue="BINANCE",
+            first_update_id=10,
+            final_update_id=5,
+            bid_updates=(),
+            ask_updates=(),
         )
 
 
@@ -214,8 +261,12 @@ def test_book_delta_rejects_inverted_window() -> None:
 
 def _trade_frame(**overrides: object) -> dict[str, object]:
     base: dict[str, object] = {
-        "e": "trade", "s": "BTCUSDT", "t": 12345,
-        "p": "50000.0", "q": "0.001", "m": False,
+        "e": "trade",
+        "s": "BTCUSDT",
+        "t": 12345,
+        "p": "50000.0",
+        "q": "0.001",
+        "m": False,
     }
     base.update(overrides)
     return base
@@ -224,8 +275,13 @@ def _trade_frame(**overrides: object) -> dict[str, object]:
 def test_parse_binance_trade_buy_side() -> None:
     t = parse_binance_trade(_trade_frame(m=False), ts_ns=42)
     assert t == Trade(
-        ts_ns=42, symbol="BTCUSDT", side="BUY",
-        price=50000.0, qty=0.001, trade_id="12345", venue="BINANCE",
+        ts_ns=42,
+        symbol="BTCUSDT",
+        side="BUY",
+        price=50000.0,
+        qty=0.001,
+        trade_id="12345",
+        venue="BINANCE",
     )
 
 
@@ -298,7 +354,8 @@ def test_parse_binance_book_snapshot_canonicalises_arbitrary_input_order() -> No
             "bids": [["100.0", "1.0"], ["99.0", "2.0"]],
             "asks": [["101.0", "1.0"], ["102.0", "2.0"]],
         },
-        ts_ns=1, symbol="BTCUSDT",
+        ts_ns=1,
+        symbol="BTCUSDT",
     )
     b = parse_binance_book_snapshot(
         {
@@ -306,7 +363,8 @@ def test_parse_binance_book_snapshot_canonicalises_arbitrary_input_order() -> No
             "bids": [["99.0", "2.0"], ["100.0", "1.0"]],
             "asks": [["102.0", "2.0"], ["101.0", "1.0"]],
         },
-        ts_ns=1, symbol="BTCUSDT",
+        ts_ns=1,
+        symbol="BTCUSDT",
     )
     assert a == b
 
@@ -336,9 +394,12 @@ def test_parse_binance_book_snapshot_rejects_empty_symbol() -> None:
 
 def _delta_frame(**overrides: object) -> dict[str, object]:
     base: dict[str, object] = {
-        "e": "depthUpdate", "s": "BTCUSDT",
-        "U": 11, "u": 13,
-        "b": [["100.0", "0.5"]], "a": [["101.0", "0.5"]],
+        "e": "depthUpdate",
+        "s": "BTCUSDT",
+        "U": 11,
+        "u": 13,
+        "b": [["100.0", "0.5"]],
+        "a": [["101.0", "0.5"]],
     }
     base.update(overrides)
     return base
@@ -347,8 +408,11 @@ def _delta_frame(**overrides: object) -> dict[str, object]:
 def test_parse_binance_book_delta_canonical_shape() -> None:
     d = parse_binance_book_delta(_delta_frame(), ts_ns=42)
     assert d == BookDelta(
-        ts_ns=42, symbol="BTCUSDT", venue="BINANCE",
-        first_update_id=11, final_update_id=13,
+        ts_ns=42,
+        symbol="BTCUSDT",
+        venue="BINANCE",
+        first_update_id=11,
+        final_update_id=13,
         bid_updates=(OrderBookLevel(price=100.0, qty=0.5),),
         ask_updates=(OrderBookLevel(price=101.0, qty=0.5),),
     )
@@ -412,8 +476,11 @@ def _delta(
     symbol: str = "BTCUSDT",
 ) -> BookDelta:
     return BookDelta(
-        ts_ns=ts_ns, symbol=symbol, venue="BINANCE",
-        first_update_id=first, final_update_id=final,
+        ts_ns=ts_ns,
+        symbol=symbol,
+        venue="BINANCE",
+        first_update_id=first,
+        final_update_id=final,
         bid_updates=tuple(OrderBookLevel(price=p, qty=q) for p, q in bids),
         ask_updates=tuple(OrderBookLevel(price=p, qty=q) for p, q in asks),
     )
@@ -445,16 +512,21 @@ def test_aggregator_apply_delta_rejects_symbol_mismatch() -> None:
 
 def test_aggregator_clean_delta_updates_top_of_book() -> None:
     a = OrderBookAggregator(symbol="BTCUSDT")
-    a.apply_snapshot(_snapshot(
-        last_update_id=100,
-        bids=((99.0, 1.0),),
-        asks=((101.0, 1.0),),
-    ))
-    res = a.apply_delta(_delta(
-        first=101, final=101,
-        bids=((100.0, 0.5),),
-        asks=((100.5, 0.5),),
-    ))
+    a.apply_snapshot(
+        _snapshot(
+            last_update_id=100,
+            bids=((99.0, 1.0),),
+            asks=((101.0, 1.0),),
+        )
+    )
+    res = a.apply_delta(
+        _delta(
+            first=101,
+            final=101,
+            bids=((100.0, 0.5),),
+            asks=((100.5, 0.5),),
+        )
+    )
     assert res.is_ok()
     assert res.snapshot is not None
     assert res.snapshot.last_update_id == 101
@@ -474,14 +546,19 @@ def test_aggregator_window_delta_advances_sequence() -> None:
 
 def test_aggregator_zero_qty_removes_level() -> None:
     a = OrderBookAggregator(symbol="BTCUSDT")
-    a.apply_snapshot(_snapshot(
-        last_update_id=100,
-        bids=((100.0, 1.0), (99.0, 2.0)),
-    ))
-    res = a.apply_delta(_delta(
-        first=101, final=101,
-        bids=((100.0, 0.0),),  # remove top bid
-    ))
+    a.apply_snapshot(
+        _snapshot(
+            last_update_id=100,
+            bids=((100.0, 1.0), (99.0, 2.0)),
+        )
+    )
+    res = a.apply_delta(
+        _delta(
+            first=101,
+            final=101,
+            bids=((100.0, 0.0),),  # remove top bid
+        )
+    )
     assert res.is_ok()
     assert res.snapshot is not None
     assert res.snapshot.best_bid() == OrderBookLevel(price=99.0, qty=2.0)
@@ -505,7 +582,9 @@ def test_aggregator_gap_freezes_state() -> None:
     a.apply_snapshot(_snapshot(last_update_id=100))
     res = a.apply_delta(_delta(first=200, final=210))  # well past last+1
     assert res.gap == BookGap(
-        ts_ns=2, symbol="BTCUSDT", venue="BINANCE",
+        ts_ns=2,
+        symbol="BTCUSDT",
+        venue="BINANCE",
         last_known_update_id=100,
         delta_first_update_id=200,
         delta_final_update_id=210,
@@ -541,11 +620,13 @@ def test_aggregator_replay_determinism() -> None:
     finals: list[OrderBookSnapshot] = []
     for _ in range(3):
         a = OrderBookAggregator(symbol="BTCUSDT")
-        a.apply_snapshot(_snapshot(
-            last_update_id=100,
-            bids=((100.0, 1.0), (99.0, 2.0)),
-            asks=((101.0, 1.0), (102.0, 2.0)),
-        ))
+        a.apply_snapshot(
+            _snapshot(
+                last_update_id=100,
+                bids=((100.0, 1.0), (99.0, 2.0)),
+                asks=((101.0, 1.0), (102.0, 2.0)),
+            )
+        )
         for d in deltas:
             a.apply_delta(d)
         cur = a.current()
@@ -558,18 +639,24 @@ def test_aggregator_canonical_sort_breaks_input_order_dependence() -> None:
     """Delta updates passed in different orders produce identical snapshots."""
     a = OrderBookAggregator(symbol="BTCUSDT")
     a.apply_snapshot(_snapshot(last_update_id=100))
-    res_a = a.apply_delta(_delta(
-        first=101, final=101,
-        bids=((100.0, 1.0), (99.0, 2.0)),
-        asks=((101.0, 1.0), (102.0, 2.0)),
-    ))
+    res_a = a.apply_delta(
+        _delta(
+            first=101,
+            final=101,
+            bids=((100.0, 1.0), (99.0, 2.0)),
+            asks=((101.0, 1.0), (102.0, 2.0)),
+        )
+    )
     b = OrderBookAggregator(symbol="BTCUSDT")
     b.apply_snapshot(_snapshot(last_update_id=100))
-    res_b = b.apply_delta(_delta(
-        first=101, final=101,
-        bids=((99.0, 2.0), (100.0, 1.0)),
-        asks=((102.0, 2.0), (101.0, 1.0)),
-    ))
+    res_b = b.apply_delta(
+        _delta(
+            first=101,
+            final=101,
+            bids=((99.0, 2.0), (100.0, 1.0)),
+            asks=((102.0, 2.0), (101.0, 1.0)),
+        )
+    )
     assert res_a.snapshot == res_b.snapshot
 
 
@@ -583,8 +670,12 @@ def test_apply_result_is_ok_only_on_clean_delta() -> None:
     assert ApplyResult(snapshot=snap, gap=None, stale=False).is_ok()
     assert not ApplyResult(snapshot=None, gap=None, stale=True).is_ok()
     gap = BookGap(
-        ts_ns=1, symbol="BTCUSDT", venue="BINANCE",
-        last_known_update_id=1, delta_first_update_id=10, delta_final_update_id=11,
+        ts_ns=1,
+        symbol="BTCUSDT",
+        venue="BINANCE",
+        last_known_update_id=1,
+        delta_first_update_id=10,
+        delta_final_update_id=11,
     )
     assert not ApplyResult(snapshot=None, gap=gap, stale=False).is_ok()
 
@@ -629,7 +720,5 @@ def test_next_reconnect_delay_s_rejects_factor_le_one() -> None:
 
 
 def test_next_reconnect_delay_s_is_pure_replay_deterministic() -> None:
-    runs = [
-        [next_reconnect_delay_s(attempt=i) for i in range(8)] for _ in range(3)
-    ]
+    runs = [[next_reconnect_delay_s(attempt=i) for i in range(8)] for _ in range(3)]
     assert runs[0] == runs[1] == runs[2]

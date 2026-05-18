@@ -291,9 +291,7 @@ def test_no_top_level_vendor_sdk_imports() -> None:
     for bad in forbidden:
         # Allow inside docstrings / comments by anchoring at line start
         for line in src.splitlines():
-            assert not line.startswith(bad), (
-                f"forbidden vendor SDK top-level import: {bad!r}"
-            )
+            assert not line.startswith(bad), f"forbidden vendor SDK top-level import: {bad!r}"
 
 
 def test_no_forbidden_top_level_imports() -> None:
@@ -328,9 +326,7 @@ def test_no_typed_event_constructors() -> None:
     )
     src = _module_source()
     for ctor in forbidden_ctors:
-        assert ctor not in src, (
-            f"adapter must not construct typed events: {ctor!r}"
-        )
+        assert ctor not in src, f"adapter must not construct typed events: {ctor!r}"
 
 
 def test_no_cross_engine_imports() -> None:
@@ -359,10 +355,7 @@ def test_b23_exemption_wired() -> None:
 
     from tools.authority_lint import B23_PYTHON_EXEMPT_MODULES
 
-    assert (
-        "intelligence_engine.cognitive.chat.provider_transports"
-        in B23_PYTHON_EXEMPT_MODULES
-    )
+    assert "intelligence_engine.cognitive.chat.provider_transports" in B23_PYTHON_EXEMPT_MODULES
 
 
 def test_no_urllib_import() -> None:
@@ -375,6 +368,5 @@ def test_no_urllib_import() -> None:
         for bad in forbidden:
             if line.startswith(bad):
                 raise AssertionError(
-                    f"urllib must not be imported into provider_transports: "
-                    f"{line!r}"
+                    f"urllib must not be imported into provider_transports: {line!r}"
                 )

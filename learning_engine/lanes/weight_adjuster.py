@@ -105,26 +105,20 @@ class WeightAdjustmentConfig:
     def __post_init__(self) -> None:
         if self.learning_rate <= 0 or not math.isfinite(self.learning_rate):
             raise ValueError(
-                f"learning_rate must be a positive finite number, "
-                f"got {self.learning_rate}"
+                f"learning_rate must be a positive finite number, got {self.learning_rate}"
             )
-        if (
-            self.max_nudge_per_step <= 0
-            or not math.isfinite(self.max_nudge_per_step)
-        ):
+        if self.max_nudge_per_step <= 0 or not math.isfinite(self.max_nudge_per_step):
             raise ValueError(
                 f"max_nudge_per_step must be a positive finite number, "
                 f"got {self.max_nudge_per_step}"
             )
         if self.min_weight < 0 or not math.isfinite(self.min_weight):
             raise ValueError(
-                f"min_weight must be a non-negative finite number, "
-                f"got {self.min_weight}"
+                f"min_weight must be a non-negative finite number, got {self.min_weight}"
             )
         if not math.isfinite(self.max_weight) or self.max_weight <= self.min_weight:
             raise ValueError(
-                f"max_weight must be > min_weight, got "
-                f"min={self.min_weight}, max={self.max_weight}"
+                f"max_weight must be > min_weight, got min={self.min_weight}, max={self.max_weight}"
             )
         if self.min_samples < 2:
             raise ValueError(
@@ -132,10 +126,7 @@ class WeightAdjustmentConfig:
                 f"fewer samples), got {self.min_samples}"
             )
         if not (0.0 <= self.correlation_floor <= 1.0):
-            raise ValueError(
-                f"correlation_floor must lie in [0, 1], got "
-                f"{self.correlation_floor}"
-            )
+            raise ValueError(f"correlation_floor must lie in [0, 1], got {self.correlation_floor}")
 
 
 # ---------------------------------------------------------------------------
@@ -181,8 +172,7 @@ class WeightBinding:
             raise ValueError("WeightBinding.strategy_id must be non-empty")
         if not math.isfinite(self.current_value):
             raise ValueError(
-                f"WeightBinding.current_value must be finite, got "
-                f"{self.current_value}"
+                f"WeightBinding.current_value must be finite, got {self.current_value}"
             )
 
 
@@ -248,11 +238,11 @@ class WeightAdjustment:
     component_name: str
     sample_count: int
     correlation: float | None  # None when undefined / under-sampled
-    raw_nudge: float           # before clipping
-    clipped_nudge: float       # after [-max_nudge, +max_nudge] clamp
+    raw_nudge: float  # before clipping
+    clipped_nudge: float  # after [-max_nudge, +max_nudge] clamp
     old_value: float
-    new_value: float           # after [min_weight, max_weight] clamp
-    proposed: bool             # True iff a LearningUpdate was emitted
+    new_value: float  # after [min_weight, max_weight] clamp
+    proposed: bool  # True iff a LearningUpdate was emitted
 
 
 def propose_weight_updates(
@@ -307,11 +297,7 @@ def propose_weight_updates(
             ys.append(b.shaped_reward)
 
         sample_count = len(xs)
-        r = (
-            _pearson(xs, ys)
-            if sample_count >= config.min_samples
-            else None
-        )
+        r = _pearson(xs, ys) if sample_count >= config.min_samples else None
 
         if r is None or abs(r) < config.correlation_floor:
             diagnostics.append(
@@ -384,10 +370,7 @@ def propose_weight_updates(
                 parameter=binding.parameter,
                 old_value=f"{binding.current_value:.6f}",
                 new_value=f"{new_value:.6f}",
-                reason=(
-                    f"weight_adjuster correlation={r:+.4f} over "
-                    f"{sample_count} breakdowns"
-                ),
+                reason=(f"weight_adjuster correlation={r:+.4f} over {sample_count} breakdowns"),
                 meta=meta,
             )
         )

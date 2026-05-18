@@ -27,31 +27,23 @@ def _item(
 
 
 def test_curator_drops_unknown_seed() -> None:
-    rules = CuratorRules.from_mapping(
-        {"known": {"topic": "crypto"}}
-    )
+    rules = CuratorRules.from_mapping({"known": {"topic": "crypto"}})
     curator = Curator(rules=rules)
     out = curator.curate([_item(seed_id="unknown")])
     assert out == ()
 
 
 def test_curator_drops_below_min_score() -> None:
-    rules = CuratorRules.from_mapping(
-        {"s": {"topic": "crypto", "min_score": 0.5}}
-    )
+    rules = CuratorRules.from_mapping({"s": {"topic": "crypto", "min_score": 0.5}})
     curator = Curator(rules=rules)
     out = curator.curate([_item(score=0.3)])
     assert out == ()
 
 
 def test_curator_passes_at_or_above_min_score() -> None:
-    rules = CuratorRules.from_mapping(
-        {"s": {"topic": "crypto", "min_score": 0.5}}
-    )
+    rules = CuratorRules.from_mapping({"s": {"topic": "crypto", "min_score": 0.5}})
     curator = Curator(rules=rules)
-    out = curator.curate(
-        [_item(score=0.5), _item(score=0.9)]
-    )
+    out = curator.curate([_item(score=0.5), _item(score=0.9)])
     assert len(out) == 2
 
 
@@ -65,9 +57,7 @@ def test_curator_deny_substrings() -> None:
         }
     )
     curator = Curator(rules=rules)
-    out = curator.curate(
-        [_item(title="Sponsored Content"), _item(title="real news")]
-    )
+    out = curator.curate([_item(title="Sponsored Content"), _item(title="real news")])
     assert len(out) == 1
     assert out[0].title == "real news"
 
@@ -82,9 +72,7 @@ def test_curator_allow_substrings_required() -> None:
         }
     )
     curator = Curator(rules=rules)
-    out = curator.curate(
-        [_item(title="BTC rallies"), _item(title="off-topic")]
-    )
+    out = curator.curate([_item(title="BTC rallies"), _item(title="off-topic")])
     assert len(out) == 1
     assert out[0].title == "BTC rallies"
 
@@ -106,9 +94,7 @@ def test_curator_carries_topic_and_tags() -> None:
 
 
 def test_curator_rules_from_mapping_defaults() -> None:
-    rules = CuratorRules.from_mapping(
-        {"s": {"topic": "crypto"}}
-    )
+    rules = CuratorRules.from_mapping({"s": {"topic": "crypto"}})
     rule = rules.rules["s"]
     assert rule.topic == "crypto"
     assert rule.min_score == 0.0
@@ -182,17 +168,13 @@ def test_curator_rules_rejects_empty_topic() -> None:
 
 def test_curator_rules_min_score_bounds() -> None:
     with pytest.raises(ValueError, match="min_score"):
-        CuratorRules.from_mapping(
-            {"s": {"topic": "x", "min_score": 1.5}}
-        )
+        CuratorRules.from_mapping({"s": {"topic": "x", "min_score": 1.5}})
 
 
 def test_curator_replay_determinism() -> None:
     """Same items + same rules -> same output (INV-15)."""
 
-    rules = CuratorRules.from_mapping(
-        {"s": {"topic": "crypto", "min_score": 0.5}}
-    )
+    rules = CuratorRules.from_mapping({"s": {"topic": "crypto", "min_score": 0.5}})
     curator = Curator(rules=rules)
     items = [_item(score=0.5), _item(score=0.9)]
     a = curator.curate(items)

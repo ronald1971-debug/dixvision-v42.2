@@ -56,6 +56,4 @@ class Filing:
         if not self.filer:
             raise ValueError("Filing.filer must be non-empty")
         if self.filed_ts_ns is not None and self.filed_ts_ns <= 0:
-            raise ValueError(
-                "Filing.filed_ts_ns must be positive or None"
-            )
+            raise ValueError("Filing.filed_ts_ns must be positive or None")

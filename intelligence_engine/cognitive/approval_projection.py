@@ -126,11 +126,7 @@ def _apply_decision(
 
     return pending.model_copy(
         update={
-            "status": (
-                ApprovalStatusApi.APPROVED
-                if approved
-                else ApprovalStatusApi.REJECTED
-            ),
+            "status": (ApprovalStatusApi.APPROVED if approved else ApprovalStatusApi.REJECTED),
             "decided_at_ts_ns": int(payload["ts_ns"]),
             "decided_by": payload.get("decided_by", ""),
         },

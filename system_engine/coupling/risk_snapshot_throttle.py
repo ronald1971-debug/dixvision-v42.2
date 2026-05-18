@@ -57,8 +57,7 @@ def apply_throttle(
             else None
         )
         symbol_caps = {
-            sym: cap * decision.qty_multiplier
-            for sym, cap in snapshot.symbol_caps.items()
+            sym: cap * decision.qty_multiplier for sym, cap in snapshot.symbol_caps.items()
         }
 
     return RiskSnapshot(

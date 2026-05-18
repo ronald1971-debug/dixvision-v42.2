@@ -171,26 +171,18 @@ class BooleanExpression:
         self._must_not = self._freeze(must_not, "must_not")
 
     @staticmethod
-    def _freeze(
-        m: Mapping[str, str] | None, name: str
-    ) -> tuple[tuple[str, str], ...]:
+    def _freeze(m: Mapping[str, str] | None, name: str) -> tuple[tuple[str, str], ...]:
         if m is None:
             return ()
         if not isinstance(m, Mapping):
-            raise TypeError(
-                f"BooleanExpression.{name} must be a Mapping or None"
-            )
+            raise TypeError(f"BooleanExpression.{name} must be a Mapping or None")
         pairs: list[tuple[str, str]] = []
         for key in sorted(m):
             if not isinstance(key, str):
-                raise TypeError(
-                    f"BooleanExpression.{name} keys must be str"
-                )
+                raise TypeError(f"BooleanExpression.{name} keys must be str")
             value = m[key]
             if not isinstance(value, str):
-                raise TypeError(
-                    f"BooleanExpression.{name}[{key!r}] must be str"
-                )
+                raise TypeError(f"BooleanExpression.{name}[{key!r}] must be str")
             pairs.append((key, value))
         return tuple(pairs)
 
@@ -274,9 +266,7 @@ class IndexParams:
                 if not isinstance(v, int) or isinstance(v, bool):
                     raise TypeError(f"params[{k!r}] must be int")
                 if v <= 0:
-                    raise ValueError(
-                        f"params[{k!r}] must be positive, got {v}"
-                    )
+                    raise ValueError(f"params[{k!r}] must be positive, got {v}")
                 pairs.append((k, v))
             frozen = tuple(pairs)
         self._index_type = index_type
@@ -305,9 +295,7 @@ class IndexParams:
         )
 
     def __hash__(self) -> int:
-        return hash(
-            (self._index_type, self._metric_type, self._params)
-        )
+        return hash((self._index_type, self._metric_type, self._params))
 
     def __repr__(self) -> str:
         return (
@@ -342,9 +330,7 @@ def _cosine_distance(a: Sequence[float], b: Sequence[float]) -> float:
 
 
 def _l2_distance(a: Sequence[float], b: Sequence[float]) -> float:
-    return math.sqrt(
-        math.fsum((x - y) ** 2 for x, y in zip(a, b, strict=True))
-    )
+    return math.sqrt(math.fsum((x - y) ** 2 for x, y in zip(a, b, strict=True)))
 
 
 def _distance(
@@ -452,13 +438,9 @@ class SemanticMilvusStore:
         if not isinstance(episode, Episode):
             raise TypeError("episode must be an Episode")
         if episode.dim != self._dim:
-            raise ValueError(
-                f"episode.dim={episode.dim} != store.dim={self._dim}"
-            )
+            raise ValueError(f"episode.dim={episode.dim} != store.dim={self._dim}")
         if episode.episode_id in self._episodes:
-            raise ValueError(
-                f"episode_id={episode.episode_id!r} already in store"
-            )
+            raise ValueError(f"episode_id={episode.episode_id!r} already in store")
         if len(self._episodes) >= self._max_size:
             self._evict_oldest()
         self._episodes[episode.episode_id] = episode
@@ -510,8 +492,7 @@ class SemanticMilvusStore:
             raise TypeError("params must be IndexParams")
         if params.metric_type is not self._metric:
             raise ValueError(
-                f"index metric_type={params.metric_type!r} "
-                f"!= store metric_type={self._metric!r}"
+                f"index metric_type={params.metric_type!r} != store metric_type={self._metric!r}"
             )
         self._index_params = params
 
@@ -530,9 +511,7 @@ class SemanticMilvusStore:
         if not isinstance(query, MemoryQuery):
             raise TypeError("query must be a MemoryQuery")
         if query.dim != self._dim:
-            raise ValueError(
-                f"query.dim={query.dim} != store.dim={self._dim}"
-            )
+            raise ValueError(f"query.dim={query.dim} != store.dim={self._dim}")
         if expr is not None and not isinstance(expr, BooleanExpression):
             raise TypeError("expr must be a BooleanExpression or None")
         scored: list[tuple[float, int, str, Episode]] = []
@@ -596,10 +575,7 @@ class SemanticMilvusStore:
             index_payload = {
                 "index_type": self._index_params.index_type.value,
                 "metric_type": self._index_params.metric_type.value,
-                "params": [
-                    {"key": k, "value": v}
-                    for k, v in self._index_params.params
-                ],
+                "params": [{"key": k, "value": v} for k, v in self._index_params.params],
             }
         payload = {
             "version": _SERIALIZATION_VERSION,
@@ -633,16 +609,12 @@ class SemanticMilvusStore:
         try:
             obj = json.loads(raw.decode("ascii"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise SemanticMilvusError(
-                f"corrupt serialised blob: {exc!s}"
-            ) from exc
+            raise SemanticMilvusError(f"corrupt serialised blob: {exc!s}") from exc
         if not isinstance(obj, dict):
             raise SemanticMilvusError("blob root must be an object")
         version = obj.get("version")
         if version != _SERIALIZATION_VERSION:
-            raise SemanticMilvusError(
-                f"unsupported version: {version!r}"
-            )
+            raise SemanticMilvusError(f"unsupported version: {version!r}")
         try:
             metric = MetricType(obj["metric"])
         except (KeyError, ValueError) as exc:
@@ -660,18 +632,14 @@ class SemanticMilvusStore:
                 idx_type = IndexType(index_raw["index_type"])
                 idx_metric = MetricType(index_raw["metric_type"])
             except (KeyError, ValueError) as exc:
-                raise SemanticMilvusError(
-                    f"bad index: {exc!s}"
-                ) from exc
+                raise SemanticMilvusError(f"bad index: {exc!s}") from exc
             params_raw = index_raw.get("params", [])
             if not isinstance(params_raw, list):
                 raise SemanticMilvusError("index params must be list")
             params_dict: dict[str, int] = {}
             for row in params_raw:
                 if not isinstance(row, dict):
-                    raise SemanticMilvusError(
-                        "index param row must be object"
-                    )
+                    raise SemanticMilvusError("index param row must be object")
                 params_dict[str(row["key"])] = int(row["value"])
             store._index_params = IndexParams(
                 index_type=idx_type,
@@ -684,9 +652,7 @@ class SemanticMilvusStore:
             payload_raw = row.get("payload", {})
             if not isinstance(payload_raw, dict):
                 raise SemanticMilvusError("payload must be an object")
-            payload = MappingProxyType(
-                {str(k): str(v) for k, v in payload_raw.items()}
-            )
+            payload = MappingProxyType({str(k): str(v) for k, v in payload_raw.items()})
             episode = Episode(
                 ts_ns=int(row["ts_ns"]),
                 episode_id=str(row["episode_id"]),
@@ -733,9 +699,7 @@ def milvus_client_factory(
     try:
         from pymilvus import MilvusClient  # noqa: PLC0415
     except ImportError as exc:  # pragma: no cover - exercised when dep absent
-        raise SemanticMilvusError(
-            "pymilvus is not installed; see NEW_PIP_DEPENDENCIES"
-        ) from exc
+        raise SemanticMilvusError("pymilvus is not installed; see NEW_PIP_DEPENDENCIES") from exc
     scheme = "https" if secure else "http"
     uri = f"{scheme}://{host}:{port}"
     token: str | None = None

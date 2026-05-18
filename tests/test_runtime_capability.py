@@ -54,11 +54,7 @@ from tools.runtime_topology import (
     RuntimeTopology,
 )
 
-MODULE_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "tools"
-    / "runtime_capability.py"
-)
+MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "runtime_capability.py"
 
 
 # ---------------------------------------------------------------------------
@@ -155,9 +151,7 @@ def _snapshot_with_states(
     for node_id, state in states.items():
         registry.register(node_id)
         current = LifecycleState.DECLARED
-        legal_path: dict[
-            LifecycleState, tuple[LifecycleState, ...]
-        ] = {
+        legal_path: dict[LifecycleState, tuple[LifecycleState, ...]] = {
             LifecycleState.DECLARED: (),
             LifecycleState.WIRED: (LifecycleState.WIRED,),
             LifecycleState.STARTED: (
@@ -448,9 +442,7 @@ def test_capability_map_who_provides_filters_to_active() -> None:
         },
     )
     cap_map = build_capability_map(topology=topology, snapshot=snapshot)
-    assert cap_map.who_provides("learning.closed_loop") == (
-        "learning.closed_loop_a",
-    )
+    assert cap_map.who_provides("learning.closed_loop") == ("learning.closed_loop_a",)
 
 
 def test_capability_map_who_provides_empty_when_all_dormant() -> None:
@@ -617,9 +609,7 @@ def test_capability_map_resolution_count() -> None:
 def test_dependency_resolver_constructs() -> None:
     topology = _depends_topology()
     snapshot = _snapshot_with_states(topology, {})
-    resolver = DependencyGraphResolver(
-        topology=topology, snapshot=snapshot
-    )
+    resolver = DependencyGraphResolver(topology=topology, snapshot=snapshot)
     assert isinstance(resolver, DependencyGraphResolver)
 
 
@@ -635,27 +625,21 @@ def test_dependency_resolver_rejects_non_topology() -> None:
 def test_dependency_chain_walks_full_chain() -> None:
     topology = _depends_topology()
     snapshot = _snapshot_with_states(topology, {})
-    resolver = build_dependency_resolver(
-        topology=topology, snapshot=snapshot
-    )
+    resolver = build_dependency_resolver(topology=topology, snapshot=snapshot)
     assert resolver.dependency_chain("alpha") == ("alpha", "beta", "gamma")
 
 
 def test_dependency_chain_single_node() -> None:
     topology = _depends_topology()
     snapshot = _snapshot_with_states(topology, {})
-    resolver = build_dependency_resolver(
-        topology=topology, snapshot=snapshot
-    )
+    resolver = build_dependency_resolver(topology=topology, snapshot=snapshot)
     assert resolver.dependency_chain("gamma") == ("gamma",)
 
 
 def test_dependency_chain_rejects_unknown_node() -> None:
     topology = _depends_topology()
     snapshot = _snapshot_with_states(topology, {})
-    resolver = build_dependency_resolver(
-        topology=topology, snapshot=snapshot
-    )
+    resolver = build_dependency_resolver(topology=topology, snapshot=snapshot)
     with pytest.raises(CapabilityError):
         resolver.dependency_chain("nonexistent")
 
@@ -663,9 +647,7 @@ def test_dependency_chain_rejects_unknown_node() -> None:
 def test_dependency_chain_detects_cycle() -> None:
     topology = _cycle_topology()
     snapshot = _snapshot_with_states(topology, {})
-    resolver = build_dependency_resolver(
-        topology=topology, snapshot=snapshot
-    )
+    resolver = build_dependency_resolver(topology=topology, snapshot=snapshot)
     with pytest.raises(CapabilityResolutionError):
         resolver.dependency_chain("alpha")
 
@@ -680,9 +662,7 @@ def test_is_reachable_true_when_all_active() -> None:
             "gamma": LifecycleState.HEALTHY,
         },
     )
-    resolver = build_dependency_resolver(
-        topology=topology, snapshot=snapshot
-    )
+    resolver = build_dependency_resolver(topology=topology, snapshot=snapshot)
     assert resolver.is_reachable("alpha") is True
 
 
@@ -696,9 +676,7 @@ def test_is_reachable_false_when_ancestor_dormant() -> None:
             "gamma": LifecycleState.DORMANT,
         },
     )
-    resolver = build_dependency_resolver(
-        topology=topology, snapshot=snapshot
-    )
+    resolver = build_dependency_resolver(topology=topology, snapshot=snapshot)
     assert resolver.is_reachable("alpha") is False
 
 
@@ -712,9 +690,7 @@ def test_missing_link_returns_none_when_all_active() -> None:
             "gamma": LifecycleState.HEALTHY,
         },
     )
-    resolver = build_dependency_resolver(
-        topology=topology, snapshot=snapshot
-    )
+    resolver = build_dependency_resolver(topology=topology, snapshot=snapshot)
     assert resolver.missing_link("alpha") is None
 
 
@@ -728,9 +704,7 @@ def test_missing_link_finds_dormant_ancestor() -> None:
             "gamma": LifecycleState.DORMANT,
         },
     )
-    resolver = build_dependency_resolver(
-        topology=topology, snapshot=snapshot
-    )
+    resolver = build_dependency_resolver(topology=topology, snapshot=snapshot)
     link = resolver.missing_link("alpha")
     assert link is not None
     assert link.start_node_id == "alpha"
@@ -749,9 +723,7 @@ def test_missing_link_finds_unregistered_ancestor() -> None:
             # gamma never registered
         },
     )
-    resolver = build_dependency_resolver(
-        topology=topology, snapshot=snapshot
-    )
+    resolver = build_dependency_resolver(topology=topology, snapshot=snapshot)
     link = resolver.missing_link("alpha")
     assert link is not None
     assert link.missing_node_id == "gamma"
@@ -769,9 +741,7 @@ def test_missing_link_returns_first_break_not_deepest() -> None:
             "gamma": LifecycleState.DORMANT,
         },
     )
-    resolver = build_dependency_resolver(
-        topology=topology, snapshot=snapshot
-    )
+    resolver = build_dependency_resolver(topology=topology, snapshot=snapshot)
     link = resolver.missing_link("alpha")
     assert link is not None
     assert link.missing_node_id == "beta"
@@ -787,9 +757,7 @@ def test_missing_link_starts_at_self_when_self_dormant() -> None:
             "gamma": LifecycleState.HEALTHY,
         },
     )
-    resolver = build_dependency_resolver(
-        topology=topology, snapshot=snapshot
-    )
+    resolver = build_dependency_resolver(topology=topology, snapshot=snapshot)
     link = resolver.missing_link("alpha")
     assert link is not None
     assert link.start_node_id == "alpha"
@@ -800,9 +768,7 @@ def test_missing_link_starts_at_self_when_self_dormant() -> None:
 def test_missing_link_rejects_unknown_node() -> None:
     topology = _depends_topology()
     snapshot = _snapshot_with_states(topology, {})
-    resolver = build_dependency_resolver(
-        topology=topology, snapshot=snapshot
-    )
+    resolver = build_dependency_resolver(topology=topology, snapshot=snapshot)
     with pytest.raises(CapabilityError):
         resolver.missing_link("nonexistent")
 
@@ -817,9 +783,7 @@ def test_unreachable_nodes_lists_all_broken() -> None:
             "gamma": LifecycleState.HEALTHY,
         },
     )
-    resolver = build_dependency_resolver(
-        topology=topology, snapshot=snapshot
-    )
+    resolver = build_dependency_resolver(topology=topology, snapshot=snapshot)
     unreachable = resolver.unreachable_nodes()
     assert "alpha" in unreachable
     assert "beta" in unreachable
@@ -831,9 +795,7 @@ def test_unreachable_nodes_lists_all_broken() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _build_canonical_pair() -> (
-    tuple[RuntimeTopology, ActivationSnapshot]
-):
+def _build_canonical_pair() -> tuple[RuntimeTopology, ActivationSnapshot]:
     topology = _three_provider_topology()
     snapshot = _snapshot_with_states(
         topology,
@@ -849,9 +811,7 @@ def test_inv_15_capability_map_digest_three_runs_identical() -> None:
     digests: list[str] = []
     for _ in range(3):
         topology, snapshot = _build_canonical_pair()
-        cap_map = build_capability_map(
-            topology=topology, snapshot=snapshot
-        )
+        cap_map = build_capability_map(topology=topology, snapshot=snapshot)
         digests.append(cap_map.digest())
     assert digests[0] == digests[1] == digests[2]
 
@@ -868,24 +828,16 @@ def test_inv_15_dependency_resolver_digest_three_runs_identical() -> None:
     digests: list[str] = []
     for _ in range(3):
         topology = _depends_topology()
-        snapshot = _snapshot_with_states(
-            topology, {"alpha": LifecycleState.HEALTHY}
-        )
-        resolver = build_dependency_resolver(
-            topology=topology, snapshot=snapshot
-        )
+        snapshot = _snapshot_with_states(topology, {"alpha": LifecycleState.HEALTHY})
+        resolver = build_dependency_resolver(topology=topology, snapshot=snapshot)
         digests.append(resolver.digest())
     assert digests[0] == digests[1] == digests[2]
 
 
 def test_inv_15_capability_map_digest_changes_when_snapshot_changes() -> None:
     topology = _three_provider_topology()
-    snap_a = _snapshot_with_states(
-        topology, {"learning.closed_loop_a": LifecycleState.HEALTHY}
-    )
-    snap_b = _snapshot_with_states(
-        topology, {"learning.closed_loop_b": LifecycleState.HEALTHY}
-    )
+    snap_a = _snapshot_with_states(topology, {"learning.closed_loop_a": LifecycleState.HEALTHY})
+    snap_b = _snapshot_with_states(topology, {"learning.closed_loop_b": LifecycleState.HEALTHY})
     map_a = build_capability_map(topology=topology, snapshot=snap_a)
     map_b = build_capability_map(topology=topology, snapshot=snap_b)
     assert map_a.digest() != map_b.digest()
@@ -921,9 +873,7 @@ def test_factory_builds_capability_map() -> None:
     factory = enable_runtime_capability_factory()
     topology = _three_provider_topology()
     snapshot = _snapshot_with_states(topology, {})
-    cap_map = factory.capability_map(
-        topology=topology, snapshot=snapshot
-    )
+    cap_map = factory.capability_map(topology=topology, snapshot=snapshot)
     assert isinstance(cap_map, RuntimeCapabilityMap)
 
 
@@ -931,9 +881,7 @@ def test_factory_builds_dependency_resolver() -> None:
     factory = enable_runtime_capability_factory()
     topology = _depends_topology()
     snapshot = _snapshot_with_states(topology, {})
-    resolver = factory.dependency_resolver(
-        topology=topology, snapshot=snapshot
-    )
+    resolver = factory.dependency_resolver(topology=topology, snapshot=snapshot)
     assert isinstance(resolver, DependencyGraphResolver)
 
 
@@ -952,14 +900,10 @@ def test_reload_yields_byte_identical_digest() -> None:
         topology,
         {"learning.closed_loop_a": LifecycleState.HEALTHY},
     )
-    digest_before = cap_module.build_capability_map(
-        topology=topology, snapshot=snapshot
-    ).digest()
+    digest_before = cap_module.build_capability_map(topology=topology, snapshot=snapshot).digest()
 
     reloaded = importlib.reload(cap_module)
-    digest_after = reloaded.build_capability_map(
-        topology=topology, snapshot=snapshot
-    ).digest()
+    digest_after = reloaded.build_capability_map(topology=topology, snapshot=snapshot).digest()
 
     assert digest_before == digest_after
 
@@ -1008,17 +952,14 @@ def test_no_banned_top_level_imports() -> None:
     for imp in imports:
         root = imp.split(".")[0]
         assert root not in _BANNED_TOP_LEVEL_MODULES, (
-            f"banned top-level import {imp!r} (root {root!r}) found "
-            f"in tools/runtime_capability.py"
+            f"banned top-level import {imp!r} (root {root!r}) found in tools/runtime_capability.py"
         )
 
 
 def test_only_allowed_tools_imports() -> None:
     source = MODULE_PATH.read_text(encoding="utf-8")
     imports = _top_level_imports(source)
-    tools_imports = sorted(
-        imp for imp in imports if imp.startswith("tools.")
-    )
+    tools_imports = sorted(imp for imp in imports if imp.startswith("tools."))
     assert tools_imports == [
         "tools.runtime_activation",
         "tools.runtime_topology",

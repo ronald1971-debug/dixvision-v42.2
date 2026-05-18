@@ -92,9 +92,7 @@ def test_authority_no_forbidden_runtime_imports() -> None:
     for node in ast.walk(_MODULE_AST):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                assert alias.name.split(".")[0] not in forbidden, (
-                    f"forbidden import: {alias.name}"
-                )
+                assert alias.name.split(".")[0] not in forbidden, f"forbidden import: {alias.name}"
         elif isinstance(node, ast.ImportFrom):
             mod = (node.module or "").split(".")[0]
             assert mod not in forbidden, f"forbidden from-import: {node.module}"
@@ -116,9 +114,7 @@ def test_authority_no_engine_cross_imports() -> None:
         if isinstance(node, ast.ImportFrom):
             mod = node.module or ""
             for forbidden in forbidden_modules:
-                assert not mod.startswith(forbidden), (
-                    f"forbidden cross-import: {node.module}"
-                )
+                assert not mod.startswith(forbidden), f"forbidden cross-import: {node.module}"
 
 
 def test_authority_no_typed_event_construction() -> None:
@@ -145,9 +141,7 @@ def test_authority_no_typed_event_construction() -> None:
                 if isinstance(func, ast.Name)
                 else (func.attr if isinstance(func, ast.Attribute) else "")
             )
-            assert name not in forbidden_constructors, (
-                f"forbidden constructor call: {name}"
-            )
+            assert name not in forbidden_constructors, f"forbidden constructor call: {name}"
 
 
 # ============================================================
@@ -209,9 +203,7 @@ def test_freezing_model_version() -> None:
 
 
 def test_freezing_stage_recommendation() -> None:
-    v = register_model_version(
-        model_name="m1", version=1, source_run_id="r1", registered_ns=0
-    )
+    v = register_model_version(model_name="m1", version=1, source_run_id="r1", registered_ns=0)
     rec = propose_stage_transition(
         version=v,
         to_stage=ModelStage.STAGING,
@@ -510,12 +502,8 @@ def test_has_metric_and_latest_metric() -> None:
 
 
 def test_register_model_digest_stable() -> None:
-    a = register_model_version(
-        model_name="ppo_v3", version=1, source_run_id="r1", registered_ns=42
-    )
-    b = register_model_version(
-        model_name="ppo_v3", version=1, source_run_id="r1", registered_ns=42
-    )
+    a = register_model_version(model_name="ppo_v3", version=1, source_run_id="r1", registered_ns=42)
+    b = register_model_version(model_name="ppo_v3", version=1, source_run_id="r1", registered_ns=42)
     assert a == b
     assert a.digest == b.digest
 
@@ -655,15 +643,9 @@ def test_backend_record_run_rejects_duplicate() -> None:
 
 def test_backend_record_model_version_sorted() -> None:
     backend = InMemoryTrackingBackend()
-    v1 = register_model_version(
-        model_name="m_b", version=1, source_run_id="r1", registered_ns=0
-    )
-    v2 = register_model_version(
-        model_name="m_a", version=1, source_run_id="r1", registered_ns=0
-    )
-    v3 = register_model_version(
-        model_name="m_a", version=2, source_run_id="r2", registered_ns=0
-    )
+    v1 = register_model_version(model_name="m_b", version=1, source_run_id="r1", registered_ns=0)
+    v2 = register_model_version(model_name="m_a", version=1, source_run_id="r1", registered_ns=0)
+    v3 = register_model_version(model_name="m_a", version=2, source_run_id="r2", registered_ns=0)
     backend.record_model_version(v1)
     backend.record_model_version(v3)
     backend.record_model_version(v2)
@@ -673,9 +655,7 @@ def test_backend_record_model_version_sorted() -> None:
 
 def test_backend_record_model_version_rejects_duplicate() -> None:
     backend = InMemoryTrackingBackend()
-    v = register_model_version(
-        model_name="m1", version=1, source_run_id="r1", registered_ns=0
-    )
+    v = register_model_version(model_name="m1", version=1, source_run_id="r1", registered_ns=0)
     backend.record_model_version(v)
     with pytest.raises(ExperimentTrackingError):
         backend.record_model_version(v)
@@ -683,12 +663,8 @@ def test_backend_record_model_version_rejects_duplicate() -> None:
 
 def test_backend_record_recommendation_sorted() -> None:
     backend = InMemoryTrackingBackend()
-    v1 = register_model_version(
-        model_name="m_a", version=1, source_run_id="r1", registered_ns=0
-    )
-    v2 = register_model_version(
-        model_name="m_b", version=1, source_run_id="r2", registered_ns=0
-    )
+    v1 = register_model_version(model_name="m_a", version=1, source_run_id="r1", registered_ns=0)
+    v2 = register_model_version(model_name="m_b", version=1, source_run_id="r2", registered_ns=0)
     r1 = propose_stage_transition(
         version=v1, to_stage=ModelStage.STAGING, proposed_ns=1, rationale="a"
     )

@@ -140,15 +140,11 @@ class NoiseConfig:
     def __post_init__(self) -> None:
         if self.mechanism not in _SUPPORTED_MECHANISMS:
             raise ValueError(
-                f"unsupported mechanism: {self.mechanism!r} "
-                f"(supported: {_SUPPORTED_MECHANISMS})"
+                f"unsupported mechanism: {self.mechanism!r} (supported: {_SUPPORTED_MECHANISMS})"
             )
         if not math.isfinite(self.sensitivity) or self.sensitivity <= 0.0:
             raise ValueError("sensitivity must be finite and positive")
-        if (
-            not math.isfinite(self.noise_multiplier)
-            or self.noise_multiplier <= 0.0
-        ):
+        if not math.isfinite(self.noise_multiplier) or self.noise_multiplier <= 0.0:
             raise ValueError("noise_multiplier must be finite and positive")
 
 
@@ -182,10 +178,7 @@ class PrivateContribution:
             raise ValueError("num_samples must be >= 0")
         if self.ts_ns < 0:
             raise ValueError("ts_ns must be >= 0")
-        if (
-            not math.isfinite(self.epsilon_consumed)
-            or self.epsilon_consumed < 0.0
-        ):
+        if not math.isfinite(self.epsilon_consumed) or self.epsilon_consumed < 0.0:
             raise ValueError("epsilon_consumed must be finite and non-negative")
         if (
             not math.isfinite(self.delta_consumed)
@@ -238,16 +231,9 @@ class PrivateRoundReport:
             raise ValueError("aggregated_delta must be finite")
         if self.total_samples < 0:
             raise ValueError("total_samples must be >= 0")
-        if (
-            not math.isfinite(self.epsilon_spent)
-            or self.epsilon_spent < 0.0
-        ):
+        if not math.isfinite(self.epsilon_spent) or self.epsilon_spent < 0.0:
             raise ValueError("epsilon_spent must be finite and non-negative")
-        if (
-            not math.isfinite(self.delta_spent)
-            or self.delta_spent < 0.0
-            or self.delta_spent >= 1.0
-        ):
+        if not math.isfinite(self.delta_spent) or self.delta_spent < 0.0 or self.delta_spent >= 1.0:
             raise ValueError("delta_spent must be in [0.0, 1.0)")
         if self.ts_ns < 0:
             raise ValueError("ts_ns must be >= 0")
@@ -271,15 +257,9 @@ class PrivacyAccountant:
     n_rounds: int = 0
 
     def __post_init__(self) -> None:
-        if (
-            not math.isfinite(self.epsilon_spent)
-            or self.epsilon_spent < 0.0
-        ):
+        if not math.isfinite(self.epsilon_spent) or self.epsilon_spent < 0.0:
             raise ValueError("epsilon_spent must be finite and non-negative")
-        if (
-            not math.isfinite(self.delta_spent)
-            or self.delta_spent < 0.0
-        ):
+        if not math.isfinite(self.delta_spent) or self.delta_spent < 0.0:
             raise ValueError("delta_spent must be finite and non-negative")
         if self.n_rounds < 0:
             raise ValueError("n_rounds must be >= 0")
@@ -301,9 +281,7 @@ class PrivacyAccountant:
             and self.delta_spent + delta <= self.budget.delta
         )
 
-    def account_round(
-        self, *, epsilon: float, delta: float = 0.0
-    ) -> PrivacyAccountant:
+    def account_round(self, *, epsilon: float, delta: float = 0.0) -> PrivacyAccountant:
         """Charge (epsilon, delta) to the budget; return a new accountant.
 
         Raises ``ValueError`` if the charge would exceed the budget — the
@@ -561,7 +539,8 @@ def aggregate_private_round(
     round_epsilon = sum(c.epsilon_consumed for c in contributions)
     round_delta = sum(c.delta_consumed for c in contributions)
     next_accountant = accountant.account_round(
-        epsilon=round_epsilon, delta=round_delta,
+        epsilon=round_epsilon,
+        delta=round_delta,
     )
     updates = [c.as_gradient_update() for c in contributions]
     sorted_updates = canonical_sort_updates(updates)

@@ -56,13 +56,8 @@ class OnChainMetric:
             raise ValueError("OnChainMetric.source must be non-empty")
         if not self.metric:
             raise ValueError("OnChainMetric.metric must be non-empty")
-        if (
-            self.observed_ts_ns is not None
-            and self.observed_ts_ns <= 0
-        ):
-            raise ValueError(
-                "OnChainMetric.observed_ts_ns must be positive or None"
-            )
+        if self.observed_ts_ns is not None and self.observed_ts_ns <= 0:
+            raise ValueError("OnChainMetric.observed_ts_ns must be positive or None")
 
 
 # ---------------------------------------------------------------------------
@@ -75,6 +70,7 @@ class OnChainMetric:
 # cannot construct ``SignalEvent`` / ``HazardEvent`` (B27 / B28 / INV-71).
 # Downstream intelligence-tier coordinators project ``OnchainEvent`` into
 # typed events on the proper side of the authority boundary.
+
 
 @dataclass(frozen=True, slots=True)
 class OnchainEvent:
@@ -122,12 +118,8 @@ class OnchainEvent:
             raise ValueError("OnchainEvent.chain must be non-empty")
         if not self.kind:
             raise ValueError("OnchainEvent.kind must be non-empty")
-        if self.rug_score is not None and not (
-            0.0 <= float(self.rug_score) <= 1.0
-        ):
-            raise ValueError(
-                "OnchainEvent.rug_score must be in [0.0, 1.0] or None"
-            )
+        if self.rug_score is not None and not (0.0 <= float(self.rug_score) <= 1.0):
+            raise ValueError("OnchainEvent.rug_score must be in [0.0, 1.0] or None")
 
 
 @dataclass(frozen=True, slots=True)
@@ -164,9 +156,7 @@ class HolderShiftAdvisory:
         if self.ts_ns <= 0:
             raise ValueError("HolderShiftAdvisory.ts_ns must be positive")
         if not self.asset:
-            raise ValueError(
-                "HolderShiftAdvisory.asset must be non-empty"
-            )
+            raise ValueError("HolderShiftAdvisory.asset must be non-empty")
         for name in (
             "top_holder_share_before",
             "top_holder_share_after",
@@ -174,13 +164,9 @@ class HolderShiftAdvisory:
         ):
             v = float(getattr(self, name))
             if not (0.0 <= v <= 1.0):
-                raise ValueError(
-                    f"HolderShiftAdvisory.{name} must be in [0.0, 1.0]"
-                )
+                raise ValueError(f"HolderShiftAdvisory.{name} must be in [0.0, 1.0]")
         if self.holders_changed < 0:
-            raise ValueError(
-                "HolderShiftAdvisory.holders_changed must be >= 0"
-            )
+            raise ValueError("HolderShiftAdvisory.holders_changed must be >= 0")
 
     @property
     def share_delta(self) -> float:

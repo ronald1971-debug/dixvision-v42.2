@@ -166,20 +166,16 @@ def test_no_forbidden_top_level_imports() -> None:
             for alias in node.names:
                 head = alias.name.split(".")[0]
                 assert head not in _FORBIDDEN_TOP_IMPORTS, (
-                    "forbidden top-level import: "
-                    f"{alias.name}"
+                    f"forbidden top-level import: {alias.name}"
                 )
         elif isinstance(node, ast.ImportFrom):
             mod = node.module or ""
             head = mod.split(".")[0]
-            assert head not in _FORBIDDEN_TOP_IMPORTS, (
-                "forbidden top-level from-import: "
-                f"{mod}"
-            )
+            assert head not in _FORBIDDEN_TOP_IMPORTS, f"forbidden top-level from-import: {mod}"
             for prefix in _FORBIDDEN_CROSS_ENGINE_PREFIXES:
-                assert not (
-                    mod == prefix or mod.startswith(prefix + ".")
-                ), f"forbidden cross-engine import: {mod}"
+                assert not (mod == prefix or mod.startswith(prefix + ".")), (
+                    f"forbidden cross-engine import: {mod}"
+                )
 
 
 def test_no_wall_clock_or_prng_calls() -> None:
@@ -204,9 +200,7 @@ def test_no_wall_clock_or_prng_calls() -> None:
         if not isinstance(node, ast.Call):
             continue
         func = node.func
-        if isinstance(func, ast.Attribute) and isinstance(
-            func.value, ast.Name
-        ):
+        if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
             assert (func.value.id, func.attr) not in forbidden_attrs
 
 
@@ -222,9 +216,7 @@ def test_no_typed_bus_event_constructors() -> None:
         "HazardEvent",
     }
     for node in ast.walk(tree):
-        if isinstance(node, ast.Call) and isinstance(
-            node.func, ast.Name
-        ):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
             assert node.func.id not in forbidden_names, (
                 f"forbidden bus-event constructor: {node.func.id}"
             )
@@ -322,9 +314,7 @@ def test_document_metadata_too_many_keys_raises() -> None:
         Document(
             id="ok",
             content="x",
-            metadata={
-                f"k{i}": "v" for i in range(MAX_METADATA_KEYS + 1)
-            },
+            metadata={f"k{i}": "v" for i in range(MAX_METADATA_KEYS + 1)},
         )
 
 
@@ -591,10 +581,7 @@ def test_bm25_known_document_ranks_first() -> None:
     docs = [
         Document(
             id="r.size",
-            content=(
-                "governance rule about position size limits and "
-                "exposure caps"
-            ),
+            content=("governance rule about position size limits and exposure caps"),
         ),
         Document(
             id="r.kill",
@@ -639,10 +626,7 @@ def test_bm25_metadata_filter_excludes_non_matches() -> None:
 
 
 def test_bm25_top_k_caps_result_count() -> None:
-    docs = [
-        Document(id=f"r.{i}", content="rule")
-        for i in range(8)
-    ]
+    docs = [Document(id=f"r.{i}", content="rule") for i in range(8)]
     store = _build_store(docs)
     ctx = store.retrieve(Query(text="rule", top_k=3))
     assert len(ctx.documents) <= 3
@@ -784,9 +768,7 @@ def test_knowledge_store_bad_transport_in_ctor_raises() -> None:
     with pytest.raises(TransportError):
         KnowledgeStore(
             transport="not a transport",  # type: ignore[arg-type]
-            retriever=BM25Retriever(
-                transport=InMemoryDocumentStore()
-            ),
+            retriever=BM25Retriever(transport=InMemoryDocumentStore()),
             builder=PromptBuilder(
                 template=PromptTemplate(body="{context}"),
             ),

@@ -127,21 +127,13 @@ class PositionSnapshot:
                 "PositionSnapshot.side must be LONG or SHORT (never FLAT)"
             )
         if not math.isfinite(self.qty) or self.qty <= 0.0:
-            raise ArchetypeLifecycleError(
-                f"PositionSnapshot.qty must be > 0; got {self.qty!r}"
-            )
+            raise ArchetypeLifecycleError(f"PositionSnapshot.qty must be > 0; got {self.qty!r}")
         if not math.isfinite(self.entry_price) or self.entry_price < 0.0:
-            raise ArchetypeLifecycleError(
-                "PositionSnapshot.entry_price must be finite and >= 0"
-            )
+            raise ArchetypeLifecycleError("PositionSnapshot.entry_price must be finite and >= 0")
         if not math.isfinite(self.unrealised_pnl_usd):
-            raise ArchetypeLifecycleError(
-                "PositionSnapshot.unrealised_pnl_usd must be finite"
-            )
+            raise ArchetypeLifecycleError("PositionSnapshot.unrealised_pnl_usd must be finite")
         if self.bars_held < 0:
-            raise ArchetypeLifecycleError(
-                "PositionSnapshot.bars_held must be >= 0"
-            )
+            raise ArchetypeLifecycleError("PositionSnapshot.bars_held must be >= 0")
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,21 +148,13 @@ class PendingEntry:
 
     def __post_init__(self) -> None:
         if self.side is Side.FLAT:
-            raise ArchetypeLifecycleError(
-                "PendingEntry.side must be LONG or SHORT (never FLAT)"
-            )
+            raise ArchetypeLifecycleError("PendingEntry.side must be LONG or SHORT (never FLAT)")
         if not math.isfinite(self.qty) or self.qty <= 0.0:
-            raise ArchetypeLifecycleError(
-                f"PendingEntry.qty must be > 0; got {self.qty!r}"
-            )
+            raise ArchetypeLifecycleError(f"PendingEntry.qty must be > 0; got {self.qty!r}")
         if not math.isfinite(self.limit_price) or self.limit_price < 0.0:
-            raise ArchetypeLifecycleError(
-                "PendingEntry.limit_price must be finite and >= 0"
-            )
+            raise ArchetypeLifecycleError("PendingEntry.limit_price must be finite and >= 0")
         if self.bars_pending < 0:
-            raise ArchetypeLifecycleError(
-                "PendingEntry.bars_pending must be >= 0"
-            )
+            raise ArchetypeLifecycleError("PendingEntry.bars_pending must be >= 0")
 
 
 @dataclass(frozen=True, slots=True)
@@ -198,9 +182,7 @@ class ArchetypeContext:
     last_price: float
     position: PositionSnapshot | None = None
     pending: PendingEntry | None = None
-    features: Mapping[str, float | int | bool | str] = field(
-        default_factory=dict
-    )
+    features: Mapping[str, float | int | bool | str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.ts_ns < 0:
@@ -208,30 +190,21 @@ class ArchetypeContext:
         if not self.archetype_id:
             raise ArchetypeLifecycleError("archetype_id must be non-empty")
         if len(self.archetype_id) > _MAX_ARCHETYPE_ID_LEN:
-            raise ArchetypeLifecycleError(
-                f"archetype_id must be <= {_MAX_ARCHETYPE_ID_LEN} chars"
-            )
+            raise ArchetypeLifecycleError(f"archetype_id must be <= {_MAX_ARCHETYPE_ID_LEN} chars")
         if not self.symbol:
             raise ArchetypeLifecycleError("symbol must be non-empty")
         if len(self.symbol) > _MAX_SYMBOL_LEN:
-            raise ArchetypeLifecycleError(
-                f"symbol must be <= {_MAX_SYMBOL_LEN} chars"
-            )
+            raise ArchetypeLifecycleError(f"symbol must be <= {_MAX_SYMBOL_LEN} chars")
         if self.bar_index < 0:
             raise ArchetypeLifecycleError("bar_index must be >= 0")
         if not math.isfinite(self.last_price) or self.last_price < 0.0:
-            raise ArchetypeLifecycleError(
-                "last_price must be finite and >= 0"
-            )
+            raise ArchetypeLifecycleError("last_price must be finite and >= 0")
         for key, value in self.features.items():
             if not isinstance(key, str):
-                raise ArchetypeLifecycleError(
-                    "ArchetypeContext.features keys must be str"
-                )
+                raise ArchetypeLifecycleError("ArchetypeContext.features keys must be str")
             if not isinstance(value, (float, int, bool, str)):
                 raise ArchetypeLifecycleError(
-                    "ArchetypeContext.features values must be "
-                    "float/int/bool/str"
+                    "ArchetypeContext.features values must be float/int/bool/str"
                 )
 
 
@@ -255,9 +228,7 @@ class EntryDecision:
 
     def __post_init__(self) -> None:
         if self.side is Side.FLAT:
-            raise ArchetypeLifecycleError(
-                "EntryDecision.side must be LONG or SHORT (never FLAT)"
-            )
+            raise ArchetypeLifecycleError("EntryDecision.side must be LONG or SHORT (never FLAT)")
         for name, value in (
             ("qty", self.qty),
             ("limit_price", self.limit_price),
@@ -265,39 +236,23 @@ class EntryDecision:
             ("take_profit_price", self.take_profit_price),
         ):
             if not math.isfinite(value):
-                raise ArchetypeLifecycleError(
-                    f"EntryDecision.{name} must be finite; got {value!r}"
-                )
+                raise ArchetypeLifecycleError(f"EntryDecision.{name} must be finite; got {value!r}")
         if self.qty <= 0.0:
-            raise ArchetypeLifecycleError(
-                "EntryDecision.qty must be > 0"
-            )
+            raise ArchetypeLifecycleError("EntryDecision.qty must be > 0")
         if self.limit_price < 0.0:
-            raise ArchetypeLifecycleError(
-                "EntryDecision.limit_price must be >= 0"
-            )
+            raise ArchetypeLifecycleError("EntryDecision.limit_price must be >= 0")
         if self.stop_loss_price < 0.0:
-            raise ArchetypeLifecycleError(
-                "EntryDecision.stop_loss_price must be >= 0"
-            )
+            raise ArchetypeLifecycleError("EntryDecision.stop_loss_price must be >= 0")
         if self.take_profit_price < 0.0:
-            raise ArchetypeLifecycleError(
-                "EntryDecision.take_profit_price must be >= 0"
-            )
+            raise ArchetypeLifecycleError("EntryDecision.take_profit_price must be >= 0")
         if self.side is Side.LONG:
             if self.stop_loss_price >= self.limit_price:
-                raise ArchetypeLifecycleError(
-                    "LONG entry: stop_loss_price must be < limit_price"
-                )
+                raise ArchetypeLifecycleError("LONG entry: stop_loss_price must be < limit_price")
             if self.take_profit_price <= self.limit_price:
-                raise ArchetypeLifecycleError(
-                    "LONG entry: take_profit_price must be > limit_price"
-                )
+                raise ArchetypeLifecycleError("LONG entry: take_profit_price must be > limit_price")
         else:  # SHORT
             if self.stop_loss_price <= self.limit_price:
-                raise ArchetypeLifecycleError(
-                    "SHORT entry: stop_loss_price must be > limit_price"
-                )
+                raise ArchetypeLifecycleError("SHORT entry: stop_loss_price must be > limit_price")
             if self.take_profit_price >= self.limit_price:
                 raise ArchetypeLifecycleError(
                     "SHORT entry: take_profit_price must be < limit_price"
@@ -308,13 +263,9 @@ class EntryDecision:
             )
         for tag in self.rationale_tags:
             if not isinstance(tag, str):
-                raise ArchetypeLifecycleError(
-                    "rationale_tags entries must be str"
-                )
+                raise ArchetypeLifecycleError("rationale_tags entries must be str")
         if len(self.rationale) > _MAX_RATIONALE_LEN:
-            raise ArchetypeLifecycleError(
-                f"rationale must be <= {_MAX_RATIONALE_LEN} chars"
-            )
+            raise ArchetypeLifecycleError(f"rationale must be <= {_MAX_RATIONALE_LEN} chars")
 
 
 class PositionAction(StrEnum):
@@ -347,18 +298,13 @@ class PositionUpdate:
             ("new_take_profit_price", self.new_take_profit_price),
         ):
             if not math.isfinite(value):
-                raise ArchetypeLifecycleError(
-                    f"PositionUpdate.{name} must be finite"
-                )
+                raise ArchetypeLifecycleError(f"PositionUpdate.{name} must be finite")
             if value < 0.0:
-                raise ArchetypeLifecycleError(
-                    f"PositionUpdate.{name} must be >= 0"
-                )
+                raise ArchetypeLifecycleError(f"PositionUpdate.{name} must be >= 0")
         if self.action is PositionAction.ADJUST_STOPS:
             if self.new_stop_loss_price <= 0.0 and self.new_take_profit_price <= 0.0:
                 raise ArchetypeLifecycleError(
-                    "ADJUST_STOPS requires a positive new_stop_loss_price "
-                    "or new_take_profit_price"
+                    "ADJUST_STOPS requires a positive new_stop_loss_price or new_take_profit_price"
                 )
         if len(self.rationale_tags) > _MAX_RATIONALE_TAGS:
             raise ArchetypeLifecycleError(
@@ -366,13 +312,9 @@ class PositionUpdate:
             )
         for tag in self.rationale_tags:
             if not isinstance(tag, str):
-                raise ArchetypeLifecycleError(
-                    "rationale_tags entries must be str"
-                )
+                raise ArchetypeLifecycleError("rationale_tags entries must be str")
         if len(self.rationale) > _MAX_RATIONALE_LEN:
-            raise ArchetypeLifecycleError(
-                f"rationale must be <= {_MAX_RATIONALE_LEN} chars"
-            )
+            raise ArchetypeLifecycleError(f"rationale must be <= {_MAX_RATIONALE_LEN} chars")
 
 
 class DecisionKind(StrEnum):
@@ -409,29 +351,17 @@ class ArchetypeDecision:
 
     def __post_init__(self) -> None:
         if self.ts_ns < 0:
-            raise ArchetypeLifecycleError(
-                "ArchetypeDecision.ts_ns must be >= 0"
-            )
+            raise ArchetypeLifecycleError("ArchetypeDecision.ts_ns must be >= 0")
         if not self.archetype_id:
-            raise ArchetypeLifecycleError(
-                "ArchetypeDecision.archetype_id must be non-empty"
-            )
+            raise ArchetypeLifecycleError("ArchetypeDecision.archetype_id must be non-empty")
         if not self.symbol:
-            raise ArchetypeLifecycleError(
-                "ArchetypeDecision.symbol must be non-empty"
-            )
+            raise ArchetypeLifecycleError("ArchetypeDecision.symbol must be non-empty")
         if self.bar_index < 0:
-            raise ArchetypeLifecycleError(
-                "ArchetypeDecision.bar_index must be >= 0"
-            )
+            raise ArchetypeLifecycleError("ArchetypeDecision.bar_index must be >= 0")
         if self.kind is DecisionKind.OPEN_ENTRY and self.entry is None:
-            raise ArchetypeLifecycleError(
-                "OPEN_ENTRY requires an EntryDecision"
-            )
+            raise ArchetypeLifecycleError("OPEN_ENTRY requires an EntryDecision")
         if self.kind is DecisionKind.ADJUST_STOPS and self.update is None:
-            raise ArchetypeLifecycleError(
-                "ADJUST_STOPS requires a PositionUpdate"
-            )
+            raise ArchetypeLifecycleError("ADJUST_STOPS requires a PositionUpdate")
 
 
 @runtime_checkable
@@ -453,14 +383,10 @@ class ArchetypeStrategy(Protocol):
     def before(self, ctx: ArchetypeContext) -> None:  # pragma: no cover
         """Read-only pre-tick hook. MUST NOT mutate ``ctx``."""
 
-    def go_long(
-        self, ctx: ArchetypeContext
-    ) -> EntryDecision | None:  # pragma: no cover
+    def go_long(self, ctx: ArchetypeContext) -> EntryDecision | None:  # pragma: no cover
         """Return a LONG :class:`EntryDecision`, or ``None`` to skip."""
 
-    def go_short(
-        self, ctx: ArchetypeContext
-    ) -> EntryDecision | None:  # pragma: no cover
+    def go_short(self, ctx: ArchetypeContext) -> EntryDecision | None:  # pragma: no cover
         """Return a SHORT :class:`EntryDecision`, or ``None`` to skip."""
 
     def should_cancel_entry(
@@ -490,18 +416,12 @@ class ArchetypeLifecycle:
 
     def __post_init__(self) -> None:
         if not self.archetype_id:
-            raise ArchetypeLifecycleError(
-                "ArchetypeLifecycle.archetype_id must be non-empty"
-            )
+            raise ArchetypeLifecycleError("ArchetypeLifecycle.archetype_id must be non-empty")
         if not self.symbol:
-            raise ArchetypeLifecycleError(
-                "ArchetypeLifecycle.symbol must be non-empty"
-            )
+            raise ArchetypeLifecycleError("ArchetypeLifecycle.symbol must be non-empty")
 
 
-def _check_ctx_matches(
-    lifecycle: ArchetypeLifecycle, ctx: ArchetypeContext
-) -> None:
+def _check_ctx_matches(lifecycle: ArchetypeLifecycle, ctx: ArchetypeContext) -> None:
     if ctx.archetype_id != lifecycle.archetype_id:
         raise ArchetypeLifecycleError(
             f"ctx.archetype_id {ctx.archetype_id!r} != "
@@ -509,18 +429,14 @@ def _check_ctx_matches(
         )
     if ctx.symbol != lifecycle.symbol:
         raise ArchetypeLifecycleError(
-            f"ctx.symbol {ctx.symbol!r} != "
-            f"lifecycle.symbol {lifecycle.symbol!r}"
+            f"ctx.symbol {ctx.symbol!r} != lifecycle.symbol {lifecycle.symbol!r}"
         )
 
 
-def _check_entry_matches_ctx(
-    entry: EntryDecision, ctx: ArchetypeContext, expected: Side
-) -> None:
+def _check_entry_matches_ctx(entry: EntryDecision, ctx: ArchetypeContext, expected: Side) -> None:
     if entry.side is not expected:
         raise ArchetypeLifecycleError(
-            f"strategy.{expected.value.lower()} returned side "
-            f"{entry.side!r}; expected {expected!r}"
+            f"strategy.{expected.value.lower()} returned side {entry.side!r}; expected {expected!r}"
         )
 
 
@@ -566,9 +482,7 @@ def advance_lifecycle(
             state was already PENDING_LONG).
     """
     if not isinstance(strategy, ArchetypeStrategy):
-        raise ArchetypeLifecycleError(
-            "strategy must implement the ArchetypeStrategy Protocol"
-        )
+        raise ArchetypeLifecycleError("strategy must implement the ArchetypeStrategy Protocol")
     _check_ctx_matches(lifecycle, ctx)
     strategy.before(ctx)
 
@@ -597,13 +511,9 @@ def _advance_idle(
     ctx: ArchetypeContext,
 ) -> ArchetypeDecision:
     if ctx.position is not None:
-        raise ArchetypeStateError(
-            "IDLE state requires ctx.position is None"
-        )
+        raise ArchetypeStateError("IDLE state requires ctx.position is None")
     if ctx.pending is not None:
-        raise ArchetypeStateError(
-            "IDLE state requires ctx.pending is None"
-        )
+        raise ArchetypeStateError("IDLE state requires ctx.pending is None")
     long_entry = strategy.go_long(ctx)
     if long_entry is not None:
         _check_entry_matches_ctx(long_entry, ctx, Side.LONG)
@@ -651,28 +561,17 @@ def _advance_pending(
     ctx: ArchetypeContext,
 ) -> ArchetypeDecision:
     if ctx.pending is None:
-        raise ArchetypeStateError(
-            f"{lifecycle.state} requires ctx.pending != None"
-        )
-    expected_side = (
-        Side.LONG
-        if lifecycle.state is LifecycleState.PENDING_LONG
-        else Side.SHORT
-    )
+        raise ArchetypeStateError(f"{lifecycle.state} requires ctx.pending != None")
+    expected_side = Side.LONG if lifecycle.state is LifecycleState.PENDING_LONG else Side.SHORT
     if ctx.pending.side is not expected_side:
         raise ArchetypeStateError(
-            f"{lifecycle.state} requires pending.side={expected_side!r}; "
-            f"got {ctx.pending.side!r}"
+            f"{lifecycle.state} requires pending.side={expected_side!r}; got {ctx.pending.side!r}"
         )
     if ctx.position is not None:
-        raise ArchetypeStateError(
-            f"{lifecycle.state} requires ctx.position is None"
-        )
+        raise ArchetypeStateError(f"{lifecycle.state} requires ctx.position is None")
     cancel = strategy.should_cancel_entry(ctx, ctx.pending)
     if not isinstance(cancel, bool):
-        raise ArchetypeLifecycleError(
-            "should_cancel_entry must return bool"
-        )
+        raise ArchetypeLifecycleError("should_cancel_entry must return bool")
     if cancel:
         return ArchetypeDecision(
             kind=DecisionKind.CANCEL_ENTRY,
@@ -700,28 +599,17 @@ def _advance_open(
     ctx: ArchetypeContext,
 ) -> ArchetypeDecision:
     if ctx.position is None:
-        raise ArchetypeStateError(
-            f"{lifecycle.state} requires ctx.position != None"
-        )
-    expected_side = (
-        Side.LONG
-        if lifecycle.state is LifecycleState.OPEN_LONG
-        else Side.SHORT
-    )
+        raise ArchetypeStateError(f"{lifecycle.state} requires ctx.position != None")
+    expected_side = Side.LONG if lifecycle.state is LifecycleState.OPEN_LONG else Side.SHORT
     if ctx.position.side is not expected_side:
         raise ArchetypeStateError(
-            f"{lifecycle.state} requires position.side={expected_side!r}; "
-            f"got {ctx.position.side!r}"
+            f"{lifecycle.state} requires position.side={expected_side!r}; got {ctx.position.side!r}"
         )
     if ctx.pending is not None:
-        raise ArchetypeStateError(
-            f"{lifecycle.state} requires ctx.pending is None"
-        )
+        raise ArchetypeStateError(f"{lifecycle.state} requires ctx.pending is None")
     update = strategy.update_position(ctx, ctx.position)
     if not isinstance(update, PositionUpdate):
-        raise ArchetypeLifecycleError(
-            "update_position must return a PositionUpdate"
-        )
+        raise ArchetypeLifecycleError("update_position must return a PositionUpdate")
     if update.action is PositionAction.CLOSE:
         return ArchetypeDecision(
             kind=DecisionKind.CLOSE_POSITION,

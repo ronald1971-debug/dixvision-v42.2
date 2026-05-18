@@ -32,24 +32,17 @@ class PatchOutcomeFeedback:
 
     def observe(self, outcome: TradeOutcome) -> StrategyStats:
         """Record an outcome; return the updated rolling stats."""
-        bucket = self._outcomes.setdefault(
-            outcome.strategy_id, deque(maxlen=self._window)
-        )
+        bucket = self._outcomes.setdefault(outcome.strategy_id, deque(maxlen=self._window))
         bucket.append(outcome)
         return self._compute(outcome.strategy_id, outcome.ts_ns)
 
-    def snapshot(
-        self, *, strategy_id: str, ts_ns: int
-    ) -> StrategyStats:
+    def snapshot(self, *, strategy_id: str, ts_ns: int) -> StrategyStats:
         """Return current rolling stats for ``strategy_id``."""
         return self._compute(strategy_id, ts_ns)
 
     def all_snapshots(self, *, ts_ns: int) -> Mapping[str, StrategyStats]:
         """Return current rolling stats for every tracked strategy."""
-        return {
-            sid: self._compute(sid, ts_ns)
-            for sid in sorted(self._outcomes.keys())
-        }
+        return {sid: self._compute(sid, ts_ns) for sid in sorted(self._outcomes.keys())}
 
     # ------------------------------------------------------------------
     def _compute(self, strategy_id: str, ts_ns: int) -> StrategyStats:

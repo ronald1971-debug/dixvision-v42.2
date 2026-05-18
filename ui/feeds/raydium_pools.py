@@ -90,14 +90,8 @@ def parse_pair(
     base_symbol = str(row.get("baseSymbol") or base_symbol)
     quote_symbol = str(row.get("quoteSymbol") or quote_symbol)
     price = _to_float(row.get("price"))
-    liquidity_usd = _to_float(
-        _first_present(row, "liquidity", "tvl", "liquidityUsd")
-    )
-    volume_24h_usd = _to_float(
-        _first_present(
-            row, "volume24h", "volume_24h", "volumeUsd24h"
-        )
-    )
+    liquidity_usd = _to_float(_first_present(row, "liquidity", "tvl", "liquidityUsd"))
+    volume_24h_usd = _to_float(_first_present(row, "volume24h", "volume_24h", "volumeUsd24h"))
     return PoolSnapshot(
         ts_ns=ts_ns,
         chain=chain,
@@ -113,9 +107,7 @@ def parse_pair(
     )
 
 
-def _first_present(
-    payload: Mapping[str, Any], *keys: str
-) -> Any:
+def _first_present(payload: Mapping[str, Any], *keys: str) -> Any:
     """Return the value of the first key whose value is not ``None``.
 
     Unlike an ``or`` chain, this preserves legitimate zero values on
@@ -197,24 +189,15 @@ class RaydiumPoolPoller:
         if not url:
             raise ValueError("RaydiumPoolPoller: url required")
         if poll_interval_s <= 0:
-            raise ValueError(
-                "RaydiumPoolPoller: poll_interval_s must be positive"
-            )
+            raise ValueError("RaydiumPoolPoller: poll_interval_s must be positive")
         if retry_delay_s <= 0:
-            raise ValueError(
-                "RaydiumPoolPoller: retry_delay_s must be positive"
-            )
+            raise ValueError("RaydiumPoolPoller: retry_delay_s must be positive")
         if retry_delay_max_s < retry_delay_s:
-            raise ValueError(
-                "RaydiumPoolPoller: retry_delay_max_s must be >= "
-                "retry_delay_s"
-            )
+            raise ValueError("RaydiumPoolPoller: retry_delay_max_s must be >= retry_delay_s")
         self._sink = sink
         self._clock_ns = clock_ns
         self._client_factory: ClientFactory = (
-            client_factory
-            if client_factory is not None
-            else _default_client_factory
+            client_factory if client_factory is not None else _default_client_factory
         )
         self._url = url
         self._poll_interval_s = poll_interval_s
@@ -268,9 +251,7 @@ class RaydiumPoolPoller:
                 if self._stop_event.is_set():
                     break
                 try:
-                    await asyncio.wait_for(
-                        self._stop_event.wait(), timeout=sleep_for
-                    )
+                    await asyncio.wait_for(self._stop_event.wait(), timeout=sleep_for)
                 except TimeoutError:
                     pass
         finally:
@@ -285,36 +266,26 @@ class RaydiumPoolPoller:
             return False
         if resp.status_code != 200:
             self._errors += 1
-            LOG.warning(
-                "raydium_pools: GET %s -> %d", self._url, resp.status_code
-            )
+            LOG.warning("raydium_pools: GET %s -> %d", self._url, resp.status_code)
             return False
         try:
             data = resp.json()
         except ValueError:
             self._errors += 1
-            LOG.warning(
-                "raydium_pools: non-json body from %s", self._url
-            )
+            LOG.warning("raydium_pools: non-json body from %s", self._url)
             return False
         if not isinstance(data, list):
             self._errors += 1
-            LOG.warning(
-                "raydium_pools: unexpected payload shape from %s", self._url
-            )
+            LOG.warning("raydium_pools: unexpected payload shape from %s", self._url)
             return False
         ts_ns = self._clock_ns()
-        snaps = parse_pairs(
-            data, ts_ns=ts_ns, venue=self._venue, chain=self._chain
-        )
+        snaps = parse_pairs(data, ts_ns=ts_ns, venue=self._venue, chain=self._chain)
         for snap in snaps:
             try:
                 self._sink(snap)
             except Exception:  # noqa: BLE001 - sink must not kill the loop
                 self._errors += 1
-                LOG.exception(
-                    "raydium_pools: sink raised on snap=%r", snap
-                )
+                LOG.exception("raydium_pools: sink raised on snap=%r", snap)
                 continue
             self._snapshots_emitted += 1
         self._last_poll_ts_ns = ts_ns

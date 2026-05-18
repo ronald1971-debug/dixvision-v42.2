@@ -463,23 +463,15 @@ def test_three_run_byte_identical_with_failures() -> None:
 
 
 def test_result_to_raw_document_pure() -> None:
-    result = ScrapyFetchResult(
-        ok=True, title="t", body="b", status_code=200
-    )
-    a = _result_to_raw_document(
-        result, ts_ns=42, seed_id="seed_a", url="u"
-    )
-    b = _result_to_raw_document(
-        result, ts_ns=42, seed_id="seed_a", url="u"
-    )
+    result = ScrapyFetchResult(ok=True, title="t", body="b", status_code=200)
+    a = _result_to_raw_document(result, ts_ns=42, seed_id="seed_a", url="u")
+    b = _result_to_raw_document(result, ts_ns=42, seed_id="seed_a", url="u")
     assert a == b
 
 
 def test_result_to_raw_document_handles_none_status() -> None:
     result = ScrapyFetchResult(ok=False, error="timeout")
-    doc = _result_to_raw_document(
-        result, ts_ns=42, seed_id="seed_a", url="u"
-    )
+    doc = _result_to_raw_document(result, ts_ns=42, seed_id="seed_a", url="u")
     assert "status_code" not in doc.meta
     assert doc.meta["error"] == "timeout"
     assert doc.fetched_ok is False
@@ -512,19 +504,17 @@ def _toplevel_imports(tree: ast.Module) -> list[str]:
 def test_no_toplevel_scrapy_import() -> None:
     """``scrapy`` must be lazy-imported only inside the default factory."""
     imports = _toplevel_imports(_module_ast())
-    assert not any(
-        n == "scrapy" or n.startswith("scrapy.")
-        for n in imports
-    ), f"toplevel scrapy import found: {imports}"
+    assert not any(n == "scrapy" or n.startswith("scrapy.") for n in imports), (
+        f"toplevel scrapy import found: {imports}"
+    )
 
 
 def test_no_toplevel_twisted_import() -> None:
     """Twisted must never leak to module load time."""
     imports = _toplevel_imports(_module_ast())
-    assert not any(
-        n == "twisted" or n.startswith("twisted.")
-        for n in imports
-    ), f"toplevel twisted import found: {imports}"
+    assert not any(n == "twisted" or n.startswith("twisted.") for n in imports), (
+        f"toplevel twisted import found: {imports}"
+    )
 
 
 def test_no_engine_imports() -> None:
@@ -539,9 +529,7 @@ def test_no_engine_imports() -> None:
     )
     for imp in imports:
         for prefix in forbidden_prefixes:
-            assert not imp.startswith(prefix), (
-                f"forbidden engine import: {imp}"
-            )
+            assert not imp.startswith(prefix), f"forbidden engine import: {imp}"
 
 
 def test_no_clock_or_random_imports() -> None:
@@ -556,9 +544,7 @@ def test_no_clock_or_random_imports() -> None:
     }
     for imp in imports:
         root = imp.split(".")[0]
-        assert root not in forbidden, (
-            f"forbidden import: {imp}"
-        )
+        assert root not in forbidden, f"forbidden import: {imp}"
 
 
 def test_no_typed_event_construction() -> None:
@@ -584,9 +570,7 @@ def test_no_typed_event_construction() -> None:
                 name = func.id
             elif isinstance(func, ast.Attribute):
                 name = func.attr
-            assert name not in forbidden, (
-                f"forbidden typed-event construction: {name}"
-            )
+            assert name not in forbidden, f"forbidden typed-event construction: {name}"
 
 
 def test_lazy_scrapy_import_inside_factory() -> None:
@@ -597,9 +581,7 @@ def test_lazy_scrapy_import_inside_factory() -> None:
     for node in tree.body:
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             for alias in getattr(node, "names", []) or []:
-                if (
-                    getattr(alias, "name", "").startswith("scrapy")
-                ):
+                if getattr(alias, "name", "").startswith("scrapy"):
                     toplevel_scrapy = True
             module = getattr(node, "module", "") or ""
             if module.startswith("scrapy"):

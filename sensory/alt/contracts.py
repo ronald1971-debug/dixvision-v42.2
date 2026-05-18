@@ -52,34 +52,19 @@ class PredictionMarket:
         if not self.source:
             raise ValueError("PredictionMarket.source must be non-empty")
         if not self.market_id:
-            raise ValueError(
-                "PredictionMarket.market_id must be non-empty"
-            )
+            raise ValueError("PredictionMarket.market_id must be non-empty")
         if not self.question:
-            raise ValueError(
-                "PredictionMarket.question must be non-empty"
-            )
+            raise ValueError("PredictionMarket.question must be non-empty")
         if not self.outcome:
-            raise ValueError(
-                "PredictionMarket.outcome must be non-empty"
-            )
+            raise ValueError("PredictionMarket.outcome must be non-empty")
         if not 0.0 <= self.probability <= 1.0:
-            raise ValueError(
-                "PredictionMarket.probability must be in [0.0, 1.0]"
-            )
+            raise ValueError("PredictionMarket.probability must be in [0.0, 1.0]")
         # Use ``not (>= 0)`` rather than ``< 0`` so NaN is rejected
         # consistently with how ``probability`` is validated above.
         # ``nan < 0`` evaluates to ``False`` under IEEE 754 and would
         # otherwise let an upstream divide-by-zero or malformed JSON
         # smuggle a NaN through the perimeter.
         if self.volume_usd is not None and not (self.volume_usd >= 0):
-            raise ValueError(
-                "PredictionMarket.volume_usd must be >= 0 or None"
-            )
-        if (
-            self.observed_ts_ns is not None
-            and self.observed_ts_ns <= 0
-        ):
-            raise ValueError(
-                "PredictionMarket.observed_ts_ns must be positive or None"
-            )
+            raise ValueError("PredictionMarket.volume_usd must be >= 0 or None")
+        if self.observed_ts_ns is not None and self.observed_ts_ns <= 0:
+            raise ValueError("PredictionMarket.observed_ts_ns must be positive or None")

@@ -155,17 +155,19 @@ MAX_META_KEY_LEN: int = 64
 MAX_META_VALUE_LEN: int = 256
 """Hard cap on caller-supplied ``extra_meta`` value length."""
 
-_RESERVED_META_KEYS: frozenset[str] = frozenset({
-    "operator",
-    "parent_a_digest",
-    "parent_b_digest",
-    "seed",
-    "generation",
-    "individual",
-    "child",
-    "cut_lo",
-    "cut_hi",
-})
+_RESERVED_META_KEYS: frozenset[str] = frozenset(
+    {
+        "operator",
+        "parent_a_digest",
+        "parent_b_digest",
+        "seed",
+        "generation",
+        "individual",
+        "child",
+        "cut_lo",
+        "cut_hi",
+    }
+)
 """Meta keys that operators populate themselves; callers cannot
 override them via ``extra_meta``."""
 
@@ -219,9 +221,7 @@ def _uniform_int(low: int, high: int, *key: int) -> int:
     chromosome dim counts we expect (at most ``2**16``)."""
 
     if high < low:
-        raise CrossoverOperatorError(
-            f"_uniform_int: empty range [{low}, {high}]"
-        )
+        raise CrossoverOperatorError(f"_uniform_int: empty range [{low}, {high}]")
     span = high - low + 1
     h = 0
     for k in key:
@@ -293,8 +293,7 @@ def _validate_pair_compatible(
 
     if a.strategy_id != b.strategy_id:
         raise CrossoverOperatorError(
-            f"{name_a} / {name_b}: strategy_id mismatch "
-            f"({a.strategy_id!r} vs {b.strategy_id!r})"
+            f"{name_a} / {name_b}: strategy_id mismatch ({a.strategy_id!r} vs {b.strategy_id!r})"
         )
     if a.specs != b.specs:
         raise CrossoverOperatorError(
@@ -354,9 +353,7 @@ def _validate_extra_meta(
     if not isinstance(extra_meta, Mapping):
         raise CrossoverOperatorError("extra_meta must be Mapping or None")
     if len(extra_meta) > MAX_META_KEYS:
-        raise CrossoverOperatorError(
-            f"extra_meta has {len(extra_meta)} keys > {MAX_META_KEYS}"
-        )
+        raise CrossoverOperatorError(f"extra_meta has {len(extra_meta)} keys > {MAX_META_KEYS}")
     pairs: list[tuple[str, str]] = []
     for k, v in extra_meta.items():
         if not isinstance(k, str):
@@ -364,21 +361,14 @@ def _validate_extra_meta(
         if not k:
             raise CrossoverOperatorError("extra_meta keys must be non-empty")
         if len(k) > MAX_META_KEY_LEN:
-            raise CrossoverOperatorError(
-                f"extra_meta key length {len(k)} > {MAX_META_KEY_LEN}"
-            )
+            raise CrossoverOperatorError(f"extra_meta key length {len(k)} > {MAX_META_KEY_LEN}")
         if k in _RESERVED_META_KEYS:
-            raise CrossoverOperatorError(
-                f"extra_meta key {k!r} is reserved (operators set it)"
-            )
+            raise CrossoverOperatorError(f"extra_meta key {k!r} is reserved (operators set it)")
         if not isinstance(v, str):
-            raise CrossoverOperatorError(
-                f"extra_meta value for {k!r} must be str"
-            )
+            raise CrossoverOperatorError(f"extra_meta value for {k!r} must be str")
         if len(v) > MAX_META_VALUE_LEN:
             raise CrossoverOperatorError(
-                f"extra_meta value length for {k!r}: "
-                f"{len(v)} > {MAX_META_VALUE_LEN}"
+                f"extra_meta value length for {k!r}: {len(v)} > {MAX_META_VALUE_LEN}"
             )
         pairs.append((k, v))
     pairs.sort(key=lambda kv: kv[0])
@@ -490,9 +480,7 @@ def simulated_binary_crossover(
 
     _validate_chromosome(parent_a, "simulated_binary_crossover.parent_a")
     _validate_chromosome(parent_b, "simulated_binary_crossover.parent_b")
-    _validate_pair_compatible(
-        parent_a, parent_b, name_a="parent_a", name_b="parent_b"
-    )
+    _validate_pair_compatible(parent_a, parent_b, name_a="parent_a", name_b="parent_b")
     eta_f = _validate_non_negative_float(eta, "simulated_binary_crossover.eta")
     seed_i = _validate_int(seed, "simulated_binary_crossover.seed")
     gen_i = _validate_int(generation, "simulated_binary_crossover.generation")
@@ -506,9 +494,7 @@ def simulated_binary_crossover(
 
     c1_enc: list[float] = []
     c2_enc: list[float] = []
-    for dim, (y1, y2, (lo, hi)) in enumerate(
-        zip(enc_a, enc_b, bounds, strict=True)
-    ):
+    for dim, (y1, y2, (lo, hi)) in enumerate(zip(enc_a, enc_b, bounds, strict=True)):
         u = _uniform01(seed_i, gen_i, ind_i, dim)
         if u <= 0.5:
             beta_q = (2.0 * u) ** exponent
@@ -593,9 +579,7 @@ def blend_crossover(
 
     _validate_chromosome(parent_a, "blend_crossover.parent_a")
     _validate_chromosome(parent_b, "blend_crossover.parent_b")
-    _validate_pair_compatible(
-        parent_a, parent_b, name_a="parent_a", name_b="parent_b"
-    )
+    _validate_pair_compatible(parent_a, parent_b, name_a="parent_a", name_b="parent_b")
     alpha_f = _validate_non_negative_float(alpha, "blend_crossover.alpha")
     seed_i = _validate_int(seed, "blend_crossover.seed")
     gen_i = _validate_int(generation, "blend_crossover.generation")
@@ -608,9 +592,7 @@ def blend_crossover(
 
     c1_enc: list[float] = []
     c2_enc: list[float] = []
-    for dim, (y1, y2, (lo, hi)) in enumerate(
-        zip(enc_a, enc_b, bounds, strict=True)
-    ):
+    for dim, (y1, y2, (lo, hi)) in enumerate(zip(enc_a, enc_b, bounds, strict=True)):
         u = _uniform01(seed_i, gen_i, ind_i, dim)
         gamma = (1.0 + 2.0 * alpha_f) * u - alpha_f
         c1 = (1.0 - gamma) * y1 + gamma * y2
@@ -692,9 +674,7 @@ def two_point_crossover(
 
     _validate_chromosome(parent_a, "two_point_crossover.parent_a")
     _validate_chromosome(parent_b, "two_point_crossover.parent_b")
-    _validate_pair_compatible(
-        parent_a, parent_b, name_a="parent_a", name_b="parent_b"
-    )
+    _validate_pair_compatible(parent_a, parent_b, name_a="parent_a", name_b="parent_b")
     seed_i = _validate_int(seed, "two_point_crossover.seed")
     gen_i = _validate_int(generation, "two_point_crossover.generation")
     ind_i = _validate_int(individual, "two_point_crossover.individual")
@@ -714,12 +694,8 @@ def two_point_crossover(
     # Re-clip / re-round through unpack for safety: a segment from
     # the other parent IS already feasible, but going through unpack
     # canonicalises INTEGER kinds (no-op for valid input).
-    c1_clean = _decode_to_values(
-        parent_a.specs, _encode_vector(parent_a.specs, c1_values)
-    )
-    c2_clean = _decode_to_values(
-        parent_b.specs, _encode_vector(parent_b.specs, c2_values)
-    )
+    c1_clean = _decode_to_values(parent_a.specs, _encode_vector(parent_a.specs, c1_values))
+    c2_clean = _decode_to_values(parent_b.specs, _encode_vector(parent_b.specs, c2_values))
 
     parent_a_digest = chromosome_digest(parent_a)
     parent_b_digest = chromosome_digest(parent_b)

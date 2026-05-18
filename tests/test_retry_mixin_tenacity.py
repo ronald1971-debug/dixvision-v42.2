@@ -285,12 +285,18 @@ def test_executor_replay_byte_identical() -> None:
     a = make()
     b = make()
     c = make()
+
     # Convert to comparable tuples (RetryRecord is a frozen dataclass).
     def _key(r: Any) -> tuple[Any, ...]:
-        return (r.callable_name, r.outcome, r.total_attempts, tuple(
-            (att.index, att.succeeded, att.error_class, att.delay_before_retry_sec)
-            for att in r.attempts
-        ))
+        return (
+            r.callable_name,
+            r.outcome,
+            r.total_attempts,
+            tuple(
+                (att.index, att.succeeded, att.error_class, att.delay_before_retry_sec)
+                for att in r.attempts
+            ),
+        )
 
     assert _key(a) == _key(b) == _key(c)
 

@@ -157,9 +157,7 @@ def test_monitor_replay_determinism_same_inputs_same_report():
     def run() -> tuple:
         mon = RuntimeMonitor()
         for i in range(50):
-            status = (
-                ExecutionStatus.FILLED if i % 2 == 0 else ExecutionStatus.REJECTED
-            )
+            status = ExecutionStatus.FILLED if i % 2 == 0 else ExecutionStatus.REJECTED
             mon.record(_ev(status, ts=i), latency_ns=10 * (i + 1))
         rep = mon.report()
         return (

@@ -119,15 +119,11 @@ class Span:
         if not isinstance(self.service_name, str) or not self.service_name:
             raise TracerError("Span.service_name must be non-empty str")
         if len(self.service_name) > MAX_SERVICE_NAME_LEN:
-            raise TracerError(
-                f"Span.service_name exceeds {MAX_SERVICE_NAME_LEN}"
-            )
+            raise TracerError(f"Span.service_name exceeds {MAX_SERVICE_NAME_LEN}")
         if not isinstance(self.operation_name, str) or not self.operation_name:
             raise TracerError("Span.operation_name must be non-empty str")
         if len(self.operation_name) > MAX_SPAN_NAME_LEN:
-            raise TracerError(
-                f"Span.operation_name exceeds {MAX_SPAN_NAME_LEN}"
-            )
+            raise TracerError(f"Span.operation_name exceeds {MAX_SPAN_NAME_LEN}")
         if not isinstance(self.start_ns, int) or self.start_ns < 0:
             raise TracerError("Span.start_ns must be int >= 0")
         if not isinstance(self.end_ns, int) or self.end_ns < self.start_ns:
@@ -135,9 +131,7 @@ class Span:
         if not isinstance(self.tags, Mapping):
             raise TracerError("Span.tags must be Mapping")
         if len(self.tags) > MAX_TAGS_PER_SPAN:
-            raise TracerError(
-                f"Span.tags exceeds {MAX_TAGS_PER_SPAN}"
-            )
+            raise TracerError(f"Span.tags exceeds {MAX_TAGS_PER_SPAN}")
         _validate_tags(self.tags)
 
     @property
@@ -161,15 +155,11 @@ class TraceReport:
 
     def __post_init__(self) -> None:
         if not isinstance(self.service_name, str) or not self.service_name:
-            raise TracerError(
-                "TraceReport.service_name must be non-empty str"
-            )
+            raise TracerError("TraceReport.service_name must be non-empty str")
         if not isinstance(self.trace_id, int) or self.trace_id < 0:
             raise TracerError("TraceReport.trace_id must be int >= 0")
         if self.backend not in ("stdlib", "jaeger"):
-            raise TracerError(
-                f"TraceReport.backend invalid: {self.backend!r}"
-            )
+            raise TracerError(f"TraceReport.backend invalid: {self.backend!r}")
         if not isinstance(self.spans, tuple):
             raise TracerError("TraceReport.spans must be tuple")
 
@@ -180,9 +170,7 @@ class TraceReport:
         return tuple(s for s in self.spans if s.parent_id == span_id)
 
     def find(self, operation_name: str) -> tuple[Span, ...]:
-        return tuple(
-            s for s in self.spans if s.operation_name == operation_name
-        )
+        return tuple(s for s in self.spans if s.operation_name == operation_name)
 
 
 # ---------------------------------------------------------------------------
@@ -266,9 +254,7 @@ class Tracer:
         if not isinstance(service_name, str) or not service_name:
             raise TracerError("service_name must be non-empty str")
         if len(service_name) > MAX_SERVICE_NAME_LEN:
-            raise TracerError(
-                f"service_name exceeds {MAX_SERVICE_NAME_LEN}"
-            )
+            raise TracerError(f"service_name exceeds {MAX_SERVICE_NAME_LEN}")
         if not isinstance(trace_id, int) or trace_id < 0:
             raise TracerError("trace_id must be int >= 0")
         if not isinstance(seed, int):
@@ -299,32 +285,18 @@ class Tracer:
         if not isinstance(operation_name, str) or not operation_name:
             raise TracerError("operation_name must be non-empty str")
         if len(operation_name) > MAX_SPAN_NAME_LEN:
-            raise TracerError(
-                f"operation_name exceeds {MAX_SPAN_NAME_LEN}"
-            )
-        if (
-            len(self._finished) + len(self._in_flight)
-            >= MAX_SPANS_PER_TRACE
-        ):
-            raise TracerError(
-                f"trace exceeds {MAX_SPANS_PER_TRACE} spans"
-            )
+            raise TracerError(f"operation_name exceeds {MAX_SPAN_NAME_LEN}")
+        if len(self._finished) + len(self._in_flight) >= MAX_SPANS_PER_TRACE:
+            raise TracerError(f"trace exceeds {MAX_SPANS_PER_TRACE} spans")
         resolved_parent: int | None
         if parent_id is None:
             resolved_parent = self._stack[-1] if self._stack else None
         else:
             if parent_id not in self._in_flight:
-                raise TracerError(
-                    f"start_span parent_id {parent_id} not in-flight"
-                )
+                raise TracerError(f"start_span parent_id {parent_id} not in-flight")
             resolved_parent = parent_id
-        if (
-            resolved_parent is not None
-            and len(self._stack) + 1 > MAX_TRACE_DEPTH
-        ):
-            raise TracerError(
-                f"trace depth exceeds {MAX_TRACE_DEPTH}"
-            )
+        if resolved_parent is not None and len(self._stack) + 1 > MAX_TRACE_DEPTH:
+            raise TracerError(f"trace depth exceeds {MAX_TRACE_DEPTH}")
         span_id = self._allocate_id()
         now = self._clock.now_ns()
         self._in_flight[span_id] = _InFlight(
@@ -343,9 +315,7 @@ class Tracer:
         tags: Mapping[str, _ScalarTag] | None = None,
     ) -> Span:
         if span_id not in self._in_flight:
-            raise TracerError(
-                f"finish_span span_id {span_id} not in-flight"
-            )
+            raise TracerError(f"finish_span span_id {span_id} not in-flight")
         if not self._stack or self._stack[-1] != span_id:
             raise TracerError(
                 f"finish_span {span_id} violates stack order; "
@@ -358,9 +328,7 @@ class Tracer:
             if not isinstance(tags, Mapping):
                 raise TracerError("finish_span tags must be Mapping")
             if len(tags) > MAX_TAGS_PER_SPAN:
-                raise TracerError(
-                    f"finish_span tags exceeds {MAX_TAGS_PER_SPAN}"
-                )
+                raise TracerError(f"finish_span tags exceeds {MAX_TAGS_PER_SPAN}")
             _validate_tags(tags)
             resolved_tags = {key: tags[key] for key in sorted(tags)}
         end_ns = self._clock.now_ns()
@@ -379,16 +347,9 @@ class Tracer:
 
     def snapshot(self) -> TraceReport:
         if self._in_flight:
-            raise TracerError(
-                f"snapshot() called with {len(self._in_flight)} "
-                "in-flight spans"
-            )
-        spans_sorted = tuple(
-            sorted(self._finished, key=lambda s: (s.start_ns, s.span_id))
-        )
-        digest = _trace_digest(
-            self._service_name, self._trace_id, spans_sorted
-        )
+            raise TracerError(f"snapshot() called with {len(self._in_flight)} in-flight spans")
+        spans_sorted = tuple(sorted(self._finished, key=lambda s: (s.start_ns, s.span_id)))
+        digest = _trace_digest(self._service_name, self._trace_id, spans_sorted)
         return TraceReport(
             service_name=self._service_name,
             trace_id=self._trace_id,
@@ -412,14 +373,9 @@ def _validate_tags(tags: Mapping[str, _ScalarTag]) -> None:
         if len(key) > MAX_TAG_KEY_LEN:
             raise TracerError(f"tag key exceeds {MAX_TAG_KEY_LEN}")
         if not isinstance(val, (str, int, float, bool, type(None))):
-            raise TracerError(
-                f"tag {key!r} value must be scalar; "
-                f"got {type(val).__name__}"
-            )
+            raise TracerError(f"tag {key!r} value must be scalar; got {type(val).__name__}")
         if isinstance(val, str) and len(val) > MAX_TAG_VALUE_LEN:
-            raise TracerError(
-                f"tag {key!r} value exceeds {MAX_TAG_VALUE_LEN}"
-            )
+            raise TracerError(f"tag {key!r} value exceeds {MAX_TAG_VALUE_LEN}")
 
 
 def _format_tag(val: _ScalarTag) -> Any:
@@ -447,10 +403,7 @@ def _trace_digest(
                 "operation_name": s.operation_name,
                 "start_ns": s.start_ns,
                 "end_ns": s.end_ns,
-                "tags": {
-                    key: _format_tag(s.tags[key])
-                    for key in sorted(s.tags.keys())
-                },
+                "tags": {key: _format_tag(s.tags[key]) for key in sorted(s.tags.keys())},
             }
             for s in spans
         ],
@@ -505,16 +458,11 @@ def enable_jaeger_factory(
             "extras_require"
         ) from exc
 
-    allowed_keys = frozenset(
-        {"reporting_host", "reporting_port", "sampler_type", "sampler_param"}
-    )
+    allowed_keys = frozenset({"reporting_host", "reporting_port", "sampler_type", "sampler_param"})
     if overrides is not None:
         unknown = set(overrides) - allowed_keys
         if unknown:
-            raise TracerError(
-                f"enable_jaeger_factory: unknown override keys "
-                f"{sorted(unknown)}"
-            )
+            raise TracerError(f"enable_jaeger_factory: unknown override keys {sorted(unknown)}")
 
     def _factory(
         *,

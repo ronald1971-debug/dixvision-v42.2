@@ -49,9 +49,7 @@ def _make_intent(**overrides: object) -> ExclusiveDutchOrderIntent:
 
 def test_intent_validates_decay_window() -> None:
     with pytest.raises(ValueError):
-        _make_intent(
-            decay_start_time_unix_s=2000, decay_end_time_unix_s=1000
-        )
+        _make_intent(decay_start_time_unix_s=2000, decay_end_time_unix_s=1000)
 
 
 def test_intent_validates_deadline_after_decay_end() -> None:
@@ -132,9 +130,7 @@ def test_sign_typed_data_returns_recoverable_signature() -> None:
     assert len(signed.signature) == 132
     # Round-trip: recover the address from the EIP-712 signed message.
     encoded = encode_typed_data(full_message=td)
-    recovered = Account.recover_message(
-        encoded, signature=signed.signature
-    )
+    recovered = Account.recover_message(encoded, signature=signed.signature)
     assert recovered == expected_address
 
 
@@ -152,9 +148,7 @@ def test_sign_is_deterministic_for_same_input() -> None:
 def test_sign_different_keys_produce_different_signatures() -> None:
     td = build_exclusive_dutch_order_typed_data(_make_intent())
     a = sign_typed_data(private_key=_PRIVATE_KEY, typed_data=td)
-    b = sign_typed_data(
-        private_key="0x" + "22" * 32, typed_data=td
-    )
+    b = sign_typed_data(private_key="0x" + "22" * 32, typed_data=td)
     assert a.signature != b.signature
     assert a.signer_address != b.signer_address
 

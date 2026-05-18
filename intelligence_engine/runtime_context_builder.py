@@ -120,9 +120,7 @@ def build_runtime_context(
     if elapsed_ns < 0:
         raise ValueError(f"elapsed_ns must be >= 0, got {elapsed_ns}")
     if latency_budget_ns <= 0:
-        raise ValueError(
-            f"latency_budget_ns must be > 0, got {latency_budget_ns}"
-        )
+        raise ValueError(f"latency_budget_ns must be > 0, got {latency_budget_ns}")
 
     if risk_snapshot.halted:
         risk = 1.0
@@ -134,10 +132,7 @@ def build_runtime_context(
         risk = 0.0
 
     if perf_pressure is None:
-        perf = _clamp01(
-            float(runtime_monitor.fail_rate)
-            + float(runtime_monitor.reject_rate)
-        )
+        perf = _clamp01(float(runtime_monitor.fail_rate) + float(runtime_monitor.reject_rate))
     else:
         perf = _clamp01(float(perf_pressure))
 

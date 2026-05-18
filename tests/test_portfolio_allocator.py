@@ -182,20 +182,14 @@ def test_two_candidates_split_proportional_to_confidence() -> None:
     by_id = {d.candidate_id: d for d in decisions}
     total = by_id["c1"].share + by_id["c2"].share
     assert total == pytest.approx(eng.config.max_total_share)
-    assert by_id["c1"].share == pytest.approx(
-        (0.9 / 1.2) * eng.config.max_total_share
-    )
-    assert by_id["c2"].share == pytest.approx(
-        (0.3 / 1.2) * eng.config.max_total_share
-    )
+    assert by_id["c1"].share == pytest.approx((0.9 / 1.2) * eng.config.max_total_share)
+    assert by_id["c2"].share == pytest.approx((0.3 / 1.2) * eng.config.max_total_share)
 
 
 def test_symbol_cap_rejects_when_room_zero() -> None:
     eng = _engine()
     # Symbol already at full cap -> next candidate must be rejected.
-    snap = ExposureSnapshot(
-        ts_ns=1, by_symbol={"BTC-USD": eng.config.max_symbol_notional_usd}
-    )
+    snap = ExposureSnapshot(ts_ns=1, by_symbol={"BTC-USD": eng.config.max_symbol_notional_usd})
     decisions = eng.allocate(
         [_cand("c1", confidence=0.9, symbol="BTC-USD")],
         snap,
@@ -238,9 +232,7 @@ def test_zero_capital_yields_no_capital_rule() -> None:
 def test_negative_capital_rejected() -> None:
     eng = _engine()
     with pytest.raises(ValueError):
-        eng.allocate(
-            [_cand("c1", confidence=0.9)], _empty_exposure(), -1.0
-        )
+        eng.allocate([_cand("c1", confidence=0.9)], _empty_exposure(), -1.0)
 
 
 def test_empty_candidates_returns_empty() -> None:

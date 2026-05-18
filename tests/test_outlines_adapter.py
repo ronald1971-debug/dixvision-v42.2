@@ -193,9 +193,7 @@ def test_match_schema_happy_path() -> None:
             JsonSchemaField(name="dry", type_=bool),
         )
     )
-    out = match_schema(
-        '{"side": "BUY", "qty": 5, "px": 1.25, "dry": true}', s
-    )
+    out = match_schema('{"side": "BUY", "qty": 5, "px": 1.25, "dry": true}', s)
     assert out == {"side": "BUY", "qty": 5, "px": 1.25, "dry": True}
 
 
@@ -323,9 +321,7 @@ def test_no_top_level_outlines_import() -> None:
         if stripped.startswith(("import outlines", "from outlines")):
             indent = len(line) - len(stripped)
             if indent == 0:
-                raise AssertionError(
-                    f"outlines must be a lazy seam — no top-level: {line!r}"
-                )
+                raise AssertionError(f"outlines must be a lazy seam — no top-level: {line!r}")
 
 
 def test_no_top_level_transformers_or_llama_cpp_import() -> None:
@@ -338,19 +334,13 @@ def test_no_top_level_transformers_or_llama_cpp_import() -> None:
                 "from llama_cpp",
             )
         ):
-            raise AssertionError(
-                f"transformers/llama_cpp must be lazy seams: {line!r}"
-            )
+            raise AssertionError(f"transformers/llama_cpp must be lazy seams: {line!r}")
 
 
 def test_no_top_level_torch_or_numpy_import() -> None:
     for line in _module_source().splitlines():
-        if line.startswith(
-            ("import torch", "from torch", "import numpy", "from numpy")
-        ):
-            raise AssertionError(
-                f"torch/numpy must be lazy seams: {line!r}"
-            )
+        if line.startswith(("import torch", "from torch", "import numpy", "from numpy")):
+            raise AssertionError(f"torch/numpy must be lazy seams: {line!r}")
 
 
 def test_no_forbidden_top_level_imports() -> None:
@@ -383,6 +373,4 @@ def test_no_typed_event_constructors() -> None:
     )
     src = _module_source()
     for ctor in forbidden_ctors:
-        assert ctor not in src, (
-            f"adapter must not construct typed events: {ctor!r}"
-        )
+        assert ctor not in src, f"adapter must not construct typed events: {ctor!r}"

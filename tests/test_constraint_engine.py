@@ -116,9 +116,7 @@ def test_canonical_rules_topo_order_respects_deps():
     pos = {rid: i for i, rid in enumerate(g.order)}
     for r in g.rules:
         for dep in r.depends_on:
-            assert pos[dep] < pos[r.id], (
-                f"{r.id} appears before its dep {dep}"
-            )
+            assert pos[dep] < pos[r.id], f"{r.id} appears before its dep {dep}"
 
 
 def test_canonical_rules_kinds_present():

@@ -137,19 +137,21 @@ MAX_META_KEY_LEN: int = 64
 MAX_META_VALUE_LEN: int = 256
 """Hard cap on caller-supplied ``extra_meta`` value length."""
 
-_RESERVED_META_KEYS: frozenset[str] = frozenset({
-    "operator",
-    "parent_digest",
-    "parent_a_digest",
-    "parent_b_digest",
-    "parent_c_digest",
-    "best_digest",
-    "target_digest",
-    "donor_digest",
-    "seed",
-    "generation",
-    "individual",
-})
+_RESERVED_META_KEYS: frozenset[str] = frozenset(
+    {
+        "operator",
+        "parent_digest",
+        "parent_a_digest",
+        "parent_b_digest",
+        "parent_c_digest",
+        "best_digest",
+        "target_digest",
+        "donor_digest",
+        "seed",
+        "generation",
+        "individual",
+    }
+)
 """Meta keys that operators populate themselves; callers cannot
 override them via ``extra_meta``."""
 
@@ -272,8 +274,7 @@ def _validate_pair_compatible(
 
     if a.strategy_id != b.strategy_id:
         raise MutationOperatorError(
-            f"{name_a} / {name_b}: strategy_id mismatch "
-            f"({a.strategy_id!r} vs {b.strategy_id!r})"
+            f"{name_a} / {name_b}: strategy_id mismatch ({a.strategy_id!r} vs {b.strategy_id!r})"
         )
     if a.specs != b.specs:
         raise MutationOperatorError(
@@ -320,9 +321,7 @@ def _validate_extra_meta(extra_meta: Mapping[str, str] | None) -> tuple[tuple[st
     if not isinstance(extra_meta, Mapping):
         raise MutationOperatorError("extra_meta must be Mapping or None")
     if len(extra_meta) > MAX_META_KEYS:
-        raise MutationOperatorError(
-            f"extra_meta has {len(extra_meta)} keys > {MAX_META_KEYS}"
-        )
+        raise MutationOperatorError(f"extra_meta has {len(extra_meta)} keys > {MAX_META_KEYS}")
     pairs: list[tuple[str, str]] = []
     for k, v in extra_meta.items():
         if not isinstance(k, str):
@@ -330,21 +329,14 @@ def _validate_extra_meta(extra_meta: Mapping[str, str] | None) -> tuple[tuple[st
         if not k:
             raise MutationOperatorError("extra_meta keys must be non-empty")
         if len(k) > MAX_META_KEY_LEN:
-            raise MutationOperatorError(
-                f"extra_meta key length {len(k)} > {MAX_META_KEY_LEN}"
-            )
+            raise MutationOperatorError(f"extra_meta key length {len(k)} > {MAX_META_KEY_LEN}")
         if k in _RESERVED_META_KEYS:
-            raise MutationOperatorError(
-                f"extra_meta key {k!r} is reserved (operators set it)"
-            )
+            raise MutationOperatorError(f"extra_meta key {k!r} is reserved (operators set it)")
         if not isinstance(v, str):
-            raise MutationOperatorError(
-                f"extra_meta value for {k!r} must be str"
-            )
+            raise MutationOperatorError(f"extra_meta value for {k!r} must be str")
         if len(v) > MAX_META_VALUE_LEN:
             raise MutationOperatorError(
-                f"extra_meta value length for {k!r}: "
-                f"{len(v)} > {MAX_META_VALUE_LEN}"
+                f"extra_meta value length for {k!r}: {len(v)} > {MAX_META_VALUE_LEN}"
             )
         pairs.append((k, v))
     pairs.sort(key=lambda kv: kv[0])
@@ -736,10 +728,7 @@ def de_binomial_crossover(
     extra_pairs = _validate_extra_meta(extra_meta)
 
     n = len(target.specs)
-    forced_index = (
-        _splitmix64(_splitmix64(seed_i ^ ((gen_i << 32) | ind_i)) ^ 0xDC0DE_BCC0)
-        % n
-    )
+    forced_index = _splitmix64(_splitmix64(seed_i ^ ((gen_i << 32) | ind_i)) ^ 0xDC0DE_BCC0) % n
 
     out_values: list[float] = []
     for dim, (vt, vd) in enumerate(zip(target.values, donor.values, strict=True)):

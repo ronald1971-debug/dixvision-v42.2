@@ -56,9 +56,7 @@ class _StubMultiArgSensor:
     name: str = "stub_multi_arg"
     code: str = "HAZ-STUB-MULTI"
 
-    def observe(
-        self, *, ts_ns: int, payload: int
-    ) -> tuple[HazardEvent, ...]:
+    def observe(self, *, ts_ns: int, payload: int) -> tuple[HazardEvent, ...]:
         # If this ever fires the test will see HAZ-STUB-MULTI rows.
         return (
             HazardEvent(
@@ -265,9 +263,7 @@ def test_process_signature_returns_sequence_of_hazard_events() -> None:
     sig = inspect.signature(SystemEngine.process)
     annotation = sig.return_annotation
     # ``__future__.annotations`` keeps the annotation as a string.
-    assert annotation == "Sequence[HazardEvent]" or annotation is Sequence[
-        HazardEvent
-    ]
+    assert annotation == "Sequence[HazardEvent]" or annotation is Sequence[HazardEvent]
 
 
 # ---------------------------------------------------------------------------

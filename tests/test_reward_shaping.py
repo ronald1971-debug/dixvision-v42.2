@@ -261,15 +261,9 @@ def test_kelly_cap_penalty_only_on_kelly_capped() -> None:
     cfg = _config(sizing_kelly_cap_penalty=0.3, sizing_floor_penalty=0.4)
     out_kc = _call(sizing_rationale=SIZING_RATIONALE_KELLY_CAPPED, config=cfg)
     out_pri = _call(sizing_rationale=SIZING_RATIONALE_PRIMARY, config=cfg)
-    out_below = _call(
-        sizing_rationale=SIZING_RATIONALE_CONFIDENCE_BELOW_FLOOR, config=cfg
-    )
-    out_zero = _call(
-        sizing_rationale=SIZING_RATIONALE_REGIME_ZERO_MULTIPLIER, config=cfg
-    )
-    assert dict(out_kc.components).get("sizing_kelly_cap_penalty") == pytest.approx(
-        -0.3
-    )
+    out_below = _call(sizing_rationale=SIZING_RATIONALE_CONFIDENCE_BELOW_FLOOR, config=cfg)
+    out_zero = _call(sizing_rationale=SIZING_RATIONALE_REGIME_ZERO_MULTIPLIER, config=cfg)
+    assert dict(out_kc.components).get("sizing_kelly_cap_penalty") == pytest.approx(-0.3)
     assert "sizing_kelly_cap_penalty" not in dict(out_pri.components)
     assert "sizing_kelly_cap_penalty" not in dict(out_below.components)
     assert "sizing_kelly_cap_penalty" not in dict(out_zero.components)
@@ -277,13 +271,9 @@ def test_kelly_cap_penalty_only_on_kelly_capped() -> None:
 
 def test_floor_penalty_only_on_confidence_below_floor() -> None:
     cfg = _config(sizing_floor_penalty=0.4)
-    out = _call(
-        sizing_rationale=SIZING_RATIONALE_CONFIDENCE_BELOW_FLOOR, config=cfg
-    )
+    out = _call(sizing_rationale=SIZING_RATIONALE_CONFIDENCE_BELOW_FLOOR, config=cfg)
     assert dict(out.components).get("sizing_floor_penalty") == pytest.approx(-0.4)
-    out_zero = _call(
-        sizing_rationale=SIZING_RATIONALE_REGIME_ZERO_MULTIPLIER, config=cfg
-    )
+    out_zero = _call(sizing_rationale=SIZING_RATIONALE_REGIME_ZERO_MULTIPLIER, config=cfg)
     assert "sizing_floor_penalty" not in dict(out_zero.components)
 
 
@@ -291,9 +281,7 @@ def test_regime_zero_multiplier_is_not_penalised() -> None:
     """A zero-size outcome under regime_zero_multiplier is *correct* —
     it must not draw any sizing penalty."""
     cfg = _config(sizing_kelly_cap_penalty=99.0, sizing_floor_penalty=99.0)
-    out = _call(
-        sizing_rationale=SIZING_RATIONALE_REGIME_ZERO_MULTIPLIER, config=cfg
-    )
+    out = _call(sizing_rationale=SIZING_RATIONALE_REGIME_ZERO_MULTIPLIER, config=cfg)
     components = dict(out.components)
     assert "sizing_kelly_cap_penalty" not in components
     assert "sizing_floor_penalty" not in components

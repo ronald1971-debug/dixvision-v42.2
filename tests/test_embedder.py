@@ -65,9 +65,7 @@ def test_embedder_spec_rejects_bad_dim(bad: object) -> None:
         EmbedderSpec(dim=bad)  # type: ignore[arg-type]
 
 
-@pytest.mark.parametrize(
-    "bad", [(0, 1), (1, 0), (2, 1), (1.0, 2), (1, 2, 3), [1, 2]]
-)
+@pytest.mark.parametrize("bad", [(0, 1), (1, 0), (2, 1), (1.0, 2), (1, 2, 3), [1, 2]])
 def test_embedder_spec_rejects_bad_ngram_range(bad: object) -> None:
     with pytest.raises(EmbedderError):
         EmbedderSpec(dim=32, ngram_range=bad)  # type: ignore[arg-type]
@@ -244,12 +242,9 @@ def _module_source() -> str:
 def test_no_top_level_sentence_transformers_import() -> None:
     src = _module_source().splitlines()
     for line in src:
-        if line.startswith(
-            ("import sentence_transformers", "from sentence_transformers")
-        ):
+        if line.startswith(("import sentence_transformers", "from sentence_transformers")):
             raise AssertionError(
-                "sentence_transformers must be a lazy seam — "
-                f"no top-level import: {line!r}"
+                f"sentence_transformers must be a lazy seam — no top-level import: {line!r}"
             )
 
 
@@ -257,18 +252,14 @@ def test_no_top_level_torch_import() -> None:
     src = _module_source().splitlines()
     for line in src:
         if line.startswith(("import torch", "from torch")):
-            raise AssertionError(
-                f"torch must be a lazy seam — no top-level import: {line!r}"
-            )
+            raise AssertionError(f"torch must be a lazy seam — no top-level import: {line!r}")
 
 
 def test_no_top_level_numpy_import() -> None:
     src = _module_source().splitlines()
     for line in src:
         if line.startswith(("import numpy", "from numpy")):
-            raise AssertionError(
-                f"numpy must be a lazy seam — no top-level import: {line!r}"
-            )
+            raise AssertionError(f"numpy must be a lazy seam — no top-level import: {line!r}")
 
 
 def test_no_forbidden_top_level_imports() -> None:
@@ -304,6 +295,4 @@ def test_no_typed_event_constructors() -> None:
     )
     src = _module_source()
     for ctor in forbidden_ctors:
-        assert ctor not in src, (
-            f"OFFLINE_ONLY module must not construct typed events: {ctor!r}"
-        )
+        assert ctor not in src, f"OFFLINE_ONLY module must not construct typed events: {ctor!r}"

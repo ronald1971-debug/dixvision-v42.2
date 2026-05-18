@@ -83,15 +83,9 @@ class RetryPolicy:
     base_backoff_ns: int = 100_000_000  # 100 ms
     backoff_factor: float = 2.0
     max_backoff_ns: int = 5_000_000_000  # 5 s
-    transient_codes: frozenset[str] = field(
-        default_factory=lambda: _DEFAULT_TRANSIENT_CODES
-    )
-    throttled_codes: frozenset[str] = field(
-        default_factory=lambda: _DEFAULT_THROTTLED_CODES
-    )
-    permanent_codes: frozenset[str] = field(
-        default_factory=lambda: _DEFAULT_PERMANENT_CODES
-    )
+    transient_codes: frozenset[str] = field(default_factory=lambda: _DEFAULT_TRANSIENT_CODES)
+    throttled_codes: frozenset[str] = field(default_factory=lambda: _DEFAULT_THROTTLED_CODES)
+    permanent_codes: frozenset[str] = field(default_factory=lambda: _DEFAULT_PERMANENT_CODES)
 
     def classify(self, error_code: str) -> RetryClassification:
         if error_code in self.permanent_codes:

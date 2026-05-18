@@ -127,16 +127,13 @@ class ParameterSpec:
             raise ChromosomeError("ParameterSpec.name must be non-empty")
         if len(self.name) > MAX_PARAMETER_NAME_LEN:
             raise ChromosomeError(
-                f"ParameterSpec.name length {len(self.name)} > "
-                f"{MAX_PARAMETER_NAME_LEN}"
+                f"ParameterSpec.name length {len(self.name)} > {MAX_PARAMETER_NAME_LEN}"
             )
         if not isinstance(self.kind, ParameterKind):
             raise ChromosomeError("ParameterSpec.kind must be ParameterKind")
         if not isinstance(self.low, (int, float)) or isinstance(self.low, bool):
             raise ChromosomeError("ParameterSpec.low must be int|float")
-        if not isinstance(self.high, (int, float)) or isinstance(
-            self.high, bool
-        ):
+        if not isinstance(self.high, (int, float)) or isinstance(self.high, bool):
             raise ChromosomeError("ParameterSpec.high must be int|float")
         if not math.isfinite(self.low):
             raise ChromosomeError("ParameterSpec.low must be finite")
@@ -144,18 +141,14 @@ class ParameterSpec:
             raise ChromosomeError("ParameterSpec.high must be finite")
         if self.low >= self.high:
             raise ChromosomeError(
-                f"ParameterSpec[{self.name}]: low ({self.low}) "
-                f"must be < high ({self.high})"
+                f"ParameterSpec[{self.name}]: low ({self.low}) must be < high ({self.high})"
             )
         if self.kind is ParameterKind.LOG_CONTINUOUS and self.low <= 0.0:
-            raise ChromosomeError(
-                f"ParameterSpec[{self.name}]: LOG_CONTINUOUS requires low > 0"
-            )
+            raise ChromosomeError(f"ParameterSpec[{self.name}]: LOG_CONTINUOUS requires low > 0")
         if self.kind is ParameterKind.INTEGER:
             if int(self.low) != self.low or int(self.high) != self.high:
                 raise ChromosomeError(
-                    f"ParameterSpec[{self.name}]: INTEGER bounds must be "
-                    f"integer-valued"
+                    f"ParameterSpec[{self.name}]: INTEGER bounds must be integer-valued"
                 )
 
     def clip(self, value: float) -> float:
@@ -165,14 +158,10 @@ class ParameterSpec:
         """
 
         if not isinstance(value, (int, float)) or isinstance(value, bool):
-            raise ChromosomeError(
-                f"ParameterSpec[{self.name}].clip: value must be int|float"
-            )
+            raise ChromosomeError(f"ParameterSpec[{self.name}].clip: value must be int|float")
         v = float(value)
         if not math.isfinite(v):
-            raise ChromosomeError(
-                f"ParameterSpec[{self.name}].clip: value must be finite"
-            )
+            raise ChromosomeError(f"ParameterSpec[{self.name}].clip: value must be finite")
         return min(self.high, max(self.low, v))
 
 
@@ -198,9 +187,7 @@ class StrategyChromosome:
         if not isinstance(self.strategy_id, str):
             raise ChromosomeError("StrategyChromosome.strategy_id must be str")
         if not self.strategy_id:
-            raise ChromosomeError(
-                "StrategyChromosome.strategy_id must be non-empty"
-            )
+            raise ChromosomeError("StrategyChromosome.strategy_id must be non-empty")
         if len(self.strategy_id) > MAX_STRATEGY_ID_LEN:
             raise ChromosomeError(
                 f"StrategyChromosome.strategy_id length "
@@ -229,24 +216,18 @@ class StrategyChromosome:
         seen_names: set[str] = set()
         for idx, (spec, value) in enumerate(zip(self.specs, self.values, strict=True)):
             if not isinstance(spec, ParameterSpec):
-                raise ChromosomeError(
-                    f"StrategyChromosome.specs[{idx}] is not a ParameterSpec"
-                )
+                raise ChromosomeError(f"StrategyChromosome.specs[{idx}] is not a ParameterSpec")
             if spec.name in seen_names:
-                raise ChromosomeError(
-                    f"StrategyChromosome.specs: duplicate name {spec.name!r}"
-                )
+                raise ChromosomeError(f"StrategyChromosome.specs: duplicate name {spec.name!r}")
             seen_names.add(spec.name)
             if not isinstance(value, (int, float)) or isinstance(value, bool):
                 raise ChromosomeError(
-                    f"StrategyChromosome.values[{idx}] ({spec.name!r}) "
-                    f"must be int|float"
+                    f"StrategyChromosome.values[{idx}] ({spec.name!r}) must be int|float"
                 )
             v = float(value)
             if not math.isfinite(v):
                 raise ChromosomeError(
-                    f"StrategyChromosome.values[{idx}] ({spec.name!r}) "
-                    f"must be finite"
+                    f"StrategyChromosome.values[{idx}] ({spec.name!r}) must be finite"
                 )
             if v < spec.low or v > spec.high:
                 raise ChromosomeError(
@@ -262,9 +243,7 @@ class StrategyChromosome:
             raise ChromosomeError("StrategyChromosome.meta must be Mapping")
         for mk, mv in self.meta.items():
             if not isinstance(mk, str) or not isinstance(mv, str):
-                raise ChromosomeError(
-                    "StrategyChromosome.meta must map str -> str"
-                )
+                raise ChromosomeError("StrategyChromosome.meta must map str -> str")
 
     @property
     def dimensionality(self) -> int:
@@ -313,29 +292,21 @@ def pack(
         if not isinstance(spec, ParameterSpec):  # pragma: no cover - typed
             raise ChromosomeError("pack: specs entry is not a ParameterSpec")
         if spec.name not in mapping:
-            raise ChromosomeError(
-                f"pack: mapping missing parameter {spec.name!r}"
-            )
+            raise ChromosomeError(f"pack: mapping missing parameter {spec.name!r}")
         raw = mapping[spec.name]
         if not isinstance(raw, (int, float)) or isinstance(raw, bool):
-            raise ChromosomeError(
-                f"pack: value for {spec.name!r} must be int|float"
-            )
+            raise ChromosomeError(f"pack: value for {spec.name!r} must be int|float")
         v = float(raw)
         if not math.isfinite(v):
-            raise ChromosomeError(
-                f"pack: value for {spec.name!r} must be finite"
-            )
+            raise ChromosomeError(f"pack: value for {spec.name!r} must be finite")
         if v < spec.low or v > spec.high:
             raise ChromosomeError(
-                f"pack: value for {spec.name!r} = {v} out of bounds "
-                f"[{spec.low}, {spec.high}]"
+                f"pack: value for {spec.name!r} = {v} out of bounds [{spec.low}, {spec.high}]"
             )
         if spec.kind is ParameterKind.INTEGER:
             if int(v) != v:
                 raise ChromosomeError(
-                    f"pack: INTEGER value for {spec.name!r} must be "
-                    f"integer-valued, got {v}"
+                    f"pack: INTEGER value for {spec.name!r} must be integer-valued, got {v}"
                 )
             out.append(v)
         elif spec.kind is ParameterKind.LOG_CONTINUOUS:
@@ -368,24 +339,17 @@ def unpack(
     if not isinstance(vector, tuple):
         raise ChromosomeError("unpack: vector must be tuple")
     if len(specs) != len(vector):
-        raise ChromosomeError(
-            f"unpack: specs length {len(specs)} != vector length "
-            f"{len(vector)}"
-        )
+        raise ChromosomeError(f"unpack: specs length {len(specs)} != vector length {len(vector)}")
     if not specs:
         raise ChromosomeError("unpack: specs must be non-empty")
 
     decoded: dict[str, float] = {}
     for spec, raw in zip(specs, vector, strict=True):
         if not isinstance(raw, (int, float)) or isinstance(raw, bool):
-            raise ChromosomeError(
-                f"unpack: vector entry for {spec.name!r} must be int|float"
-            )
+            raise ChromosomeError(f"unpack: vector entry for {spec.name!r} must be int|float")
         v = float(raw)
         if not math.isfinite(v):
-            raise ChromosomeError(
-                f"unpack: vector entry for {spec.name!r} must be finite"
-            )
+            raise ChromosomeError(f"unpack: vector entry for {spec.name!r} must be finite")
         if spec.kind is ParameterKind.LOG_CONTINUOUS:
             decoded_value = math.pow(_LOG_BASE, v)
             decoded_value = min(spec.high, max(spec.low, decoded_value))
@@ -415,8 +379,7 @@ def clip_to_bounds(
         raise ChromosomeError("clip_to_bounds: vector must be tuple")
     if len(specs) != len(vector):
         raise ChromosomeError(
-            f"clip_to_bounds: specs length {len(specs)} != vector length "
-            f"{len(vector)}"
+            f"clip_to_bounds: specs length {len(specs)} != vector length {len(vector)}"
         )
     if not specs:
         raise ChromosomeError("clip_to_bounds: specs must be non-empty")
@@ -425,15 +388,11 @@ def clip_to_bounds(
     for spec, raw in zip(specs, vector, strict=True):
         if not isinstance(raw, (int, float)) or isinstance(raw, bool):
             raise ChromosomeError(
-                f"clip_to_bounds: vector entry for {spec.name!r} "
-                f"must be int|float"
+                f"clip_to_bounds: vector entry for {spec.name!r} must be int|float"
             )
         v = float(raw)
         if not math.isfinite(v):
-            raise ChromosomeError(
-                f"clip_to_bounds: vector entry for {spec.name!r} "
-                f"must be finite"
-            )
+            raise ChromosomeError(f"clip_to_bounds: vector entry for {spec.name!r} must be finite")
         if spec.kind is ParameterKind.INTEGER:
             v = float(round(v))
         out.append(min(spec.high, max(spec.low, v)))
@@ -450,9 +409,7 @@ def chromosome_digest(chromosome: StrategyChromosome) -> str:
     """
 
     if not isinstance(chromosome, StrategyChromosome):
-        raise ChromosomeError(
-            "chromosome_digest: argument must be StrategyChromosome"
-        )
+        raise ChromosomeError("chromosome_digest: argument must be StrategyChromosome")
     parts: list[str] = [
         f"strategy_id={chromosome.strategy_id}",
         f"version={chromosome.version}",

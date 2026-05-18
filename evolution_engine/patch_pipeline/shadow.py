@@ -44,25 +44,18 @@ class ShadowStage:
     ) -> tuple[ShadowVerdict, StageVerdict]:
         if samples < 0 or matches < 0 or matches > samples:
             raise ValueError("invalid sample counts")
-        error_rate = (
-            0.0 if samples == 0 else 1.0 - (matches / samples)
-        )
+        error_rate = 0.0 if samples == 0 else 1.0 - (matches / samples)
         sv = ShadowVerdict(
             samples=samples,
             matches=matches,
             error_rate=error_rate,
         )
-        passed = (
-            samples >= self._min_samples
-            and error_rate <= self._max_error_rate
-        )
+        passed = samples >= self._min_samples and error_rate <= self._max_error_rate
         verdict = StageVerdict(
             ts_ns=ts_ns,
             stage=PatchStage.SHADOW,
             passed=passed,
-            detail=(
-                f"samples={samples} matches={matches} err={error_rate:.4f}"
-            ),
+            detail=(f"samples={samples} matches={matches} err={error_rate:.4f}"),
             meta={
                 "samples": str(samples),
                 "matches": str(matches),

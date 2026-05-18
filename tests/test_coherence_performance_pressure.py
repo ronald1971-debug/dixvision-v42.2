@@ -150,9 +150,11 @@ def test_safety_modifier_is_one_below_high_water() -> None:
 
 def test_safety_modifier_compresses_above_high_water() -> None:
     """Force max disagreement → safety_modifier strictly below 1."""
-    sigs = [_sig(Side.BUY, conf=0.0)] * 3 + [_sig(Side.SELL, conf=0.0)] * 3 + [
-        _sig(Side.HOLD, conf=0.0)
-    ] * 3
+    sigs = (
+        [_sig(Side.BUY, conf=0.0)] * 3
+        + [_sig(Side.SELL, conf=0.0)] * 3
+        + [_sig(Side.HOLD, conf=0.0)] * 3
+    )
     pv = _derive(sigs)
     assert pv.uncertainty == pytest.approx(1.0)
     # over = 1.0 - 0.6 = 0.4 ; modifier 1.5 → 1 - 0.6 = 0.4

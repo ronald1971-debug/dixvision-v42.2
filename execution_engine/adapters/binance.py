@@ -130,9 +130,7 @@ class BinanceAdapter(LiveAdapterBase):
         if default_qty < 0.0:
             raise ValueError("default_qty must be >= 0")
         if default_order_type not in ("market", "limit"):
-            raise ValueError(
-                "default_order_type must be 'market' or 'limit'"
-            )
+            raise ValueError("default_order_type must be 'market' or 'limit'")
         self._api_key = api_key
         self._api_secret = api_secret
         self._sandbox = bool(sandbox)
@@ -187,9 +185,7 @@ class BinanceAdapter(LiveAdapterBase):
             self._detail = f"ccxt construction failed: {exc.__class__.__name__}"
             return
         self._state = AdapterState.READY
-        self._detail = (
-            "sandbox" if self._sandbox else "production"
-        ) + " — credentials loaded"
+        self._detail = ("sandbox" if self._sandbox else "production") + " — credentials loaded"
 
     def disconnect(self) -> None:
         super().disconnect()
@@ -246,9 +242,7 @@ class BinanceAdapter(LiveAdapterBase):
         order_type = self._order_type_for(signal)
         ccxt_side = "buy" if signal.side is Side.BUY else "sell"
         price_arg: float | None = (
-            float(signal.meta.get("limit_price", mark_price))
-            if order_type == "limit"
-            else None
+            float(signal.meta.get("limit_price", mark_price)) if order_type == "limit" else None
         )
 
         try:
@@ -339,11 +333,7 @@ class BinanceAdapter(LiveAdapterBase):
         if filled is None:
             filled = 0.0
 
-        if (
-            status is ExecutionStatus.FILLED
-            and filled > 0.0
-            and filled + 1e-12 < requested_qty
-        ):
+        if status is ExecutionStatus.FILLED and filled > 0.0 and filled + 1e-12 < requested_qty:
             status = ExecutionStatus.PARTIALLY_FILLED
 
         # Average fill price preferred; fall back to limit price; then

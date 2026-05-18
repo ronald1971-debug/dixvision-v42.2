@@ -60,9 +60,7 @@ class HealthStatus:
 
     state: HealthState
     detail: str = ""
-    plugin_states: Mapping[str, Mapping[str, HealthState]] = field(
-        default_factory=dict
-    )
+    plugin_states: Mapping[str, Mapping[str, HealthState]] = field(default_factory=dict)
 
 
 class PluginLifecycle(StrEnum):

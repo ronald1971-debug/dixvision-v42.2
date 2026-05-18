@@ -83,9 +83,7 @@ def test_module_has_no_forbidden_top_level_imports() -> None:
                 )
         elif isinstance(node, ast.ImportFrom):
             mod = (node.module or "").split(".", 1)[0]
-            assert mod not in forbidden, (
-                f"top-level from-import of {node.module} forbidden"
-            )
+            assert mod not in forbidden, f"top-level from-import of {node.module} forbidden"
 
 
 def test_module_has_no_clock_calls() -> None:
@@ -115,19 +113,13 @@ def test_module_has_no_engine_cross_imports() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 root = alias.name.split(".", 1)[0]
-                assert root not in forbidden_roots, (
-                    f"OFFLINE module must not import {alias.name}"
-                )
+                assert root not in forbidden_roots, f"OFFLINE module must not import {alias.name}"
         elif isinstance(node, ast.ImportFrom):
-            mod = (node.module or "")
+            mod = node.module or ""
             root = mod.split(".", 1)[0]
-            assert root not in forbidden_roots, (
-                f"OFFLINE module must not import from {mod}"
-            )
+            assert root not in forbidden_roots, f"OFFLINE module must not import from {mod}"
             if mod.startswith("intelligence_engine.meta_controller.hot_path"):
-                raise AssertionError(
-                    f"OFFLINE module must not import from {mod}"
-                )
+                raise AssertionError(f"OFFLINE module must not import from {mod}")
 
 
 def test_module_has_no_random_or_prng() -> None:
@@ -135,10 +127,7 @@ def test_module_has_no_random_or_prng() -> None:
     tree = ast.parse(src)
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
-            mod = (
-                getattr(node, "module", None)
-                or (node.names[0].name if node.names else "")
-            )
+            mod = getattr(node, "module", None) or (node.names[0].name if node.names else "")
             mod_root = (mod or "").split(".", 1)[0]
             assert mod_root != "random", "no PRNG in deterministic OFFLINE module"
 
@@ -169,9 +158,7 @@ def test_polars_lazy_import_lives_inside_compute_feature_importance() -> None:
 
 
 def test_module_globals_do_not_leak_polars() -> None:
-    assert "polars" not in vars(fi), (
-        "polars must not leak into module globals after lazy import"
-    )
+    assert "polars" not in vars(fi), "polars must not leak into module globals after lazy import"
     assert "pl" not in vars(fi)
 
 
@@ -184,9 +171,7 @@ def test_module_imports_without_polars_in_sys_modules() -> None:
     if "learning_engine.analytics.feature_importance" in sys.modules:
         del sys.modules["learning_engine.analytics.feature_importance"]
     try:
-        mod = importlib.import_module(
-            "learning_engine.analytics.feature_importance"
-        )
+        mod = importlib.import_module("learning_engine.analytics.feature_importance")
         assert mod.NEW_PIP_DEPENDENCIES == ("polars",)
         assert "polars" not in sys.modules, (
             "module import pulled polars in despite lazy-import contract"
@@ -408,8 +393,7 @@ def test_compute_feature_importance_empty_input() -> None:
 
 def test_compute_feature_importance_perfect_positive_correlation() -> None:
     # y = 2x + 1 => Pearson = 1.0, Spearman = 1.0
-    obs = [_obs(ts_ns=i, feature_value=float(i), target_value=2.0 * i + 1.0)
-           for i in range(1, 11)]
+    obs = [_obs(ts_ns=i, feature_value=float(i), target_value=2.0 * i + 1.0) for i in range(1, 11)]
     report = compute_feature_importance(obs)
     assert len(report.by_feature) == 1
     f = report.by_feature[0]
@@ -420,8 +404,7 @@ def test_compute_feature_importance_perfect_positive_correlation() -> None:
 
 
 def test_compute_feature_importance_perfect_negative_correlation() -> None:
-    obs = [_obs(ts_ns=i, feature_value=float(i), target_value=-3.0 * i)
-           for i in range(1, 9)]
+    obs = [_obs(ts_ns=i, feature_value=float(i), target_value=-3.0 * i) for i in range(1, 9)]
     report = compute_feature_importance(obs)
     f = report.by_feature[0]
     assert f.pearson_corr == pytest.approx(-1.0, abs=1e-9)
@@ -431,8 +414,7 @@ def test_compute_feature_importance_perfect_negative_correlation() -> None:
 
 def test_compute_feature_importance_zero_correlation_zero_variance_target() -> None:
     """Zero-variance target ⇒ corr is NaN; module clamps to 0.0."""
-    obs = [_obs(ts_ns=i, feature_value=float(i), target_value=5.0)
-           for i in range(5)]
+    obs = [_obs(ts_ns=i, feature_value=float(i), target_value=5.0) for i in range(5)]
     report = compute_feature_importance(obs)
     f = report.by_feature[0]
     assert f.pearson_corr == 0.0
@@ -441,8 +423,7 @@ def test_compute_feature_importance_zero_correlation_zero_variance_target() -> N
 
 
 def test_compute_feature_importance_zero_variance_feature() -> None:
-    obs = [_obs(ts_ns=i, feature_value=7.0, target_value=float(i))
-           for i in range(5)]
+    obs = [_obs(ts_ns=i, feature_value=7.0, target_value=float(i)) for i in range(5)]
     report = compute_feature_importance(obs)
     f = report.by_feature[0]
     assert f.pearson_corr == 0.0
@@ -463,10 +444,7 @@ def test_compute_feature_importance_single_observation() -> None:
 
 def test_compute_feature_importance_spearman_beats_pearson_on_monotone_nonlinear() -> None:
     """y = x^3 over positive x: Spearman == 1.0 but Pearson < 1.0."""
-    obs = [
-        _obs(ts_ns=i, feature_value=float(i), target_value=float(i) ** 3)
-        for i in range(1, 11)
-    ]
+    obs = [_obs(ts_ns=i, feature_value=float(i), target_value=float(i) ** 3) for i in range(1, 11)]
     report = compute_feature_importance(obs)
     f = report.by_feature[0]
     assert f.rank_corr == pytest.approx(1.0, abs=1e-9)
@@ -478,14 +456,19 @@ def test_compute_feature_importance_spearman_beats_pearson_on_monotone_nonlinear
 def test_compute_feature_importance_groups_features_independently() -> None:
     obs = []
     # Feature A: perfectly positive
-    obs += [_obs(ts_ns=i, feature_name="a", feature_value=float(i),
-                 target_value=float(i) * 2.0) for i in range(1, 6)]
+    obs += [
+        _obs(ts_ns=i, feature_name="a", feature_value=float(i), target_value=float(i) * 2.0)
+        for i in range(1, 6)
+    ]
     # Feature B: perfectly negative
-    obs += [_obs(ts_ns=i, feature_name="b", feature_value=float(i),
-                 target_value=-float(i)) for i in range(1, 6)]
+    obs += [
+        _obs(ts_ns=i, feature_name="b", feature_value=float(i), target_value=-float(i))
+        for i in range(1, 6)
+    ]
     # Feature C: zero variance feature
-    obs += [_obs(ts_ns=i, feature_name="c", feature_value=1.0,
-                 target_value=float(i)) for i in range(5)]
+    obs += [
+        _obs(ts_ns=i, feature_name="c", feature_value=1.0, target_value=float(i)) for i in range(5)
+    ]
     report = compute_feature_importance(obs)
     assert len(report.by_feature) == 3
     by_name = {f.feature_name: f for f in report.by_feature}
@@ -498,16 +481,27 @@ def test_compute_feature_importance_sorted_descending_by_abs_score() -> None:
     """Output order: abs_score DESC, feature_name ASC tiebreak."""
     obs = []
     # weak: a (Pearson ≈ 0.0)
-    obs += [_obs(ts_ns=i, feature_name="weak", feature_value=float(i),
-                 target_value=float(i % 2) * 0.0001)
-            for i in range(1, 6)]
+    obs += [
+        _obs(
+            ts_ns=i, feature_name="weak", feature_value=float(i), target_value=float(i % 2) * 0.0001
+        )
+        for i in range(1, 6)
+    ]
     # strong: y = x
-    obs += [_obs(ts_ns=i, feature_name="strong", feature_value=float(i),
-                 target_value=float(i)) for i in range(1, 6)]
+    obs += [
+        _obs(ts_ns=i, feature_name="strong", feature_value=float(i), target_value=float(i))
+        for i in range(1, 6)
+    ]
     # medium: y = x but with tiny noise
-    obs += [_obs(ts_ns=i, feature_name="medium", feature_value=float(i),
-                 target_value=float(i) + (0.5 if i == 3 else 0.0))
-            for i in range(1, 6)]
+    obs += [
+        _obs(
+            ts_ns=i,
+            feature_name="medium",
+            feature_value=float(i),
+            target_value=float(i) + (0.5 if i == 3 else 0.0),
+        )
+        for i in range(1, 6)
+    ]
     report = compute_feature_importance(obs)
     scores = [f.abs_score for f in report.by_feature]
     assert scores == sorted(scores, reverse=True)
@@ -517,8 +511,10 @@ def test_compute_feature_importance_tie_break_alphabetical() -> None:
     """When two features get identical abs_score, name asc breaks the tie."""
     obs = []
     for name in ("zeta", "alpha", "mu"):
-        obs += [_obs(ts_ns=i, feature_name=name, feature_value=float(i),
-                     target_value=float(i)) for i in range(1, 5)]
+        obs += [
+            _obs(ts_ns=i, feature_name=name, feature_value=float(i), target_value=float(i))
+            for i in range(1, 5)
+        ]
     report = compute_feature_importance(obs)
     names = [f.feature_name for f in report.by_feature]
     # All have abs_score == 1.0; tiebreak by name ascending.
@@ -526,8 +522,7 @@ def test_compute_feature_importance_tie_break_alphabetical() -> None:
 
 
 def test_compute_feature_importance_n_obs_and_means() -> None:
-    obs = [_obs(ts_ns=i, feature_value=float(i), target_value=float(i + 5))
-           for i in range(1, 6)]
+    obs = [_obs(ts_ns=i, feature_value=float(i), target_value=float(i + 5)) for i in range(1, 6)]
     report = compute_feature_importance(obs)
     f = report.by_feature[0]
     assert f.n_obs == 5
@@ -540,8 +535,10 @@ def test_compute_feature_importance_pearson_matches_reference() -> None:
     """Hand-rolled Pearson on a small, known sample."""
     xs = [1.0, 2.0, 3.0, 4.0, 5.0]
     ys = [2.0, 4.0, 5.0, 4.0, 5.0]
-    obs = [_obs(ts_ns=i, feature_value=x, target_value=y)
-           for i, (x, y) in enumerate(zip(xs, ys, strict=True))]
+    obs = [
+        _obs(ts_ns=i, feature_value=x, target_value=y)
+        for i, (x, y) in enumerate(zip(xs, ys, strict=True))
+    ]
     report = compute_feature_importance(obs)
     f = report.by_feature[0]
     expected = _pearson(xs, ys)

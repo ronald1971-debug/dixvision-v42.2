@@ -79,9 +79,7 @@ def _obs(
     y: int = 1,
     learner_id: str = "alpha",
 ) -> OnlineLearnerObservation:
-    return OnlineLearnerObservation(
-        ts_ns=ts_ns, learner_id=learner_id, x=x, y=y
-    )
+    return OnlineLearnerObservation(ts_ns=ts_ns, learner_id=learner_id, x=x, y=y)
 
 
 # ---------------------------------------------------------------------------
@@ -168,9 +166,7 @@ def test_observation_rejects_non_int_ts_ns() -> None:
 
 def test_observation_rejects_non_positive_ts_ns() -> None:
     with pytest.raises(OnlineLearnerError, match="ts_ns must be positive"):
-        OnlineLearnerObservation(
-            ts_ns=0, learner_id="x", x=(1.0,), y=1
-        )
+        OnlineLearnerObservation(ts_ns=0, learner_id="x", x=(1.0,), y=1)
 
 
 def test_observation_rejects_empty_learner_id() -> None:
@@ -200,16 +196,12 @@ def test_observation_rejects_non_float_x_element() -> None:
 
 def test_observation_rejects_nan_in_x() -> None:
     with pytest.raises(OnlineLearnerError, match=r"x\[0\] must be finite"):
-        OnlineLearnerObservation(
-            ts_ns=1, learner_id="x", x=(float("nan"),), y=1
-        )
+        OnlineLearnerObservation(ts_ns=1, learner_id="x", x=(float("nan"),), y=1)
 
 
 def test_observation_rejects_inf_in_x() -> None:
     with pytest.raises(OnlineLearnerError, match=r"x\[0\] must be finite"):
-        OnlineLearnerObservation(
-            ts_ns=1, learner_id="x", x=(float("inf"),), y=1
-        )
+        OnlineLearnerObservation(ts_ns=1, learner_id="x", x=(float("inf"),), y=1)
 
 
 def test_observation_rejects_invalid_label() -> None:
@@ -485,10 +477,7 @@ def test_adwin_no_drift_on_stationary_safe_stream() -> None:
     """Once the model classifies correctly the margin saturates and
     ADWIN sees a stationary post-update margin → no cut."""
     cfg = _cfg(dim=1, adwin_min_window=4, adwin_delta=0.05)
-    obs = [
-        _obs(ts_ns=i + 1, x=(1.0,), y=1, learner_id="x")
-        for i in range(50)
-    ]
+    obs = [_obs(ts_ns=i + 1, x=(1.0,), y=1, learner_id="x") for i in range(50)]
     _, outs = _drive(cfg, obs)
     assert all(o.drift_report is None for o in outs)
 
@@ -513,9 +502,7 @@ def test_adwin_smaller_delta_means_fewer_or_equal_cuts() -> None:
     for i in range(20):
         obs.append(_obs(ts_ns=20 + i + 1, x=(1.0,), y=-1, learner_id="x"))
     _, outs_loose = _drive(_cfg(dim=1, adwin_min_window=4, adwin_delta=0.5), obs)
-    _, outs_strict = _drive(
-        _cfg(dim=1, adwin_min_window=4, adwin_delta=1e-6), obs
-    )
+    _, outs_strict = _drive(_cfg(dim=1, adwin_min_window=4, adwin_delta=1e-6), obs)
     n_loose = sum(1 for o in outs_loose if o.drift_report is not None)
     n_strict = sum(1 for o in outs_strict if o.drift_report is not None)
     assert n_strict <= n_loose
@@ -609,9 +596,7 @@ def test_step_emits_learning_update_alongside_drift() -> None:
 
 def test_step_no_drift_emits_no_update() -> None:
     cfg = _cfg(dim=1, adwin_min_window=4, adwin_delta=0.05)
-    obs = [
-        _obs(ts_ns=i + 1, x=(1.0,), y=1, learner_id="x") for i in range(20)
-    ]
+    obs = [_obs(ts_ns=i + 1, x=(1.0,), y=1, learner_id="x") for i in range(20)]
     _, outs = _drive(cfg, obs)
     assert all(o.proposed_update is None for o in outs)
     assert all(o.drift_report is None for o in outs)
@@ -747,9 +732,7 @@ def test_module_does_not_import_clock_or_environ() -> None:
     """B-CLOCK / T1 / INV-15."""
     forbidden = {"time", "datetime", "os"}
     found = _imported_roots(_module_ast()) & forbidden
-    assert found == set(), (
-        f"online_feature_learner imports forbidden roots: {sorted(found)}"
-    )
+    assert found == set(), f"online_feature_learner imports forbidden roots: {sorted(found)}"
 
 
 def test_module_does_not_import_governance_or_execution_or_system() -> None:
@@ -760,9 +743,7 @@ def test_module_does_not_import_governance_or_execution_or_system() -> None:
         "system_engine",
     }
     found = _imported_roots(_module_ast()) & forbidden
-    assert found == set(), (
-        f"online_feature_learner imports forbidden engines: {sorted(found)}"
-    )
+    assert found == set(), f"online_feature_learner imports forbidden engines: {sorted(found)}"
 
 
 def test_module_does_not_import_river_at_top_level() -> None:
@@ -792,9 +773,7 @@ def test_module_does_not_emit_signal_or_execution_intent() -> None:
             seen.add(node.id)
         elif isinstance(node, ast.Attribute) and node.attr in forbidden:
             seen.add(node.attr)
-    assert seen == set(), (
-        f"online_feature_learner references execution-side names: {sorted(seen)}"
-    )
+    assert seen == set(), f"online_feature_learner references execution-side names: {sorted(seen)}"
 
 
 def test_module_has_adapted_from_header() -> None:

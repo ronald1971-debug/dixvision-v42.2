@@ -162,9 +162,7 @@ def test_strategy_fsm_all_in():
 def _tick(ts: int, mid: float, spread: float = 0.02) -> MarketTick:
     bid = mid - spread / 2
     ask = mid + spread / 2
-    return MarketTick(
-        ts_ns=ts, symbol="BTCUSDT", bid=bid, ask=ask, last=mid
-    )
+    return MarketTick(ts_ns=ts, symbol="BTCUSDT", bid=bid, ask=ask, last=mid)
 
 
 def test_regime_detector_unknown_when_too_few_samples():
@@ -232,9 +230,7 @@ def test_regime_detector_classifies_volatile_overrides_trend():
 
 def test_regime_detector_unknown_on_crossed_book():
     det = RegimeDetector(window=8)
-    bad = MarketTick(
-        ts_ns=1, symbol="X", bid=100.0, ask=99.0, last=99.5
-    )
+    bad = MarketTick(ts_ns=1, symbol="X", bid=100.0, ask=99.0, last=99.5)
     r = det.observe(bad)
     assert r.regime is MarketRegime.UNKNOWN
 

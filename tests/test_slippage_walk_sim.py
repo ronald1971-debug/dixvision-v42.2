@@ -88,7 +88,7 @@ def test_zero_std_compounding_is_geometric() -> None:
     )
     out = SlippageWalk().step(seed=0, scenario=s)
     leg = 10_000.0 / 4
-    expected_delta = sum(leg * ((1.01 ** i) - 1.0) for i in range(1, 5))
+    expected_delta = sum(leg * ((1.01**i) - 1.0) for i in range(1, 5))
     assert out.pnl_usd == pytest.approx(-expected_delta)
 
 
@@ -230,8 +230,6 @@ def test_invalid_config_rejected() -> None:
 def test_distribution_over_seeds_varies() -> None:
     s = _scenario(per_leg_drift_mean=0.0, per_leg_drift_std=0.01)
     runner = SlippageWalk()
-    pnls = {
-        runner.step(seed=k, scenario=s).pnl_usd for k in range(50)
-    }
+    pnls = {runner.step(seed=k, scenario=s).pnl_usd for k in range(50)}
     # With random walk and 50 seeds, must produce >> 1 distinct outcomes.
     assert len(pnls) >= 25

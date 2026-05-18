@@ -205,11 +205,7 @@ def test_run_dataflow_identity_emits_original_events() -> None:
 
 
 def test_run_dataflow_map_then_filter_is_insertion_order() -> None:
-    df = (
-        Dataflow(name="t")
-        .map(lambda x: x * 2)
-        .filter(lambda x: x % 4 == 0)
-    )
+    df = Dataflow(name="t").map(lambda x: x * 2).filter(lambda x: x % 4 == 0)
     out = run_dataflow(df, [1, 2, 3, 4])
     # map -> [2,4,6,8]; filter keeps multiples of 4 -> [4,8]
     assert tuple(r.payload for r in out) == (4, 8)
@@ -253,7 +249,7 @@ def test_run_dataflow_tumbling_window_sorts_by_bucket_then_key() -> None:
         )
     )
     events = [
-        {"sym": "BTC", "ts_ns": 500_000_000, "qty": 1},   # bucket 0
+        {"sym": "BTC", "ts_ns": 500_000_000, "qty": 1},  # bucket 0
         {"sym": "ETH", "ts_ns": 600_000_000, "qty": 10},  # bucket 0
         {"sym": "BTC", "ts_ns": 1_200_000_000, "qty": 2},  # bucket 1
         {"sym": "BTC", "ts_ns": 1_400_000_000, "qty": 3},  # bucket 1

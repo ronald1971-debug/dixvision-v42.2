@@ -159,9 +159,7 @@ def test_b30_allows_each_leaf_producer_without_belief_state_import() -> None:
     )
     for importer in B30_ALLOWED_LEAF_PRODUCERS:
         violations = _run(src, importer)
-        assert violations == [], (
-            f"leaf producer {importer!r} should be allowed, got {violations}"
-        )
+        assert violations == [], f"leaf producer {importer!r} should be allowed, got {violations}"
 
 
 def test_b30_leaf_producer_set_matches_expected_canonical_set() -> None:

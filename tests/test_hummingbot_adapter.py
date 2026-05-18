@@ -37,9 +37,7 @@ def _signal(side: Side = Side.BUY, symbol: str = "ETH-USDC") -> SignalEvent:
 # ---------------------------------------------------------------------------
 
 
-def _mk_client(
-    handler: Any, *, base_url: str = "http://gw.local"
-) -> HummingbotGatewayClient:
+def _mk_client(handler: Any, *, base_url: str = "http://gw.local") -> HummingbotGatewayClient:
     transport = httpx.MockTransport(handler)
     return HummingbotGatewayClient(base_url=base_url, transport=transport)
 
