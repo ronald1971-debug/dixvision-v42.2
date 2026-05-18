@@ -46,16 +46,6 @@ from core.cognitive_router import (
     select_providers,
 )
 from core.coherence.performance_pressure import load_pressure_config
-from core.contracts.api.cognitive_chat import (
-    ChatStatusResponse,
-    ChatTurnRequest,
-    ChatTurnResponse,
-)
-from core.contracts.api.cognitive_chat_approvals import (
-    ApprovalDecisionRequest,
-    ApprovalDecisionResponse,
-    ApprovalsListResponse,
-)
 from core.contracts.api.credentials import (
     CredentialItem,
     CredentialsStatusResponse,
@@ -177,9 +167,7 @@ from execution_engine.adapters.registry import (
     default_registry as default_adapter_registry,
 )
 from intelligence_engine.cognitive.approval_edge import (
-    ApprovalAlreadyDecidedError,
     ApprovalEdge,
-    ApprovalNotFoundError,
 )
 from intelligence_engine.cognitive.chat import (
     FEATURE_FLAG_ENV_VAR as COGNITIVE_CHAT_FEATURE_FLAG_ENV_VAR,
@@ -270,14 +258,12 @@ from system_engine.scvs.source_registry import (
 )
 from ui._ledger_boot import resolve_ledger_path
 from ui.cognitive_chat_runtime import (
-    ChatTurnDisabled,
-    ChatTurnNoProvider,
-    ChatTurnTransportFailed,
     CognitiveChatRuntime,
 )
 from ui.cognitive_chat_runtime import (
     build_runtime as build_cognitive_chat_runtime,
 )
+from ui.cognitive_routes import build_cognitive_router
 from ui.dashboard_projection_routes import build_projection_router
 from ui.dashboard_routes import build_dashboard_router
 from ui.execution_routes import build_execution_router
@@ -1724,6 +1710,14 @@ app.include_router(build_execution_router())
 app.include_router(build_runtime_router(lambda: STATE))
 
 
+# C-2 / P2-4 / R-1 part 3 — the five cognitive-chat endpoints
+# (status / turn / approvals / approve / reject) live under
+# :mod:`ui.cognitive_routes`. The route module reads ``chat_runtime``
+# and ``approval_edge`` through the same lambda-state-accessor pattern
+# the dashboard / governance / execution / runtime routers use.
+app.include_router(build_cognitive_router(lambda: STATE))
+
+
 # Wave-Live PR-4 — root URL routes operators to the live SPA. PR #105
 # redirected the named legacy paths (``/operator``, ``/indira-chat`` etc.)
 # but missed ``/`` itself, so the Windows launcher (which opens
@@ -3072,140 +3066,12 @@ def _decision_to_dict(decision: Any) -> dict[str, Any]:
     return str(decision)  # type: ignore[return-value]
 
 
-@app.get("/api/cognitive/chat/status", response_model=ChatStatusResponse)
-def cognitive_chat_status() -> ChatStatusResponse:
-    """Wave-03 PR-4 — feature-flag + provider availability snapshot.
-
-    Polled by the operator chat page on mount so the UI can decide
-    whether to render the input box or a "feature disabled" notice.
-    Read-only; never writes the ledger.
-    """
-
-    with STATE.lock:
-        return STATE.chat_runtime.status()
-
-
-@app.post("/api/cognitive/chat/turn", response_model=ChatTurnResponse)
-def cognitive_chat_turn(body: ChatTurnRequest) -> ChatTurnResponse:
-    """Wave-03 PR-4 — drive one turn of the cognitive chat graph.
-
-    Honors ``DIX_COGNITIVE_CHAT_ENABLED`` (on by default since
-    PR #165 — only the explicit falsy set ``0`` / ``false`` /
-    ``no`` / ``off`` flips it off; 503 is returned in that case).
-    Dispatches through the registry-driven chat model from PR-1
-    so no vendor name appears on the wire. State is persisted to
-    the audit ledger via PR-2's saver. Operator-approval edges
-    that gate ``SignalEvent`` proposal emission land in PR-5.
-    """
-
-    # Snapshot the runtime under the process-wide lock, then drop
-    # it before calling ``turn`` — the LLM round-trip can take
-    # seconds, and holding ``STATE.lock`` across it would block
-    # every other endpoint (health, ticks, operator summary, …).
-    # ``CognitiveChatRuntime`` has its own lock guarding the
-    # bundle lazy-init path; the graph itself is invocation-safe
-    # under concurrent calls because LangGraph keys state by
-    # ``thread_id``.
-    with STATE.lock:
-        runtime = STATE.chat_runtime
-    try:
-        return runtime.turn(body)
-    except ChatTurnDisabled as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except ChatTurnNoProvider as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-    except ChatTurnTransportFailed as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-    except ValueError as exc:
-        # Bad request shape (empty messages / wrong tail role /
-        # SYSTEM message before PR-5 lands).
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-
-@app.get(
-    "/api/cognitive/chat/approvals",
-    response_model=ApprovalsListResponse,
-)
-def cognitive_chat_approvals_list(
-    include_decided: bool = False,
-) -> ApprovalsListResponse:
-    """Wave-03 PR-5 — snapshot the operator-approval queue.
-
-    Default returns ``PENDING``-only rows so the dashboard panel
-    only shows what still needs an operator click. Pass
-    ``?include_decided=true`` to also surface the recent
-    ``APPROVED`` / ``REJECTED`` history (used by the audit panel).
-    Read-only; never writes the ledger.
-    """
-
-    with STATE.lock:
-        rows = STATE.chat_runtime.approval_queue.list(
-            include_decided=include_decided,
-        )
-    return ApprovalsListResponse(requests=list(rows))
-
-
-@app.post(
-    "/api/cognitive/chat/approvals/{request_id}/approve",
-    response_model=ApprovalDecisionResponse,
-)
-def cognitive_chat_approval_approve(
-    request_id: str,
-    body: ApprovalDecisionRequest | None = None,
-) -> ApprovalDecisionResponse:
-    """Wave-03 PR-5 — operator approves a queued cognitive proposal.
-
-    The approval edge stamps ``produced_by_engine=
-    "intelligence_engine.cognitive"`` on the resulting
-    ``SignalEvent`` (B26 / HARDEN-03), routes it through the
-    intelligence → execution chain (HARDEN-02 chokepoint), and
-    writes an ``OPERATOR_APPROVED_SIGNAL`` ledger row. Returns
-    the decided request and the new event's audit-ledger id.
-    """
-
-    decision = body if body is not None else ApprovalDecisionRequest()
-    try:
-        decided, sig = STATE.approval_edge.approve(
-            request_id=request_id,
-            decision=decision,
-        )
-    except ApprovalNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except ApprovalAlreadyDecidedError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
-    return ApprovalDecisionResponse(
-        request=decided,
-        emitted_signal_id=f"{sig.symbol}:{sig.side.value}:{sig.ts_ns}",
-    )
-
-
-@app.post(
-    "/api/cognitive/chat/approvals/{request_id}/reject",
-    response_model=ApprovalDecisionResponse,
-)
-def cognitive_chat_approval_reject(
-    request_id: str,
-    body: ApprovalDecisionRequest | None = None,
-) -> ApprovalDecisionResponse:
-    """Wave-03 PR-5 — operator rejects a queued cognitive proposal.
-
-    No event hits the bus; an ``OPERATOR_REJECTED_SIGNAL`` row is
-    written to the ledger so the audit chain captures every
-    decision (not just the approvals). Returns the decided
-    request with ``emitted_signal_id`` left empty.
-    """
-
-    decision = body if body is not None else ApprovalDecisionRequest()
-    try:
-        decided = STATE.approval_edge.reject(
-            request_id=request_id,
-            decision=decision,
-        )
-    except ApprovalNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except ApprovalAlreadyDecidedError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
-    return ApprovalDecisionResponse(request=decided, emitted_signal_id="")
+# C-2 / P2-4 / R-1 part 3 — the five cognitive-chat endpoints
+# (status / turn / approvals / approve / reject) moved to
+# :mod:`ui.cognitive_routes` and are mounted via ``include_router``
+# above. The route module reads ``chat_runtime`` + ``approval_edge``
+# through the lambda-state-accessor pattern, so this host module no
+# longer carries the inline ``@app.get/.post`` decorators.
 
 
 @app.post("/api/tick")
