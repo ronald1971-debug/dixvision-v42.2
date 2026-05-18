@@ -30,6 +30,134 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class DevelopmentModeRequest(BaseModel):
+    """Body for ``POST /api/operator/development-mode`` (PR-DEV-A).
+
+    The operator-toggled flag that determines whether Indira and Dyon
+    run at full potential (trader discovery, profiling, modeling,
+    heavy learning, structural evolution, slow-loop critique, patch
+    pipeline). Defaults to ``True`` at boot via
+    ``DIXVISION_DEVELOPMENT_MODE``; flipping to ``False`` pauses the
+    learning + research surface while leaving every safety gate in
+    place. Independent of :class:`TradingAllowedRequest` -- the two
+    flags compose into one ``DevelopmentModePolicy``.
+    """
+
+    enabled: bool = Field(
+        ...,
+        description=(
+            "Target value of the development-mode flag. When True "
+            "(the boot default), Indira and Dyon are unblocked."
+        ),
+    )
+    requestor: str = Field(
+        default="dashboard",
+        min_length=1,
+        max_length=64,
+        description=(
+            "Caller identity recorded on the audit row; defaults to the dashboard origin."
+        ),
+    )
+    reason: str = Field(
+        default="",
+        max_length=256,
+        description=("Free-form rationale; included verbatim in the audit ledger payload."),
+    )
+
+
+class TradingAllowedRequest(BaseModel):
+    """Body for ``POST /api/operator/trading-allowed`` (PR-DEV-A).
+
+    The single operator-toggled switch that opens the Execution Gate.
+    Defaults to ``False`` at boot via ``DIXVISION_TRADING_ALLOWED``;
+    while False the gate emits a synthetic ``REJECTED`` ExecutionEvent
+    with ``meta.reason='development_mode_trading_blocked'`` for every
+    intent. The AuthorityGuard, hazard throttle, kill-switch,
+    mode-effect table, FSM consent envelopes, and HARDEN-04 remain in
+    force as defense-in-depth.
+    """
+
+    enabled: bool = Field(
+        ...,
+        description=(
+            "Target value of the trading-allowed flag. When True "
+            "the Execution Gate dispatches normally; when False "
+            "(the boot default) the gate refuses all dispatch."
+        ),
+    )
+    requestor: str = Field(
+        default="dashboard",
+        min_length=1,
+        max_length=64,
+        description=(
+            "Caller identity recorded on the audit row; defaults to the dashboard origin."
+        ),
+    )
+    reason: str = Field(
+        default="",
+        max_length=256,
+        description=("Free-form rationale; included verbatim in the audit ledger payload."),
+    )
+
+
+class DevelopmentModeResponse(BaseModel):
+    """Response shape for GET / POST development-mode + trading-allowed.
+
+    Carries the full ``DevelopmentModePolicy`` projection so the
+    cockpit can render both flags + the live ``SystemMode`` from a
+    single round-trip.
+    """
+
+    development_enabled: bool
+    trading_allowed: bool
+    mode: str
+    learning_unblocked: bool
+    trading_unblocked: bool
+    policy_version: str
+
+
+class LearningOverrideRequest(BaseModel):
+    """Body for ``POST /api/operator/learning-override`` (AUDIT-P1.7).
+
+    The operator-toggled override that, in conjunction with
+    ``mode is SystemMode.LIVE``, unfreezes the
+    ``LearningEvolutionFreezePolicy`` so the slow learning loop +
+    evolution patch pipeline can emit mutations. Defaults to ``False``
+    so flipping the override is always an explicit operator act (B36 /
+    HARDEN-04 invariant).
+    """
+
+    enabled: bool = Field(
+        ...,
+        description=(
+            "Target value of the operator override. Adaptive "
+            "mutations require both this flag to be True *and* "
+            "the system mode to be LIVE."
+        ),
+    )
+    requestor: str = Field(
+        default="dashboard",
+        min_length=1,
+        max_length=64,
+        description=(
+            "Caller identity recorded on the audit row; defaults to the dashboard origin."
+        ),
+    )
+    reason: str = Field(
+        default="",
+        max_length=256,
+        description=("Free-form rationale; included verbatim in the audit ledger payload."),
+    )
+
+
+class LearningOverrideResponse(BaseModel):
+    """Response shape for both GET and POST learning-override routes."""
+
+    enabled: bool
+    mode: str
+    is_freeze_active: bool
+
+
 class OperatorModeSnapshot(BaseModel):
     """Mode FSM read projection (DASH-02)."""
 
@@ -219,6 +347,10 @@ class OperatorActionResponse(BaseModel):
 
 
 __all__ = [
+    "DevelopmentModeRequest",
+    "DevelopmentModeResponse",
+    "LearningOverrideRequest",
+    "LearningOverrideResponse",
     "OperatorActionResponse",
     "OperatorAuditRequest",
     "OperatorAuditResponse",
@@ -230,5 +362,6 @@ __all__ = [
     "OperatorStrategyCounts",
     "OperatorSummaryResponse",
     "OperatorUnlockRequest",
+    "TradingAllowedRequest",
     "WalletInfoResponse",
 ]
