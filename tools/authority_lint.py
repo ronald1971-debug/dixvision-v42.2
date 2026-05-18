@@ -150,9 +150,24 @@ ALLOWED_SHARED_PREFIXES: tuple[str, ...] = (
 #   adapter to short-circuit dispatch when an active hazard window
 #   raises ``halted=True``. Scoped to B1 -- the dashboard and
 #   system-intent surfaces remain blocked from importing it.
+#
+# * ``system_engine.credentials`` — the credential read shim
+#   (:func:`system_engine.credentials.storage.resolve_env`) is pure
+#   data: merges ``os.environ`` and the operator's ``.env`` into a
+#   single read-only ``dict[str, str]``. No FSM mutation, no clock,
+#   no network. The execution-engine adapter registry
+#   (``execution_engine.adapters.registry``) consults it at boot to
+#   wire UniswapX with the EVM RPC URL + private-key path through the
+#   canonical credential pipeline (C-1 / P1-4). Without this, the
+#   adapter would either silently default to scaffold mode or have
+#   to be wired by ``ui/server.py`` (which would invert the chokepoint:
+#   the dashboard would own credential resolution for the adapter
+#   registry it does not own). Scoped to B1 -- the dashboard and
+#   system-intent surfaces remain blocked from importing it.
 B1_EXTRA_ALLOWED_PREFIXES: tuple[str, ...] = (
     "system_engine.authority",
     "system_engine.coupling",
+    "system_engine.credentials",
 )
 
 # Hot-path modules subject to T1.
