@@ -15,6 +15,15 @@ Two pieces:
    PumpFun, UniswapX). The defaults are *all in DISCONNECTED state* —
    no credential is read from the environment until the operator
    explicitly invokes ``adapter.connect()``.
+
+C-1 / P1-4 — credential pipeline. UniswapX needs an EVM private key
+to sign EIP-712 Permit2 witnesses. The key location and the JSON-RPC
+endpoint are looked up via :func:`system_engine.credentials.storage.resolve_env`
+(``os.environ`` precedence then ``.env``), not via raw
+``os.environ.get`` calls. This keeps the read shim consistent with
+every other credential in the system (Reuters, FRED, BLS, GitHub,
+Glassnode, Dune, ...) and ensures the dashboard ``/credentials``
+surface and the audit ledger see the same value the adapter sees.
 """
 
 from __future__ import annotations
@@ -28,6 +37,7 @@ from execution_engine.adapters._live_base import (
 )
 from execution_engine.adapters.hummingbot import HummingbotAdapter
 from execution_engine.adapters.pumpfun import PumpFunAdapter
+from system_engine.credentials.storage import resolve_env
 
 _log = logging.getLogger(__name__)
 
@@ -87,7 +97,22 @@ def default_registry() -> AdapterRegistry:
                 exc.name or exc,
             )
         else:
-            reg.add(UniswapXAdapter())
+            # C-1 / P1-4 — read EVM credentials through the canonical
+            # ``resolve_env`` shim (os.environ > .env > None) so a
+            # freshly-saved ``.env`` line is visible without a server
+            # restart, and so the dashboard credential view reflects
+            # exactly what the adapter sees. Both keys are optional;
+            # ``UniswapXAdapter.connect`` already handles ``None`` by
+            # staying in DISCONNECTED scaffold mode.
+            env = resolve_env()
+            rpc_url = env.get("DIX_EVM_RPC_URL") or None
+            private_key_path = env.get("DIX_EVM_PRIVATE_KEY_PATH") or None
+            reg.add(
+                UniswapXAdapter(
+                    rpc_url=rpc_url,
+                    private_key_path=private_key_path,
+                )
+            )
         _DEFAULT = reg
     return _DEFAULT
 

@@ -143,6 +143,28 @@ CREDENTIAL_BLUEPRINTS: Mapping[str, CredentialBlueprint] = MappingProxyType(
             free_tier=True,
             notes="Free public-API registration; key by email.",
         ),
+        # ----- Execution venues -----
+        # C-1 / P1-4 — UniswapX (and any other EVM venue that signs
+        # EIP-712 Permit2 witnesses locally) needs the EVM private key
+        # path and the JSON-RPC endpoint to come through the canonical
+        # credential pipeline. The private key itself never sits in
+        # an env var — only the *path* to the key file does. That
+        # path is read by ``UniswapXAdapter._load_private_key`` which
+        # then validates length (32 bytes, 0x-prefixed). There is no
+        # public signup for "an EVM wallet" — operators bring their
+        # own — so ``signup_url`` is intentionally ``None``.
+        "uniswapx": CredentialBlueprint(
+            env_vars=("DIX_EVM_RPC_URL", "DIX_EVM_PRIVATE_KEY_PATH"),
+            signup_url=None,
+            free_tier=False,
+            notes=(
+                "EVM wallet credentials. RPC_URL: any JSON-RPC endpoint"
+                " (Alchemy / Infura / self-hosted). PRIVATE_KEY_PATH:"
+                " filesystem path to a 0x-prefixed hex private key"
+                " file (32 bytes). The key file itself never appears"
+                " in any env var or log line."
+            ),
+        ),
         # ----- Dev -----
         "github": CredentialBlueprint(
             # Canonical convention is GITHUB_TOKEN (gh CLI, Actions,
