@@ -557,6 +557,61 @@ def _read_authority_lint_text() -> str:
 # Phase 7 — file usage validation
 # ---------------------------------------------------------------------------
 
+# R-5 / Phase-6 audit fix — the python import graph alone cannot see CLI
+# entry-points invoked from CI workflows or shell scripts. Five canonical
+# entry-points (``tools/enforce.py``, ``tools/authority_matrix_lint.py``,
+# ``tools/scvs_lint.py``, ``tools/constraint_lint.py`` and
+# ``tools/rust_revival_reminder.py``) were historically flagged DEAD even
+# though every one is invoked from ``.github/workflows/*.yml``. The
+# helper below walks the workflow + script directories and harvests every
+# ``tools/<name>.py`` (path-style) and ``tools.<name>`` (module-style)
+# reference, returning a reverse map ``rel_path -> {caller_relpath, …}``
+# that ``_phase_7_file_usage`` merges into ``referenced_by``.
+
+_EXTERNAL_CALLER_DIRS: tuple[str, ...] = (
+    ".github/workflows",
+    "scripts",
+)
+# Limit to text files so a stray .bmp / .ico under scripts/ doesn't get
+# slurped at megabyte sizes.
+_EXTERNAL_CALLER_EXTS: frozenset[str] = frozenset(
+    {".yml", ".yaml", ".bat", ".ps1", ".sh", ".py", ".md", ".cmd"}
+)
+_TOOLS_PATH_RE = re.compile(r"\btools/([A-Za-z_][\w/]*)\.py\b")
+_TOOLS_MODULE_RE = re.compile(r"\btools\.([A-Za-z_][\w.]*)\b")
+
+
+def _build_external_caller_index() -> dict[str, set[str]]:
+    """Walk workflow + script directories and harvest tools/X.py callers.
+
+    Returns ``{rel_path_of_tool: {caller_relpath, …}}`` keyed by the
+    repo-root-relative path of the called tool (e.g.
+    ``"tools/enforce.py"``). Both ``python tools/enforce.py --strict``
+    (path style) and ``python -m tools.enforce`` (module style) are
+    detected.
+    """
+    callers: dict[str, set[str]] = defaultdict(set)
+    for sub in _EXTERNAL_CALLER_DIRS:
+        root = REPO_ROOT / sub
+        if not root.exists():
+            continue
+        for p in root.rglob("*"):
+            if not p.is_file() or p.suffix.lower() not in _EXTERNAL_CALLER_EXTS:
+                continue
+            try:
+                text = p.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            caller_rel = _rel(p)
+            for m in _TOOLS_PATH_RE.finditer(text):
+                tool_rel = f"tools/{m.group(1)}.py"
+                callers[tool_rel].add(caller_rel)
+            for m in _TOOLS_MODULE_RE.finditer(text):
+                mod_path = m.group(1).replace(".", "/")
+                tool_rel = f"tools/{mod_path}.py"
+                callers[tool_rel].add(caller_rel)
+    return callers
+
 
 def _build_python_import_graph(
     files: list[Path],
@@ -612,6 +667,9 @@ def _phase_7_file_usage(
     feature_status: dict[str, str],
 ) -> Phase:
     rev, module_to_path = _build_python_import_graph(files)
+    # R-5 / Phase-6 audit fix — augment the python-only reverse graph
+    # with CLI callers harvested from .github/workflows/ + scripts/.
+    external_callers = _build_external_caller_index()
     rows: list[tuple[str, str, str, str]] = []
     dead = 0
     for i, p in enumerate(files):
@@ -624,6 +682,7 @@ def _phase_7_file_usage(
         else:
             mod = rel[:-3].replace("/", ".")
         importers = sorted(rev.get(mod, set()))
+        ext_callers = sorted(external_callers.get(rel, set()))
         feature_links: list[str] = []
         try:
             text = p.read_text(encoding="utf-8", errors="replace")
@@ -641,13 +700,14 @@ def _phase_7_file_usage(
             or rel == "ui/server.py"
             or rel.startswith("bootstrap_kernel.py")
         )
-        status = "DEAD" if not importers and not feature_links and not is_entrypoint else "USED"
+        all_callers = importers + ext_callers
+        status = "DEAD" if not all_callers and not feature_links and not is_entrypoint else "USED"
         if status == "DEAD":
             dead += 1
         rows.append(
             (
                 f"F{i:05d}",
-                ";".join(importers[:5]),
+                ";".join(all_callers[:5]),
                 ";".join(feature_links[:5]),
                 status,
             )
@@ -1003,9 +1063,7 @@ def _phase_12_topology_drift(advisory: bool) -> tuple[Phase, bool, int]:
         if _registrar_mod is None:
             import importlib.util
 
-            _registrar_path = (
-                REPO_ROOT / "ui" / "harness" / "runtime_registrar.py"
-            )
+            _registrar_path = REPO_ROOT / "ui" / "harness" / "runtime_registrar.py"
             _spec = importlib.util.spec_from_file_location(
                 "_dix_registrar_phase12", _registrar_path
             )
@@ -1019,9 +1077,7 @@ def _phase_12_topology_drift(advisory: bool) -> tuple[Phase, bool, int]:
                 _spec.loader.exec_module(_registrar_mod)
             finally:
                 sys.modules.pop(_spec.name, None)
-        DECLARED_BUT_DORMANT_ALLOWLIST = (
-            _registrar_mod.DECLARED_BUT_DORMANT_ALLOWLIST
-        )
+        DECLARED_BUT_DORMANT_ALLOWLIST = _registrar_mod.DECLARED_BUT_DORMANT_ALLOWLIST
         declared_state_attrs = _registrar_mod.declared_state_attrs
     except Exception as exc:  # pragma: no cover - defensive
         payload["status"] = "skipped"
@@ -1102,13 +1158,9 @@ def _phase_12_topology_drift(advisory: bool) -> tuple[Phase, bool, int]:
 
 def _phase_13_summary(report: ValidationReport) -> dict[str, Any]:
     file_cov = report.coverage_pct(report.file_count, report.file_count)
-    feat_cov = report.coverage_pct(
-        report.implemented_feature_count, report.declared_feature_count
-    )
+    feat_cov = report.coverage_pct(report.implemented_feature_count, report.declared_feature_count)
     src_cov = "100%"  # source ingestion failures already captured per-source
-    inv_cov = report.coverage_pct(
-        report.enforced_invariant_count, report.invariant_count
-    )
+    inv_cov = report.coverage_pct(report.enforced_invariant_count, report.invariant_count)
 
     all_ok = (
         feat_cov == "100%"
@@ -1183,17 +1235,13 @@ def run(advisory: bool = True) -> dict[str, Any]:
 
     p4, feature_status = _phase_4_feature_coverage(feature_to_sources, files)
     report.phases.append(p4)
-    report.implemented_feature_count = sum(
-        1 for s in feature_status.values() if s == "OK"
-    )
+    report.implemented_feature_count = sum(1 for s in feature_status.values() if s == "OK")
     report.feature_count = len(feature_status)
     report.ambiguity = sum(1 for s in feature_status.values() if s == "AMBIGUOUS")
 
     report.phases.append(_phase_5_source_coverage(parsed_sources, feature_to_sources))
 
-    p6, inv_total, inv_enforced = _phase_6_invariant_validation(
-        feature_to_sources, files
-    )
+    p6, inv_total, inv_enforced = _phase_6_invariant_validation(feature_to_sources, files)
     report.phases.append(p6)
     report.invariant_count = inv_total
     report.enforced_invariant_count = inv_enforced
