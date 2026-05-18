@@ -105,12 +105,8 @@ def test_benchmark_synthetic_market_trace_with_bursts() -> None:
 
 def test_benchmark_subtract_vs_zero_reset_differs() -> None:
     trace = _synthetic_trace(seed=33_333, length=200, amp=2.0)
-    sub = benchmark_against_norse(
-        input_current=trace, reset_mechanism=RESET_SUBTRACT
-    )
-    zero = benchmark_against_norse(
-        input_current=trace, reset_mechanism=RESET_ZERO
-    )
+    sub = benchmark_against_norse(input_current=trace, reset_mechanism=RESET_SUBTRACT)
+    zero = benchmark_against_norse(input_current=trace, reset_mechanism=RESET_ZERO)
     # Identical inputs but different reset semantics — at least one of
     # the snnTorch-side metrics must differ.
     assert (
@@ -173,9 +169,7 @@ def test_promotion_gate_exposed_via_is_precision_match() -> None:
     assert result.first_spike_step_norse >= 0
     assert result.first_spike_step_snntorch >= 0
     delta_count = abs(result.spike_count_delta)
-    delta_first = abs(
-        result.first_spike_step_norse - result.first_spike_step_snntorch
-    )
+    delta_first = abs(result.first_spike_step_norse - result.first_spike_step_snntorch)
     # The gate must pass when we set tolerances exactly at the
     # observed deltas. Anything tighter is a precision regression.
     assert result.is_precision_match(

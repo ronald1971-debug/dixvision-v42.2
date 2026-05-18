@@ -89,9 +89,7 @@ _POLARITY_LONG: str = "LONG"
 _POLARITY_SHORT: str = "SHORT"
 _POLARITY_NEUTRAL: str = "NEUTRAL"
 
-_POLARITIES: frozenset[str] = frozenset(
-    {_POLARITY_LONG, _POLARITY_SHORT, _POLARITY_NEUTRAL}
-)
+_POLARITIES: frozenset[str] = frozenset({_POLARITY_LONG, _POLARITY_SHORT, _POLARITY_NEUTRAL})
 
 
 # ---------------------------------------------------------------- errors
@@ -143,9 +141,7 @@ class LIFConfig:
         if not (math.isfinite(self.dt) and self.dt > 0.0):
             raise SNNLIFError("LIFConfig.dt must be finite and > 0")
         if self.dt > self.tau_mem:
-            raise SNNLIFError(
-                "LIFConfig.dt must be <= tau_mem for stable integration"
-            )
+            raise SNNLIFError("LIFConfig.dt must be <= tau_mem for stable integration")
 
 
 # ---------------------------------------------------------------- weights
@@ -175,27 +171,17 @@ class LIFWeights:
 
     def __post_init__(self) -> None:
         if self.input_dim < 1 or self.input_dim > MAX_INPUT_DIM:
-            raise SNNLIFError(
-                f"LIFWeights.input_dim must be in [1, {MAX_INPUT_DIM}]"
-            )
+            raise SNNLIFError(f"LIFWeights.input_dim must be in [1, {MAX_INPUT_DIM}]")
         if self.hidden_dim < 1 or self.hidden_dim > MAX_HIDDEN_DIM:
-            raise SNNLIFError(
-                f"LIFWeights.hidden_dim must be in [1, {MAX_HIDDEN_DIM}]"
-            )
+            raise SNNLIFError(f"LIFWeights.hidden_dim must be in [1, {MAX_HIDDEN_DIM}]")
         if len(self.weight) != self.input_dim:
-            raise SNNLIFError(
-                "LIFWeights.weight row count must equal input_dim"
-            )
+            raise SNNLIFError("LIFWeights.weight row count must equal input_dim")
         for row in self.weight:
             if len(row) != self.hidden_dim:
-                raise SNNLIFError(
-                    "LIFWeights.weight row width must equal hidden_dim"
-                )
+                raise SNNLIFError("LIFWeights.weight row width must equal hidden_dim")
             for value in row:
                 if not math.isfinite(value):
-                    raise SNNLIFError(
-                        "LIFWeights.weight entries must be finite"
-                    )
+                    raise SNNLIFError("LIFWeights.weight entries must be finite")
         if len(self.bias) != self.hidden_dim:
             raise SNNLIFError("LIFWeights.bias length must equal hidden_dim")
         for value in self.bias:
@@ -223,16 +209,10 @@ def identity_weights(dim: int) -> LIFWeights:
     """
 
     if dim < 1 or dim > MAX_HIDDEN_DIM:
-        raise SNNLIFError(
-            f"identity_weights: dim must be in [1, {MAX_HIDDEN_DIM}]"
-        )
-    weight = tuple(
-        tuple(1.0 if i == j else 0.0 for j in range(dim)) for i in range(dim)
-    )
+        raise SNNLIFError(f"identity_weights: dim must be in [1, {MAX_HIDDEN_DIM}]")
+    weight = tuple(tuple(1.0 if i == j else 0.0 for j in range(dim)) for i in range(dim))
     bias = tuple(0.0 for _ in range(dim))
-    return LIFWeights(
-        weight=weight, bias=bias, input_dim=dim, hidden_dim=dim
-    )
+    return LIFWeights(weight=weight, bias=bias, input_dim=dim, hidden_dim=dim)
 
 
 # ---------------------------------------------------------------- state
@@ -259,9 +239,7 @@ def initial_state(hidden_dim: int, *, v_leak: float = 0.0) -> LIFState:
     """Build the rest-potential initial :class:`LIFState`."""
 
     if hidden_dim < 1 or hidden_dim > MAX_HIDDEN_DIM:
-        raise SNNLIFError(
-            f"initial_state: hidden_dim must be in [1, {MAX_HIDDEN_DIM}]"
-        )
+        raise SNNLIFError(f"initial_state: hidden_dim must be in [1, {MAX_HIDDEN_DIM}]")
     if not math.isfinite(v_leak):
         raise SNNLIFError("initial_state: v_leak must be finite")
     return LIFState(v=tuple(v_leak for _ in range(hidden_dim)))
@@ -315,24 +293,15 @@ class SpikePulse:
         if not self.symbol:
             raise SNNLIFError("SpikePulse.symbol must be non-empty")
         if self.polarity not in _POLARITIES:
-            raise SNNLIFError(
-                "SpikePulse.polarity must be one of "
-                f"{sorted(_POLARITIES)}"
-            )
-        if not (
-            math.isfinite(self.intensity) and 0.0 <= self.intensity <= 1.0
-        ):
-            raise SNNLIFError(
-                "SpikePulse.intensity must be finite in [0.0, 1.0]"
-            )
+            raise SNNLIFError(f"SpikePulse.polarity must be one of {sorted(_POLARITIES)}")
+        if not (math.isfinite(self.intensity) and 0.0 <= self.intensity <= 1.0):
+            raise SNNLIFError("SpikePulse.intensity must be finite in [0.0, 1.0]")
         if self.spike_count < 0:
             raise SNNLIFError("SpikePulse.spike_count must be >= 0")
         if self.sample_count < 1:
             raise SNNLIFError("SpikePulse.sample_count must be >= 1")
         if len(self.weights_digest) != _DIGEST_BYTES * 2:
-            raise SNNLIFError(
-                "SpikePulse.weights_digest must be 16-hex BLAKE2b-16"
-            )
+            raise SNNLIFError("SpikePulse.weights_digest must be 16-hex BLAKE2b-16")
 
 
 # ---------------------------------------------------------------- functional
@@ -368,18 +337,13 @@ def lif_feed_forward_step(
     """
 
     if len(input_current) != len(state.v):
-        raise SNNLIFError(
-            "lif_feed_forward_step: input_current length must equal "
-            "state.v length"
-        )
+        raise SNNLIFError("lif_feed_forward_step: input_current length must equal state.v length")
     decay = config.dt / config.tau_mem
     next_v: list[float] = []
     spikes: list[bool] = []
     for v, i in zip(state.v, input_current, strict=True):
         if not math.isfinite(i):
-            raise SNNLIFError(
-                "lif_feed_forward_step: input_current entries must be finite"
-            )
+            raise SNNLIFError("lif_feed_forward_step: input_current entries must be finite")
         v_after = v + decay * (config.v_leak - v + i)
         spiked = v_after >= config.v_threshold
         spikes.append(spiked)
@@ -391,9 +355,7 @@ def _project(weights: LIFWeights, x: Sequence[float]) -> tuple[float, ...]:
     """Linear projection ``W @ x + b`` for the frozen weight matrix."""
 
     if len(x) != weights.input_dim:
-        raise SNNLIFError(
-            "_project: input length must equal weights.input_dim"
-        )
+        raise SNNLIFError("_project: input length must equal weights.input_dim")
     out: list[float] = list(weights.bias)
     for i, xi in enumerate(x):
         if not math.isfinite(xi):
@@ -422,16 +384,11 @@ class LIFCell:
     weights: LIFWeights
     config: LIFConfig = field(default_factory=LIFConfig)
 
-    def forward(
-        self, state: LIFState, x: Sequence[float]
-    ) -> tuple[LIFState, tuple[bool, ...]]:
+    def forward(self, state: LIFState, x: Sequence[float]) -> tuple[LIFState, tuple[bool, ...]]:
         """Single forward step: returns ``(next_state, spikes)``."""
 
         if len(state.v) != self.weights.hidden_dim:
-            raise SNNLIFError(
-                "LIFCell.forward: state.v length must equal "
-                "weights.hidden_dim"
-            )
+            raise SNNLIFError("LIFCell.forward: state.v length must equal weights.hidden_dim")
         i = _project(self.weights, x)
         return lif_feed_forward_step(state, i, self.config)
 
@@ -486,22 +443,16 @@ def poisson_encode(
     """
 
     if n_steps < 1 or n_steps > MAX_WINDOW:
-        raise SNNLIFError(
-            f"poisson_encode: n_steps must be in [1, {MAX_WINDOW}]"
-        )
+        raise SNNLIFError(f"poisson_encode: n_steps must be in [1, {MAX_WINDOW}]")
     if not (math.isfinite(dt) and dt > 0.0):
         raise SNNLIFError("poisson_encode: dt must be finite and > 0")
     if seed < 0:
         raise SNNLIFError("poisson_encode: seed must be >= 0")
     if len(rates) == 0 or len(rates) > MAX_INPUT_DIM:
-        raise SNNLIFError(
-            f"poisson_encode: rates length must be in [1, {MAX_INPUT_DIM}]"
-        )
+        raise SNNLIFError(f"poisson_encode: rates length must be in [1, {MAX_INPUT_DIM}]")
     for r in rates:
         if not (math.isfinite(r) and r >= 0.0):
-            raise SNNLIFError(
-                "poisson_encode: rate entries must be finite and >= 0"
-            )
+            raise SNNLIFError("poisson_encode: rate entries must be finite and >= 0")
     state = seed
     out: list[tuple[bool, ...]] = []
     for _ in range(n_steps):
@@ -520,10 +471,7 @@ def poisson_encode(
 class LIFForwardCallable(Protocol):
     """Anything that exposes a single-step ``forward(state, x)``."""
 
-    def forward(
-        self, state: LIFState, x: Sequence[float]
-    ) -> tuple[LIFState, tuple[bool, ...]]:
-        ...
+    def forward(self, state: LIFState, x: Sequence[float]) -> tuple[LIFState, tuple[bool, ...]]: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -553,9 +501,7 @@ class SNNDetector:
             math.isfinite(self.spike_polarity_threshold)
             and 0.0 < self.spike_polarity_threshold <= 1.0
         ):
-            raise SNNLIFError(
-                "SNNDetector.spike_polarity_threshold must be in (0, 1]"
-            )
+            raise SNNLIFError("SNNDetector.spike_polarity_threshold must be in (0, 1]")
 
     def detect(
         self,
@@ -593,29 +539,19 @@ class SNNDetector:
         if not symbol:
             raise SNNLIFError("SNNDetector.detect: symbol must be non-empty")
         if polarity_sign not in (-1, 0, 1):
-            raise SNNLIFError(
-                "SNNDetector.detect: polarity_sign must be in {-1, 0, 1}"
-            )
+            raise SNNLIFError("SNNDetector.detect: polarity_sign must be in {-1, 0, 1}")
         rows = list(window)
         if len(rows) > MAX_WINDOW:
-            raise SNNLIFError(
-                f"SNNDetector.detect: window length must be <= {MAX_WINDOW}"
-            )
-        state = initial_state(
-            self.cell.weights.hidden_dim, v_leak=self.cell.config.v_leak
-        )
+            raise SNNLIFError(f"SNNDetector.detect: window length must be <= {MAX_WINDOW}")
+        state = initial_state(self.cell.weights.hidden_dim, v_leak=self.cell.config.v_leak)
         spike_count = 0
-        total_neurons = (
-            max(1, len(rows)) * self.cell.weights.hidden_dim
-        )
+        total_neurons = max(1, len(rows)) * self.cell.weights.hidden_dim
         for x in rows:
             state, spikes = self.cell.forward(state, x)
             for s in spikes:
                 if s:
                     spike_count += 1
-        intensity_raw = (
-            spike_count / total_neurons if total_neurons > 0 else 0.0
-        )
+        intensity_raw = spike_count / total_neurons if total_neurons > 0 else 0.0
         intensity = max(0.0, min(1.0, intensity_raw))
         if polarity_sign == 0 or intensity < self.spike_polarity_threshold:
             polarity = _POLARITY_NEUTRAL
@@ -641,20 +577,13 @@ class SNNDetector:
 
 
 def _digest(payload: str) -> str:
-    return hashlib.blake2b(
-        payload.encode("utf-8"), digest_size=_DIGEST_BYTES
-    ).hexdigest()
+    return hashlib.blake2b(payload.encode("utf-8"), digest_size=_DIGEST_BYTES).hexdigest()
 
 
 def _canonical_weights(weights: LIFWeights) -> str:
-    rows = ";".join(
-        ",".join(f"{v:.17g}" for v in row) for row in weights.weight
-    )
+    rows = ";".join(",".join(f"{v:.17g}" for v in row) for row in weights.weight)
     bias = ",".join(f"{v:.17g}" for v in weights.bias)
-    return (
-        f"v={SNN_LIF_VERSION}|i={weights.input_dim}|h={weights.hidden_dim}"
-        f"|W={rows}|b={bias}"
-    )
+    return f"v={SNN_LIF_VERSION}|i={weights.input_dim}|h={weights.hidden_dim}|W={rows}|b={bias}"
 
 
 # ---------------------------------------------------------------- factories

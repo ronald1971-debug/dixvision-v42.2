@@ -92,9 +92,7 @@ def test_authority_no_engine_cross_imports() -> None:
     for node in ast.walk(MODULE_AST):
         if isinstance(node, ast.ImportFrom):
             root = (node.module or "").split(".")[0]
-            assert root not in forbidden_roots, (
-                f"forbidden engine import: {node.module}"
-            )
+            assert root not in forbidden_roots, f"forbidden engine import: {node.module}"
 
 
 def test_authority_no_typed_event_construction() -> None:
@@ -115,9 +113,7 @@ def test_authority_no_typed_event_construction() -> None:
             elif isinstance(func, ast.Attribute):
                 name = func.attr
             if name in forbidden_call_names:
-                raise AssertionError(
-                    f"forbidden typed event construction: {name}"
-                )
+                raise AssertionError(f"forbidden typed event construction: {name}")
 
 
 def test_authority_no_top_level_io() -> None:
@@ -306,9 +302,7 @@ def test_env_rejects_duplicate_bar_for_symbol() -> None:
 
 def test_env_rejects_missing_symbol_for_timestamp() -> None:
     cfg = EpisodeConfig(symbols=("AAPL", "MSFT"))
-    bars = (
-        Bar(ts_ns=1_000, symbol="AAPL", close=100.0),
-    )
+    bars = (Bar(ts_ns=1_000, symbol="AAPL", close=100.0),)
     with pytest.raises(FinRLEnvError):
         FinRLPortfolioEnv(bars=bars, config=cfg)
 
@@ -343,9 +337,7 @@ def test_reset_returns_initial_observation() -> None:
 
 def test_step_before_reset_raises() -> None:
     cfg = EpisodeConfig(symbols=("AAPL",))
-    env = FinRLPortfolioEnv(
-        bars=(Bar(ts_ns=0, symbol="AAPL", close=100.0),), config=cfg
-    )
+    env = FinRLPortfolioEnv(bars=(Bar(ts_ns=0, symbol="AAPL", close=100.0),), config=cfg)
     with pytest.raises(EpisodeNotStartedError):
         env.step(PortfolioAction(targets=(0.0,)))
 
@@ -614,9 +606,7 @@ def test_terminated_at_last_bar() -> None:
 
 
 def test_truncated_at_max_steps() -> None:
-    cfg = EpisodeConfig(
-        symbols=("AAPL",), initial_cash=10_000.0, max_steps=2
-    )
+    cfg = EpisodeConfig(symbols=("AAPL",), initial_cash=10_000.0, max_steps=2)
     env = FinRLPortfolioEnv(
         bars=(
             Bar(ts_ns=1_000, symbol="AAPL", close=100.0),
@@ -725,9 +715,7 @@ def test_run_episode_stops_at_termination() -> None:
         ),
         config=cfg,
     )
-    actions = tuple(
-        PortfolioAction(targets=(0.0,)) for _ in range(10)
-    )
+    actions = tuple(PortfolioAction(targets=(0.0,)) for _ in range(10))
     traj = run_episode(env, actions, seed=0)
     # Initial obs + at most 2 step obs (env terminates after 1 step, since
     # there are only 2 bars and step 1 reaches the last bar).

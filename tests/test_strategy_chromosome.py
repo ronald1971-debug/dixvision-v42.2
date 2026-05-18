@@ -78,14 +78,12 @@ def test_no_top_level_io_or_clock_imports() -> None:
     }
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom):
-            assert (
-                node.module not in forbidden_modules
-            ), f"forbidden module imported: {node.module}"
+            assert node.module not in forbidden_modules, f"forbidden module imported: {node.module}"
         if isinstance(node, ast.Import):
             for alias in node.names:
-                assert (
-                    alias.name not in forbidden_modules
-                ), f"forbidden module imported: {alias.name}"
+                assert alias.name not in forbidden_modules, (
+                    f"forbidden module imported: {alias.name}"
+                )
 
 
 def test_no_engine_cross_imports() -> None:

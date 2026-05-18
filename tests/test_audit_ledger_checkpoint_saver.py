@@ -281,9 +281,9 @@ def test_module_does_not_import_governance_engine() -> None:
     tree = ast.parse(target.read_text(encoding="utf-8"))
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom):
-            assert node.module is None or not node.module.startswith(
-                "governance_engine"
-            ), f"forbidden cross-engine import: {node.module}"
+            assert node.module is None or not node.module.startswith("governance_engine"), (
+                f"forbidden cross-engine import: {node.module}"
+            )
         elif isinstance(node, ast.Import):
             for alias in node.names:
                 assert not alias.name.startswith("governance_engine"), (

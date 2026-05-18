@@ -53,9 +53,7 @@ def _parse_input(raw: Any, idx: int, ctx: str) -> ConsumptionInput:
         raise ValueError(f"{ctx}: inputs[{idx}] missing 'source_id'")
     sid = str(raw["source_id"])
     if not sid.startswith("SRC-"):
-        raise ValueError(
-            f"{ctx}: inputs[{idx}] source_id '{sid}' must start with 'SRC-'"
-        )
+        raise ValueError(f"{ctx}: inputs[{idx}] source_id '{sid}' must start with 'SRC-'")
     return ConsumptionInput(
         source_id=sid,
         required=bool(raw.get("required", True)),
@@ -84,9 +82,7 @@ def load_consumption_declaration(path: str | Path) -> ConsumptionDeclaration:
     for idx, row in enumerate(inputs_raw):
         decl = _parse_input(row, idx, ctx)
         if decl.source_id in seen:
-            raise ValueError(
-                f"{p}: duplicate source_id {decl.source_id!r} in inputs"
-            )
+            raise ValueError(f"{p}: duplicate source_id {decl.source_id!r} in inputs")
         seen.add(decl.source_id)
         inputs.append(decl)
 
@@ -112,9 +108,7 @@ def discover_consumption_declarations(
                 continue
             decl = load_consumption_declaration(p)
             if decl.module in seen_modules:
-                raise ValueError(
-                    f"duplicate consumes.yaml module {decl.module!r}"
-                )
+                raise ValueError(f"duplicate consumes.yaml module {decl.module!r}")
             seen_modules.add(decl.module)
             out.append(decl)
     return tuple(out)

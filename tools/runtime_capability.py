@@ -105,10 +105,7 @@ class CapabilityResolution:
 
     def __post_init__(self) -> None:
         if not isinstance(self.capability, str):
-            raise CapabilityError(
-                "capability must be a str, got "
-                f"{type(self.capability).__name__}"
-            )
+            raise CapabilityError(f"capability must be a str, got {type(self.capability).__name__}")
         if not self.capability:
             raise CapabilityError("capability must be non-empty")
         if len(self.capability) > MAX_CAPABILITY_LEN:
@@ -119,15 +116,11 @@ class CapabilityResolution:
         for field_name in ("declared", "active", "dormant", "unregistered"):
             value = getattr(self, field_name)
             if not isinstance(value, tuple):
-                raise CapabilityError(
-                    f"{field_name} must be a tuple, got "
-                    f"{type(value).__name__}"
-                )
+                raise CapabilityError(f"{field_name} must be a tuple, got {type(value).__name__}")
             for entry in value:
                 if not isinstance(entry, str):
                     raise CapabilityError(
-                        f"{field_name} entries must be str, got "
-                        f"{type(entry).__name__}"
+                        f"{field_name} entries must be str, got {type(entry).__name__}"
                     )
         declared_set = frozenset(self.declared)
         active_set = frozenset(self.active)
@@ -214,31 +207,20 @@ class DependencyMissingLink:
         for field_name in ("start_node_id", "missing_node_id"):
             value = getattr(self, field_name)
             if not isinstance(value, str):
-                raise CapabilityError(
-                    f"{field_name} must be a str, got "
-                    f"{type(value).__name__}"
-                )
+                raise CapabilityError(f"{field_name} must be a str, got {type(value).__name__}")
             if not value:
                 raise CapabilityError(f"{field_name} must be non-empty")
-        if self.state is not None and not isinstance(
-            self.state, LifecycleState
-        ):
+        if self.state is not None and not isinstance(self.state, LifecycleState):
             raise CapabilityError(
-                "state must be a LifecycleState or None, got "
-                f"{type(self.state).__name__}"
+                f"state must be a LifecycleState or None, got {type(self.state).__name__}"
             )
         if not isinstance(self.chain, tuple):
-            raise CapabilityError(
-                f"chain must be a tuple, got {type(self.chain).__name__}"
-            )
+            raise CapabilityError(f"chain must be a tuple, got {type(self.chain).__name__}")
         if not self.chain:
             raise CapabilityError("chain must be non-empty")
         for entry in self.chain:
             if not isinstance(entry, str):
-                raise CapabilityError(
-                    "chain entries must be str, got "
-                    f"{type(entry).__name__}"
-                )
+                raise CapabilityError(f"chain entries must be str, got {type(entry).__name__}")
         if self.chain[0] != self.start_node_id:
             raise CapabilityError(
                 f"chain[0] must equal start_node_id, got "
@@ -282,13 +264,11 @@ class RuntimeCapabilityMap:
     def __post_init__(self) -> None:
         if not isinstance(self.topology, RuntimeTopology):
             raise CapabilityError(
-                "topology must be a RuntimeTopology, got "
-                f"{type(self.topology).__name__}"
+                f"topology must be a RuntimeTopology, got {type(self.topology).__name__}"
             )
         if not isinstance(self.snapshot, ActivationSnapshot):
             raise CapabilityError(
-                "snapshot must be an ActivationSnapshot, got "
-                f"{type(self.snapshot).__name__}"
+                f"snapshot must be an ActivationSnapshot, got {type(self.snapshot).__name__}"
             )
 
     def canonical(self) -> dict[str, object]:
@@ -313,10 +293,7 @@ class RuntimeCapabilityMap:
 
     def _validate_capability(self, capability: str) -> None:
         if not isinstance(capability, str):
-            raise CapabilityError(
-                "capability must be a str, got "
-                f"{type(capability).__name__}"
-            )
+            raise CapabilityError(f"capability must be a str, got {type(capability).__name__}")
         if not capability:
             raise CapabilityError("capability must be non-empty")
         if len(capability) > MAX_CAPABILITY_LEN:
@@ -349,9 +326,7 @@ class RuntimeCapabilityMap:
         all_states = {nid for nid, _ in self.snapshot.states}
         return tuple(
             sorted(
-                n.node_id
-                for n in declared
-                if n.node_id in all_states and n.node_id not in active
+                n.node_id for n in declared if n.node_id in all_states and n.node_id not in active
             )
         )
 
@@ -363,9 +338,7 @@ class RuntimeCapabilityMap:
         self._validate_capability(capability)
         declared = self.topology.providers_of(capability)
         all_states = {nid for nid, _ in self.snapshot.states}
-        return tuple(
-            sorted(n.node_id for n in declared if n.node_id not in all_states)
-        )
+        return tuple(sorted(n.node_id for n in declared if n.node_id not in all_states))
 
     def resolve(self, capability: str) -> CapabilityResolution:
         """Return the full breakdown of a capability resolution."""
@@ -377,15 +350,9 @@ class RuntimeCapabilityMap:
         all_state_ids = {nid for nid, _ in self.snapshot.states}
         active = tuple(sorted(nid for nid in declared_ids if nid in active_set))
         dormant = tuple(
-            sorted(
-                nid
-                for nid in declared_ids
-                if nid in all_state_ids and nid not in active_set
-            )
+            sorted(nid for nid in declared_ids if nid in all_state_ids and nid not in active_set)
         )
-        unregistered = tuple(
-            sorted(nid for nid in declared_ids if nid not in all_state_ids)
-        )
+        unregistered = tuple(sorted(nid for nid in declared_ids if nid not in all_state_ids))
         return CapabilityResolution(
             capability=capability,
             declared=declared_ids,
@@ -412,11 +379,7 @@ class RuntimeCapabilityMap:
         """
 
         return tuple(
-            sorted(
-                cap
-                for cap in self.all_capabilities()
-                if len(self.who_provides(cap)) == 0
-            )
+            sorted(cap for cap in self.all_capabilities() if len(self.who_provides(cap)) == 0)
         )
 
     def resolution_count(self) -> int:
@@ -444,13 +407,11 @@ class DependencyGraphResolver:
     def __post_init__(self) -> None:
         if not isinstance(self.topology, RuntimeTopology):
             raise CapabilityError(
-                "topology must be a RuntimeTopology, got "
-                f"{type(self.topology).__name__}"
+                f"topology must be a RuntimeTopology, got {type(self.topology).__name__}"
             )
         if not isinstance(self.snapshot, ActivationSnapshot):
             raise CapabilityError(
-                "snapshot must be an ActivationSnapshot, got "
-                f"{type(self.snapshot).__name__}"
+                f"snapshot must be an ActivationSnapshot, got {type(self.snapshot).__name__}"
             )
 
     def canonical(self) -> dict[str, object]:
@@ -472,21 +433,13 @@ class DependencyGraphResolver:
 
     def _validate_node_id(self, node_id: str) -> None:
         if not isinstance(node_id, str):
-            raise CapabilityError(
-                f"node_id must be a str, got {type(node_id).__name__}"
-            )
+            raise CapabilityError(f"node_id must be a str, got {type(node_id).__name__}")
         if not node_id:
             raise CapabilityError("node_id must be non-empty")
 
     def _depends_on_targets(self, node_id: str) -> tuple[str, ...]:
         edges = self.topology.edges_from(node_id)
-        return tuple(
-            sorted(
-                e.target_id
-                for e in edges
-                if e.relation is EdgeRelation.DEPENDS_ON
-            )
-        )
+        return tuple(sorted(e.target_id for e in edges if e.relation is EdgeRelation.DEPENDS_ON))
 
     def dependency_chain(self, start_node_id: str) -> tuple[str, ...]:
         """Return the deterministic depth-first DEPENDS_ON walk from
@@ -500,9 +453,7 @@ class DependencyGraphResolver:
 
         self._validate_node_id(start_node_id)
         if self.topology.find_node(start_node_id) is None:
-            raise CapabilityError(
-                f"node_id {start_node_id!r} is not declared in topology"
-            )
+            raise CapabilityError(f"node_id {start_node_id!r} is not declared in topology")
         chain: list[str] = []
         visited: set[str] = set()
 
@@ -539,16 +490,12 @@ class DependencyGraphResolver:
 
         self._validate_node_id(node_id)
         if self.topology.find_node(node_id) is None:
-            raise CapabilityError(
-                f"node_id {node_id!r} is not declared in topology"
-            )
+            raise CapabilityError(f"node_id {node_id!r} is not declared in topology")
         active = self.snapshot.active_node_ids()
         chain = self.dependency_chain(node_id)
         return all(member in active for member in chain)
 
-    def missing_link(
-        self, start_node_id: str
-    ) -> DependencyMissingLink | None:
+    def missing_link(self, start_node_id: str) -> DependencyMissingLink | None:
         """Return the first DEPENDS_ON ancestor of ``start_node_id``
         that is not active, or ``None`` when the whole chain is
         reachable.
@@ -560,9 +507,7 @@ class DependencyGraphResolver:
 
         self._validate_node_id(start_node_id)
         if self.topology.find_node(start_node_id) is None:
-            raise CapabilityError(
-                f"node_id {start_node_id!r} is not declared in topology"
-            )
+            raise CapabilityError(f"node_id {start_node_id!r} is not declared in topology")
         active = self.snapshot.active_node_ids()
         all_states = {nid for nid, _ in self.snapshot.states}
         chain: list[str] = []
@@ -586,11 +531,7 @@ class DependencyGraphResolver:
                     f"while walking from {start_node_id!r}"
                 )
             if node not in active:
-                state = (
-                    self.snapshot.state_of(node)
-                    if node in all_states
-                    else None
-                )
+                state = self.snapshot.state_of(node) if node in all_states else None
                 result.append(
                     DependencyMissingLink(
                         start_node_id=start_node_id,
@@ -676,9 +617,7 @@ class RuntimeCapabilityFactory:
         topology: RuntimeTopology,
         snapshot: ActivationSnapshot,
     ) -> DependencyGraphResolver:
-        return build_dependency_resolver(
-            topology=topology, snapshot=snapshot
-        )
+        return build_dependency_resolver(topology=topology, snapshot=snapshot)
 
 
 def enable_runtime_capability_factory(
@@ -694,20 +633,14 @@ def enable_runtime_capability_factory(
     if overrides is None:
         return RuntimeCapabilityFactory()
     if not isinstance(overrides, Mapping):
-        raise CapabilityError(
-            "overrides must be a Mapping, got "
-            f"{type(overrides).__name__}"
-        )
+        raise CapabilityError(f"overrides must be a Mapping, got {type(overrides).__name__}")
     allowed = {"version"}
     unknown = set(overrides) - allowed
     if unknown:
         raise CapabilityError(
-            f"unknown override keys: {sorted(unknown)!r}; "
-            f"allowed: {sorted(allowed)!r}"
+            f"unknown override keys: {sorted(unknown)!r}; allowed: {sorted(allowed)!r}"
         )
     version = overrides.get("version", CAPABILITY_VERSION)
     if not isinstance(version, str):
-        raise CapabilityError(
-            f"version override must be a str, got {type(version).__name__}"
-        )
+        raise CapabilityError(f"version override must be a str, got {type(version).__name__}")
     return RuntimeCapabilityFactory(version=version)

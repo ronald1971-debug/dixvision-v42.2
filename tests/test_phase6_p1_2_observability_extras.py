@@ -54,8 +54,7 @@ def _adapter_declared_deps(adapter_path: str) -> frozenset[str]:
     text = (_REPO_ROOT / adapter_path).read_text()
     match = _TUPLE_RE.search(text)
     assert match is not None, (
-        f"{adapter_path} is expected to declare NEW_PIP_DEPENDENCIES "
-        f"as a module-level tuple"
+        f"{adapter_path} is expected to declare NEW_PIP_DEPENDENCIES as a module-level tuple"
     )
     raw = match.group("body")
     parts = [chunk.strip().strip(",").strip('"').strip("'") for chunk in raw.split(",")]

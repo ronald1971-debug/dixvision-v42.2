@@ -140,9 +140,7 @@ def _require_positive_int(meta: dict[str, Any], key: str) -> int:
     return raw
 
 
-def _require_bounded_float(
-    meta: dict[str, Any], key: str, low: float, high: float
-) -> float:
+def _require_bounded_float(meta: dict[str, Any], key: str, low: float, high: float) -> float:
     if key not in meta:
         raise ValueError(f"RealityScenario.meta missing required key {key!r}")
     raw = meta[key]
@@ -153,9 +151,7 @@ def _require_bounded_float(
     # `not low <= v <= high` rejects NaN — IEEE 754 makes every
     # NaN comparison False.
     if not low <= v <= high:
-        raise ValueError(
-            f"meta[{key!r}] must be in [{low}, {high}], got {v!r}"
-        )
+        raise ValueError(f"meta[{key!r}] must be in [{low}, {high}], got {v!r}")
     return v
 
 
@@ -164,9 +160,7 @@ def _require_side(meta: dict[str, Any]) -> str:
         raise ValueError("RealityScenario.meta missing required key 'side'")
     side = meta["side"]
     if side not in (_BUY, _SELL):
-        raise ValueError(
-            f"meta['side'] must be 'buy' or 'sell', got {side!r}"
-        )
+        raise ValueError(f"meta['side'] must be 'buy' or 'sell', got {side!r}")
     return side
 
 
@@ -191,10 +185,7 @@ class OrderBookDecay:
         size_usd = _require_positive_float(meta, "order_size_usd")
         num_levels = _require_positive_int(meta, "num_levels")
         if num_levels > cfg.max_levels:
-            raise ValueError(
-                f"meta['num_levels'] {num_levels} exceeds "
-                f"max_levels {cfg.max_levels}"
-            )
+            raise ValueError(f"meta['num_levels'] {num_levels} exceeds max_levels {cfg.max_levels}")
         spacing_bps = _require_bounded_float(meta, "level_spacing_bps", 0.1, 100.0)
         depth_per_level = _require_positive_float(meta, "level_depth_usd")
         decay_rate = _require_bounded_float(meta, "decay_rate", 0.0, 10.0)
@@ -220,11 +211,7 @@ class OrderBookDecay:
                 remaining = 0.0
                 break
 
-        rule_fired = (
-            "fully_swept"
-            if remaining <= cfg.residual_epsilon_usd
-            else "book_too_thin"
-        )
+        rule_fired = "fully_swept" if remaining <= cfg.residual_epsilon_usd else "book_too_thin"
 
         # Sign convention: a market sweep always pays the offset (buy
         # pays the ask side; sell receives less than mid). Both yield

@@ -97,13 +97,11 @@ class LatencySample:
             )
         if self.entry_latency_ns < 0:
             raise ValueError(
-                "LatencySample.entry_latency_ns must be >= 0, "
-                f"got {self.entry_latency_ns!r}"
+                f"LatencySample.entry_latency_ns must be >= 0, got {self.entry_latency_ns!r}"
             )
         if self.response_latency_ns < 0:
             raise ValueError(
-                "LatencySample.response_latency_ns must be >= 0, "
-                f"got {self.response_latency_ns!r}"
+                f"LatencySample.response_latency_ns must be >= 0, got {self.response_latency_ns!r}"
             )
 
     @property
@@ -169,8 +167,7 @@ class ConstantLatency:
     def __post_init__(self) -> None:
         if self.entry_latency_ns < 0:
             raise ValueError(
-                "ConstantLatency.entry_latency_ns must be >= 0, "
-                f"got {self.entry_latency_ns!r}"
+                f"ConstantLatency.entry_latency_ns must be >= 0, got {self.entry_latency_ns!r}"
             )
         if self.response_latency_ns < 0:
             raise ValueError(
@@ -216,9 +213,7 @@ class InterpolatedLatency:
 
     def __post_init__(self) -> None:
         if not self.samples:
-            raise ValueError(
-                "InterpolatedLatency.samples must contain at least one row"
-            )
+            raise ValueError("InterpolatedLatency.samples must contain at least one row")
         for i, row in enumerate(self.samples):
             if len(row) != 3:
                 raise ValueError(
@@ -228,18 +223,12 @@ class InterpolatedLatency:
                 )
             ts_ns, entry, response = row
             if not (
-                isinstance(ts_ns, int)
-                and isinstance(entry, int)
-                and isinstance(response, int)
+                isinstance(ts_ns, int) and isinstance(entry, int) and isinstance(response, int)
             ):
-                raise TypeError(
-                    f"InterpolatedLatency.samples[{i}] must be all int, "
-                    f"got {row!r}"
-                )
+                raise TypeError(f"InterpolatedLatency.samples[{i}] must be all int, got {row!r}")
             if entry < 0 or response < 0:
                 raise ValueError(
-                    f"InterpolatedLatency.samples[{i}] latencies must "
-                    f"be >= 0, got {row!r}"
+                    f"InterpolatedLatency.samples[{i}] latencies must be >= 0, got {row!r}"
                 )
             if i > 0 and ts_ns <= self.samples[i - 1][0]:
                 raise ValueError(
@@ -354,21 +343,13 @@ class JitteredLatency:
         h1 = _splitmix64((ts_ns ^ (seed << 1)) & _U64)
         h2 = _splitmix64((ts_ns ^ ((seed << 1) | 1)) & _U64)
 
-        entry_jitter = (
-            h1 % (self.max_jitter_entry_ns + 1)
-            if self.max_jitter_entry_ns > 0
-            else 0
-        )
+        entry_jitter = h1 % (self.max_jitter_entry_ns + 1) if self.max_jitter_entry_ns > 0 else 0
         response_jitter = (
-            h2 % (self.max_jitter_response_ns + 1)
-            if self.max_jitter_response_ns > 0
-            else 0
+            h2 % (self.max_jitter_response_ns + 1) if self.max_jitter_response_ns > 0 else 0
         )
         return LatencySample(
             entry_latency_ns=self.base.entry_latency_ns + entry_jitter,
-            response_latency_ns=(
-                self.base.response_latency_ns + response_jitter
-            ),
+            response_latency_ns=(self.base.response_latency_ns + response_jitter),
         )
 
 

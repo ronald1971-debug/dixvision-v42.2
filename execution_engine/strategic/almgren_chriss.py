@@ -173,8 +173,7 @@ def solve_almgren_chriss(
     eta_tilde = eta - 0.5 * gamma * tau
     if eta_tilde <= 0:
         raise ValueError(
-            "eta - gamma*tau/2 must be > 0; reduce gamma, increase eta, "
-            "or use more slices"
+            "eta - gamma*tau/2 must be > 0; reduce gamma, increase eta, or use more slices"
         )
 
     kappa_squared = (risk_aversion * sigma * sigma) / eta_tilde if sigma > 0 else 0.0

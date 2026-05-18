@@ -188,9 +188,7 @@ def test_llm_request_rejects_non_chatmessage_in_messages() -> None:
 @pytest.mark.parametrize("max_tokens", [0, -1, -100])
 def test_llm_request_rejects_non_positive_max_tokens(max_tokens: int) -> None:
     with pytest.raises(ValueError, match="max_tokens"):
-        LLMRequest(
-            task=TaskClass.INDIRA_REASONING, messages=_msgs(), max_tokens=max_tokens
-        )
+        LLMRequest(task=TaskClass.INDIRA_REASONING, messages=_msgs(), max_tokens=max_tokens)
 
 
 def test_llm_request_rejects_bool_max_tokens() -> None:
@@ -242,7 +240,8 @@ def test_llm_usage_total_tokens_is_sum() -> None:
 
 
 @pytest.mark.parametrize(
-    "p,c", [(-1, 0), (0, -1), (-5, -10)],
+    "p,c",
+    [(-1, 0), (0, -1), (-5, -10)],
 )
 def test_llm_usage_rejects_negative_tokens(p: int, c: int) -> None:
     with pytest.raises(ValueError):
@@ -256,9 +255,7 @@ def test_llm_usage_rejects_negative_cost() -> None:
 
 def test_llm_usage_rejects_nan_cost() -> None:
     with pytest.raises(ValueError, match="cost_usd"):
-        LLMUsage(
-            prompt_tokens=1, completion_tokens=1, cost_usd=float("nan")
-        )
+        LLMUsage(prompt_tokens=1, completion_tokens=1, cost_usd=float("nan"))
 
 
 def test_llm_usage_rejects_bool_tokens() -> None:
@@ -385,18 +382,12 @@ def _provider(pid: str, *, endpoint: str | None = None) -> AIProvider:
 class _RecordingTransport:
     """Test transport that scripts a per-provider response."""
 
-    def __init__(
-        self, plan: dict[str, Any], *, usage: LLMUsage | None = None
-    ) -> None:
+    def __init__(self, plan: dict[str, Any], *, usage: LLMUsage | None = None) -> None:
         self._plan = plan
-        self._usage = usage or LLMUsage(
-            prompt_tokens=10, completion_tokens=5, cost_usd=0.001
-        )
+        self._usage = usage or LLMUsage(prompt_tokens=10, completion_tokens=5, cost_usd=0.001)
         self.calls: list[tuple[str, LLMRequest]] = []
 
-    def complete(
-        self, provider: AIProvider, request: LLMRequest, /
-    ) -> tuple[str, LLMUsage]:
+    def complete(self, provider: AIProvider, request: LLMRequest, /) -> tuple[str, LLMUsage]:
         self.calls.append((provider.id, request))
         action = self._plan.get(provider.id)
         if action is None:
@@ -602,9 +593,7 @@ def test_router_rejects_transport_returning_non_str_content() -> None:
     providers = (_provider("p1"),)
 
     class _BadTransport:
-        def complete(
-            self, provider: AIProvider, request: LLMRequest, /
-        ) -> tuple[str, LLMUsage]:
+        def complete(self, provider: AIProvider, request: LLMRequest, /) -> tuple[str, LLMUsage]:
             return (123, _usage())  # type: ignore[return-value]
 
     r = LiteLLMRouter(
@@ -619,9 +608,7 @@ def test_router_rejects_transport_returning_non_usage() -> None:
     providers = (_provider("p1"),)
 
     class _BadTransport:
-        def complete(
-            self, provider: AIProvider, request: LLMRequest, /
-        ) -> tuple[str, LLMUsage]:
+        def complete(self, provider: AIProvider, request: LLMRequest, /) -> tuple[str, LLMUsage]:
             return ("ok", "not-usage")  # type: ignore[return-value]
 
     r = LiteLLMRouter(

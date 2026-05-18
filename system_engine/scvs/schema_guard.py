@@ -126,9 +126,7 @@ class SchemaGuard:
             return ValidationResult(
                 source_id=source_id,
                 outcome=ValidationOutcome.REJECTED_STALE,
-                detail=(
-                    f"packet age {gap}ns exceeds max_age_ns={self.max_age_ns}"
-                ),
+                detail=(f"packet age {gap}ns exceeds max_age_ns={self.max_age_ns}"),
             )
         return _validate_schema(decl, self.contracts, packet)
 

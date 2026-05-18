@@ -83,9 +83,7 @@ class GovernanceEngine(RuntimeEngine):
         exposure_store: ExposureStore | None = None,
         signal_trust_registry: ExternalSignalTrustRegistry | None = None,
     ) -> None:
-        self.plugin_slots: Mapping[str, Sequence[Plugin]] = dict(
-            plugin_slots or {}
-        )
+        self.plugin_slots: Mapping[str, Sequence[Plugin]] = dict(plugin_slots or {})
 
         # Wave-04.6 PR-E — share one canonical ledger with the
         # strategy registry when provided so the audit chain stays
@@ -164,9 +162,7 @@ class GovernanceEngine(RuntimeEngine):
             self.update_validator: UpdateValidator | None = UpdateValidator(
                 registry=strategy_registry
             )
-            self.update_applier: UpdateApplier | None = UpdateApplier(
-                registry=strategy_registry
-            )
+            self.update_applier: UpdateApplier | None = UpdateApplier(registry=strategy_registry)
         else:
             self.update_validator = None
             self.update_applier = None
@@ -245,20 +241,15 @@ class GovernanceEngine(RuntimeEngine):
             # authority escalation — write a loud
             # ``UNAUTHORIZED_DIRECTIVE`` row and refuse to dispatch.
             sys_event = event  # type: ignore[assignment]
-            if (
-                getattr(sys_event, "proposed", True) is False
-                and not is_operator_authorized_source(
-                    getattr(sys_event, "source", "")
-                )
+            if getattr(sys_event, "proposed", True) is False and not is_operator_authorized_source(
+                getattr(sys_event, "source", "")
             ):
                 self.ledger.append(
                     ts_ns=event.ts_ns,
                     kind="UNAUTHORIZED_DIRECTIVE",
                     payload={
                         "event_kind": event.kind.value,
-                        "sub_kind": getattr(
-                            sys_event.sub_kind, "value", str(sys_event.sub_kind)
-                        ),
+                        "sub_kind": getattr(sys_event.sub_kind, "value", str(sys_event.sub_kind)),
                         "source": getattr(sys_event, "source", ""),
                         "code": "FAIL_CLOSED_UNAUTHORIZED_DIRECTIVE",
                         "detail": (
@@ -328,15 +319,11 @@ class GovernanceEngine(RuntimeEngine):
                 else HealthState.DEGRADED
             ),
             self.classifier.spec_id: HealthState.OK,
-            self.ledger.spec_id: (
-                HealthState.OK if self.ledger.verify() else HealthState.FAIL
-            ),
+            self.ledger.spec_id: (HealthState.OK if self.ledger.verify() else HealthState.FAIL),
             self.compliance.spec_id: HealthState.OK,
             self.operator.spec_id: HealthState.OK,
         }
-        plugin_states: dict[str, dict[str, HealthState]] = {
-            "control_plane": cp_states
-        }
+        plugin_states: dict[str, dict[str, HealthState]] = {"control_plane": cp_states}
 
         worst = HealthState.OK
         for s in cp_states.values():
@@ -360,9 +347,7 @@ class GovernanceEngine(RuntimeEngine):
     # Internal handlers
     # ------------------------------------------------------------------
 
-    def _handle_hazard(
-        self, event: HazardEvent, emergency_lock: bool
-    ) -> None:
+    def _handle_hazard(self, event: HazardEvent, emergency_lock: bool) -> None:
         if emergency_lock:
             self.state_transitions.propose(
                 ModeTransitionRequest(
@@ -496,9 +481,7 @@ class GovernanceEngine(RuntimeEngine):
             # plugin_id and the new lifecycle target so the audit
             # trail can answer "who flipped what when". Missing
             # fields → MALFORMED_PAYLOAD audit row, no silent insert.
-            missing = [
-                k for k in ("plugin_id", "lifecycle") if k not in event.payload
-            ]
+            missing = [k for k in ("plugin_id", "lifecycle") if k not in event.payload]
             if missing:
                 self.ledger.append(
                     ts_ns=event.ts_ns,

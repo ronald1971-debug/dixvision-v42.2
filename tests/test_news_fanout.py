@@ -73,9 +73,7 @@ def _make_fanout(
         signal_sink=cap.signal_sink,
         hazard_sink=cap.hazard_sink,
         sensor=sensor if sensor is not None else NewsShockSensor(),
-        current_belief=(lambda: current_belief)
-        if current_belief is not None
-        else None,
+        current_belief=(lambda: current_belief) if current_belief is not None else None,
     )
     return fanout, cap
 
@@ -305,8 +303,8 @@ def test_repeat_call_on_same_fanout_is_stable() -> None:
     first_hazards = list(cap.hazards)
     fanout(item)
     # second call appends another identical pair
-    assert cap.signals[len(first_signals):] == first_signals
-    assert cap.hazards[len(first_hazards):] == first_hazards
+    assert cap.signals[len(first_signals) :] == first_signals
+    assert cap.hazards[len(first_hazards) :] == first_hazards
 
 
 # ---------------------------------------------------------------------------

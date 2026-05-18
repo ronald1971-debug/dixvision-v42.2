@@ -100,9 +100,9 @@ class BacktestMetrics:
     """
 
     n_trades: int
-    win_rate: float        # in [0.0, 1.0]
-    total_return: float    # decimal: 0.15 == +15 %
-    max_drawdown: float    # absolute, in [0.0, 1.0]
+    win_rate: float  # in [0.0, 1.0]
+    total_return: float  # decimal: 0.15 == +15 %
+    max_drawdown: float  # absolute, in [0.0, 1.0]
     sharpe: float = 0.0
     sortino: float = 0.0
 
@@ -112,9 +112,7 @@ class BacktestMetrics:
         if not (0.0 <= self.win_rate <= 1.0):
             raise ValueError(f"win_rate must be in [0,1]; got {self.win_rate}")
         if not (0.0 <= self.max_drawdown <= 1.0):
-            raise ValueError(
-                f"max_drawdown must be in [0,1]; got {self.max_drawdown}"
-            )
+            raise ValueError(f"max_drawdown must be in [0,1]; got {self.max_drawdown}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -160,10 +158,7 @@ class BacktestResult:
         if self.ts_ns < 0:
             raise ValueError(f"ts_ns must be >= 0; got {self.ts_ns}")
         if not _SOURCE_PATTERN.fullmatch(self.source):
-            raise ValueError(
-                "source must match [a-z][a-z0-9_]{1,31}; "
-                f"got {self.source!r}"
-            )
+            raise ValueError(f"source must match [a-z][a-z0-9_]{{1,31}}; got {self.source!r}")
         if not self.backtest_id:
             raise ValueError("backtest_id must be non-empty")
         if not self.strategy_id:
@@ -181,54 +176,36 @@ class BacktestResult:
         last_ts: int | None = None
         for pt in self.equity_curve:
             if not isinstance(pt, EquityPoint):
-                raise TypeError(
-                    f"equity_curve entries must be EquityPoint; got {type(pt)!r}"
-                )
+                raise TypeError(f"equity_curve entries must be EquityPoint; got {type(pt)!r}")
             if pt.ts_ns < self.period_start_ns or pt.ts_ns > self.period_end_ns:
-                raise ValueError(
-                    f"equity point ts_ns={pt.ts_ns} outside period window"
-                )
+                raise ValueError(f"equity point ts_ns={pt.ts_ns} outside period window")
             if last_ts is not None and pt.ts_ns < last_ts:
-                raise ValueError(
-                    "equity_curve must be sorted ascending by ts_ns"
-                )
+                raise ValueError("equity_curve must be sorted ascending by ts_ns")
             last_ts = pt.ts_ns
         # Trades must lie inside the window (any order — multiple
         # symbols may interleave).
         for trade in self.trades:
             if not isinstance(trade, BacktestTrade):
-                raise TypeError(
-                    f"trades entries must be BacktestTrade; got {type(trade)!r}"
-                )
-            if (
-                trade.ts_ns < self.period_start_ns
-                or trade.ts_ns > self.period_end_ns
-            ):
-                raise ValueError(
-                    f"trade ts_ns={trade.ts_ns} outside period window"
-                )
+                raise TypeError(f"trades entries must be BacktestTrade; got {type(trade)!r}")
+            if trade.ts_ns < self.period_start_ns or trade.ts_ns > self.period_end_ns:
+                raise ValueError(f"trade ts_ns={trade.ts_ns} outside period window")
         # n_trades in metrics should equal len(trades) when both
         # are non-empty; we enforce exact equality so a malformed
         # ingester cannot ship inconsistent stats.
         if self.metrics.n_trades != len(self.trades):
             raise ValueError(
-                f"metrics.n_trades ({self.metrics.n_trades}) != "
-                f"len(trades) ({len(self.trades)})"
+                f"metrics.n_trades ({self.metrics.n_trades}) != len(trades) ({len(self.trades)})"
             )
-        if self.policy_hash and not _POLICY_HASH_PATTERN.fullmatch(
-            self.policy_hash
-        ):
+        if self.policy_hash and not _POLICY_HASH_PATTERN.fullmatch(self.policy_hash):
             raise ValueError(
-                "policy_hash must be 16-64 lowercase hex chars; "
-                f"got {self.policy_hash!r}"
+                f"policy_hash must be 16-64 lowercase hex chars; got {self.policy_hash!r}"
             )
         # Confirm meta values are all str so JSON / event-bus
         # round-trip stays trivial.
         for key, value in self.meta.items():
             if not isinstance(key, str) or not isinstance(value, str):
                 raise TypeError(
-                    "meta keys and values must be str; "
-                    f"got ({type(key)!r}, {type(value)!r})"
+                    f"meta keys and values must be str; got ({type(key)!r}, {type(value)!r})"
                 )
 
 

@@ -217,9 +217,7 @@ def run_deterministic_backtest(req: BacktestRequest) -> BacktestReport:
             from datetime import datetime
 
             ts_iso = (
-                datetime.fromtimestamp(ts_ms / 1000.0, tz=UTC)
-                .isoformat()
-                .replace("+00:00", "Z")
+                datetime.fromtimestamp(ts_ms / 1000.0, tz=UTC).isoformat().replace("+00:00", "Z")
             )
             trades.append(
                 BacktestTrade(
@@ -263,9 +261,7 @@ def run_deterministic_backtest(req: BacktestRequest) -> BacktestReport:
     max_dd = min(drawdown) if drawdown else 0.0
     total_trades = wins + losses
     profit_factor = gross_win / gross_loss if gross_loss > 0.0 else math.inf
-    avg_trade = (
-        (gross_win - gross_loss) / total_trades if total_trades > 0 else 0.0
-    )
+    avg_trade = (gross_win - gross_loss) / total_trades if total_trades > 0 else 0.0
 
     metrics = BacktestMetrics(
         final_equity_pct=final_pct,

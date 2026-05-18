@@ -39,9 +39,7 @@ class RuleGraphPatchVerdictKind(StrEnum):
 
 
 # Rule actions that block the ``CANARY → APPROVED`` edge.
-_BLOCKING_ACTIONS: frozenset[RuleAction] = frozenset(
-    {RuleAction.REJECT, RuleAction.HALT}
-)
+_BLOCKING_ACTIONS: frozenset[RuleAction] = frozenset({RuleAction.REJECT, RuleAction.HALT})
 
 
 @dataclass(frozen=True, slots=True)
@@ -188,9 +186,7 @@ class RuleGraphPatchEvaluator:
         return self._rule_id_prefix
 
     # ------------------------------------------------------------------
-    def evaluate(
-        self, facts: PatchEvaluationFacts | Mapping[str, Any]
-    ) -> RuleGraphPatchVerdict:
+    def evaluate(self, facts: PatchEvaluationFacts | Mapping[str, Any]) -> RuleGraphPatchVerdict:
         """Evaluate the rule graph against ``facts`` and return a verdict."""
 
         if isinstance(facts, PatchEvaluationFacts):
@@ -204,19 +200,11 @@ class RuleGraphPatchEvaluator:
         # mapping. This keeps the patch-fact contract narrow and
         # avoids spurious ``KeyError`` from the expression engine.
         candidates: tuple[CompiledRule, ...] = tuple(
-            r
-            for r in self._rule_graph.rules
-            if r.id.startswith(self._rule_id_prefix)
+            r for r in self._rule_graph.rules if r.id.startswith(self._rule_id_prefix)
         )
-        scoped = tuple(
-            r for r in candidates if r.when_ast is not None and r.fires(mapping)
-        )
+        scoped = tuple(r for r in candidates if r.when_ast is not None and r.fires(mapping))
         fired_ids = tuple(sorted(r.id for r in scoped))
-        blocking = tuple(
-            sorted(
-                r.id for r in scoped if r.action in _BLOCKING_ACTIONS
-            )
-        )
+        blocking = tuple(sorted(r.id for r in scoped if r.action in _BLOCKING_ACTIONS))
 
         if not blocking:
             return RuleGraphPatchVerdict(
@@ -230,16 +218,8 @@ class RuleGraphPatchEvaluator:
         # Determine whether any blocking rule asked for HALT (a harder
         # stop than REJECT). HALT escalates the verdict kind so the
         # bridge can wire it to a system-wide halt path if desired.
-        any_halt = any(
-            r.action == RuleAction.HALT
-            for r in scoped
-            if r.id in blocking
-        )
-        kind = (
-            RuleGraphPatchVerdictKind.HALTED
-            if any_halt
-            else RuleGraphPatchVerdictKind.REJECTED
-        )
+        any_halt = any(r.action == RuleAction.HALT for r in scoped if r.id in blocking)
+        kind = RuleGraphPatchVerdictKind.HALTED if any_halt else RuleGraphPatchVerdictKind.REJECTED
         return RuleGraphPatchVerdict(
             kind=kind,
             passed=False,

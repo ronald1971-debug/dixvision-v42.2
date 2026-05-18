@@ -8,9 +8,7 @@ import yaml
 
 from sensory.web_autolearn.curator import CuratorRules
 
-_SEEDS = Path(__file__).resolve().parents[3] / (
-    "sensory/web_autolearn/seeds.yaml"
-)
+_SEEDS = Path(__file__).resolve().parents[3] / ("sensory/web_autolearn/seeds.yaml")
 
 
 def test_seeds_yaml_exists() -> None:

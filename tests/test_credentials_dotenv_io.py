@@ -46,7 +46,7 @@ def test_parse_simple() -> None:
 
 
 def test_parse_strips_quotes() -> None:
-    text = 'FOO="hello world"\nBAR=\'single quoted\'\n'
+    text = "FOO=\"hello world\"\nBAR='single quoted'\n"
     assert parse_dotenv(text) == {
         "FOO": "hello world",
         "BAR": "single quoted",
@@ -95,9 +95,7 @@ def test_update_creates_file(tmp_path: Path) -> None:
 
 def test_update_replaces_existing_key_in_place(tmp_path: Path) -> None:
     p = tmp_path / ".env"
-    p.write_text(
-        "# header\nFOO=old\n# spacer\nBAR=keep\n", encoding="utf-8"
-    )
+    p.write_text("# header\nFOO=old\n# spacer\nBAR=keep\n", encoding="utf-8")
     update_dotenv_file(p, {"FOO": "new"})
     text = p.read_text(encoding="utf-8")
     # Order/comment preserved, only FOO line rewritten:
@@ -164,7 +162,7 @@ def test_update_rejects_newline_in_value(tmp_path: Path) -> None:
         "has\\backslash",
         'all"three\\$mixed',
         "sk-abc$def",
-        "key-with\"quote",
+        'key-with"quote',
         "key-with\\backslash",
         "trailing space ",
         " leading space",

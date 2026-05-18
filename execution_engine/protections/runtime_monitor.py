@@ -161,10 +161,7 @@ class RuntimeMonitor:
         reject_rate = win_rejected / win_total
         fail_rate = win_failed / win_total
 
-        if (
-            fail_rate >= self._fail_fail_rate
-            or reject_rate >= self._fail_reject_rate
-        ):
+        if fail_rate >= self._fail_fail_rate or reject_rate >= self._fail_reject_rate:
             state = RuntimeMonitorState.FAIL
             health = HealthState.FAIL
         elif (

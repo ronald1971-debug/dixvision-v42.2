@@ -170,30 +170,22 @@ class UniswapXQuoteClient:
         except httpx.HTTPError as exc:
             raise UniswapXError(f"quote transport error: {exc!s}") from exc
         if not (200 <= r.status_code < 300):
-            raise UniswapXError(
-                f"quote HTTP {r.status_code}: {r.text[:200]}"
-            )
+            raise UniswapXError(f"quote HTTP {r.status_code}: {r.text[:200]}")
         try:
             payload = r.json()
         except ValueError as exc:
-            raise UniswapXError(
-                f"quote: malformed JSON: {exc!s}"
-            ) from exc
+            raise UniswapXError(f"quote: malformed JSON: {exc!s}") from exc
         order = payload.get("order") or payload.get("quote") or {}
         if not isinstance(order, Mapping) or not order:
-            raise UniswapXError(
-                f"quote: missing 'order' field: {payload!r}"[:200]
-            )
+            raise UniswapXError(f"quote: missing 'order' field: {payload!r}"[:200])
         amount_out_quote = _to_int(
             order.get("outputs", [{}])[0].get("startAmount")
-            if isinstance(order.get("outputs"), list)
-            and order["outputs"]
+            if isinstance(order.get("outputs"), list) and order["outputs"]
             else None
         )
         amount_out_min = _to_int(
             order.get("outputs", [{}])[0].get("endAmount")
-            if isinstance(order.get("outputs"), list)
-            and order["outputs"]
+            if isinstance(order.get("outputs"), list) and order["outputs"]
             else None
         )
         return QuoteResponse(
@@ -217,36 +209,25 @@ class UniswapXQuoteClient:
         The backend convention: ``{order, signature, chainId}`` envelope.
         """
         body = {
-            "encodedOrder": order_payload.get("encodedOrder")
-            or order_payload,
+            "encodedOrder": order_payload.get("encodedOrder") or order_payload,
             "signature": signature,
             "chainId": chain_id,
         }
         try:
             r = self._client.post("/v2/order", json=body)
         except httpx.HTTPError as exc:
-            raise UniswapXError(
-                f"order transport error: {exc!s}"
-            ) from exc
+            raise UniswapXError(f"order transport error: {exc!s}") from exc
         try:
             payload = r.json() if r.content else {}
         except ValueError as exc:
-            raise UniswapXError(
-                f"order: malformed JSON: {exc!s}"
-            ) from exc
+            raise UniswapXError(f"order: malformed JSON: {exc!s}") from exc
         if not (200 <= r.status_code < 300):
             return OrderSubmitResponse(
                 accepted=False,
                 order_hash="",
-                raw=payload
-                or {"status_code": r.status_code, "text": r.text[:200]},
+                raw=payload or {"status_code": r.status_code, "text": r.text[:200]},
             )
-        order_hash = str(
-            payload.get("hash")
-            or payload.get("orderHash")
-            or payload.get("id")
-            or ""
-        )
+        order_hash = str(payload.get("hash") or payload.get("orderHash") or payload.get("id") or "")
         return OrderSubmitResponse(
             accepted=bool(order_hash),
             order_hash=order_hash,

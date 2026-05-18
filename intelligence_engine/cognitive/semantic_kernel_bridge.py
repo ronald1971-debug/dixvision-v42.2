@@ -116,13 +116,9 @@ _IDENTIFIER_RE: re.Pattern[str] = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 def _validate_identifier(label: str, value: str) -> None:
     if not isinstance(value, str) or not value:
-        raise PluginRegistryError(
-            f"{label} must be a non-empty str, got {value!r}"
-        )
+        raise PluginRegistryError(f"{label} must be a non-empty str, got {value!r}")
     if not _IDENTIFIER_RE.fullmatch(value):
-        raise PluginRegistryError(
-            f"{label} must match [A-Za-z_][A-Za-z0-9_]*, got {value!r}"
-        )
+        raise PluginRegistryError(f"{label} must match [A-Za-z_][A-Za-z0-9_]*, got {value!r}")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -153,8 +149,7 @@ class KernelFunction:
         _validate_identifier("KernelFunction.function_name", self.function_name)
         if not isinstance(self.description, str):
             raise PluginRegistryError(
-                "KernelFunction.description must be str, got "
-                f"{type(self.description).__name__}"
+                f"KernelFunction.description must be str, got {type(self.description).__name__}"
             )
         if not isinstance(self.parameter_names, tuple):
             raise PluginRegistryError(
@@ -163,19 +158,15 @@ class KernelFunction:
             )
         seen: set[str] = set()
         for i, p in enumerate(self.parameter_names):
-            _validate_identifier(
-                f"KernelFunction.parameter_names[{i}]", p
-            )
+            _validate_identifier(f"KernelFunction.parameter_names[{i}]", p)
             if p in seen:
                 raise PluginRegistryError(
-                    "KernelFunction.parameter_names contains duplicate "
-                    f"{p!r}"
+                    f"KernelFunction.parameter_names contains duplicate {p!r}"
                 )
             seen.add(p)
         if not callable(self.call):
             raise PluginRegistryError(
-                "KernelFunction.call must be callable, got "
-                f"{type(self.call).__name__}"
+                f"KernelFunction.call must be callable, got {type(self.call).__name__}"
             )
 
 
@@ -195,24 +186,19 @@ class KernelPlugin:
         _validate_identifier("KernelPlugin.plugin_name", self.plugin_name)
         if not isinstance(self.functions, tuple):
             raise PluginRegistryError(
-                "KernelPlugin.functions must be a tuple, got "
-                f"{type(self.functions).__name__}"
+                f"KernelPlugin.functions must be a tuple, got {type(self.functions).__name__}"
             )
         if not self.functions:
-            raise PluginRegistryError(
-                "KernelPlugin.functions must be non-empty"
-            )
+            raise PluginRegistryError("KernelPlugin.functions must be non-empty")
         seen: set[str] = set()
         for i, fn in enumerate(self.functions):
             if not isinstance(fn, KernelFunction):
                 raise PluginRegistryError(
-                    f"KernelPlugin.functions[{i}] must be a "
-                    f"KernelFunction, got {type(fn).__name__}"
+                    f"KernelPlugin.functions[{i}] must be a KernelFunction, got {type(fn).__name__}"
                 )
             if fn.function_name in seen:
                 raise PluginRegistryError(
-                    "KernelPlugin.functions contains duplicate "
-                    f"function {fn.function_name!r}"
+                    f"KernelPlugin.functions contains duplicate function {fn.function_name!r}"
                 )
             seen.add(fn.function_name)
 
@@ -241,27 +227,20 @@ class KernelInvocation:
     arguments: Mapping[str, str]
 
     def __post_init__(self) -> None:
-        _validate_identifier(
-            "KernelInvocation.plugin_name", self.plugin_name
-        )
-        _validate_identifier(
-            "KernelInvocation.function_name", self.function_name
-        )
+        _validate_identifier("KernelInvocation.plugin_name", self.plugin_name)
+        _validate_identifier("KernelInvocation.function_name", self.function_name)
         if not isinstance(self.arguments, Mapping):
             raise InvocationError(
-                "KernelInvocation.arguments must be a Mapping, got "
-                f"{type(self.arguments).__name__}"
+                f"KernelInvocation.arguments must be a Mapping, got {type(self.arguments).__name__}"
             )
         for k, v in self.arguments.items():
             if not isinstance(k, str) or not k:
                 raise InvocationError(
-                    "KernelInvocation.arguments keys must be non-empty "
-                    f"str, got {k!r}"
+                    f"KernelInvocation.arguments keys must be non-empty str, got {k!r}"
                 )
             if not isinstance(v, str):
                 raise InvocationError(
-                    f"KernelInvocation.arguments[{k!r}] must be str, "
-                    f"got {type(v).__name__}"
+                    f"KernelInvocation.arguments[{k!r}] must be str, got {type(v).__name__}"
                 )
 
 
@@ -284,18 +263,14 @@ class KernelResult:
 
     def __post_init__(self) -> None:
         _validate_identifier("KernelResult.plugin_name", self.plugin_name)
-        _validate_identifier(
-            "KernelResult.function_name", self.function_name
-        )
+        _validate_identifier("KernelResult.function_name", self.function_name)
         if not isinstance(self.value, str):
             raise InvocationError(
-                "KernelResult.value must be str, got "
-                f"{type(self.value).__name__}"
+                f"KernelResult.value must be str, got {type(self.value).__name__}"
             )
         if not isinstance(self.audit_id, str) or not self.audit_id:
             raise InvocationError(
-                "KernelResult.audit_id must be a non-empty str, got "
-                f"{self.audit_id!r}"
+                f"KernelResult.audit_id must be a non-empty str, got {self.audit_id!r}"
             )
 
 
@@ -320,27 +295,17 @@ class MemoryEntry:
     def __post_init__(self) -> None:
         if not isinstance(self.entry_id, str) or not self.entry_id:
             raise MemoryError(
-                "MemoryEntry.entry_id must be a non-empty str, got "
-                f"{self.entry_id!r}"
+                f"MemoryEntry.entry_id must be a non-empty str, got {self.entry_id!r}"
             )
         if not isinstance(self.text, str):
+            raise MemoryError(f"MemoryEntry.text must be str, got {type(self.text).__name__}")
+        if isinstance(self.score, bool) or not isinstance(self.score, (int, float)):
             raise MemoryError(
-                "MemoryEntry.text must be str, got "
-                f"{type(self.text).__name__}"
-            )
-        if isinstance(self.score, bool) or not isinstance(
-            self.score, (int, float)
-        ):
-            raise MemoryError(
-                "MemoryEntry.score must be int|float, got "
-                f"{type(self.score).__name__}"
+                f"MemoryEntry.score must be int|float, got {type(self.score).__name__}"
             )
         s = float(self.score)
         if not (0.0 <= s <= 1.0):
-            raise MemoryError(
-                "MemoryEntry.score must be in [0.0, 1.0], got "
-                f"{self.score!r}"
-            )
+            raise MemoryError(f"MemoryEntry.score must be in [0.0, 1.0], got {self.score!r}")
 
 
 @runtime_checkable
@@ -358,9 +323,7 @@ class SemanticMemoryProtocol(Protocol):
     ) -> tuple[MemoryEntry, ...]:  # pragma: no cover - Protocol
         ...
 
-    def store(
-        self, entry_id: str, text: str
-    ) -> None:  # pragma: no cover - Protocol
+    def store(self, entry_id: str, text: str) -> None:  # pragma: no cover - Protocol
         ...
 
 
@@ -381,19 +344,14 @@ class InMemorySemanticMemory:
     def recall(self, query: str, *, top_k: int) -> tuple[MemoryEntry, ...]:
         if not isinstance(query, str):
             raise MemoryError(
-                "InMemorySemanticMemory.recall query must be str, got "
-                f"{type(query).__name__}"
+                f"InMemorySemanticMemory.recall query must be str, got {type(query).__name__}"
             )
         if isinstance(top_k, bool) or not isinstance(top_k, int):
             raise MemoryError(
-                "InMemorySemanticMemory.recall top_k must be int, got "
-                f"{type(top_k).__name__}"
+                f"InMemorySemanticMemory.recall top_k must be int, got {type(top_k).__name__}"
             )
         if top_k <= 0:
-            raise MemoryError(
-                "InMemorySemanticMemory.recall top_k must be > 0, got "
-                f"{top_k!r}"
-            )
+            raise MemoryError(f"InMemorySemanticMemory.recall top_k must be > 0, got {top_k!r}")
         hits: list[MemoryEntry] = []
         for entry_id, text in self._rows.items():
             if text == query:
@@ -402,22 +360,18 @@ class InMemorySemanticMemory:
                 score = 0.5
             else:
                 continue
-            hits.append(
-                MemoryEntry(entry_id=entry_id, text=text, score=score)
-            )
+            hits.append(MemoryEntry(entry_id=entry_id, text=text, score=score))
         hits.sort(key=lambda e: (-e.score, e.entry_id))
         return tuple(hits[:top_k])
 
     def store(self, entry_id: str, text: str) -> None:
         if not isinstance(entry_id, str) or not entry_id:
             raise MemoryError(
-                "InMemorySemanticMemory.store entry_id must be a "
-                f"non-empty str, got {entry_id!r}"
+                f"InMemorySemanticMemory.store entry_id must be a non-empty str, got {entry_id!r}"
             )
         if not isinstance(text, str):
             raise MemoryError(
-                "InMemorySemanticMemory.store text must be str, got "
-                f"{type(text).__name__}"
+                f"InMemorySemanticMemory.store text must be str, got {type(text).__name__}"
             )
         self._rows[entry_id] = text
 
@@ -446,12 +400,9 @@ class Kernel:
         *,
         memory: SemanticMemoryProtocol | None = None,
     ) -> None:
-        if memory is not None and not isinstance(
-            memory, SemanticMemoryProtocol
-        ):
+        if memory is not None and not isinstance(memory, SemanticMemoryProtocol):
             raise PluginRegistryError(
-                "Kernel.memory must implement SemanticMemoryProtocol, "
-                f"got {type(memory).__name__}"
+                f"Kernel.memory must implement SemanticMemoryProtocol, got {type(memory).__name__}"
             )
         self._plugins: dict[str, KernelPlugin] = {}
         self._memory: SemanticMemoryProtocol = (
@@ -465,13 +416,11 @@ class Kernel:
     def register_plugin(self, plugin: KernelPlugin) -> None:
         if not isinstance(plugin, KernelPlugin):
             raise PluginRegistryError(
-                "Kernel.register_plugin requires KernelPlugin, got "
-                f"{type(plugin).__name__}"
+                f"Kernel.register_plugin requires KernelPlugin, got {type(plugin).__name__}"
             )
         if plugin.plugin_name in self._plugins:
             raise PluginRegistryError(
-                "Kernel.register_plugin: plugin "
-                f"{plugin.plugin_name!r} already registered"
+                f"Kernel.register_plugin: plugin {plugin.plugin_name!r} already registered"
             )
         self._plugins[plugin.plugin_name] = plugin
 
@@ -481,9 +430,7 @@ class Kernel:
     def function_names(self, plugin_name: str) -> tuple[str, ...]:
         plugin = self._plugins.get(plugin_name)
         if plugin is None:
-            raise InvocationError(
-                f"Kernel.function_names: unknown plugin {plugin_name!r}"
-            )
+            raise InvocationError(f"Kernel.function_names: unknown plugin {plugin_name!r}")
         return plugin.function_names()
 
     def invoke(
@@ -494,20 +441,15 @@ class Kernel:
     ) -> KernelResult:
         if not isinstance(invocation, KernelInvocation):
             raise InvocationError(
-                "Kernel.invoke requires KernelInvocation, got "
-                f"{type(invocation).__name__}"
+                f"Kernel.invoke requires KernelInvocation, got {type(invocation).__name__}"
             )
         if not isinstance(audit_id, str) or not audit_id:
             raise InvocationError(
-                "Kernel.invoke audit_id must be a non-empty str, got "
-                f"{audit_id!r}"
+                f"Kernel.invoke audit_id must be a non-empty str, got {audit_id!r}"
             )
         plugin = self._plugins.get(invocation.plugin_name)
         if plugin is None:
-            raise InvocationError(
-                f"Kernel.invoke: unknown plugin "
-                f"{invocation.plugin_name!r}"
-            )
+            raise InvocationError(f"Kernel.invoke: unknown plugin {invocation.plugin_name!r}")
         target: KernelFunction | None = None
         for fn in plugin.functions:
             if fn.function_name == invocation.function_name:
@@ -531,8 +473,7 @@ class Kernel:
         value = target.call(invocation, self._memory)
         if not isinstance(value, str):
             raise InvocationError(
-                "Kernel.invoke: KernelFunction.call must return str, "
-                f"got {type(value).__name__}"
+                f"Kernel.invoke: KernelFunction.call must return str, got {type(value).__name__}"
             )
         return KernelResult(
             plugin_name=invocation.plugin_name,
@@ -574,9 +515,7 @@ LiteLLMRouter`-backed bridge so SK never reaches a provider SDK
         )
     import semantic_kernel  # type: ignore[import-not-found]  # noqa: F401 - lazy seam
 
-    def _call(
-        invocation: KernelInvocation, audit_id: str
-    ) -> KernelResult:
+    def _call(invocation: KernelInvocation, audit_id: str) -> KernelResult:
         if not isinstance(invocation, KernelInvocation):
             raise InvocationError(
                 "semantic-kernel factory requires KernelInvocation, "
@@ -584,13 +523,9 @@ LiteLLMRouter`-backed bridge so SK never reaches a provider SDK
             )
         if not isinstance(audit_id, str) or not audit_id:
             raise InvocationError(
-                "semantic-kernel factory audit_id must be a "
-                f"non-empty str, got {audit_id!r}"
+                f"semantic-kernel factory audit_id must be a non-empty str, got {audit_id!r}"
             )
-        prompt = "\n".join(
-            f"{k}: {v}"
-            for k, v in invocation.arguments.items()
-        )
+        prompt = "\n".join(f"{k}: {v}" for k, v in invocation.arguments.items())
         value = completion_callable(prompt)
         if not isinstance(value, str):
             raise InvocationError(

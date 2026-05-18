@@ -122,9 +122,7 @@ class TradeRow:
 
     def __post_init__(self) -> None:
         if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
-            raise TypeError(
-                f"ts_ns must be int; got {type(self.ts_ns).__name__}"
-            )
+            raise TypeError(f"ts_ns must be int; got {type(self.ts_ns).__name__}")
         if self.ts_ns < 0:
             raise ValueError(f"ts_ns must be >= 0; got {self.ts_ns}")
         if not isinstance(self.symbol, str) or not self.symbol:
@@ -142,9 +140,7 @@ class TradeRow:
         if self.fill_price <= 0.0:
             raise ValueError(f"fill_price must be > 0; got {self.fill_price}")
         if self.signal_price <= 0.0:
-            raise ValueError(
-                f"signal_price must be > 0; got {self.signal_price}"
-            )
+            raise ValueError(f"signal_price must be > 0; got {self.signal_price}")
         if self.fee_usd < 0.0:
             raise ValueError(f"fee_usd must be >= 0; got {self.fee_usd}")
 
@@ -169,15 +165,11 @@ class SymbolAttribution:
         if not isinstance(self.symbol, str) or not self.symbol:
             raise ValueError("symbol must be a non-empty str")
         if not isinstance(self.n_trades, int) or isinstance(self.n_trades, bool):
-            raise TypeError(
-                f"n_trades must be int; got {type(self.n_trades).__name__}"
-            )
+            raise TypeError(f"n_trades must be int; got {type(self.n_trades).__name__}")
         if self.n_trades < 0:
             raise ValueError(f"n_trades must be >= 0; got {self.n_trades}")
         if self.notional_usd < 0.0:
-            raise ValueError(
-                f"notional_usd must be >= 0; got {self.notional_usd}"
-            )
+            raise ValueError(f"notional_usd must be >= 0; got {self.notional_usd}")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -205,39 +197,25 @@ class PolarsPnLReport:
 
     def __post_init__(self) -> None:
         if not isinstance(self.by_symbol, tuple):
-            raise TypeError(
-                f"by_symbol must be tuple; got {type(self.by_symbol).__name__}"
-            )
+            raise TypeError(f"by_symbol must be tuple; got {type(self.by_symbol).__name__}")
         for r in self.by_symbol:
             if not isinstance(r, SymbolAttribution):
                 raise TypeError(
-                    "by_symbol entries must be SymbolAttribution; got "
-                    f"{type(r).__name__}"
+                    f"by_symbol entries must be SymbolAttribution; got {type(r).__name__}"
                 )
         names = [r.symbol for r in self.by_symbol]
         if names != sorted(names):
             raise ValueError(
-                "by_symbol must be sorted ascending by symbol for INV-15 "
-                "replay determinism"
+                "by_symbol must be sorted ascending by symbol for INV-15 replay determinism"
             )
         if len(set(names)) != len(names):
             raise ValueError("by_symbol must contain unique symbols")
-        if not isinstance(self.total_n_trades, int) or isinstance(
-            self.total_n_trades, bool
-        ):
-            raise TypeError(
-                "total_n_trades must be int; got "
-                f"{type(self.total_n_trades).__name__}"
-            )
+        if not isinstance(self.total_n_trades, int) or isinstance(self.total_n_trades, bool):
+            raise TypeError(f"total_n_trades must be int; got {type(self.total_n_trades).__name__}")
         if self.total_n_trades < 0:
-            raise ValueError(
-                f"total_n_trades must be >= 0; got {self.total_n_trades}"
-            )
+            raise ValueError(f"total_n_trades must be >= 0; got {self.total_n_trades}")
         if self.total_notional_usd < 0.0:
-            raise ValueError(
-                "total_notional_usd must be >= 0; got "
-                f"{self.total_notional_usd}"
-            )
+            raise ValueError(f"total_notional_usd must be >= 0; got {self.total_notional_usd}")
 
 
 def attribute_pnl_polars(
@@ -273,9 +251,7 @@ def attribute_pnl_polars(
     rows = tuple(trades)
     for r in rows:
         if not isinstance(r, TradeRow):
-            raise TypeError(
-                f"trades entries must be TradeRow; got {type(r).__name__}"
-            )
+            raise TypeError(f"trades entries must be TradeRow; got {type(r).__name__}")
 
     if not rows:
         return PolarsPnLReport(
@@ -289,9 +265,7 @@ def attribute_pnl_polars(
         )
 
     # Sort inputs deterministically before building the LazyFrame.
-    sorted_rows = sorted(
-        rows, key=lambda t: (t.symbol, t.ts_ns, t.fill_price, t.qty, t.side)
-    )
+    sorted_rows = sorted(rows, key=lambda t: (t.symbol, t.ts_ns, t.fill_price, t.qty, t.side))
 
     lf = pl.LazyFrame(
         {
@@ -305,33 +279,35 @@ def attribute_pnl_polars(
         }
     )
 
-    lf = lf.with_columns(
-        [
-            (pl.col("qty") * pl.col("fill_price")).alias("notional"),
-            pl.when(pl.col("side") == "BUY")
-            .then(pl.lit(1.0))
-            .otherwise(pl.lit(-1.0))
-            .alias("side_sign"),
-        ]
-    ).with_columns(
-        [
-            (
-                -(
-                    (pl.col("fill_price") - pl.col("signal_price"))
-                    * pl.col("qty")
-                    * pl.col("side_sign")
-                )
-            ).alias("slippage_pnl"),
-            (-pl.col("fee_usd")).alias("fee_pnl"),
-        ]
-    ).with_columns(
-        [
-            (
-                pl.col("pnl_usd")
-                - pl.col("slippage_pnl")
-                - pl.col("fee_pnl")
-            ).alias("signal_pnl"),
-        ]
+    lf = (
+        lf.with_columns(
+            [
+                (pl.col("qty") * pl.col("fill_price")).alias("notional"),
+                pl.when(pl.col("side") == "BUY")
+                .then(pl.lit(1.0))
+                .otherwise(pl.lit(-1.0))
+                .alias("side_sign"),
+            ]
+        )
+        .with_columns(
+            [
+                (
+                    -(
+                        (pl.col("fill_price") - pl.col("signal_price"))
+                        * pl.col("qty")
+                        * pl.col("side_sign")
+                    )
+                ).alias("slippage_pnl"),
+                (-pl.col("fee_usd")).alias("fee_pnl"),
+            ]
+        )
+        .with_columns(
+            [
+                (pl.col("pnl_usd") - pl.col("slippage_pnl") - pl.col("fee_pnl")).alias(
+                    "signal_pnl"
+                ),
+            ]
+        )
     )
 
     by_symbol_lf = (
@@ -369,15 +345,9 @@ def attribute_pnl_polars(
         by_symbol=tuple(by_symbol_rows),
         total_n_trades=sum(r.n_trades for r in by_symbol_rows),
         total_notional_usd=math.fsum(r.notional_usd for r in by_symbol_rows),
-        total_realised_pnl_usd=math.fsum(
-            r.realised_pnl_usd for r in by_symbol_rows
-        ),
-        total_signal_pnl_usd=math.fsum(
-            r.signal_pnl_usd for r in by_symbol_rows
-        ),
-        total_slippage_pnl_usd=math.fsum(
-            r.slippage_pnl_usd for r in by_symbol_rows
-        ),
+        total_realised_pnl_usd=math.fsum(r.realised_pnl_usd for r in by_symbol_rows),
+        total_signal_pnl_usd=math.fsum(r.signal_pnl_usd for r in by_symbol_rows),
+        total_slippage_pnl_usd=math.fsum(r.slippage_pnl_usd for r in by_symbol_rows),
         total_fee_pnl_usd=math.fsum(r.fee_pnl_usd for r in by_symbol_rows),
     )
 

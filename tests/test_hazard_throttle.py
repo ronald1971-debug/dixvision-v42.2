@@ -69,9 +69,7 @@ def _observation(
     severity: HazardSeverity = HazardSeverity.MEDIUM,
     source: str = "dyon.test",
 ) -> HazardObservation:
-    return HazardObservation(
-        ts_ns=ts_ns, code=code, severity=severity, source=source
-    )
+    return HazardObservation(ts_ns=ts_ns, code=code, severity=severity, source=source)
 
 
 # ---------------------------------------------------------------------------
@@ -157,11 +155,7 @@ def test_config_rejects_missing_severity() -> None:
         block=False,
         active_window_ns=1_000,
     )
-    partial = tuple(
-        (s, rule)
-        for s in HazardSeverity
-        if s is not HazardSeverity.CRITICAL
-    )
+    partial = tuple((s, rule) for s in HazardSeverity if s is not HazardSeverity.CRITICAL)
     with pytest.raises(ValueError, match="missing severity rule"):
         HazardThrottleConfig(severity_rules=partial)
 
@@ -258,9 +252,7 @@ def test_observation_from_event_round_trip() -> None:
 
 def test_no_observations_returns_neutral_decision() -> None:
     config = HazardThrottleConfig.default()
-    decision = compute_throttle(
-        observations=(), now_ns=1_000, config=config
-    )
+    decision = compute_throttle(observations=(), now_ns=1_000, config=config)
     assert decision.block is False
     assert decision.qty_multiplier == 1.0
     assert decision.confidence_floor == 0.0
@@ -392,9 +384,7 @@ def test_future_dated_observation_is_active() -> None:
     """
     config = HazardThrottleConfig.default()
     obs = _observation(ts_ns=2_000, severity=HazardSeverity.HIGH)
-    decision = compute_throttle(
-        observations=(obs,), now_ns=1_000, config=config
-    )
+    decision = compute_throttle(observations=(obs,), now_ns=1_000, config=config)
     assert decision.block is True
 
 
@@ -499,9 +489,7 @@ def test_decayed_observations_excluded_from_contributing_codes() -> None:
 def test_code_override_replaces_severity_default() -> None:
     config = HazardThrottleConfig(
         severity_rules=HazardThrottleConfig.default().severity_rules,
-        code_overrides=(
-            HazardCodeOverride(code="HAZ-X", qty_multiplier=0.1),
-        ),
+        code_overrides=(HazardCodeOverride(code="HAZ-X", qty_multiplier=0.1),),
     )
     obs = _observation(code="HAZ-X", severity=HazardSeverity.LOW)
     decision = compute_throttle(
@@ -516,9 +504,7 @@ def test_code_override_partial_falls_back_per_field() -> None:
     base = HazardThrottleConfig.default()
     config = HazardThrottleConfig(
         severity_rules=base.severity_rules,
-        code_overrides=(
-            HazardCodeOverride(code="HAZ-X", confidence_floor=0.95),
-        ),
+        code_overrides=(HazardCodeOverride(code="HAZ-X", confidence_floor=0.95),),
     )
     obs = _observation(code="HAZ-X", severity=HazardSeverity.LOW)
     decision = compute_throttle(
@@ -538,20 +524,12 @@ def test_code_override_can_extend_active_window() -> None:
     extended = base.rule_for(HazardSeverity.LOW).active_window_ns * 4
     config = HazardThrottleConfig(
         severity_rules=base.severity_rules,
-        code_overrides=(
-            HazardCodeOverride(
-                code="HAZ-LONG", active_window_ns=extended
-            ),
-        ),
+        code_overrides=(HazardCodeOverride(code="HAZ-LONG", active_window_ns=extended),),
     )
     obs = _observation(code="HAZ-LONG", severity=HazardSeverity.LOW)
     # past the LOW default window, but inside the override window
-    now_ns = (
-        obs.ts_ns + base.rule_for(HazardSeverity.LOW).active_window_ns + 1
-    )
-    decision = compute_throttle(
-        observations=(obs,), now_ns=now_ns, config=config
-    )
+    now_ns = obs.ts_ns + base.rule_for(HazardSeverity.LOW).active_window_ns + 1
+    decision = compute_throttle(observations=(obs,), now_ns=now_ns, config=config)
     assert decision.is_throttled is True
 
 
@@ -582,12 +560,8 @@ def test_compute_throttle_is_deterministic() -> None:
             severity=HazardSeverity.MEDIUM,
         ),
     )
-    a = compute_throttle(
-        observations=observations, now_ns=3_000, config=config
-    )
-    b = compute_throttle(
-        observations=observations, now_ns=3_000, config=config
-    )
+    a = compute_throttle(observations=observations, now_ns=3_000, config=config)
+    b = compute_throttle(observations=observations, now_ns=3_000, config=config)
     assert a == b
 
 
@@ -898,9 +872,7 @@ def test_medium_hazard_raises_executor_confidence_floor() -> None:
             source="dyon.heartbeat",
         )
     )
-    base = _snapshot(
-        ts_ns=1_000_000_000, max_signal_confidence=0.0
-    )
+    base = _snapshot(ts_ns=1_000_000_000, max_signal_confidence=0.0)
     decision = observer.current_throttle(now_ns=1_000_000_000)
     snap = apply_throttle(snapshot=base, decision=decision)
     executor = FastExecutor()

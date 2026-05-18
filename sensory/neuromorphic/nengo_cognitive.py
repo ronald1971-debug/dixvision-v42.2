@@ -236,33 +236,20 @@ class NengoEnsembleConfig:
 
     def __post_init__(self) -> None:
         if not (math.isfinite(self.tau_rc) and self.tau_rc > 0.0):
-            raise NengoCognitiveError(
-                "NengoEnsembleConfig.tau_rc must be finite and > 0"
-            )
+            raise NengoCognitiveError("NengoEnsembleConfig.tau_rc must be finite and > 0")
         if not (math.isfinite(self.tau_ref) and self.tau_ref >= 0.0):
-            raise NengoCognitiveError(
-                "NengoEnsembleConfig.tau_ref must be finite and >= 0"
-            )
+            raise NengoCognitiveError("NengoEnsembleConfig.tau_ref must be finite and >= 0")
         if not math.isfinite(self.v_threshold):
-            raise NengoCognitiveError(
-                "NengoEnsembleConfig.v_threshold must be finite"
-            )
+            raise NengoCognitiveError("NengoEnsembleConfig.v_threshold must be finite")
         if not math.isfinite(self.v_reset):
-            raise NengoCognitiveError(
-                "NengoEnsembleConfig.v_reset must be finite"
-            )
+            raise NengoCognitiveError("NengoEnsembleConfig.v_reset must be finite")
         if not math.isfinite(self.v_leak):
-            raise NengoCognitiveError(
-                "NengoEnsembleConfig.v_leak must be finite"
-            )
+            raise NengoCognitiveError("NengoEnsembleConfig.v_leak must be finite")
         if not (math.isfinite(self.dt) and self.dt > 0.0):
-            raise NengoCognitiveError(
-                "NengoEnsembleConfig.dt must be finite and > 0"
-            )
+            raise NengoCognitiveError("NengoEnsembleConfig.dt must be finite and > 0")
         if self.dt > self.tau_rc:
             raise NengoCognitiveError(
-                "NengoEnsembleConfig.dt must be <= tau_rc for stable "
-                "integration"
+                "NengoEnsembleConfig.dt must be <= tau_rc for stable integration"
             )
 
 
@@ -315,74 +302,54 @@ class NengoEnsembleWeights:
     def __post_init__(self) -> None:
         if self.n_neurons < MIN_NEURONS or self.n_neurons > MAX_NEURONS:
             raise NengoCognitiveError(
-                "NengoEnsembleWeights.n_neurons must be in "
-                f"[{MIN_NEURONS}, {MAX_NEURONS}]"
+                f"NengoEnsembleWeights.n_neurons must be in [{MIN_NEURONS}, {MAX_NEURONS}]"
             )
-        if (
-            self.dimensions < MIN_DIMENSIONS
-            or self.dimensions > MAX_DIMENSIONS
-        ):
+        if self.dimensions < MIN_DIMENSIONS or self.dimensions > MAX_DIMENSIONS:
             raise NengoCognitiveError(
-                "NengoEnsembleWeights.dimensions must be in "
-                f"[{MIN_DIMENSIONS}, {MAX_DIMENSIONS}]"
+                f"NengoEnsembleWeights.dimensions must be in [{MIN_DIMENSIONS}, {MAX_DIMENSIONS}]"
             )
         if len(self.encoders) != self.n_neurons:
             raise NengoCognitiveError(
-                "NengoEnsembleWeights.encoders row count must equal "
-                "n_neurons"
+                "NengoEnsembleWeights.encoders row count must equal n_neurons"
             )
         for row in self.encoders:
             if len(row) != self.dimensions:
                 raise NengoCognitiveError(
-                    "NengoEnsembleWeights.encoders row width must "
-                    "equal dimensions"
+                    "NengoEnsembleWeights.encoders row width must equal dimensions"
                 )
             for value in row:
                 if not math.isfinite(value):
                     raise NengoCognitiveError(
-                        "NengoEnsembleWeights.encoders entries must "
-                        "be finite"
+                        "NengoEnsembleWeights.encoders entries must be finite"
                     )
         if len(self.gains) != self.n_neurons:
-            raise NengoCognitiveError(
-                "NengoEnsembleWeights.gains length must equal n_neurons"
-            )
+            raise NengoCognitiveError("NengoEnsembleWeights.gains length must equal n_neurons")
         for value in self.gains:
             if not (math.isfinite(value) and value > 0.0):
                 raise NengoCognitiveError(
-                    "NengoEnsembleWeights.gains entries must be "
-                    "finite and > 0"
+                    "NengoEnsembleWeights.gains entries must be finite and > 0"
                 )
         if len(self.biases) != self.n_neurons:
-            raise NengoCognitiveError(
-                "NengoEnsembleWeights.biases length must equal n_neurons"
-            )
+            raise NengoCognitiveError("NengoEnsembleWeights.biases length must equal n_neurons")
         for value in self.biases:
             if not math.isfinite(value):
-                raise NengoCognitiveError(
-                    "NengoEnsembleWeights.biases entries must be finite"
-                )
+                raise NengoCognitiveError("NengoEnsembleWeights.biases entries must be finite")
         if len(self.decoders) != self.dimensions:
             raise NengoCognitiveError(
-                "NengoEnsembleWeights.decoders row count must equal "
-                "dimensions"
+                "NengoEnsembleWeights.decoders row count must equal dimensions"
             )
         for row in self.decoders:
             if len(row) != self.n_neurons:
                 raise NengoCognitiveError(
-                    "NengoEnsembleWeights.decoders row width must "
-                    "equal n_neurons"
+                    "NengoEnsembleWeights.decoders row width must equal n_neurons"
                 )
             for value in row:
                 if not math.isfinite(value):
                     raise NengoCognitiveError(
-                        "NengoEnsembleWeights.decoders entries must "
-                        "be finite"
+                        "NengoEnsembleWeights.decoders entries must be finite"
                     )
         if self.weights_seed < 0:
-            raise NengoCognitiveError(
-                "NengoEnsembleWeights.weights_seed must be >= 0"
-            )
+            raise NengoCognitiveError("NengoEnsembleWeights.weights_seed must be >= 0")
 
     def digest(self) -> str:
         """Stable 16-hex BLAKE2b digest of all weights + dims +
@@ -422,8 +389,7 @@ def build_random_ensemble_weights(
 
     if n_neurons < MIN_NEURONS or n_neurons > MAX_NEURONS:
         raise NengoCognitiveError(
-            "build_random_ensemble_weights: n_neurons must be in "
-            f"[{MIN_NEURONS}, {MAX_NEURONS}]"
+            f"build_random_ensemble_weights: n_neurons must be in [{MIN_NEURONS}, {MAX_NEURONS}]"
         )
     if dimensions < MIN_DIMENSIONS or dimensions > MAX_DIMENSIONS:
         raise NengoCognitiveError(
@@ -431,23 +397,14 @@ def build_random_ensemble_weights(
             f"[{MIN_DIMENSIONS}, {MAX_DIMENSIONS}]"
         )
     if seed < 0:
-        raise NengoCognitiveError(
-            "build_random_ensemble_weights: seed must be >= 0"
-        )
+        raise NengoCognitiveError("build_random_ensemble_weights: seed must be >= 0")
     if not (math.isfinite(max_rate) and max_rate > 0.0):
-        raise NengoCognitiveError(
-            "build_random_ensemble_weights: max_rate must be finite "
-            "and > 0"
-        )
+        raise NengoCognitiveError("build_random_ensemble_weights: max_rate must be finite and > 0")
     if not (math.isfinite(intercept_low) and math.isfinite(intercept_high)):
-        raise NengoCognitiveError(
-            "build_random_ensemble_weights: intercept bounds must be "
-            "finite"
-        )
+        raise NengoCognitiveError("build_random_ensemble_weights: intercept bounds must be finite")
     if intercept_low >= intercept_high:
         raise NengoCognitiveError(
-            "build_random_ensemble_weights: intercept_low must be < "
-            "intercept_high"
+            "build_random_ensemble_weights: intercept_low must be < intercept_high"
         )
 
     state = seed
@@ -541,9 +498,7 @@ class NengoEnsembleState:
     def __post_init__(self) -> None:
         for value in self.v:
             if not math.isfinite(value):
-                raise NengoCognitiveError(
-                    "NengoEnsembleState.v entries must be finite"
-                )
+                raise NengoCognitiveError("NengoEnsembleState.v entries must be finite")
 
 
 def initial_state(n_neurons: int, *, v_leak: float = 0.0) -> NengoEnsembleState:
@@ -551,8 +506,7 @@ def initial_state(n_neurons: int, *, v_leak: float = 0.0) -> NengoEnsembleState:
 
     if n_neurons < MIN_NEURONS or n_neurons > MAX_NEURONS:
         raise NengoCognitiveError(
-            f"initial_state: n_neurons must be in "
-            f"[{MIN_NEURONS}, {MAX_NEURONS}]"
+            f"initial_state: n_neurons must be in [{MIN_NEURONS}, {MAX_NEURONS}]"
         )
     if not math.isfinite(v_leak):
         raise NengoCognitiveError("initial_state: v_leak must be finite")
@@ -618,100 +572,49 @@ class NengoRegimePulse:
 
     def __post_init__(self) -> None:
         if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
-            raise NengoCognitiveError(
-                "NengoRegimePulse.ts_ns must be int"
-            )
+            raise NengoCognitiveError("NengoRegimePulse.ts_ns must be int")
         if self.ts_ns < 0:
-            raise NengoCognitiveError(
-                "NengoRegimePulse.ts_ns must be >= 0"
-            )
+            raise NengoCognitiveError("NengoRegimePulse.ts_ns must be >= 0")
         if not isinstance(self.source, str) or not self.source:
-            raise NengoCognitiveError(
-                "NengoRegimePulse.source must be a non-empty string"
-            )
+            raise NengoCognitiveError("NengoRegimePulse.source must be a non-empty string")
         if len(self.source) > MAX_SOURCE_LEN:
-            raise NengoCognitiveError(
-                "NengoRegimePulse.source must be <= "
-                f"{MAX_SOURCE_LEN} chars"
-            )
+            raise NengoCognitiveError(f"NengoRegimePulse.source must be <= {MAX_SOURCE_LEN} chars")
         if not isinstance(self.symbol, str) or not self.symbol:
-            raise NengoCognitiveError(
-                "NengoRegimePulse.symbol must be a non-empty string"
-            )
+            raise NengoCognitiveError("NengoRegimePulse.symbol must be a non-empty string")
         if len(self.symbol) > MAX_SYMBOL_LEN:
-            raise NengoCognitiveError(
-                "NengoRegimePulse.symbol must be <= "
-                f"{MAX_SYMBOL_LEN} chars"
-            )
-        if (
-            not isinstance(self.regime_label, str)
-            or not self.regime_label
-        ):
-            raise NengoCognitiveError(
-                "NengoRegimePulse.regime_label must be a non-empty "
-                "string"
-            )
+            raise NengoCognitiveError(f"NengoRegimePulse.symbol must be <= {MAX_SYMBOL_LEN} chars")
+        if not isinstance(self.regime_label, str) or not self.regime_label:
+            raise NengoCognitiveError("NengoRegimePulse.regime_label must be a non-empty string")
         if len(self.regime_label) > MAX_REGIME_LABEL_LEN:
             raise NengoCognitiveError(
-                "NengoRegimePulse.regime_label must be <= "
-                f"{MAX_REGIME_LABEL_LEN} chars"
+                f"NengoRegimePulse.regime_label must be <= {MAX_REGIME_LABEL_LEN} chars"
             )
         if self.polarity not in _REGIMES:
             raise NengoCognitiveError(
-                "NengoRegimePulse.polarity must be one of "
-                f"{sorted(_REGIMES)}"
+                f"NengoRegimePulse.polarity must be one of {sorted(_REGIMES)}"
             )
-        if not (
-            math.isfinite(self.confidence) and 0.0 <= self.confidence <= 1.0
-        ):
-            raise NengoCognitiveError(
-                "NengoRegimePulse.confidence must be finite in "
-                "[0.0, 1.0]"
-            )
+        if not (math.isfinite(self.confidence) and 0.0 <= self.confidence <= 1.0):
+            raise NengoCognitiveError("NengoRegimePulse.confidence must be finite in [0.0, 1.0]")
         if not isinstance(self.decoded_value, tuple):
-            raise NengoCognitiveError(
-                "NengoRegimePulse.decoded_value must be a tuple"
-            )
-        if (
-            len(self.decoded_value) < MIN_DIMENSIONS
-            or len(self.decoded_value) > MAX_DIMENSIONS
-        ):
+            raise NengoCognitiveError("NengoRegimePulse.decoded_value must be a tuple")
+        if len(self.decoded_value) < MIN_DIMENSIONS or len(self.decoded_value) > MAX_DIMENSIONS:
             raise NengoCognitiveError(
                 "NengoRegimePulse.decoded_value length must be in "
                 f"[{MIN_DIMENSIONS}, {MAX_DIMENSIONS}]"
             )
         for value in self.decoded_value:
-            if not isinstance(value, (int, float)) or isinstance(
-                value, bool
-            ):
-                raise NengoCognitiveError(
-                    "NengoRegimePulse.decoded_value entries must be "
-                    "float"
-                )
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                raise NengoCognitiveError("NengoRegimePulse.decoded_value entries must be float")
             if not math.isfinite(value):
-                raise NengoCognitiveError(
-                    "NengoRegimePulse.decoded_value entries must be "
-                    "finite"
-                )
+                raise NengoCognitiveError("NengoRegimePulse.decoded_value entries must be finite")
         if self.spike_count < 0:
-            raise NengoCognitiveError(
-                "NengoRegimePulse.spike_count must be >= 0"
-            )
+            raise NengoCognitiveError("NengoRegimePulse.spike_count must be >= 0")
         if self.sample_count < 1:
-            raise NengoCognitiveError(
-                "NengoRegimePulse.sample_count must be >= 1"
-            )
+            raise NengoCognitiveError("NengoRegimePulse.sample_count must be >= 1")
         if len(self.weights_digest) != _DIGEST_BYTES * 2:
-            raise NengoCognitiveError(
-                "NengoRegimePulse.weights_digest must be 16-hex "
-                "BLAKE2b-16"
-            )
-        if not all(
-            c in "0123456789abcdef" for c in self.weights_digest
-        ):
-            raise NengoCognitiveError(
-                "NengoRegimePulse.weights_digest must be lowercase hex"
-            )
+            raise NengoCognitiveError("NengoRegimePulse.weights_digest must be 16-hex BLAKE2b-16")
+        if not all(c in "0123456789abcdef" for c in self.weights_digest):
+            raise NengoCognitiveError("NengoRegimePulse.weights_digest must be lowercase hex")
 
 
 # ---------------------------------------------------------------- functional
@@ -742,17 +645,13 @@ def lif_step(
     """
 
     if len(input_current) != len(state.v):
-        raise NengoCognitiveError(
-            "lif_step: input_current length must equal state.v length"
-        )
+        raise NengoCognitiveError("lif_step: input_current length must equal state.v length")
     decay = config.dt / config.tau_rc
     next_v: list[float] = []
     spikes: list[bool] = []
     for v, j in zip(state.v, input_current, strict=True):
         if not math.isfinite(j):
-            raise NengoCognitiveError(
-                "lif_step: input_current entries must be finite"
-            )
+            raise NengoCognitiveError("lif_step: input_current entries must be finite")
         v_after = v + decay * (config.v_leak - v + j)
         spiked = v_after >= config.v_threshold
         spikes.append(spiked)
@@ -760,15 +659,12 @@ def lif_step(
     return NengoEnsembleState(v=tuple(next_v)), tuple(spikes)
 
 
-def _compute_input_currents(
-    weights: NengoEnsembleWeights, x: Sequence[float]
-) -> tuple[float, ...]:
+def _compute_input_currents(weights: NengoEnsembleWeights, x: Sequence[float]) -> tuple[float, ...]:
     """Compute per-neuron input current J_i = G_i * (e_i . x) + b_i."""
 
     if len(x) != weights.dimensions:
         raise NengoCognitiveError(
-            "_compute_input_currents: input length must equal "
-            "weights.dimensions"
+            "_compute_input_currents: input length must equal weights.dimensions"
         )
     currents: list[float] = []
     for i in range(weights.n_neurons):
@@ -776,33 +672,24 @@ def _compute_input_currents(
         dot = 0.0
         for d, xd in enumerate(x):
             if not math.isfinite(xd):
-                raise NengoCognitiveError(
-                    "_compute_input_currents: input entries must be "
-                    "finite"
-                )
+                raise NengoCognitiveError("_compute_input_currents: input entries must be finite")
             dot += e_row[d] * xd
         currents.append(weights.gains[i] * dot + weights.biases[i])
     return tuple(currents)
 
 
-def _decode(
-    weights: NengoEnsembleWeights, activity: Sequence[float]
-) -> tuple[float, ...]:
+def _decode(weights: NengoEnsembleWeights, activity: Sequence[float]) -> tuple[float, ...]:
     """Linear decode y_hat = D @ activity."""
 
     if len(activity) != weights.n_neurons:
-        raise NengoCognitiveError(
-            "_decode: activity length must equal weights.n_neurons"
-        )
+        raise NengoCognitiveError("_decode: activity length must equal weights.n_neurons")
     out: list[float] = []
     for d in range(weights.dimensions):
         row = weights.decoders[d]
         acc = 0.0
         for i, a_i in enumerate(activity):
             if not math.isfinite(a_i):
-                raise NengoCognitiveError(
-                    "_decode: activity entries must be finite"
-                )
+                raise NengoCognitiveError("_decode: activity entries must be finite")
             acc += row[i] * a_i
         out.append(acc)
     return tuple(out)
@@ -821,8 +708,7 @@ class NengoForwardCallable(Protocol):
         self,
         state: NengoEnsembleState,
         x: Sequence[float],
-    ) -> tuple[NengoEnsembleState, tuple[bool, ...], tuple[float, ...]]:
-        ...
+    ) -> tuple[NengoEnsembleState, tuple[bool, ...], tuple[float, ...]]: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -855,8 +741,7 @@ class NengoEnsemble:
 
         if len(state.v) != self.weights.n_neurons:
             raise NengoCognitiveError(
-                "NengoEnsemble.forward: state.v length must equal "
-                "weights.n_neurons"
+                "NengoEnsemble.forward: state.v length must equal weights.n_neurons"
             )
         currents = _compute_input_currents(self.weights, x)
         next_state, spikes = lif_step(state, currents, self.config)
@@ -958,16 +843,13 @@ class NengoCognitiveAnalyser:
     def __post_init__(self) -> None:
         if not isinstance(self.engine, NengoCognitiveEngine):
             raise NengoCognitiveError(
-                "NengoCognitiveAnalyser.engine must implement the "
-                "NengoCognitiveEngine Protocol"
+                "NengoCognitiveAnalyser.engine must implement the NengoCognitiveEngine Protocol"
             )
         if not (
-            math.isfinite(self.confidence_threshold)
-            and 0.0 < self.confidence_threshold <= 1.0
+            math.isfinite(self.confidence_threshold) and 0.0 < self.confidence_threshold <= 1.0
         ):
             raise NengoCognitiveError(
-                "NengoCognitiveAnalyser.confidence_threshold must be "
-                "in (0, 1]"
+                "NengoCognitiveAnalyser.confidence_threshold must be in (0, 1]"
             )
 
     def detect(
@@ -978,9 +860,7 @@ class NengoCognitiveAnalyser:
         symbol: str,
         regime_label: str,
         weights: NengoEnsembleWeights,
-        window: (
-            Sequence[Sequence[float]] | Iterable[Sequence[float]]
-        ),
+        window: (Sequence[Sequence[float]] | Iterable[Sequence[float]]),
         config: NengoEnsembleConfig | None = None,
         evidence: Mapping[str, str] | None = None,
         polarity_axis: int = 0,
@@ -1015,79 +895,52 @@ class NengoCognitiveAnalyser:
         """
 
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
-            raise NengoCognitiveError(
-                "NengoCognitiveAnalyser.detect: ts_ns must be int"
-            )
+            raise NengoCognitiveError("NengoCognitiveAnalyser.detect: ts_ns must be int")
         if ts_ns < 0:
-            raise NengoCognitiveError(
-                "NengoCognitiveAnalyser.detect: ts_ns must be >= 0"
-            )
+            raise NengoCognitiveError("NengoCognitiveAnalyser.detect: ts_ns must be >= 0")
         if not isinstance(source, str) or not source:
-            raise NengoCognitiveError(
-                "NengoCognitiveAnalyser.detect: source must be "
-                "non-empty"
-            )
+            raise NengoCognitiveError("NengoCognitiveAnalyser.detect: source must be non-empty")
         if not isinstance(symbol, str) or not symbol:
-            raise NengoCognitiveError(
-                "NengoCognitiveAnalyser.detect: symbol must be "
-                "non-empty"
-            )
+            raise NengoCognitiveError("NengoCognitiveAnalyser.detect: symbol must be non-empty")
         if not isinstance(regime_label, str) or not regime_label:
             raise NengoCognitiveError(
-                "NengoCognitiveAnalyser.detect: regime_label must be "
-                "non-empty"
+                "NengoCognitiveAnalyser.detect: regime_label must be non-empty"
             )
         if not isinstance(weights, NengoEnsembleWeights):
             raise NengoCognitiveError(
-                "NengoCognitiveAnalyser.detect: weights must be "
-                "NengoEnsembleWeights"
+                "NengoCognitiveAnalyser.detect: weights must be NengoEnsembleWeights"
             )
         if polarity_sign not in (-1, 0, 1):
             raise NengoCognitiveError(
-                "NengoCognitiveAnalyser.detect: polarity_sign must be "
-                "in {-1, 0, 1}"
+                "NengoCognitiveAnalyser.detect: polarity_sign must be in {-1, 0, 1}"
             )
-        if not isinstance(polarity_axis, int) or isinstance(
-            polarity_axis, bool
-        ):
-            raise NengoCognitiveError(
-                "NengoCognitiveAnalyser.detect: polarity_axis must be "
-                "int"
-            )
+        if not isinstance(polarity_axis, int) or isinstance(polarity_axis, bool):
+            raise NengoCognitiveError("NengoCognitiveAnalyser.detect: polarity_axis must be int")
         if polarity_axis < 0 or polarity_axis >= weights.dimensions:
             raise NengoCognitiveError(
-                "NengoCognitiveAnalyser.detect: polarity_axis out of "
-                "range [0, dimensions)"
+                "NengoCognitiveAnalyser.detect: polarity_axis out of range [0, dimensions)"
             )
-        effective_config = (
-            config if config is not None else NengoEnsembleConfig()
-        )
+        effective_config = config if config is not None else NengoEnsembleConfig()
         if not isinstance(effective_config, NengoEnsembleConfig):
             raise NengoCognitiveError(
-                "NengoCognitiveAnalyser.detect: config must be "
-                "NengoEnsembleConfig"
+                "NengoCognitiveAnalyser.detect: config must be NengoEnsembleConfig"
             )
 
         rows: list[tuple[float, ...]] = []
         for x in window:
             if len(x) != weights.dimensions:
                 raise NengoCognitiveError(
-                    "NengoCognitiveAnalyser.detect: window row length "
-                    "must equal weights.dimensions"
+                    "NengoCognitiveAnalyser.detect: window row length must equal weights.dimensions"
                 )
             row: list[float] = []
             for value in x:
-                if not isinstance(value, (int, float)) or isinstance(
-                    value, bool
-                ):
+                if not isinstance(value, (int, float)) or isinstance(value, bool):
                     raise NengoCognitiveError(
-                        "NengoCognitiveAnalyser.detect: window entries "
-                        "must be float"
+                        "NengoCognitiveAnalyser.detect: window entries must be float"
                     )
                 if not math.isfinite(value):
                     raise NengoCognitiveError(
-                        "NengoCognitiveAnalyser.detect: window entries "
-                        "must be finite"
+                        "NengoCognitiveAnalyser.detect: window entries must be finite"
                     )
                 row.append(float(value))
             rows.append(tuple(row))
@@ -1103,38 +956,23 @@ class NengoCognitiveAnalyser:
             config=effective_config,
             window=window_t,
         )
-        if not isinstance(spike_count, int) or isinstance(
-            spike_count, bool
-        ):
-            raise NengoCognitiveError(
-                "NengoCognitiveEngine.run_window: spike_count must be "
-                "int"
-            )
+        if not isinstance(spike_count, int) or isinstance(spike_count, bool):
+            raise NengoCognitiveError("NengoCognitiveEngine.run_window: spike_count must be int")
         if spike_count < 0:
-            raise NengoCognitiveError(
-                "NengoCognitiveEngine.run_window: spike_count must be "
-                ">= 0"
-            )
-        if (
-            not isinstance(decoded_mean, tuple)
-            or len(decoded_mean) != weights.dimensions
-        ):
+            raise NengoCognitiveError("NengoCognitiveEngine.run_window: spike_count must be >= 0")
+        if not isinstance(decoded_mean, tuple) or len(decoded_mean) != weights.dimensions:
             raise NengoCognitiveError(
                 "NengoCognitiveEngine.run_window: decoded_mean must be "
                 "a tuple of length weights.dimensions"
             )
         for value in decoded_mean:
-            if not isinstance(value, (int, float)) or isinstance(
-                value, bool
-            ):
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
                 raise NengoCognitiveError(
-                    "NengoCognitiveEngine.run_window: decoded_mean "
-                    "entries must be float"
+                    "NengoCognitiveEngine.run_window: decoded_mean entries must be float"
                 )
             if not math.isfinite(value):
                 raise NengoCognitiveError(
-                    "NengoCognitiveEngine.run_window: decoded_mean "
-                    "entries must be finite"
+                    "NengoCognitiveEngine.run_window: decoded_mean entries must be finite"
                 )
 
         magnitude = math.sqrt(sum(v * v for v in decoded_mean))
@@ -1150,19 +988,11 @@ class NengoCognitiveAnalyser:
             else:
                 polarity = REGIME_NEUTRAL
 
-        evidence_out: dict[str, str] = (
-            dict(evidence) if evidence else {}
-        )
+        evidence_out: dict[str, str] = dict(evidence) if evidence else {}
         evidence_out.setdefault("analyser", ANALYSIS_SOURCE)
-        evidence_out.setdefault(
-            "polarity_axis", str(polarity_axis)
-        )
-        evidence_out.setdefault(
-            "polarity_sign", str(polarity_sign)
-        )
-        evidence_out.setdefault(
-            "confidence_threshold", repr(self.confidence_threshold)
-        )
+        evidence_out.setdefault("polarity_axis", str(polarity_axis))
+        evidence_out.setdefault("polarity_sign", str(polarity_sign))
+        evidence_out.setdefault("confidence_threshold", repr(self.confidence_threshold))
 
         return NengoRegimePulse(
             ts_ns=ts_ns,
@@ -1183,20 +1013,14 @@ class NengoCognitiveAnalyser:
 
 
 def _digest(payload: str) -> str:
-    return hashlib.blake2b(
-        payload.encode("utf-8"), digest_size=_DIGEST_BYTES
-    ).hexdigest()
+    return hashlib.blake2b(payload.encode("utf-8"), digest_size=_DIGEST_BYTES).hexdigest()
 
 
 def _canonical_weights(weights: NengoEnsembleWeights) -> str:
-    encoders = ";".join(
-        ",".join(f"{v:.17g}" for v in row) for row in weights.encoders
-    )
+    encoders = ";".join(",".join(f"{v:.17g}" for v in row) for row in weights.encoders)
     gains = ",".join(f"{v:.17g}" for v in weights.gains)
     biases = ",".join(f"{v:.17g}" for v in weights.biases)
-    decoders = ";".join(
-        ",".join(f"{v:.17g}" for v in row) for row in weights.decoders
-    )
+    decoders = ";".join(",".join(f"{v:.17g}" for v in row) for row in weights.decoders)
     return (
         f"v={NENGO_COGNITIVE_VERSION}"
         f"|n={weights.n_neurons}"

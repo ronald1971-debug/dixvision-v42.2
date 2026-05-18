@@ -563,9 +563,7 @@ def test_enable_jaeger_factory_rejects_unknown_override_keys() -> None:
 # ---------------------------------------------------------------------------
 
 
-_MODULE_PATH = (
-    Path(__file__).resolve().parents[1] / "tools" / "jaeger_tracer.py"
-)
+_MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "jaeger_tracer.py"
 
 
 def _module_ast() -> ast.Module:
@@ -620,9 +618,7 @@ def test_no_top_level_engine_imports() -> None:
             assert not name.startswith(prefix), name
 
 
-def _find_enclosing_function(
-    tree: ast.Module, target: ast.AST
-) -> ast.FunctionDef | None:
+def _find_enclosing_function(tree: ast.Module, target: ast.AST) -> ast.FunctionDef | None:
     for func in ast.walk(tree):
         if isinstance(func, ast.FunctionDef):
             for descendant in ast.walk(func):
@@ -636,21 +632,15 @@ def test_jaeger_import_only_inside_factory() -> None:
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             mod = node.module if isinstance(node, ast.ImportFrom) else None
-            names = (
-                [a.name for a in node.names]
-                if isinstance(node, ast.Import)
-                else [mod or ""]
-            )
+            names = [a.name for a in node.names] if isinstance(node, ast.Import) else [mod or ""]
             for name in names:
                 if name in ("jaeger_client", "opentracing"):
                     parent = _find_enclosing_function(tree, node)
                     assert parent is not None, (
-                        f"top-level {name} import — must be inside "
-                        "enable_jaeger_factory"
+                        f"top-level {name} import — must be inside enable_jaeger_factory"
                     )
                     assert parent.name == "enable_jaeger_factory", (
-                        f"{name} imported in {parent.name!r} — must be "
-                        "inside enable_jaeger_factory"
+                        f"{name} imported in {parent.name!r} — must be inside enable_jaeger_factory"
                     )
 
 

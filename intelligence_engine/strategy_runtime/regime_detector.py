@@ -85,9 +85,7 @@ class RegimeDetector:
                 sample_count=0,
             )
         mid = 0.5 * (tick.bid + tick.ask)
-        buf = self._mids.setdefault(
-            tick.symbol, deque(maxlen=self._window)
-        )
+        buf = self._mids.setdefault(tick.symbol, deque(maxlen=self._window))
         buf.append(mid)
         return self._classify(tick, buf)
 
@@ -99,9 +97,7 @@ class RegimeDetector:
 
     # -- internals ---------------------------------------------------------
 
-    def _classify(
-        self, tick: MarketTick, buf: deque[float]
-    ) -> RegimeReading:
+    def _classify(self, tick: MarketTick, buf: deque[float]) -> RegimeReading:
         n = len(buf)
         if n < 2:
             return RegimeReading(
@@ -121,9 +117,7 @@ class RegimeDetector:
         lo = min(buf)
         hi = max(buf)
         mean = sum(buf) / n
-        volatility_bps = (
-            (hi - lo) / mean * 10_000.0 if mean > 0 else 0.0
-        )
+        volatility_bps = (hi - lo) / mean * 10_000.0 if mean > 0 else 0.0
 
         if volatility_bps >= self._volatility_threshold_bps:
             regime = MarketRegime.VOLATILE

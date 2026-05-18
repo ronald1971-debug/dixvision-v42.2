@@ -72,9 +72,7 @@ def load_schedule(path: Path = SCHEDULE_PATH) -> Schedule:
     elif isinstance(deletion, date):
         deletion_date = deletion
     else:
-        raise TypeError(
-            f"deletion_iso_date must be ISO string or date, got {type(deletion)!r}"
-        )
+        raise TypeError(f"deletion_iso_date must be ISO string or date, got {type(deletion)!r}")
     issue = raw["reminder_issue"]
     return Schedule(
         deletion_date=deletion_date,
@@ -119,9 +117,8 @@ def existing_issue_for(
     token: str,
 ) -> tuple[bool, bool]:
     """Return ``(exists_open, exists_closed)`` for issues matching ``title``."""
-    url = (
-        "https://api.github.com/search/issues?q="
-        + urllib.request.quote(f'repo:{repo} is:issue in:title "{title}"')
+    url = "https://api.github.com/search/issues?q=" + urllib.request.quote(
+        f'repo:{repo} is:issue in:title "{title}"'
     )
     result = _gh_request("GET", url, token)
     items = result.get("items", []) if isinstance(result, dict) else []

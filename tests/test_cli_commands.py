@@ -390,11 +390,7 @@ def test_lazy_seams_have_function_local_imports() -> None:
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef) and node.name == "enable_typer_factory":
             imports = [n for n in ast.walk(node) if isinstance(n, ast.Import)]
-            assert any(
-                alias.name == "typer" for imp in imports for alias in imp.names
-            )
+            assert any(alias.name == "typer" for imp in imports for alias in imp.names)
         elif isinstance(node, ast.FunctionDef) and node.name == "enable_rich_formatter_factory":
             imports = [n for n in ast.walk(node) if isinstance(n, ast.Import)]
-            assert any(
-                alias.name == "rich" for imp in imports for alias in imp.names
-            )
+            assert any(alias.name == "rich" for imp in imports for alias in imp.names)

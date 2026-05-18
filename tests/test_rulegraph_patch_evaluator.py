@@ -122,9 +122,7 @@ def test_gov_patch_divergence_rule_fires_above_sigma_ceiling(
 def test_multiple_rules_fire_at_once_blocking_ids_sorted(
     evaluator: RuleGraphPatchEvaluator,
 ) -> None:
-    v = evaluator.evaluate(
-        _facts(sharpe_ratio=0.1, max_drawdown=0.20, samples=10)
-    )
+    v = evaluator.evaluate(_facts(sharpe_ratio=0.1, max_drawdown=0.20, samples=10))
     assert v.passed is False
     assert list(v.blocking_rule_ids) == sorted(v.blocking_rule_ids)
     assert "GOV-PATCH-SHARPE" in v.blocking_rule_ids
@@ -215,9 +213,7 @@ def test_custom_rule_id_prefix_isolates_other_invariants(
     # Build a second evaluator that filters by a never-firing prefix —
     # GOV-PATCH-* rules must then be ignored and the verdict approve.
     rg = evaluator.rule_graph
-    narrow = RuleGraphPatchEvaluator(
-        rule_graph=rg, rule_id_prefix="NOT-A-REAL-PREFIX-"
-    )
+    narrow = RuleGraphPatchEvaluator(rule_graph=rg, rule_id_prefix="NOT-A-REAL-PREFIX-")
     v = narrow.evaluate(_facts(sharpe_ratio=0.1, max_drawdown=0.9))
     assert v.kind is RuleGraphPatchVerdictKind.APPROVED
     assert v.passed is True

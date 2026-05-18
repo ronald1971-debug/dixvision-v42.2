@@ -168,9 +168,7 @@ def test_rationale_tags_in_registry_allowlist() -> None:
 
     repo = Path(__file__).resolve().parents[1]
     doc = yaml.safe_load(
-        (repo / "registry" / "agent_rationale_tags.yaml").read_text(
-            encoding="utf-8"
-        )
+        (repo / "registry" / "agent_rationale_tags.yaml").read_text(encoding="utf-8")
     )
     allowed = set(doc.get("tags", []))
     used = {

@@ -60,9 +60,7 @@ class DecisionTracePanel:
         return self._group_by_symbol(events)
 
     @classmethod
-    def _group_by_symbol(
-        cls, events: Sequence[Event]
-    ) -> tuple[DecisionTraceChain, ...]:
+    def _group_by_symbol(cls, events: Sequence[Event]) -> tuple[DecisionTraceChain, ...]:
         # Stable grouping by symbol, preserving event order within
         # each chain. SystemEvents and HazardEvents without an owning
         # symbol are bucketed under "<system>".
@@ -75,8 +73,7 @@ class DecisionTracePanel:
                 order.append(symbol)
             groups[symbol].append(cls._step_for(event))
         return tuple(
-            DecisionTraceChain(symbol=symbol, steps=tuple(groups[symbol]))
-            for symbol in order
+            DecisionTraceChain(symbol=symbol, steps=tuple(groups[symbol])) for symbol in order
         )
 
     @staticmethod
@@ -90,24 +87,15 @@ class DecisionTracePanel:
         kind_value = event.kind.value
         if isinstance(event, SignalEvent):
             chain = " -> ".join(event.plugin_chain) if event.plugin_chain else "(none)"
-            summary = (
-                f"SIGNAL {event.side.value} conf={event.confidence:.2f} "
-                f"plugins=[{chain}]"
-            )
+            summary = f"SIGNAL {event.side.value} conf={event.confidence:.2f} plugins=[{chain}]"
         elif isinstance(event, ExecutionEvent):
             summary = (
-                f"EXEC {event.status.value} {event.side.value} "
-                f"qty={event.qty} px={event.price}"
+                f"EXEC {event.status.value} {event.side.value} qty={event.qty} px={event.price}"
             )
         elif isinstance(event, SystemEvent):
             summary = f"SYSTEM {event.sub_kind.value} from={event.source}"
         elif isinstance(event, HazardEvent):
-            summary = (
-                f"HAZARD {event.code} sev={event.severity.value} "
-                f"src={event.source}"
-            )
+            summary = f"HAZARD {event.code} sev={event.severity.value} src={event.source}"
         else:
             summary = f"{kind_value} (unrecognised event variant)"
-        return DecisionTraceStep(
-            ts_ns=event.ts_ns, kind=kind_value, summary=summary
-        )
+        return DecisionTraceStep(ts_ns=event.ts_ns, kind=kind_value, summary=summary)

@@ -63,9 +63,7 @@ class ExposureBook:
     def set(self, symbol: str, qty: float, *, ts_ns: int = 0) -> None:
         self._exposures[symbol] = qty
         if self._store is not None:
-            self._store.write_exposure(
-                symbol=symbol, qty=qty, ts_ns=ts_ns
-            )
+            self._store.write_exposure(symbol=symbol, qty=qty, ts_ns=ts_ns)
 
     def apply(
         self,
@@ -81,9 +79,7 @@ class ExposureBook:
         new = self._exposures.get(symbol, 0.0) + signed
         self._exposures[symbol] = new
         if self._store is not None:
-            self._store.write_exposure(
-                symbol=symbol, qty=new, ts_ns=ts_ns
-            )
+            self._store.write_exposure(symbol=symbol, qty=new, ts_ns=ts_ns)
         return new
 
     def snapshot(self) -> Mapping[str, float]:
@@ -118,9 +114,7 @@ class RiskEvaluator:
     # Internals
     # ------------------------------------------------------------------
 
-    def _limit(
-        self, kind: ConstraintKind, *, symbol: str | None = None
-    ) -> float | None:
+    def _limit(self, kind: ConstraintKind, *, symbol: str | None = None) -> float | None:
         """Resolve the most-specific numeric limit for ``kind``.
 
         SYMBOL-scoped beats GLOBAL-scoped. Returns ``None`` if no
@@ -192,9 +186,7 @@ class RiskEvaluator:
         signed = qty if side == "BUY" else -qty
         exposure_after = self._book.get(symbol) + signed
 
-        max_exposure = self._limit(
-            ConstraintKind.MAX_SYMBOL_EXPOSURE, symbol=symbol
-        )
+        max_exposure = self._limit(ConstraintKind.MAX_SYMBOL_EXPOSURE, symbol=symbol)
         if max_exposure is not None and abs(exposure_after) > max_exposure:
             breached.append(f"MAX_SYMBOL_EXPOSURE:{max_exposure:g}")
 

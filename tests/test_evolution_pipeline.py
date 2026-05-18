@@ -68,12 +68,8 @@ MODULE_TEXT = MODULE_PATH.read_text(encoding="utf-8")
 
 def _two_d_specs() -> tuple[ParameterSpec, ...]:
     return (
-        ParameterSpec(
-            name="x", kind=ParameterKind.CONTINUOUS, low=-5.0, high=5.0
-        ),
-        ParameterSpec(
-            name="y", kind=ParameterKind.CONTINUOUS, low=-5.0, high=5.0
-        ),
+        ParameterSpec(name="x", kind=ParameterKind.CONTINUOUS, low=-5.0, high=5.0),
+        ParameterSpec(name="y", kind=ParameterKind.CONTINUOUS, low=-5.0, high=5.0),
     )
 
 
@@ -198,9 +194,7 @@ class _RecordingEvaluator:
         ts_ns: int,
     ) -> FitnessReport:
         self.calls.append((seed, ts_ns, chromosome_digest(chromosome)))
-        return self.inner.evaluate(
-            chromosome=chromosome, seed=seed, ts_ns=ts_ns
-        )
+        return self.inner.evaluate(chromosome=chromosome, seed=seed, ts_ns=ts_ns)
 
 
 def _make_config(
@@ -299,16 +293,12 @@ def test_ast_no_top_level_runtime_imports() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 root = alias.name.split(".")[0]
-                assert root not in forbidden, (
-                    f"Forbidden top-level import: {alias.name}"
-                )
+                assert root not in forbidden, f"Forbidden top-level import: {alias.name}"
         elif isinstance(node, ast.ImportFrom):
             if node.module is None:
                 continue
             root = node.module.split(".")[0]
-            assert root not in forbidden, (
-                f"Forbidden from-import: {node.module}"
-            )
+            assert root not in forbidden, f"Forbidden from-import: {node.module}"
 
 
 def test_ast_no_engine_cross_imports() -> None:
@@ -329,9 +319,7 @@ def test_ast_no_engine_cross_imports() -> None:
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module is not None:
             root = node.module.split(".")[0]
-            assert root not in forbidden, (
-                f"Forbidden engine cross-import: {node.module}"
-            )
+            assert root not in forbidden, f"Forbidden engine cross-import: {node.module}"
 
 
 def test_ast_adapted_from_header_present() -> None:
@@ -963,9 +951,7 @@ def test_inv15_three_run_equality_de_current_to_best_1() -> None:
 
 
 def test_inv15_three_run_equality_mixed_specs() -> None:
-    pipe = EvolutionPipeline(
-        evaluator=_SphereEvaluator(drawdown_floor=0.5)
-    )
+    pipe = EvolutionPipeline(evaluator=_SphereEvaluator(drawdown_floor=0.5))
     cfg = _make_config(population_size=6, max_generations=4)
     digests = []
     for _ in range(3):
@@ -1054,12 +1040,8 @@ def _shifted_specs() -> tuple[ParameterSpec, ...]:
     # individual is therefore meaningfully sub-optimal so DE has room
     # to make progress.
     return (
-        ParameterSpec(
-            name="x", kind=ParameterKind.CONTINUOUS, low=-3.0, high=5.0
-        ),
-        ParameterSpec(
-            name="y", kind=ParameterKind.CONTINUOUS, low=-3.0, high=5.0
-        ),
+        ParameterSpec(name="x", kind=ParameterKind.CONTINUOUS, low=-3.0, high=5.0),
+        ParameterSpec(name="y", kind=ParameterKind.CONTINUOUS, low=-3.0, high=5.0),
     )
 
 
@@ -1321,9 +1303,7 @@ class _RecordingCallback:
         ts_ns: int,
         report: GenerationReport,
     ) -> None:
-        self.events.append(
-            ("gen_end", report.generation_idx, report.n_replacements)
-        )
+        self.events.append(("gen_end", report.generation_idx, report.n_replacements))
 
     def on_evolution_end(
         self,

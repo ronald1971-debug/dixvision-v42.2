@@ -569,9 +569,7 @@ def test_enable_semgrep_factory_rejects_unknown_overrides() -> None:
 # ---------------------------------------------------------------------------
 
 
-_MODULE_PATH = (
-    Path(__file__).resolve().parents[1] / "tools" / "semgrep_scanner.py"
-)
+_MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "semgrep_scanner.py"
 
 
 def _module_ast() -> ast.Module:
@@ -591,10 +589,7 @@ def _top_level_imports(tree: ast.Module) -> list[str]:
 
 
 def test_no_top_level_semgrep_import() -> None:
-    assert all(
-        not name.startswith("semgrep")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("semgrep") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_subprocess_import() -> None:
@@ -626,9 +621,7 @@ def test_no_top_level_engine_imports() -> None:
             assert not name.startswith(prefix), name
 
 
-def _find_enclosing_function(
-    tree: ast.Module, target: ast.AST
-) -> ast.FunctionDef | None:
+def _find_enclosing_function(tree: ast.Module, target: ast.AST) -> ast.FunctionDef | None:
     for func in ast.walk(tree):
         if isinstance(func, ast.FunctionDef):
             for descendant in ast.walk(func):
@@ -642,17 +635,12 @@ def test_semgrep_import_only_inside_factory() -> None:
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             mod = node.module if isinstance(node, ast.ImportFrom) else None
-            names = (
-                [a.name for a in node.names]
-                if isinstance(node, ast.Import)
-                else [mod or ""]
-            )
+            names = [a.name for a in node.names] if isinstance(node, ast.Import) else [mod or ""]
             for name in names:
                 if name.startswith("semgrep") or name == "subprocess":
                     parent = _find_enclosing_function(tree, node)
                     assert parent is not None, (
-                        f"top-level {name} import — must be inside "
-                        "enable_semgrep_factory"
+                        f"top-level {name} import — must be inside enable_semgrep_factory"
                     )
                     assert parent.name == "enable_semgrep_factory", (
                         f"{name} imported in {parent.name!r} — must be "

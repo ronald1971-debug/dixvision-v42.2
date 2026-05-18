@@ -71,15 +71,9 @@ class FeedbackSample:
 
     def __post_init__(self) -> None:
         if self.weight <= 0.0 or not math.isfinite(self.weight):
-            raise ValueError(
-                f"FeedbackSample.weight must be > 0 and finite, "
-                f"got {self.weight!r}"
-            )
+            raise ValueError(f"FeedbackSample.weight must be > 0 and finite, got {self.weight!r}")
         if not math.isfinite(self.reward):
-            raise ValueError(
-                f"FeedbackSample.reward must be finite, "
-                f"got {self.reward!r}"
-            )
+            raise ValueError(f"FeedbackSample.reward must be finite, got {self.reward!r}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,17 +96,12 @@ class ParameterBounds:
         if not (math.isfinite(self.lo) and math.isfinite(self.hi)):
             raise ValueError("ParameterBounds.lo / hi must be finite")
         if self.hi <= self.lo:
-            raise ValueError(
-                f"ParameterBounds.hi ({self.hi}) must be > lo ({self.lo})"
-            )
+            raise ValueError(f"ParameterBounds.hi ({self.hi}) must be > lo ({self.lo})")
         if self.step <= 0.0 or not math.isfinite(self.step):
-            raise ValueError(
-                f"ParameterBounds.step must be > 0, got {self.step}"
-            )
+            raise ValueError(f"ParameterBounds.step must be > 0, got {self.step}")
         if not (self.lo <= self.initial <= self.hi):
             raise ValueError(
-                f"ParameterBounds.initial ({self.initial}) outside "
-                f"[{self.lo}, {self.hi}]"
+                f"ParameterBounds.initial ({self.initial}) outside [{self.lo}, {self.hi}]"
             )
 
 
@@ -182,22 +171,13 @@ class SlowLoopLearner:
         if not bounds:
             raise ValueError("bounds must be non-empty")
         if not (0.0 < ema_alpha <= 1.0):
-            raise ValueError(
-                f"ema_alpha must be in (0, 1], got {ema_alpha}"
-            )
+            raise ValueError(f"ema_alpha must be in (0, 1], got {ema_alpha}")
         if max_samples_per_param <= 0:
-            raise ValueError(
-                f"max_samples_per_param must be > 0, "
-                f"got {max_samples_per_param}"
-            )
+            raise ValueError(f"max_samples_per_param must be > 0, got {max_samples_per_param}")
         if exploration_eps < 0.0:
-            raise ValueError(
-                f"exploration_eps must be >= 0, got {exploration_eps}"
-            )
+            raise ValueError(f"exploration_eps must be >= 0, got {exploration_eps}")
         self._time_unix_s = (
-            time_unix_s_provider
-            if time_unix_s_provider is not None
-            else (lambda: 0)
+            time_unix_s_provider if time_unix_s_provider is not None else (lambda: 0)
         )
         self._rng = rng if rng is not None else random.Random(0)
         self._freeze = freeze_policy
@@ -205,8 +185,7 @@ class SlowLoopLearner:
         self._max_samples = max_samples_per_param
         self._eps = exploration_eps
         self._params: dict[str, _ParamState] = {
-            name: _ParamState(bounds=b, value=b.initial)
-            for name, b in bounds.items()
+            name: _ParamState(bounds=b, value=b.initial) for name, b in bounds.items()
         }
 
     @property
@@ -263,9 +242,7 @@ class SlowLoopLearner:
             version=SLOW_LOOP_VERSION,
             values={n: s.value for n, s in self._params.items()},
             ema={n: s.ema for n, s in self._params.items()},
-            sample_counts={
-                n: s.samples_seen for n, s in self._params.items()
-            },
+            sample_counts={n: s.samples_seen for n, s in self._params.items()},
             frozen=not unfrozen,
         )
 

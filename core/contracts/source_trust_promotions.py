@@ -54,9 +54,7 @@ outside the operator promotion route.
 DEMOTION_LEDGER_KIND = "OPERATOR_SOURCE_TRUST_DEMOTED"
 """Authority-ledger ``kind`` for demotion (revert) rows."""
 
-_ALLOWED_PROMOTION_TARGETS: frozenset[SignalTrust] = frozenset(
-    {SignalTrust.EXTERNAL_MED}
-)
+_ALLOWED_PROMOTION_TARGETS: frozenset[SignalTrust] = frozenset({SignalTrust.EXTERNAL_MED})
 
 
 __all__ = [
@@ -135,10 +133,7 @@ class SourceTrustPromotionStore:
         if not source_id:
             raise ValueError("source_id must be a non-empty string")
         if not is_promotable_target(target_trust):
-            raise ValueError(
-                "only EXTERNAL_MED is a valid promotion target; "
-                f"got {target_trust!r}"
-            )
+            raise ValueError(f"only EXTERNAL_MED is a valid promotion target; got {target_trust!r}")
         record = SourceTrustPromotion(
             source_id=source_id,
             target_trust=target_trust,
@@ -172,9 +167,7 @@ class SourceTrustPromotionStore:
         with self._lock:
             return source_id in self._promotions
 
-    def effective_trust(
-        self, source_id: str, declared_trust: SignalTrust
-    ) -> SignalTrust:
+    def effective_trust(self, source_id: str, declared_trust: SignalTrust) -> SignalTrust:
         """Compute the effective trust class for ``(source_id, declared)``.
 
         Rules (fail-closed -- never *demote* via overlay):

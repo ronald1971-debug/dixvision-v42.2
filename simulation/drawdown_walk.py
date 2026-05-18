@@ -90,8 +90,7 @@ class DrawdownWalkConfig:
     def __post_init__(self) -> None:
         if not 0 < self.max_steps <= 1_000_000:
             raise ValueError(
-                "DrawdownWalkConfig.max_steps must be in "
-                f"(0, 1_000_000], got {self.max_steps!r}"
+                f"DrawdownWalkConfig.max_steps must be in (0, 1_000_000], got {self.max_steps!r}"
             )
 
 
@@ -123,9 +122,7 @@ def _require_positive_int(meta: dict[str, Any], key: str) -> int:
     return raw
 
 
-def _require_bounded_float(
-    meta: dict[str, Any], key: str, low: float, high: float
-) -> float:
+def _require_bounded_float(meta: dict[str, Any], key: str, low: float, high: float) -> float:
     if key not in meta:
         raise ValueError(f"RealityScenario.meta missing required key {key!r}")
     raw = meta[key]
@@ -134,9 +131,7 @@ def _require_bounded_float(
     except (TypeError, ValueError) as exc:
         raise ValueError(f"meta[{key!r}] must be numeric, got {raw!r}") from exc
     if not low <= v <= high:
-        raise ValueError(
-            f"meta[{key!r}] must be in [{low}, {high}], got {v!r}"
-        )
+        raise ValueError(f"meta[{key!r}] must be in [{low}, {high}], got {v!r}")
     return v
 
 
@@ -145,9 +140,7 @@ def _require_side(meta: dict[str, Any]) -> str:
         raise ValueError("RealityScenario.meta missing required key 'side'")
     side = meta["side"]
     if side not in (_BUY, _SELL):
-        raise ValueError(
-            f"meta['side'] must be 'buy' or 'sell', got {side!r}"
-        )
+        raise ValueError(f"meta['side'] must be 'buy' or 'sell', got {side!r}")
     return side
 
 
@@ -172,10 +165,7 @@ class DrawdownWalk:
         size_usd = _require_positive_float(meta, "order_size_usd")
         num_steps = _require_positive_int(meta, "num_steps")
         if num_steps > cfg.max_steps:
-            raise ValueError(
-                f"meta['num_steps'] {num_steps} exceeds "
-                f"max_steps {cfg.max_steps}"
-            )
+            raise ValueError(f"meta['num_steps'] {num_steps} exceeds max_steps {cfg.max_steps}")
         drift = _require_bounded_float(meta, "per_step_drift", -0.01, 0.01)
         std = _require_bounded_float(meta, "per_step_std", 0.0, 0.1)
         side = _require_side(meta)

@@ -73,9 +73,7 @@ class SystemEngine(RuntimeEngine):
         *,
         sensor_array: SensorArray | None = None,
     ) -> None:
-        self.plugin_slots: Mapping[str, Sequence[Plugin]] = dict(
-            plugin_slots or {}
-        )
+        self.plugin_slots: Mapping[str, Sequence[Plugin]] = dict(plugin_slots or {})
         # AUDIT-WIRE.4 + P1-3 — bind the SensorArray primitive that
         # carries the frozen HAZ-XX sensors. WIRE.4 closed the
         # "primitive built but never bound" gap; P1-3 closes the
@@ -84,9 +82,7 @@ class SystemEngine(RuntimeEngine):
         self.sensor_array: SensorArray | None = sensor_array
         self._pollable: tuple[HazardSensor, ...] = ()
         if sensor_array is not None:
-            self._pollable = tuple(
-                s for s in sensor_array.sensors if _is_pollable(s)
-            )
+            self._pollable = tuple(s for s in sensor_array.sensors if _is_pollable(s))
 
     def process(self, event: Event) -> Sequence[HazardEvent]:
         """Dispatch pollable sensors with ``event.ts_ns``.

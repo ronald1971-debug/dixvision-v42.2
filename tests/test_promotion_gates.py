@@ -107,9 +107,7 @@ def test_check_passes_for_non_gated_targets(gates_path: Path) -> None:
 
 
 @pytest.mark.parametrize("target", ["CANARY", "LIVE", "AUTO"])
-def test_check_refuses_gated_target_when_not_bound(
-    gates_path: Path, target: str
-) -> None:
+def test_check_refuses_gated_target_when_not_bound(gates_path: Path, target: str) -> None:
     ledger = LedgerAuthorityWriter()
     gates = PromotionGates(ledger=ledger, path=gates_path)
 
@@ -136,9 +134,7 @@ def test_check_refuses_on_hash_mismatch(gates_path: Path) -> None:
     gates.bind(ts_ns=100, requestor="op")
 
     # Mid-window edit -- adding even a comment must trip the gate.
-    gates_path.write_bytes(
-        gates_path.read_bytes() + b"# operator changed sharpe min\n"
-    )
+    gates_path.write_bytes(gates_path.read_bytes() + b"# operator changed sharpe min\n")
 
     ok, code = gates.check("CANARY")
     assert ok is False
@@ -245,17 +241,13 @@ def test_state_manager_binds_hash_on_paper_entry(gates_path: Path) -> None:
     ledger = LedgerAuthorityWriter()
     policy = PolicyEngine()
     gates = PromotionGates(ledger=ledger, path=gates_path)
-    state = StateTransitionManager(
-        policy=policy, ledger=ledger, promotion_gates=gates
-    )
+    state = StateTransitionManager(policy=policy, ledger=ledger, promotion_gates=gates)
 
     assert gates.bound_hash() is None
     _ratchet_to_paper(state)
     assert gates.bound_hash() == compute_file_hash(gates_path)
 
-    bound_rows = [
-        r for r in ledger.read() if r.kind == LEDGER_KIND_PROMOTION_GATES_BOUND
-    ]
+    bound_rows = [r for r in ledger.read() if r.kind == LEDGER_KIND_PROMOTION_GATES_BOUND]
     assert len(bound_rows) == 1
 
 
@@ -265,14 +257,10 @@ def test_state_manager_refuses_canary_on_hash_mismatch(
     ledger = LedgerAuthorityWriter()
     policy = PolicyEngine()
     gates = PromotionGates(ledger=ledger, path=gates_path)
-    state = StateTransitionManager(
-        policy=policy, ledger=ledger, promotion_gates=gates
-    )
+    state = StateTransitionManager(policy=policy, ledger=ledger, promotion_gates=gates)
 
     _ratchet_to_paper(state)
-    gates_path.write_bytes(
-        gates_path.read_bytes() + b"# operator nudged thresholds\n"
-    )
+    gates_path.write_bytes(gates_path.read_bytes() + b"# operator nudged thresholds\n")
 
     decision = state.propose(
         ModeTransitionRequest(
@@ -287,12 +275,9 @@ def test_state_manager_refuses_canary_on_hash_mismatch(
     assert decision.rejection_code == "PROMOTION_GATES_HASH_MISMATCH"
     assert state.current_mode() is SystemMode.PAPER
 
-    rejected_rows = [
-        r for r in ledger.read() if r.kind == "MODE_TRANSITION_REJECTED"
-    ]
+    rejected_rows = [r for r in ledger.read() if r.kind == "MODE_TRANSITION_REJECTED"]
     assert any(
-        r.payload["rejection_code"] == "PROMOTION_GATES_HASH_MISMATCH"
-        for r in rejected_rows
+        r.payload["rejection_code"] == "PROMOTION_GATES_HASH_MISMATCH" for r in rejected_rows
     )
 
 
@@ -302,9 +287,7 @@ def test_state_manager_allows_canary_when_hash_matches(
     ledger = LedgerAuthorityWriter()
     policy = PolicyEngine()
     gates = PromotionGates(ledger=ledger, path=gates_path)
-    state = StateTransitionManager(
-        policy=policy, ledger=ledger, promotion_gates=gates
-    )
+    state = StateTransitionManager(policy=policy, ledger=ledger, promotion_gates=gates)
 
     _ratchet_to_paper(state)
 
@@ -327,9 +310,7 @@ def test_state_manager_reentry_to_paper_rebinds_hash(
     ledger = LedgerAuthorityWriter()
     policy = PolicyEngine()
     gates = PromotionGates(ledger=ledger, path=gates_path)
-    state = StateTransitionManager(
-        policy=policy, ledger=ledger, promotion_gates=gates
-    )
+    state = StateTransitionManager(policy=policy, ledger=ledger, promotion_gates=gates)
 
     _ratchet_to_paper(state)
     h1 = gates.bound_hash()
@@ -348,9 +329,7 @@ def test_state_manager_reentry_to_paper_rebinds_hash(
     assert decision.approved is True
 
     # Operator edits the gates file...
-    gates_path.write_bytes(
-        gates_path.read_bytes() + b"# new sharpe floor\n"
-    )
+    gates_path.write_bytes(gates_path.read_bytes() + b"# new sharpe floor\n")
 
     # ...and re-enters PAPER. The bind must rerun on the new bytes.
     consent = OperatorConsent(
@@ -398,9 +377,7 @@ def test_state_manager_de_escalation_does_not_require_gate(
     ledger = LedgerAuthorityWriter()
     policy = PolicyEngine()
     gates = PromotionGates(ledger=ledger, path=gates_path)
-    state = StateTransitionManager(
-        policy=policy, ledger=ledger, promotion_gates=gates
-    )
+    state = StateTransitionManager(policy=policy, ledger=ledger, promotion_gates=gates)
 
     _ratchet_to_paper(state)
     state.propose(

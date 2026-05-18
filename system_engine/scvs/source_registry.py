@@ -140,15 +140,11 @@ def _parse_source(raw: Any, idx: int) -> SourceDeclaration:
     try:
         category = SourceCategory(category_raw)
     except ValueError as exc:
-        raise ValueError(
-            f"{ctx}: category '{category_raw}' is not a SourceCategory"
-        ) from exc
+        raise ValueError(f"{ctx}: category '{category_raw}' is not a SourceCategory") from exc
 
     auth = str(_require(raw, "auth", ctx))
     if auth not in ALLOWED_AUTH:
-        raise ValueError(
-            f"{ctx}: auth '{auth}' must be one of {sorted(ALLOWED_AUTH)}"
-        )
+        raise ValueError(f"{ctx}: auth '{auth}' must be one of {sorted(ALLOWED_AUTH)}")
 
     default_liveness = _DEFAULT_LIVENESS_MS_BY_CATEGORY.get(category.value, 30_000)
     liveness_raw = raw.get("liveness_threshold_ms", default_liveness)
@@ -159,9 +155,7 @@ def _parse_source(raw: Any, idx: int) -> SourceDeclaration:
             f"{ctx}: liveness_threshold_ms must be an integer (got {liveness_raw!r})"
         ) from exc
     if liveness_ms < 0:
-        raise ValueError(
-            f"{ctx}: liveness_threshold_ms must be >= 0 (got {liveness_ms})"
-        )
+        raise ValueError(f"{ctx}: liveness_threshold_ms must be >= 0 (got {liveness_ms})")
 
     capabilities_raw = raw.get("capabilities", ())
     if capabilities_raw is None:
@@ -172,13 +166,10 @@ def _parse_source(raw: Any, idx: int) -> SourceDeclaration:
         for cap in capabilities_raw:
             if not isinstance(cap, str):
                 raise ValueError(
-                    f"{ctx}: capabilities entries must be strings"
-                    f" (got {type(cap).__name__})"
+                    f"{ctx}: capabilities entries must be strings (got {type(cap).__name__})"
                 )
             if cap in seen:
-                raise ValueError(
-                    f"{ctx}: capability '{cap}' listed more than once"
-                )
+                raise ValueError(f"{ctx}: capability '{cap}' listed more than once")
             seen.add(cap)
             cap_list.append(cap)
         capabilities_tuple = tuple(cap_list)
@@ -187,9 +178,7 @@ def _parse_source(raw: Any, idx: int) -> SourceDeclaration:
             f"{ctx}: capabilities must be a list (got {type(capabilities_raw).__name__})"
         )
     if capabilities_tuple and category is not SourceCategory.AI:
-        raise ValueError(
-            f"{ctx}: capabilities only valid on category=ai (got '{category.value}')"
-        )
+        raise ValueError(f"{ctx}: capabilities only valid on category=ai (got '{category.value}')")
     if capabilities_tuple:
         unknown = set(capabilities_tuple) - ALLOWED_AI_CAPABILITIES
         if unknown:

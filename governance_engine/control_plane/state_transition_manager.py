@@ -134,9 +134,7 @@ class StateTransitionManager:
         # are rejected with ``CONSENT_MISSING`` — the manager never
         # silently downgrades to the legacy bool gate for those edges.
         self._consent_validator = (
-            consent_validator
-            if consent_validator is not None
-            else OperatorConsentValidator()
+            consent_validator if consent_validator is not None else OperatorConsentValidator()
         )
 
     # ------------------------------------------------------------------
@@ -147,9 +145,7 @@ class StateTransitionManager:
         with self._lock:
             return self._mode
 
-    def propose(
-        self, request: ModeTransitionRequest
-    ) -> ModeTransitionDecision:
+    def propose(self, request: ModeTransitionRequest) -> ModeTransitionDecision:
         """Apply the full transition pipeline atomically.
 
         Order (deterministic):
@@ -217,9 +213,7 @@ class StateTransitionManager:
             consent_envelope_to_commit: OperatorConsent | None = None
             if edge_requires_consent(prev, normalised.target_mode):
                 consent_obj = normalised.consent
-                if consent_obj is not None and not isinstance(
-                    consent_obj, OperatorConsent
-                ):
+                if consent_obj is not None and not isinstance(consent_obj, OperatorConsent):
                     rejection_payload = {
                         "requestor": normalised.requestor,
                         "prev_mode": prev.name,
@@ -298,9 +292,7 @@ class StateTransitionManager:
             # so the rejection_code surfaces the gate violation, not a
             # downstream policy code that would obscure the real cause.
             if self._promotion_gates is not None:
-                gate_ok, gate_code = self._promotion_gates.check(
-                    normalised.target_mode.name
-                )
+                gate_ok, gate_code = self._promotion_gates.check(normalised.target_mode.name)
                 if not gate_ok:
                     rejection_payload = {
                         "requestor": normalised.requestor,
@@ -324,9 +316,7 @@ class StateTransitionManager:
                         ledger_seq=entry.seq,
                     )
 
-            policy_ok, policy_code = self._policy.permit_mode_transition(
-                normalised
-            )
+            policy_ok, policy_code = self._policy.permit_mode_transition(normalised)
             if not policy_ok:
                 rejection_payload = {
                     "requestor": normalised.requestor,
@@ -377,9 +367,7 @@ class StateTransitionManager:
                 "prev_mode": prev.name,
                 "new_mode": normalised.target_mode.name,
                 "reason": normalised.reason,
-                "operator_authorized": (
-                    "true" if normalised.operator_authorized else "false"
-                ),
+                "operator_authorized": ("true" if normalised.operator_authorized else "false"),
             }
             entry = self._ledger.append(
                 ts_ns=normalised.ts_ns,
@@ -398,10 +386,7 @@ class StateTransitionManager:
             # SHADOW-DEMOLITION-02 moved this binding moment from SHADOW
             # entry to PAPER entry when the SHADOW system-mode tier was
             # collapsed into PAPER.
-            if (
-                self._promotion_gates is not None
-                and normalised.target_mode is SystemMode.PAPER
-            ):
+            if self._promotion_gates is not None and normalised.target_mode is SystemMode.PAPER:
                 self._promotion_gates.bind(
                     ts_ns=normalised.ts_ns,
                     requestor=normalised.requestor,
@@ -417,14 +402,11 @@ class StateTransitionManager:
                 ledger_seq=entry.seq,
             )
 
-
     # ------------------------------------------------------------------
     # Intent transitions (Phase 6.T1d, INV-38)
     # ------------------------------------------------------------------
 
-    def propose_intent(
-        self, request: IntentTransitionRequest
-    ) -> IntentTransitionDecision:
+    def propose_intent(self, request: IntentTransitionRequest) -> IntentTransitionDecision:
         """Commit (or reject) an operator-set System Intent.
 
         ``StateTransitionManager.propose_intent`` is the **only** writer

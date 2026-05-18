@@ -43,9 +43,7 @@ _RSS_TWO_ITEMS = b"""<?xml version="1.0" encoding="UTF-8"?>
 
 _RSS_MALFORMED = b"<rss><channel><not-closed>"
 _RSS_EMPTY = b""
-_RSS_NO_ITEMS = (
-    b"<rss version='2.0'><channel><title>Empty</title></channel></rss>"
-)
+_RSS_NO_ITEMS = b"<rss version='2.0'><channel><title>Empty</title></channel></rss>"
 _RSS_BLANK_TITLE = b"""<?xml version="1.0"?>
 <rss><channel>
   <item><title></title><link>https://example.invalid/x</link></item>
@@ -227,9 +225,7 @@ def test_news_item_rejects_empty_title() -> None:
 
 def test_news_item_rejects_negative_published_ts() -> None:
     with pytest.raises(ValueError, match="published_ts_ns"):
-        NewsItem(
-            ts_ns=1, source="X", guid="g", title="t", published_ts_ns=-1
-        )
+        NewsItem(ts_ns=1, source="X", guid="g", title="t", published_ts_ns=-1)
 
 
 def test_news_item_rejects_zero_published_ts() -> None:
@@ -238,15 +234,11 @@ def test_news_item_rejects_zero_published_ts() -> None:
     proof of a real publication timestamp instead of a sentinel.
     """
     with pytest.raises(ValueError, match="published_ts_ns"):
-        NewsItem(
-            ts_ns=1, source="X", guid="g", title="t", published_ts_ns=0
-        )
+        NewsItem(ts_ns=1, source="X", guid="g", title="t", published_ts_ns=0)
 
 
 def test_news_item_allows_none_published_ts() -> None:
-    item = NewsItem(
-        ts_ns=1, source="X", guid="g", title="t", published_ts_ns=None
-    )
+    item = NewsItem(ts_ns=1, source="X", guid="g", title="t", published_ts_ns=None)
     assert item.published_ts_ns is None
 
 
@@ -262,6 +254,4 @@ def test_news_item_is_frozen() -> None:
 
 
 def test_make_coindesk_rss_url_returns_canonical_endpoint() -> None:
-    assert make_coindesk_rss_url() == (
-        "https://www.coindesk.com/arc/outboundfeeds/rss/"
-    )
+    assert make_coindesk_rss_url() == ("https://www.coindesk.com/arc/outboundfeeds/rss/")

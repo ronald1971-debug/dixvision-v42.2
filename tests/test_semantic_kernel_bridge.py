@@ -127,10 +127,7 @@ def test_semantic_kernel_only_imported_inside_factory_body() -> None:
     # ``InMemorySemanticMemory`` class — fails this guard.
     factory_node: ast.FunctionDef | None = None
     for node in _MODULE_TREE.body:
-        if (
-            isinstance(node, ast.FunctionDef)
-            and node.name == "enable_semantic_kernel_factory"
-        ):
+        if isinstance(node, ast.FunctionDef) and node.name == "enable_semantic_kernel_factory":
             factory_node = node
             break
     assert factory_node is not None, "factory not found"
@@ -143,17 +140,14 @@ def test_semantic_kernel_only_imported_inside_factory_body() -> None:
     for node in ast.walk(_MODULE_TREE):
         if isinstance(node, ast.Import):
             for a in node.names:
-                if a.name == "semantic_kernel" or a.name.startswith(
-                    "semantic_kernel."
-                ):
+                if a.name == "semantic_kernel" or a.name.startswith("semantic_kernel."):
                     assert node.lineno in factory_offsets, (
                         f"semantic_kernel imported at line "
                         f"{node.lineno} outside the lazy factory body"
                     )
         if isinstance(node, ast.ImportFrom):
             if node.module is not None and (
-                node.module == "semantic_kernel"
-                or node.module.startswith("semantic_kernel.")
+                node.module == "semantic_kernel" or node.module.startswith("semantic_kernel.")
             ):
                 pytest.fail(
                     f"semantic_kernel imported via 'from' at line "
@@ -169,9 +163,7 @@ def test_module_imports_cleanly_without_semantic_kernel_installed(
     # must import + parse cleanly. Production environments without
     # the optional vendor dep still mount this surface.
     monkeypatch.setitem(sys.modules, "semantic_kernel", None)
-    spec = importlib.util.spec_from_file_location(
-        "_skb_isolated", skb.__file__
-    )
+    spec = importlib.util.spec_from_file_location("_skb_isolated", skb.__file__)
     assert spec is not None and spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     # dataclasses walks ``sys.modules[cls.__module__]`` to resolve
@@ -194,9 +186,7 @@ def test_no_wall_clock_or_prng_calls_in_module() -> None:
         ("random", "randint"),
     }
     for node in ast.walk(_MODULE_TREE):
-        if isinstance(node, ast.Attribute) and isinstance(
-            node.value, ast.Name
-        ):
+        if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
             pair = (node.value.id, node.attr)
             assert pair not in forbidden_attrs, pair
 
@@ -206,9 +196,7 @@ def test_no_wall_clock_or_prng_calls_in_module() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _echo(
-    invocation: KernelInvocation, memory: SemanticMemoryProtocol
-) -> str:
+def _echo(invocation: KernelInvocation, memory: SemanticMemoryProtocol) -> str:
     return invocation.arguments["text"]
 
 
@@ -383,9 +371,7 @@ def test_kernel_invoke_returns_str_only_no_freeform_object() -> None:
     # canonical SK return contract is str. This pins the rule that
     # cognitive callers cannot smuggle untyped objects through the
     # bridge.
-    def bad_call(
-        invocation: KernelInvocation, memory: SemanticMemoryProtocol
-    ) -> str:
+    def bad_call(invocation: KernelInvocation, memory: SemanticMemoryProtocol) -> str:
         return 42  # type: ignore[return-value]
 
     plugin = KernelPlugin(
@@ -487,9 +473,7 @@ def test_kernel_plugin_and_function_names_round_trip() -> None:
 
 
 def _digest_result(r: KernelResult) -> bytes:
-    body = (
-        f"{r.plugin_name}|{r.function_name}|{r.value}|{r.audit_id}"
-    ).encode()
+    body = (f"{r.plugin_name}|{r.function_name}|{r.value}|{r.audit_id}").encode()
     return hashlib.blake2b(body, digest_size=16).digest()
 
 
@@ -540,9 +524,7 @@ def test_in_memory_semantic_memory_recall_inv15_deterministic() -> None:
         mem.store("b", "alpha")
         mem.store("c", "gamma")
         hits = mem.recall("alpha", top_k=2)
-        body = "|".join(
-            f"{h.entry_id}:{h.text}:{h.score:.6f}" for h in hits
-        ).encode()
+        body = "|".join(f"{h.entry_id}:{h.text}:{h.score:.6f}" for h in hits).encode()
         digests.append(hashlib.blake2b(body, digest_size=16).digest())
     assert digests[0] == digests[1] == digests[2]
 
@@ -629,10 +611,7 @@ def test_enable_semantic_kernel_factory_signature() -> None:
     # NOT a parameter so callers cannot pass in provider SDK objects
     # directly.
     assert list(sig.parameters) == ["completion_callable"]
-    assert (
-        sig.parameters["completion_callable"].kind
-        == inspect.Parameter.KEYWORD_ONLY
-    )
+    assert sig.parameters["completion_callable"].kind == inspect.Parameter.KEYWORD_ONLY
 
 
 def test_enable_semantic_kernel_factory_rejects_non_callable() -> None:
@@ -678,9 +657,7 @@ def test_enable_semantic_kernel_factory_audit_id_required(
 ) -> None:
     fake_sk = type(sys)("semantic_kernel")
     monkeypatch.setitem(sys.modules, "semantic_kernel", fake_sk)
-    invoke = enable_semantic_kernel_factory(
-        completion_callable=lambda p: "ok"
-    )
+    invoke = enable_semantic_kernel_factory(completion_callable=lambda p: "ok")
     with pytest.raises(InvocationError):
         invoke(
             KernelInvocation(
@@ -719,17 +696,10 @@ def test_completion_callable_signature_accepts_only_prompt() -> None:
     src = Path(skb.__file__).read_text()
     tree = ast.parse(src)
     for node in ast.walk(tree):
-        if (
-            isinstance(node, ast.FunctionDef)
-            and node.name == "enable_semantic_kernel_factory"
-        ):
+        if isinstance(node, ast.FunctionDef) and node.name == "enable_semantic_kernel_factory":
             args = node.args
-            assert args.args == [], (
-                "factory must take no positional args"
-            )
-            assert [a.arg for a in args.kwonlyargs] == [
-                "completion_callable"
-            ]
+            assert args.args == [], "factory must take no positional args"
+            assert [a.arg for a in args.kwonlyargs] == ["completion_callable"]
             assert args.vararg is None
             assert args.kwarg is None
             return

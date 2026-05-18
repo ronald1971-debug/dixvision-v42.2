@@ -67,13 +67,8 @@ def test_state_wires_both_loops() -> None:
     """``_State`` exposes both loops with the canonical types."""
 
     state = ui_server.STATE
-    assert (
-        type(state.closed_learning_loop).__name__ == "ClosedLearningLoop"
-    )
-    assert (
-        type(state.structural_evolution_loop).__name__
-        == "StructuralEvolutionLoop"
-    )
+    assert type(state.closed_learning_loop).__name__ == "ClosedLearningLoop"
+    assert type(state.structural_evolution_loop).__name__ == "StructuralEvolutionLoop"
 
 
 def test_inner_components_have_no_inner_freeze() -> None:
@@ -124,9 +119,7 @@ def test_admin_tick_refuses_without_env_opt_in(
 ) -> None:
     """Disabled by default — production deployments cannot tick."""
 
-    monkeypatch.delenv(
-        ui_server.ADMIN_LEARNING_TICK_ENV_VAR, raising=False
-    )
+    monkeypatch.delenv(ui_server.ADMIN_LEARNING_TICK_ENV_VAR, raising=False)
     response = client.post("/api/admin/learning/tick")
     assert response.status_code == 403
     body = response.json()

@@ -82,9 +82,7 @@ def _canonicalise(value: Any) -> Any:
         return value
     if isinstance(value, float):
         if math.isnan(value) or math.isinf(value):
-            raise CodecError(
-                "orjson-shape JSON cannot represent nan / inf / -inf"
-            )
+            raise CodecError("orjson-shape JSON cannot represent nan / inf / -inf")
         return value
     if isinstance(value, str):
         return value
@@ -95,14 +93,11 @@ def _canonicalise(value: Any) -> Any:
         for raw_key, raw_value in value.items():
             if not isinstance(raw_key, str):
                 raise CodecError(
-                    "orjson-shape JSON keys must be str (got "
-                    f"{type(raw_key).__name__!r})"
+                    f"orjson-shape JSON keys must be str (got {type(raw_key).__name__!r})"
                 )
             out[raw_key] = _canonicalise(raw_value)
         return out
-    raise CodecError(
-        f"value of type {type(value).__name__!r} is not orjson-serialisable"
-    )
+    raise CodecError(f"value of type {type(value).__name__!r} is not orjson-serialisable")
 
 
 def canonical_dumps(value: Any) -> bytes:
@@ -132,10 +127,7 @@ def canonical_loads(blob: bytes) -> Any:
     """Decode bytes produced by :func:`canonical_dumps` back to a value tree."""
 
     if not isinstance(blob, (bytes, bytearray, memoryview)):
-        raise CodecError(
-            f"canonical_loads requires bytes-like input (got "
-            f"{type(blob).__name__!r})"
-        )
+        raise CodecError(f"canonical_loads requires bytes-like input (got {type(blob).__name__!r})")
     try:
         text = bytes(blob).decode("utf-8")
     except UnicodeDecodeError as exc:
@@ -181,8 +173,7 @@ def enable_orjson_factory() -> JsonCodec:
     def _loads(blob: bytes) -> Any:
         if not isinstance(blob, (bytes, bytearray, memoryview)):
             raise CodecError(
-                "canonical_loads requires bytes-like input (got "
-                f"{type(blob).__name__!r})"
+                f"canonical_loads requires bytes-like input (got {type(blob).__name__!r})"
             )
         try:
             return orjson.loads(bytes(blob))

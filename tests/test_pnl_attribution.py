@@ -231,9 +231,7 @@ def test_sell_receiving_more_than_signal_is_positive_slippage() -> None:
 
 def test_fee_is_negative_pnl_component() -> None:
     at = AttributedTrade(
-        trade=_trade(
-            side=Side.BUY, qty=1.0, price=100.0, pnl_usd=5.0, fee_usd=0.5
-        ),
+        trade=_trade(side=Side.BUY, qty=1.0, price=100.0, pnl_usd=5.0, fee_usd=0.5),
         signal_price=100.0,
     )
     r = attribute_pnl([at])
@@ -329,9 +327,7 @@ def test_slippage_bps_is_negative_when_execution_beats_signal() -> None:
 
 def test_fee_bps_is_positive_when_fees_charged() -> None:
     at = AttributedTrade(
-        trade=_trade(
-            side=Side.BUY, qty=1.0, price=100.0, pnl_usd=0.0, fee_usd=1.0
-        ),
+        trade=_trade(side=Side.BUY, qty=1.0, price=100.0, pnl_usd=0.0, fee_usd=1.0),
         signal_price=100.0,
     )
     r = attribute_pnl([at])

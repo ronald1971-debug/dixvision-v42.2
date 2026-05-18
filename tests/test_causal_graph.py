@@ -328,9 +328,7 @@ def test_topological_sort_is_valid_order() -> None:
 
 
 def test_topological_sort_deterministic() -> None:
-    edges = [
-        ("a", "b"), ("a", "c"), ("b", "d"), ("c", "d"), ("d", "e")
-    ]
+    edges = [("a", "b"), ("a", "c"), ("b", "d"), ("c", "d"), ("d", "e")]
     g1 = CausalGraph()
     for src, dst in edges:
         g1.add_edge(src, dst)
@@ -423,9 +421,7 @@ def test_iter_edges_sorted() -> None:
     for src, dst in (("c", "z"), ("a", "z"), ("b", "z")):
         g.add_edge(src, dst)
     edges = list(g.iter_edges())
-    assert [(e.source_id, e.target_id) for e in edges] == [
-        ("a", "z"), ("b", "z"), ("c", "z")
-    ]
+    assert [(e.source_id, e.target_id) for e in edges] == [("a", "z"), ("b", "z"), ("c", "z")]
 
 
 def test_len_and_edge_count() -> None:
@@ -540,8 +536,13 @@ def test_inv15_insertion_order_independence() -> None:
 
 def test_inv15_topological_sort_order_independence() -> None:
     edges = [
-        ("a", "b"), ("a", "c"), ("b", "d"), ("c", "d"), ("d", "e"),
-        ("e", "f"), ("f", "g"),
+        ("a", "b"),
+        ("a", "c"),
+        ("b", "d"),
+        ("c", "d"),
+        ("d", "e"),
+        ("e", "f"),
+        ("f", "g"),
     ]
     g_forward = CausalGraph()
     for src, dst in edges:
@@ -629,9 +630,7 @@ def test_no_typed_event_construction() -> None:
     tree = _module_ast()
     for node in ast.walk(tree):
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-            assert node.func.id not in banned_names, (
-                f"forbidden construction: {node.func.id}"
-            )
+            assert node.func.id not in banned_names, f"forbidden construction: {node.func.id}"
 
 
 def test_adapted_from_header_present() -> None:

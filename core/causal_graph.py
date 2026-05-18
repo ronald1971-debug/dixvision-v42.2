@@ -109,9 +109,7 @@ def _validate_prop_value(value: Any) -> None:
         return
     if isinstance(value, int | float | str):
         return
-    raise CausalGraphError(
-        f"attr value must be JSON-primitive, got {type(value).__name__}"
-    )
+    raise CausalGraphError(f"attr value must be JSON-primitive, got {type(value).__name__}")
 
 
 def _freeze(props: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -199,9 +197,7 @@ class CausalGraph:
         else:
             existing.update(attrs)
 
-    def add_edge(
-        self, source_id: str, target_id: str, /, **attrs: Any
-    ) -> None:
+    def add_edge(self, source_id: str, target_id: str, /, **attrs: Any) -> None:
         """Idempotent directed-edge insert with cycle detection.
 
         Both endpoints are auto-created if absent (mirrors networkx).
@@ -223,9 +219,7 @@ class CausalGraph:
         # Cycle check: a cycle exists iff ``source`` is reachable from
         # ``target`` (the new edge would close the loop).
         if self._reachable(target_id, source_id):
-            raise CycleError(
-                f"adding edge {source_id!r}->{target_id!r} would create a cycle"
-            )
+            raise CycleError(f"adding edge {source_id!r}->{target_id!r} would create a cycle")
         existing = self._out[source_id].get(target_id)
         if existing is None:
             self._out[source_id][target_id] = dict(attrs)
@@ -240,9 +234,7 @@ class CausalGraph:
         _validate_prop_value(value)
         self._nodes[node_id][key] = value
 
-    def set_edge_attr(
-        self, source_id: str, target_id: str, key: str, value: Any
-    ) -> None:
+    def set_edge_attr(self, source_id: str, target_id: str, key: str, value: Any) -> None:
         """Set a single edge attribute."""
         self._require_edge_exists(source_id, target_id)
         self._require_nonempty_str("key", key)
@@ -269,9 +261,7 @@ class CausalGraph:
         return node_id in self._nodes
 
     def has_edge(self, source_id: str, target_id: str) -> bool:
-        return (
-            source_id in self._out and target_id in self._out[source_id]
-        )
+        return source_id in self._out and target_id in self._out[source_id]
 
     def node(self, node_id: str) -> NodeView:
         """Return a :class:`NodeView` for ``node_id`` (KeyError if missing)."""
@@ -360,9 +350,7 @@ class CausalGraph:
             )
         return tuple(order)
 
-    def shortest_path(
-        self, source_id: str, target_id: str
-    ) -> tuple[str, ...] | None:
+    def shortest_path(self, source_id: str, target_id: str) -> tuple[str, ...] | None:
         """Shortest directed path from ``source_id`` to ``target_id``.
 
         Returns ``None`` if no path exists. BFS over forward adjacency
@@ -386,9 +374,7 @@ class CausalGraph:
                     visited.add(nxt)
                     predecessor[nxt] = current
                     if nxt == target_id:
-                        return self._reconstruct_path(
-                            predecessor, source_id, target_id
-                        )
+                        return self._reconstruct_path(predecessor, source_id, target_id)
                     next_frontier.append(nxt)
             frontier = next_frontier
         return None
@@ -460,8 +446,7 @@ class CausalGraph:
     def serialize(self) -> bytes:
         """INV-15 byte-stable JSON projection."""
         nodes = [
-            {"id": n.node_id, "attrs": dict(sorted(n.attrs.items()))}
-            for n in self.iter_nodes()
+            {"id": n.node_id, "attrs": dict(sorted(n.attrs.items()))} for n in self.iter_nodes()
         ]
         edges = [
             {
@@ -476,9 +461,7 @@ class CausalGraph:
             "nodes": nodes,
             "edges": edges,
         }
-        return json.dumps(
-            payload, sort_keys=True, separators=(",", ":")
-        ).encode("utf-8")
+        return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
     @classmethod
     def deserialize(cls, blob: bytes) -> CausalGraph:
@@ -492,9 +475,7 @@ class CausalGraph:
         if not isinstance(payload, Mapping):
             raise CausalGraphError("blob root must be an object")
         if payload.get("version") != CAUSAL_GRAPH_VERSION:
-            raise CausalGraphError(
-                f"unsupported version: {payload.get('version')!r}"
-            )
+            raise CausalGraphError(f"unsupported version: {payload.get('version')!r}")
         graph = cls()
         for raw_node in payload.get("nodes", ()):
             graph.add_node(str(raw_node["id"]), **dict(raw_node.get("attrs", {})))
@@ -523,9 +504,7 @@ class CausalGraph:
         try:
             import networkx  # noqa: PLC0415
         except ImportError as exc:  # pragma: no cover - exercised when dep absent
-            raise CausalGraphError(
-                "networkx is not installed; see NEW_PIP_DEPENDENCIES"
-            ) from exc
+            raise CausalGraphError("networkx is not installed; see NEW_PIP_DEPENDENCIES") from exc
         g = networkx.DiGraph()
         for n in self.iter_nodes():
             g.add_node(n.node_id, **dict(n.attrs))

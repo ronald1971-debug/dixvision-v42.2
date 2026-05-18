@@ -70,14 +70,18 @@ def test_write_credential_creates_file(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(storage, "_has_devin_install_dir", lambda: False)
     p = tmp_path / ".env"
     written = write_credential(
-        "MY_KEY", "value123", dotenv_path=p, refresh_process_env=False,
+        "MY_KEY",
+        "value123",
+        dotenv_path=p,
+        refresh_process_env=False,
     )
     assert written == p
     assert p.read_text(encoding="utf-8") == "MY_KEY=value123\n"
 
 
 def test_write_credential_refreshes_process_env(
-    monkeypatch, tmp_path: Path,
+    monkeypatch,
+    tmp_path: Path,
 ) -> None:
     monkeypatch.delenv("DEVIN_SESSION_ID", raising=False)
     monkeypatch.delenv("DEVIN_USER_ID", raising=False)
@@ -90,53 +94,63 @@ def test_write_credential_refreshes_process_env(
 
 
 def test_write_credential_refuses_inside_devin_session(
-    monkeypatch, tmp_path: Path,
+    monkeypatch,
+    tmp_path: Path,
 ) -> None:
     # Force Devin-session detection.
     monkeypatch.setenv("DEVIN_SESSION_ID", "abc")
     p = tmp_path / ".env"
     with pytest.raises(StorageNotWritable):
         write_credential(
-            "MY_KEY", "v", dotenv_path=p, refresh_process_env=False,
+            "MY_KEY",
+            "v",
+            dotenv_path=p,
+            refresh_process_env=False,
         )
     assert not p.exists()
 
 
 def test_write_credential_rejects_invalid_name(
-    monkeypatch, tmp_path: Path,
+    monkeypatch,
+    tmp_path: Path,
 ) -> None:
     monkeypatch.delenv("DEVIN_SESSION_ID", raising=False)
     monkeypatch.delenv("DEVIN_USER_ID", raising=False)
     monkeypatch.setattr(storage, "_has_devin_install_dir", lambda: False)
     with pytest.raises(ValueError):
         write_credential(
-            "1BAD", "v",
+            "1BAD",
+            "v",
             dotenv_path=tmp_path / ".env",
             refresh_process_env=False,
         )
 
 
 def test_write_credential_rejects_empty_value(
-    monkeypatch, tmp_path: Path,
+    monkeypatch,
+    tmp_path: Path,
 ) -> None:
     monkeypatch.delenv("DEVIN_SESSION_ID", raising=False)
     monkeypatch.setattr(storage, "_has_devin_install_dir", lambda: False)
     with pytest.raises(ValueError):
         write_credential(
-            "FOO", "",
+            "FOO",
+            "",
             dotenv_path=tmp_path / ".env",
             refresh_process_env=False,
         )
 
 
 def test_write_credential_rejects_newline_value(
-    monkeypatch, tmp_path: Path,
+    monkeypatch,
+    tmp_path: Path,
 ) -> None:
     monkeypatch.delenv("DEVIN_SESSION_ID", raising=False)
     monkeypatch.setattr(storage, "_has_devin_install_dir", lambda: False)
     with pytest.raises(ValueError):
         write_credential(
-            "FOO", "line1\nline2",
+            "FOO",
+            "line1\nline2",
             dotenv_path=tmp_path / ".env",
             refresh_process_env=False,
         )

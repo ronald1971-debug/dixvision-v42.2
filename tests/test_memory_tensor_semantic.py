@@ -20,12 +20,7 @@ from state.memory_tensor.semantic import (
     SemanticMemoryStore,
 )
 
-_SEMANTIC_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "state"
-    / "memory_tensor"
-    / "semantic.py"
-)
+_SEMANTIC_PATH = Path(__file__).resolve().parents[1] / "state" / "memory_tensor" / "semantic.py"
 
 _FORBIDDEN_TOP_LEVEL_IMPORTS = frozenset(
     {
@@ -323,9 +318,7 @@ def test_iter_is_sorted_by_ts_then_id() -> None:
 def test_search_returns_zero_distance_for_exact_match() -> None:
     s = SemanticMemoryStore(dim=3, max_size=8)
     s.add(Episode(ts_ns=1, episode_id="exact", embedding=(0.5, -0.5, 1.0)))
-    q = MemoryQuery(
-        ts_ns=2, query_id="q", embedding=(0.5, -0.5, 1.0), k=1
-    )
+    q = MemoryQuery(ts_ns=2, query_id="q", embedding=(0.5, -0.5, 1.0), k=1)
     res = s.search(q)
     assert isinstance(res, MemoryResult)
     assert len(res.hits) == 1
@@ -392,10 +385,7 @@ def test_search_hits_sorted_ascending_by_distance() -> None:
     q = MemoryQuery(ts_ns=99, query_id="q", embedding=(1.0, 0.0), k=3)
     res = s.search(q)
     assert [h.episode_id for h in res.hits] == ["a", "c", "b"]
-    assert all(
-        res.hits[i].distance <= res.hits[i + 1].distance
-        for i in range(len(res.hits) - 1)
-    )
+    assert all(res.hits[i].distance <= res.hits[i + 1].distance for i in range(len(res.hits) - 1))
 
 
 def test_search_breaks_distance_ties_by_ts_then_episode_id() -> None:
@@ -539,9 +529,10 @@ def test_serialize_is_deterministic_across_runs() -> None:
 
 
 def test_ivf_search_is_deterministic_across_runs() -> None:
-    results = [_build_ivf_store().search(
-        MemoryQuery(ts_ns=99, query_id="q", embedding=(1.0, 0.1), k=2)
-    ) for _ in range(3)]
+    results = [
+        _build_ivf_store().search(MemoryQuery(ts_ns=99, query_id="q", embedding=(1.0, 0.1), k=2))
+        for _ in range(3)
+    ]
     assert results[0] == results[1] == results[2]
 
 
@@ -558,9 +549,7 @@ def _build_reference_store(*, ivf: bool = False) -> SemanticMemoryStore:
         )
     else:
         centroids = None
-    s = SemanticMemoryStore(
-        dim=3, max_size=8, centroids=centroids, nprobe=1
-    )
+    s = SemanticMemoryStore(dim=3, max_size=8, centroids=centroids, nprobe=1)
     s.add(
         Episode(
             ts_ns=10,
@@ -658,18 +647,14 @@ def test_deserialize_rejects_non_object_top_level() -> None:
 
 
 def test_deserialize_rejects_unknown_version() -> None:
-    blob = (
-        b'{"version": 99, "dim": 2, "max_size": 8, "nprobe": 1, '
-        b'"centroids": [], "episodes": []}'
-    )
+    blob = b'{"version": 99, "dim": 2, "max_size": 8, "nprobe": 1, "centroids": [], "episodes": []}'
     with pytest.raises(ValueError):
         SemanticMemoryStore.deserialize(blob)
 
 
 def test_deserialize_rejects_bad_dim() -> None:
     blob = (
-        b'{"version": 1, "dim": "x", "max_size": 8, "nprobe": 1, '
-        b'"centroids": [], "episodes": []}'
+        b'{"version": 1, "dim": "x", "max_size": 8, "nprobe": 1, "centroids": [], "episodes": []}'
     )
     with pytest.raises(ValueError):
         SemanticMemoryStore.deserialize(blob)
@@ -677,8 +662,7 @@ def test_deserialize_rejects_bad_dim() -> None:
 
 def test_deserialize_rejects_bad_max_size() -> None:
     blob = (
-        b'{"version": 1, "dim": 2, "max_size": "x", "nprobe": 1, '
-        b'"centroids": [], "episodes": []}'
+        b'{"version": 1, "dim": 2, "max_size": "x", "nprobe": 1, "centroids": [], "episodes": []}'
     )
     with pytest.raises(ValueError):
         SemanticMemoryStore.deserialize(blob)
@@ -686,8 +670,7 @@ def test_deserialize_rejects_bad_max_size() -> None:
 
 def test_deserialize_rejects_bad_nprobe() -> None:
     blob = (
-        b'{"version": 1, "dim": 2, "max_size": 8, "nprobe": "x", '
-        b'"centroids": [], "episodes": []}'
+        b'{"version": 1, "dim": 2, "max_size": 8, "nprobe": "x", "centroids": [], "episodes": []}'
     )
     with pytest.raises(ValueError):
         SemanticMemoryStore.deserialize(blob)
@@ -695,8 +678,7 @@ def test_deserialize_rejects_bad_nprobe() -> None:
 
 def test_deserialize_rejects_bad_centroids_type() -> None:
     blob = (
-        b'{"version": 1, "dim": 2, "max_size": 8, "nprobe": 1, '
-        b'"centroids": "no", "episodes": []}'
+        b'{"version": 1, "dim": 2, "max_size": 8, "nprobe": 1, "centroids": "no", "episodes": []}'
     )
     with pytest.raises(ValueError):
         SemanticMemoryStore.deserialize(blob)
@@ -704,8 +686,7 @@ def test_deserialize_rejects_bad_centroids_type() -> None:
 
 def test_deserialize_rejects_bad_episodes_type() -> None:
     blob = (
-        b'{"version": 1, "dim": 2, "max_size": 8, "nprobe": 1, '
-        b'"centroids": [], "episodes": "no"}'
+        b'{"version": 1, "dim": 2, "max_size": 8, "nprobe": 1, "centroids": [], "episodes": "no"}'
     )
     with pytest.raises(ValueError):
         SemanticMemoryStore.deserialize(blob)

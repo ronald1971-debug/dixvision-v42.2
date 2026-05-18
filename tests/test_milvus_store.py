@@ -45,9 +45,7 @@ from state.memory_tensor.semantic_milvus import (
     milvus_client_factory,
 )
 
-_THIS_MODULE = pathlib.Path(
-    "state/memory_tensor/semantic_milvus.py"
-).resolve()
+_THIS_MODULE = pathlib.Path("state/memory_tensor/semantic_milvus.py").resolve()
 
 
 # ---------------------------------------------------------------------------
@@ -238,9 +236,7 @@ def test_store_rejects_negative_max_size():
 
 def test_store_rejects_non_metric():
     with pytest.raises(TypeError):
-        SemanticMilvusStore(
-            dim=4, max_size=10, metric_type="L2"
-        )  # type: ignore[arg-type]
+        SemanticMilvusStore(dim=4, max_size=10, metric_type="L2")  # type: ignore[arg-type]
 
 
 def test_store_rejects_empty_collection():
@@ -284,9 +280,7 @@ def test_add_rejects_non_episode():
 
 def test_add_rejects_wrong_dim():
     store = SemanticMilvusStore(dim=2, max_size=4)
-    e = Episode(
-        ts_ns=1, episode_id="a", embedding=(1.0, 0.0, 0.0), payload={}
-    )
+    e = Episode(ts_ns=1, episode_id="a", embedding=(1.0, 0.0, 0.0), payload={})
     with pytest.raises(ValueError):
         store.add(e)
 
@@ -339,9 +333,7 @@ def test_evict_tie_breaks_by_episode_id():
 # ---------------------------------------------------------------------------
 def test_insert_batch():
     store = SemanticMilvusStore(dim=2, max_size=4)
-    store.insert(
-        [_ep("a", (1.0, 0.0)), _ep("b", (0.0, 1.0))]
-    )
+    store.insert([_ep("a", (1.0, 0.0)), _ep("b", (0.0, 1.0))])
     assert len(store) == 2
 
 
@@ -416,9 +408,7 @@ def test_create_index_rejects_non_index_params():
 
 
 def test_create_index_rejects_metric_mismatch():
-    store = SemanticMilvusStore(
-        dim=2, max_size=4, metric_type=MetricType.COSINE
-    )
+    store = SemanticMilvusStore(dim=2, max_size=4, metric_type=MetricType.COSINE)
     params = IndexParams(
         index_type=IndexType.HNSW,
         metric_type=MetricType.L2,
@@ -433,9 +423,7 @@ def test_create_index_rejects_metric_mismatch():
 def test_search_cosine_identical_returns_zero_distance():
     store = SemanticMilvusStore(dim=2, max_size=4)
     store.add(_ep("a", (1.0, 0.0)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=1
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=1)
     result = store.search(q)
     assert len(result.hits) == 1
     assert result.hits[0].distance == pytest.approx(0.0)
@@ -444,9 +432,7 @@ def test_search_cosine_identical_returns_zero_distance():
 def test_search_cosine_orthogonal_returns_one():
     store = SemanticMilvusStore(dim=2, max_size=4)
     store.add(_ep("a", (1.0, 0.0)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(0.0, 1.0), k=1
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(0.0, 1.0), k=1)
     result = store.search(q)
     assert result.hits[0].distance == pytest.approx(1.0)
 
@@ -454,9 +440,7 @@ def test_search_cosine_orthogonal_returns_one():
 def test_search_cosine_opposite_returns_two():
     store = SemanticMilvusStore(dim=2, max_size=4)
     store.add(_ep("a", (1.0, 0.0)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(-1.0, 0.0), k=1
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(-1.0, 0.0), k=1)
     result = store.search(q)
     assert result.hits[0].distance == pytest.approx(2.0)
 
@@ -464,9 +448,7 @@ def test_search_cosine_opposite_returns_two():
 def test_search_cosine_zero_norm_falls_back():
     store = SemanticMilvusStore(dim=2, max_size=4)
     store.add(_ep("a", (0.0, 0.0)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=1
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=1)
     result = store.search(q)
     assert result.hits[0].distance == pytest.approx(1.0)
 
@@ -475,25 +457,17 @@ def test_search_cosine_zero_norm_falls_back():
 # L2 search
 # ---------------------------------------------------------------------------
 def test_search_l2_zero_when_identical():
-    store = SemanticMilvusStore(
-        dim=2, max_size=4, metric_type=MetricType.L2
-    )
+    store = SemanticMilvusStore(dim=2, max_size=4, metric_type=MetricType.L2)
     store.add(_ep("a", (3.0, 4.0)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(3.0, 4.0), k=1
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(3.0, 4.0), k=1)
     result = store.search(q)
     assert result.hits[0].distance == pytest.approx(0.0)
 
 
 def test_search_l2_pythagoras():
-    store = SemanticMilvusStore(
-        dim=2, max_size=4, metric_type=MetricType.L2
-    )
+    store = SemanticMilvusStore(dim=2, max_size=4, metric_type=MetricType.L2)
     store.add(_ep("a", (0.0, 0.0)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(3.0, 4.0), k=1
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(3.0, 4.0), k=1)
     result = store.search(q)
     assert result.hits[0].distance == pytest.approx(5.0)
 
@@ -502,28 +476,20 @@ def test_search_l2_pythagoras():
 # IP search
 # ---------------------------------------------------------------------------
 def test_search_ip_non_negative():
-    store = SemanticMilvusStore(
-        dim=2, max_size=4, metric_type=MetricType.IP
-    )
+    store = SemanticMilvusStore(dim=2, max_size=4, metric_type=MetricType.IP)
     store.add(_ep("a", (1.0, 0.0)))
     store.add(_ep("b", (0.5, 0.5)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2)
     result = store.search(q)
     for hit in result.hits:
         assert hit.distance >= 0.0
 
 
 def test_search_ip_picks_highest_ip():
-    store = SemanticMilvusStore(
-        dim=2, max_size=4, metric_type=MetricType.IP
-    )
+    store = SemanticMilvusStore(dim=2, max_size=4, metric_type=MetricType.IP)
     store.add(_ep("a", (1.0, 0.0)))
     store.add(_ep("b", (0.5, 0.5)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2)
     result = store.search(q)
     assert result.hits[0].episode_id == "a"
 
@@ -535,24 +501,16 @@ def test_filtered_search_must_filters_out():
     store = SemanticMilvusStore(dim=2, max_size=4)
     store.add(_ep("a", (1.0, 0.0), strategy="alpha"))
     store.add(_ep("b", (1.0, 0.0), strategy="beta"))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2
-    )
-    result = store.search_with_filter(
-        q, expr=BooleanExpression(must={"strategy": "alpha"})
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2)
+    result = store.search_with_filter(q, expr=BooleanExpression(must={"strategy": "alpha"}))
     assert [h.episode_id for h in result.hits] == ["a"]
 
 
 def test_filtered_search_returns_empty_when_no_match():
     store = SemanticMilvusStore(dim=2, max_size=4)
     store.add(_ep("a", (1.0, 0.0), strategy="alpha"))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2
-    )
-    result = store.search_with_filter(
-        q, expr=BooleanExpression(must={"strategy": "missing"})
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2)
+    result = store.search_with_filter(q, expr=BooleanExpression(must={"strategy": "missing"}))
     assert result.hits == ()
 
 
@@ -560,9 +518,7 @@ def test_search_filter_none_returns_all():
     store = SemanticMilvusStore(dim=2, max_size=4)
     store.add(_ep("a", (1.0, 0.0), strategy="alpha"))
     store.add(_ep("b", (0.0, 1.0), strategy="beta"))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2)
     result = store.search_with_filter(q, expr=None)
     assert len(result.hits) == 2
 
@@ -575,22 +531,16 @@ def test_search_rejects_non_query():
 
 def test_search_rejects_dim_mismatch():
     store = SemanticMilvusStore(dim=2, max_size=4)
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0, 0.0), k=1
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0, 0.0), k=1)
     with pytest.raises(ValueError):
         store.search(q)
 
 
 def test_search_rejects_non_expr():
     store = SemanticMilvusStore(dim=2, max_size=4)
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=1
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=1)
     with pytest.raises(TypeError):
-        store.search_with_filter(
-            q, expr="must=alpha"
-        )  # type: ignore[arg-type]
+        store.search_with_filter(q, expr="must=alpha")  # type: ignore[arg-type]
 
 
 # ---------------------------------------------------------------------------
@@ -601,9 +551,7 @@ def test_search_hits_sorted_by_distance_asc():
     store.add(_ep("a", (1.0, 0.0)))
     store.add(_ep("b", (0.5, 0.5)))
     store.add(_ep("c", (0.0, 1.0)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=3
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=3)
     result = store.search(q)
     distances = [h.distance for h in result.hits]
     assert distances == sorted(distances)
@@ -613,9 +561,7 @@ def test_search_k_limits():
     store = SemanticMilvusStore(dim=2, max_size=4)
     for i, eid in enumerate(["a", "b", "c", "d"]):
         store.add(_ep(eid, (1.0 - i * 0.1, 0.0), ts=10 + i))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2)
     result = store.search(q)
     assert len(result.hits) == 2
 
@@ -625,9 +571,7 @@ def test_search_tie_breaks_by_ts_then_episode_id():
     store.add(_ep("z", (1.0, 0.0), ts=10))
     store.add(_ep("a", (1.0, 0.0), ts=10))
     store.add(_ep("m", (1.0, 0.0), ts=20))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=3
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=3)
     result = store.search(q)
     assert [h.episode_id for h in result.hits] == ["a", "z", "m"]
 
@@ -635,9 +579,7 @@ def test_search_tie_breaks_by_ts_then_episode_id():
 def test_search_result_echoes_ts_and_query_id():
     store = SemanticMilvusStore(dim=2, max_size=4)
     store.add(_ep("a", (1.0, 0.0)))
-    q = MemoryQuery(
-        ts_ns=12345, query_id="qx", embedding=(1.0, 0.0), k=1
-    )
+    q = MemoryQuery(ts_ns=12345, query_id="qx", embedding=(1.0, 0.0), k=1)
     result = store.search(q)
     assert result.ts_ns == 12345
     assert result.query_id == "qx"
@@ -646,9 +588,7 @@ def test_search_result_echoes_ts_and_query_id():
 def test_search_result_type():
     store = SemanticMilvusStore(dim=2, max_size=4)
     store.add(_ep("a", (1.0, 0.0)))
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=1
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=1)
     result = store.search(q)
     assert isinstance(result, MemoryResult)
     assert all(isinstance(h, MemoryHit) for h in result.hits)
@@ -656,9 +596,7 @@ def test_search_result_type():
 
 def test_search_empty_store_returns_no_hits():
     store = SemanticMilvusStore(dim=2, max_size=4)
-    q = MemoryQuery(
-        ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=3
-    )
+    q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=3)
     result = store.search(q)
     assert result.hits == ()
 
@@ -761,15 +699,9 @@ def test_replay_byte_identical_three_runs():
                 params={"M": 16, "efConstruction": 200},
             )
         )
-        q = MemoryQuery(
-            ts_ns=100, query_id="q1", embedding=(0.5, 0.5, 0.0), k=3
-        )
+        q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(0.5, 0.5, 0.0), k=3)
         result = store.search(q)
-        return (
-            store.serialize()
-            + b"||"
-            + repr(result.hits).encode("ascii")
-        )
+        return store.serialize() + b"||" + repr(result.hits).encode("ascii")
 
     b1 = run()
     b2 = run()
@@ -782,12 +714,8 @@ def test_replay_byte_identical_filtered():
         store = SemanticMilvusStore(dim=2, max_size=4)
         store.add(_ep("a", (1.0, 0.0), ts=10, strategy="alpha"))
         store.add(_ep("b", (0.0, 1.0), ts=20, strategy="beta"))
-        q = MemoryQuery(
-            ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2
-        )
-        result = store.search_with_filter(
-            q, expr=BooleanExpression(must={"strategy": "alpha"})
-        )
+        q = MemoryQuery(ts_ns=100, query_id="q1", embedding=(1.0, 0.0), k=2)
+        result = store.search_with_filter(q, expr=BooleanExpression(must={"strategy": "alpha"}))
         return repr(result.hits).encode("ascii")
 
     assert run() == run() == run()
@@ -809,21 +737,27 @@ def test_factory_rejects_non_positive_port():
 def test_factory_rejects_non_str_user():
     with pytest.raises(TypeError):
         milvus_client_factory(
-            host="localhost", port=19530, user=123  # type: ignore[arg-type]
+            host="localhost",
+            port=19530,
+            user=123,  # type: ignore[arg-type]
         )
 
 
 def test_factory_rejects_non_str_password():
     with pytest.raises(TypeError):
         milvus_client_factory(
-            host="localhost", port=19530, password=123  # type: ignore[arg-type]
+            host="localhost",
+            port=19530,
+            password=123,  # type: ignore[arg-type]
         )
 
 
 def test_factory_rejects_non_bool_secure():
     with pytest.raises(TypeError):
         milvus_client_factory(
-            host="localhost", port=19530, secure="yes"  # type: ignore[arg-type]
+            host="localhost",
+            port=19530,
+            secure="yes",  # type: ignore[arg-type]
         )
 
 
@@ -903,10 +837,7 @@ def test_no_typed_event_constructions():
             func = node.func
             if isinstance(func, ast.Name) and func.id in forbidden_names:
                 pytest.fail(f"forbidden constructor call: {func.id}")
-            if (
-                isinstance(func, ast.Attribute)
-                and func.attr in forbidden_names
-            ):
+            if isinstance(func, ast.Attribute) and func.attr in forbidden_names:
                 pytest.fail(f"forbidden constructor call: {func.attr}")
 
 
@@ -919,10 +850,7 @@ def test_pymilvus_import_confined_to_factory():
     tree = _parse()
     factory_fn: ast.FunctionDef | None = None
     for node in tree.body:
-        if (
-            isinstance(node, ast.FunctionDef)
-            and node.name == "milvus_client_factory"
-        ):
+        if isinstance(node, ast.FunctionDef) and node.name == "milvus_client_factory":
             factory_fn = node
             break
     assert factory_fn is not None

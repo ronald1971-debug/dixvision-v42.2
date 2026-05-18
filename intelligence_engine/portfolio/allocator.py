@@ -64,32 +64,21 @@ class PortfolioAllocatorConfig:
 
     def __post_init__(self) -> None:
         if not (0.0 <= self.confidence_floor <= 1.0):
-            raise ValueError(
-                f"confidence_floor must be in [0, 1], "
-                f"got {self.confidence_floor!r}"
-            )
+            raise ValueError(f"confidence_floor must be in [0, 1], got {self.confidence_floor!r}")
         # NB: phrased as ``not (x > 0.0)`` rather than ``x <= 0.0`` so NaN
         # — which compares False against every numeric — is rejected here
         # instead of silently passing through and causing the headroom math
         # below to clamp every symbol's allocation to 0.
         if not (self.max_symbol_notional_usd > 0.0):
             raise ValueError(
-                "max_symbol_notional_usd must be positive, "
-                f"got {self.max_symbol_notional_usd!r}"
+                f"max_symbol_notional_usd must be positive, got {self.max_symbol_notional_usd!r}"
             )
         if not (0.0 < self.max_total_share <= 1.0):
-            raise ValueError(
-                f"max_total_share must be in (0, 1], "
-                f"got {self.max_total_share!r}"
-            )
+            raise ValueError(f"max_total_share must be in (0, 1], got {self.max_total_share!r}")
 
 
 def _default_config_path() -> Path:
-    return (
-        Path(__file__).resolve().parents[2]
-        / "registry"
-        / "portfolio_allocator.yaml"
-    )
+    return Path(__file__).resolve().parents[2] / "registry" / "portfolio_allocator.yaml"
 
 
 def load_portfolio_allocator_config(
@@ -98,9 +87,7 @@ def load_portfolio_allocator_config(
     p = path or _default_config_path()
     raw: Any = yaml.safe_load(p.read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
-        raise ValueError(
-            f"{p}: expected mapping at top level, got {type(raw)!r}"
-        )
+        raise ValueError(f"{p}: expected mapping at top level, got {type(raw)!r}")
     try:
         return PortfolioAllocatorConfig(
             confidence_floor=float(raw["confidence_floor"]),
@@ -137,8 +124,7 @@ class PortfolioAllocator:
         # ``max_symbol_notional_usd`` validator above.
         if not (available_capital_usd >= 0.0):
             raise ValueError(
-                "available_capital_usd must be non-negative, "
-                f"got {available_capital_usd!r}"
+                f"available_capital_usd must be non-negative, got {available_capital_usd!r}"
             )
 
         cfg = self._config

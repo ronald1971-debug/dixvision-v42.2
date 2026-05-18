@@ -101,16 +101,12 @@ def _schema_to_ts(
     if "enum" in schema:
         values = schema["enum"]
         if not all(isinstance(v, str) for v in values):
-            raise NotImplementedError(
-                f"only string enums are supported (got {values!r})"
-            )
+            raise NotImplementedError(f"only string enums are supported (got {values!r})")
         return " | ".join(repr(v).replace("'", '"') for v in values)
 
     if "anyOf" in schema:
         # Pydantic encodes Optional[T] as anyOf[T, null].
-        parts = [
-            _schema_to_ts(s, defs, interfaces, enums) for s in schema["anyOf"]
-        ]
+        parts = [_schema_to_ts(s, defs, interfaces, enums) for s in schema["anyOf"]]
         return " | ".join(parts)
 
     type_ = schema.get("type")
@@ -158,16 +154,12 @@ def _emit_named(
     if "enum" in schema:
         values = schema["enum"]
         if not all(isinstance(v, str) for v in values):
-            raise NotImplementedError(
-                f"only string enums are supported (got {values!r})"
-            )
+            raise NotImplementedError(f"only string enums are supported (got {values!r})")
         enums[name] = _Enum(name=name, values=list(values))
         return
 
     if schema.get("type") != "object":
-        raise NotImplementedError(
-            f"unsupported named def {name}: {schema!r}"
-        )
+        raise NotImplementedError(f"unsupported named def {name}: {schema!r}")
 
     properties = schema.get("properties", {})
     required = set(schema.get("required", []))
@@ -253,10 +245,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help=(
-            "do not write; exit non-zero if the rendered output differs "
-            "from --out's contents"
-        ),
+        help=("do not write; exit non-zero if the rendered output differs from --out's contents"),
     )
     args = parser.parse_args(argv)
 

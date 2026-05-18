@@ -113,13 +113,9 @@ class ExclusiveDutchOrderIntent:
         if self.exclusivity_override_bps < 0:
             raise ValueError("exclusivity_override_bps must be >= 0")
         if self.decay_end_time_unix_s < self.decay_start_time_unix_s:
-            raise ValueError(
-                "decay_end_time must be >= decay_start_time"
-            )
+            raise ValueError("decay_end_time must be >= decay_start_time")
         if self.deadline_unix_s < self.decay_end_time_unix_s:
-            raise ValueError(
-                "deadline must be >= decay_end_time"
-            )
+            raise ValueError("deadline must be >= decay_end_time")
 
 
 def build_exclusive_dutch_order_typed_data(
@@ -199,9 +195,7 @@ def build_exclusive_dutch_order_typed_data(
                 "decayStartTime": intent.decay_start_time_unix_s,
                 "decayEndTime": intent.decay_end_time_unix_s,
                 "exclusiveFiller": intent.exclusive_filler,
-                "exclusivityOverrideBps": (
-                    intent.exclusivity_override_bps
-                ),
+                "exclusivityOverrideBps": (intent.exclusivity_override_bps),
                 "inputToken": intent.input.token,
                 "inputStartAmount": intent.input.start_amount,
                 "inputEndAmount": intent.input.end_amount,
@@ -294,9 +288,7 @@ def intent_from_quote_payload(
                 token=str(out["token"]),
                 start_amount=int(out["startAmount"]),
                 end_amount=int(out["endAmount"]),
-                recipient=str(
-                    out.get("recipient", default_swapper)
-                ),
+                recipient=str(out.get("recipient", default_swapper)),
             )
         )
 
@@ -308,12 +300,8 @@ def intent_from_quote_payload(
         deadline_unix_s=_int("deadline"),
         decay_start_time_unix_s=_int("decayStartTime"),
         decay_end_time_unix_s=_int("decayEndTime"),
-        exclusive_filler=_str(
-            "exclusiveFiller", default="0x" + "0" * 40
-        ),
-        exclusivity_override_bps=_int(
-            "exclusivityOverrideBps", default=0
-        ),
+        exclusive_filler=_str("exclusiveFiller", default="0x" + "0" * 40),
+        exclusivity_override_bps=_int("exclusivityOverrideBps", default=0),
         input=DutchInput(
             token=str(raw_input["token"]),
             start_amount=int(raw_input["startAmount"]),
@@ -323,9 +311,7 @@ def intent_from_quote_payload(
     )
 
 
-def sign_typed_data(
-    *, private_key: str, typed_data: dict[str, Any]
-) -> SignedIntent:
+def sign_typed_data(*, private_key: str, typed_data: dict[str, Any]) -> SignedIntent:
     """Sign ``typed_data`` with ``private_key`` (EIP-712).
 
     Args:
@@ -348,9 +334,7 @@ def sign_typed_data(
     sig: str = signed.signature.hex()
     if not sig.startswith("0x"):
         sig = "0x" + sig
-    return SignedIntent(
-        signature=sig, signer_address=account.address
-    )
+    return SignedIntent(signature=sig, signer_address=account.address)
 
 
 __all__ = [

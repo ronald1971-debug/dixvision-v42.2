@@ -144,9 +144,7 @@ def make_bls_request_body(
             normaliser simpler.
     """
     if not registration_key:
-        raise ValueError(
-            "make_bls_request_body: registration_key must be non-empty"
-        )
+        raise ValueError("make_bls_request_body: registration_key must be non-empty")
     # Defensive copy + dedup-by-id (preserves first-seen order).
     seen: set[str] = set()
     ordered: list[str] = []
@@ -158,20 +156,14 @@ def make_bls_request_body(
         seen.add(sid)
         ordered.append(sid)
     if not ordered:
-        raise ValueError(
-            "make_bls_request_body: at least one non-empty series id required"
-        )
+        raise ValueError("make_bls_request_body: at least one non-empty series id required")
     if (start_year is None) ^ (end_year is None):
-        raise ValueError(
-            "make_bls_request_body: start_year and end_year must be set together"
-        )
+        raise ValueError("make_bls_request_body: start_year and end_year must be set together")
     if start_year is not None and end_year is not None:
         if start_year < 1900 or end_year < 1900:
             raise ValueError("make_bls_request_body: years must be >= 1900")
         if end_year < start_year:
-            raise ValueError(
-                "make_bls_request_body: end_year must be >= start_year"
-            )
+            raise ValueError("make_bls_request_body: end_year must be >= start_year")
     body: dict[str, object] = {
         "seriesid": ordered,
         "registrationkey": registration_key,
@@ -218,7 +210,7 @@ def _period_to_observation_date(year: str, period: str) -> str | None:
         # M01..M12 -> first-of-month (BLS convention is mid-month
         # publication, but the as-of date is the publishing month;
         # using day=01 keeps replay deterministic).
-        suffix = period[len(_MONTHLY_PERIOD_PREFIX):]
+        suffix = period[len(_MONTHLY_PERIOD_PREFIX) :]
         if not suffix.isdigit():
             return None
         month = int(suffix)
@@ -504,9 +496,7 @@ class BLSHTTPPump:
         if reconnect_delay_s <= 0:
             raise ValueError("BLSHTTPPump: reconnect_delay_s must be positive")
         if reconnect_delay_max_s < reconnect_delay_s:
-            raise ValueError(
-                "BLSHTTPPump: reconnect_delay_max_s must be >= reconnect_delay_s"
-            )
+            raise ValueError("BLSHTTPPump: reconnect_delay_max_s must be >= reconnect_delay_s")
         if not source:
             raise ValueError("BLSHTTPPump: source must be non-empty")
         if not registration_key:
@@ -518,16 +508,12 @@ class BLSHTTPPump:
         # raising on every poll cycle (where the run-loop would simply
         # increment ``errors`` and back off forever).
         if (start_year is None) ^ (end_year is None):
-            raise ValueError(
-                "BLSHTTPPump: start_year and end_year must be set together"
-            )
+            raise ValueError("BLSHTTPPump: start_year and end_year must be set together")
         if start_year is not None and end_year is not None:
             if start_year < 1900 or end_year < 1900:
                 raise ValueError("BLSHTTPPump: years must be >= 1900")
             if end_year < start_year:
-                raise ValueError(
-                    "BLSHTTPPump: end_year must be >= start_year"
-                )
+                raise ValueError("BLSHTTPPump: end_year must be >= start_year")
         # Defensive copy + dedup-by-id (preserves first-seen order).
         seen: set[str] = set()
         ordered: list[BLSSeriesSpec] = []
@@ -616,12 +602,8 @@ class BLSHTTPPump:
         )
         payload = await self._post(url, body)
         ts_ns = self._clock_ns()
-        units_overrides = {
-            spec.series_id: spec.units for spec in self._series if spec.units
-        }
-        title_overrides = {
-            spec.series_id: spec.title for spec in self._series if spec.title
-        }
+        units_overrides = {spec.series_id: spec.units for spec in self._series if spec.units}
+        title_overrides = {spec.series_id: spec.title for spec in self._series if spec.title}
         observations = parse_bls_payload(
             payload,
             ts_ns=ts_ns,

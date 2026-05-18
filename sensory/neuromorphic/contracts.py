@@ -42,9 +42,7 @@ POLARITY_LONG: str = "LONG"
 POLARITY_SHORT: str = "SHORT"
 POLARITY_NEUTRAL: str = "NEUTRAL"
 
-_POLARITIES: frozenset[str] = frozenset(
-    {POLARITY_LONG, POLARITY_SHORT, POLARITY_NEUTRAL}
-)
+_POLARITIES: frozenset[str] = frozenset({POLARITY_LONG, POLARITY_SHORT, POLARITY_NEUTRAL})
 
 
 def _is_finite_nonneg(x: float) -> bool:
@@ -97,18 +95,11 @@ class PulseSignal:
         if not self.symbol:
             raise ValueError("PulseSignal.symbol must be non-empty")
         if self.polarity not in _POLARITIES:
-            raise ValueError(
-                "PulseSignal.polarity must be one of "
-                f"{sorted(_POLARITIES)}"
-            )
+            raise ValueError(f"PulseSignal.polarity must be one of {sorted(_POLARITIES)}")
         if not (math.isfinite(self.intensity) and 0.0 <= self.intensity <= 1.0):
-            raise ValueError(
-                "PulseSignal.intensity must be finite in [0.0, 1.0]"
-            )
+            raise ValueError("PulseSignal.intensity must be finite in [0.0, 1.0]")
         if self.sample_count < 1:
-            raise ValueError(
-                "PulseSignal.sample_count must be >= 1"
-            )
+            raise ValueError("PulseSignal.sample_count must be >= 1")
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,21 +144,13 @@ class AnomalyPulse:
         if not self.source:
             raise ValueError("AnomalyPulse.source must be non-empty")
         if not self.anomaly_kind:
-            raise ValueError(
-                "AnomalyPulse.anomaly_kind must be non-empty"
-            )
+            raise ValueError("AnomalyPulse.anomaly_kind must be non-empty")
         if not math.isfinite(self.z_score):
-            raise ValueError(
-                "AnomalyPulse.z_score must be finite"
-            )
+            raise ValueError("AnomalyPulse.z_score must be finite")
         if not (math.isfinite(self.severity) and 0.0 <= self.severity <= 1.0):
-            raise ValueError(
-                "AnomalyPulse.severity must be finite in [0.0, 1.0]"
-            )
+            raise ValueError("AnomalyPulse.severity must be finite in [0.0, 1.0]")
         if self.window_size < 2:
-            raise ValueError(
-                "AnomalyPulse.window_size must be >= 2"
-            )
+            raise ValueError("AnomalyPulse.window_size must be >= 2")
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,17 +191,10 @@ class RiskPulse:
             raise ValueError("RiskPulse.source must be non-empty")
         if not self.risk_kind:
             raise ValueError("RiskPulse.risk_kind must be non-empty")
-        if not (
-            math.isfinite(self.risk_score)
-            and 0.0 <= self.risk_score <= 1.0
-        ):
-            raise ValueError(
-                "RiskPulse.risk_score must be finite in [0.0, 1.0]"
-            )
+        if not (math.isfinite(self.risk_score) and 0.0 <= self.risk_score <= 1.0):
+            raise ValueError("RiskPulse.risk_score must be finite in [0.0, 1.0]")
         if self.sample_count < 1:
-            raise ValueError(
-                "RiskPulse.sample_count must be >= 1"
-            )
+            raise ValueError("RiskPulse.sample_count must be >= 1")
 
 
 __all__ = [

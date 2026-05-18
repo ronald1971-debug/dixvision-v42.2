@@ -114,9 +114,7 @@ def test_authority_no_runtime_imports() -> None:
     }
     for name in _iter_imports(MODULE_AST):
         root = name.split(".")[0]
-        assert (
-            root not in forbidden_roots
-        ), f"forbidden import for OFFLINE_ONLY tier: {name}"
+        assert root not in forbidden_roots, f"forbidden import for OFFLINE_ONLY tier: {name}"
 
 
 def test_authority_no_engine_cross_imports() -> None:
@@ -129,9 +127,7 @@ def test_authority_no_engine_cross_imports() -> None:
     }
     for name in _iter_imports(MODULE_AST):
         root = name.split(".")[0]
-        assert (
-            root not in forbidden_roots
-        ), f"forbidden engine cross-import: {name}"
+        assert root not in forbidden_roots, f"forbidden engine cross-import: {name}"
 
 
 def _collect_call_names(tree: ast.AST) -> list[str]:
@@ -159,9 +155,9 @@ def test_authority_no_typed_event_construction() -> None:
     }
     for node in ast.walk(MODULE_AST):
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-            assert (
-                node.func.id not in forbidden_types
-            ), f"forbidden typed-event construction: {node.func.id}"
+            assert node.func.id not in forbidden_types, (
+                f"forbidden typed-event construction: {node.func.id}"
+            )
 
 
 def test_authority_no_learning_contract_import() -> None:
@@ -184,9 +180,7 @@ def test_authority_no_top_level_io_calls() -> None:
     for node in MODULE_AST.body:
         for sub in ast.walk(node):
             if isinstance(sub, ast.Call) and isinstance(sub.func, ast.Name):
-                assert (
-                    sub.func.id not in forbidden
-                ), f"forbidden top-level IO call: {sub.func.id}"
+                assert sub.func.id not in forbidden, f"forbidden top-level IO call: {sub.func.id}"
 
 
 def test_authority_module_reimport_clean() -> None:
@@ -269,20 +263,10 @@ class _FakeDistiller:
         for tr in trajectories:
             total_steps += len(tr.steps)
             episode_rewards.append(sum(s.reward for s in tr.steps))
-        reward_mean = (
-            sum(episode_rewards) / len(episode_rewards)
-            if episode_rewards
-            else 0.0
-        )
-        reward_best = (
-            max(episode_rewards) if episode_rewards else 0.0
-        )
-        adv_sq_sum = sum(
-            a * a for adv_list in advantages for a in adv_list
-        )
-        ret_sq_sum = sum(
-            r * r for ret_list in returns for r in ret_list
-        )
+        reward_mean = sum(episode_rewards) / len(episode_rewards) if episode_rewards else 0.0
+        reward_best = max(episode_rewards) if episode_rewards else 0.0
+        adv_sq_sum = sum(a * a for adv_list in advantages for a in adv_list)
+        ret_sq_sum = sum(r * r for ret_list in returns for r in ret_list)
         policy_loss = -0.0001 * adv_sq_sum
         value_loss = 0.5 * ret_sq_sum
         entropy_loss = -0.01 * float(total_steps)
@@ -607,9 +591,7 @@ def test_distill_rejects_non_finite_value() -> None:
 
 
 def test_distill_rejects_too_many_trajectories() -> None:
-    trajectories = tuple(
-        _trajectory(trajectory_id=f"t-{i}") for i in range(MAX_TRAJECTORIES + 1)
-    )
+    trajectories = tuple(_trajectory(trajectory_id=f"t-{i}") for i in range(MAX_TRAJECTORIES + 1))
     with pytest.raises(PolicyDistillationError):
         PolicyDistillation(distiller=_FakeDistiller()).distill(
             trajectories=trajectories,
@@ -781,12 +763,8 @@ def test_null_callback_callable() -> None:
 
 
 def test_derive_policy_artifact_digest_deterministic() -> None:
-    a = derive_policy_artifact_digest(
-        backend="fake", payload_parts=("a", "b", "c")
-    )
-    b = derive_policy_artifact_digest(
-        backend="fake", payload_parts=("a", "b", "c")
-    )
+    a = derive_policy_artifact_digest(backend="fake", payload_parts=("a", "b", "c"))
+    b = derive_policy_artifact_digest(backend="fake", payload_parts=("a", "b", "c"))
     assert a.content_digest == b.content_digest
     assert a.backend == "fake"
 

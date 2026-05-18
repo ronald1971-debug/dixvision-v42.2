@@ -218,9 +218,7 @@ class InMemoryMemgraphTransport:
     # Transport surface.
     # ------------------------------------------------------------------
 
-    def run(
-        self, cypher: str, /, **params: Any
-    ) -> Sequence[Mapping[str, Any]]:
+    def run(self, cypher: str, /, **params: Any) -> Sequence[Mapping[str, Any]]:
         if cypher == MERGE_STRATEGY:
             return self._merge_node(NodeKind.STRATEGY.value, params)
         if cypher == MERGE_REGIME:
@@ -241,9 +239,7 @@ class InMemoryMemgraphTransport:
             return self._fetch_all_nodes()
         if cypher == FETCH_ALL_EDGES:
             return self._fetch_all_edges()
-        raise MemgraphKnowledgeStoreError(
-            f"unknown cypher query: {cypher[:60]!r}…"
-        )
+        raise MemgraphKnowledgeStoreError(f"unknown cypher query: {cypher[:60]!r}…")
 
     def close(self) -> None:
         return None
@@ -252,12 +248,8 @@ class InMemoryMemgraphTransport:
     # MERGE handlers.
     # ------------------------------------------------------------------
 
-    def _merge_node(
-        self, label: str, params: Mapping[str, Any]
-    ) -> Sequence[Mapping[str, Any]]:
-        node_id = self._require_str(
-            params, ("strategy_id", "regime_id", "failure_id")
-        )
+    def _merge_node(self, label: str, params: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
+        node_id = self._require_str(params, ("strategy_id", "regime_id", "failure_id"))
         ts_ns = self._require_int(params, "ts_ns")
         props: dict[str, Any] = {"ts_ns": ts_ns}
         for key, value in params.items():
@@ -280,24 +272,18 @@ class InMemoryMemgraphTransport:
             self._nodes[node_id] = (label, dict(props))
         return ({"id": node_id},)
 
-    def _merge_edge(
-        self, params: Mapping[str, Any]
-    ) -> Sequence[Mapping[str, Any]]:
+    def _merge_edge(self, params: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
         src = self._require_str(params, ("src_id",))
         dst = self._require_str(params, ("dst_id",))
         if src == dst:
-            raise MemgraphKnowledgeStoreError(
-                f"self-edge not permitted: {src!r}"
-            )
+            raise MemgraphKnowledgeStoreError(f"self-edge not permitted: {src!r}")
         if src not in self._nodes or dst not in self._nodes:
             raise MemgraphKnowledgeStoreError(
                 f"edge endpoints must both exist; got src={src!r} dst={dst!r}"
             )
         weight = float(params.get("weight", 1.0))
         if not 0.0 <= weight <= 1.0:
-            raise MemgraphKnowledgeStoreError(
-                f"weight out of bounds: {weight!r}"
-            )
+            raise MemgraphKnowledgeStoreError(f"weight out of bounds: {weight!r}")
         ts_ns = self._require_int(params, "ts_ns")
         self._edges[(src, dst)] = {"weight": weight, "ts_ns": ts_ns}
         return ({"rel": CAUSED_BY},)
@@ -306,9 +292,7 @@ class InMemoryMemgraphTransport:
     # Read handlers.
     # ------------------------------------------------------------------
 
-    def _fetch_node(
-        self, params: Mapping[str, Any]
-    ) -> Sequence[Mapping[str, Any]]:
+    def _fetch_node(self, params: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
         node_id = self._require_str(params, ("node_id",))
         node = self._nodes.get(node_id)
         if node is None:
@@ -316,9 +300,7 @@ class InMemoryMemgraphTransport:
         label, props = node
         return ({"label": label, "props": dict(sorted(props.items()))},)
 
-    def _fetch_outgoing(
-        self, params: Mapping[str, Any]
-    ) -> Sequence[Mapping[str, Any]]:
+    def _fetch_outgoing(self, params: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
         node_id = self._require_str(params, ("node_id",))
         rows: list[dict[str, Any]] = []
         for (src, dst), edge_props in self._edges.items():
@@ -334,9 +316,7 @@ class InMemoryMemgraphTransport:
         rows.sort(key=lambda r: r["target"])
         return tuple(rows)
 
-    def _fetch_incoming(
-        self, params: Mapping[str, Any]
-    ) -> Sequence[Mapping[str, Any]]:
+    def _fetch_incoming(self, params: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
         node_id = self._require_str(params, ("node_id",))
         rows: list[dict[str, Any]] = []
         for (src, dst), edge_props in self._edges.items():
@@ -352,15 +332,11 @@ class InMemoryMemgraphTransport:
         rows.sort(key=lambda r: r["source"])
         return tuple(rows)
 
-    def _fetch_causal_chain(
-        self, params: Mapping[str, Any]
-    ) -> Sequence[Mapping[str, Any]]:
+    def _fetch_causal_chain(self, params: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
         src = self._require_str(params, ("src_id",))
         max_depth = self._require_int(params, "max_depth")
         if max_depth <= 0:
-            raise MemgraphKnowledgeStoreError(
-                f"max_depth must be positive: {max_depth!r}"
-            )
+            raise MemgraphKnowledgeStoreError(f"max_depth must be positive: {max_depth!r}")
         if src not in self._nodes:
             return ()
         adjacency: dict[str, list[str]] = {}
@@ -415,32 +391,22 @@ class InMemoryMemgraphTransport:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _require_str(
-        params: Mapping[str, Any], keys: Sequence[str]
-    ) -> str:
+    def _require_str(params: Mapping[str, Any], keys: Sequence[str]) -> str:
         for key in keys:
             if key in params:
                 value = params[key]
                 if not isinstance(value, str) or not value:
-                    raise MemgraphKnowledgeStoreError(
-                        f"param {key!r} must be a non-empty str"
-                    )
+                    raise MemgraphKnowledgeStoreError(f"param {key!r} must be a non-empty str")
                 return value
-        raise MemgraphKnowledgeStoreError(
-            f"missing required str param: one of {keys!r}"
-        )
+        raise MemgraphKnowledgeStoreError(f"missing required str param: one of {keys!r}")
 
     @staticmethod
     def _require_int(params: Mapping[str, Any], key: str) -> int:
         if key not in params:
-            raise MemgraphKnowledgeStoreError(
-                f"missing required int param: {key!r}"
-            )
+            raise MemgraphKnowledgeStoreError(f"missing required int param: {key!r}")
         value = params[key]
         if isinstance(value, bool) or not isinstance(value, int):
-            raise MemgraphKnowledgeStoreError(
-                f"param {key!r} must be int"
-            )
+            raise MemgraphKnowledgeStoreError(f"param {key!r} must be int")
         return value
 
 
@@ -459,16 +425,12 @@ class MemgraphKnowledgeStore:
 
     __slots__ = ("_transport",)
 
-    def __init__(
-        self, transport: MemgraphTransport | None = None
-    ) -> None:
+    def __init__(self, transport: MemgraphTransport | None = None) -> None:
         if transport is None:
             transport = InMemoryMemgraphTransport()
         else:
             if not isinstance(transport, MemgraphTransport):
-                raise TypeError(
-                    "transport must satisfy MemgraphTransport"
-                )
+                raise TypeError("transport must satisfy MemgraphTransport")
         self._transport = transport
 
     # ------------------------------------------------------------------
@@ -547,9 +509,7 @@ class MemgraphKnowledgeStore:
         self._require_nonempty_str("source_id", source_id)
         self._require_nonempty_str("target_id", target_id)
         if not isinstance(weight, float | int) or isinstance(weight, bool):
-            raise MemgraphKnowledgeStoreError(
-                "weight must be a real number"
-            )
+            raise MemgraphKnowledgeStoreError("weight must be a real number")
         self._require_int("ts_ns", ts_ns)
         self._transport.run(
             MERGE_CAUSED_BY,
@@ -580,9 +540,7 @@ class MemgraphKnowledgeStore:
             ts_ns=ts_ns,
         )
 
-    def fetch_outgoing(
-        self, *, node_id: str
-    ) -> tuple[EdgeRecord, ...]:
+    def fetch_outgoing(self, *, node_id: str) -> tuple[EdgeRecord, ...]:
         """Outgoing ``CAUSED_BY`` edges, sorted by target."""
         self._require_nonempty_str("node_id", node_id)
         rows = self._transport.run(FETCH_OUTGOING, node_id=node_id)
@@ -596,9 +554,7 @@ class MemgraphKnowledgeStore:
             for row in rows
         )
 
-    def fetch_incoming(
-        self, *, node_id: str
-    ) -> tuple[EdgeRecord, ...]:
+    def fetch_incoming(self, *, node_id: str) -> tuple[EdgeRecord, ...]:
         """Incoming ``CAUSED_BY`` edges, sorted by source."""
         self._require_nonempty_str("node_id", node_id)
         rows = self._transport.run(FETCH_INCOMING, node_id=node_id)
@@ -612,24 +568,18 @@ class MemgraphKnowledgeStore:
             for row in rows
         )
 
-    def fetch_causal_chain(
-        self, *, source_id: str, max_depth: int
-    ) -> tuple[CausalChain, ...]:
+    def fetch_causal_chain(self, *, source_id: str, max_depth: int) -> tuple[CausalChain, ...]:
         """Enumerate ``CAUSED_BY`` chains rooted at ``source_id``."""
         self._require_nonempty_str("source_id", source_id)
         self._require_int("max_depth", max_depth)
         if max_depth <= 0:
-            raise MemgraphKnowledgeStoreError(
-                f"max_depth must be positive: {max_depth!r}"
-            )
+            raise MemgraphKnowledgeStoreError(f"max_depth must be positive: {max_depth!r}")
         rows = self._transport.run(
             FETCH_CAUSAL_CHAIN,
             src_id=source_id,
             max_depth=max_depth,
         )
-        return tuple(
-            CausalChain(node_ids=tuple(row["chain"])) for row in rows
-        )
+        return tuple(CausalChain(node_ids=tuple(row["chain"])) for row in rows)
 
     # ------------------------------------------------------------------
     # Iteration / serialisation.
@@ -684,63 +634,43 @@ class MemgraphKnowledgeStore:
             "nodes": nodes,
             "edges": edges,
         }
-        return json.dumps(
-            payload, sort_keys=True, separators=(",", ":")
-        ).encode("utf-8")
+        return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
     @classmethod
     def deserialize(cls, blob: bytes) -> MemgraphKnowledgeStore:
         """Reconstruct a graph from :meth:`serialize` output."""
         if not isinstance(blob, bytes | bytearray):
-            raise MemgraphKnowledgeStoreError(
-                "serialize blob must be bytes"
-            )
+            raise MemgraphKnowledgeStoreError("serialize blob must be bytes")
         try:
             payload = json.loads(blob.decode("utf-8"))
         except (ValueError, UnicodeDecodeError) as exc:
-            raise MemgraphKnowledgeStoreError(
-                f"corrupt blob: {exc}"
-            ) from exc
+            raise MemgraphKnowledgeStoreError(f"corrupt blob: {exc}") from exc
         if not isinstance(payload, Mapping):
-            raise MemgraphKnowledgeStoreError(
-                "blob root must be an object"
-            )
+            raise MemgraphKnowledgeStoreError("blob root must be an object")
         version = payload.get("version")
         if version != MEMGRAPH_STORE_VERSION:
-            raise MemgraphKnowledgeStoreError(
-                f"unsupported version: {version!r}"
-            )
+            raise MemgraphKnowledgeStoreError(f"unsupported version: {version!r}")
         graph = cls()
         for raw_node in payload.get("nodes", ()):
             kind = NodeKind(raw_node["kind"])
             if kind is NodeKind.STRATEGY:
                 graph.merge_strategy(
                     strategy_id=str(raw_node["id"]),
-                    version=int(
-                        raw_node["props"].get("version", 0)
-                    ),
-                    lifecycle=str(
-                        raw_node["props"].get("lifecycle", "DRAFT")
-                    ),
+                    version=int(raw_node["props"].get("version", 0)),
+                    lifecycle=str(raw_node["props"].get("lifecycle", "DRAFT")),
                     ts_ns=int(raw_node["ts_ns"]),
                 )
             elif kind is NodeKind.REGIME:
                 graph.merge_regime(
                     regime_id=str(raw_node["id"]),
-                    label=str(
-                        raw_node["props"].get("label", "unknown")
-                    ),
+                    label=str(raw_node["props"].get("label", "unknown")),
                     ts_ns=int(raw_node["ts_ns"]),
                 )
             else:
                 graph.merge_failure(
                     failure_id=str(raw_node["id"]),
-                    kind=str(
-                        raw_node["props"].get("kind", "unknown")
-                    ),
-                    severity=str(
-                        raw_node["props"].get("severity", "unknown")
-                    ),
+                    kind=str(raw_node["props"].get("kind", "unknown")),
+                    severity=str(raw_node["props"].get("severity", "unknown")),
                     ts_ns=int(raw_node["ts_ns"]),
                 )
         for raw_edge in payload.get("edges", ()):
@@ -763,16 +693,12 @@ class MemgraphKnowledgeStore:
     @staticmethod
     def _require_nonempty_str(name: str, value: Any) -> None:
         if not isinstance(value, str) or not value:
-            raise MemgraphKnowledgeStoreError(
-                f"{name} must be a non-empty str"
-            )
+            raise MemgraphKnowledgeStoreError(f"{name} must be a non-empty str")
 
     @staticmethod
     def _require_int(name: str, value: Any) -> None:
         if isinstance(value, bool) or not isinstance(value, int):
-            raise MemgraphKnowledgeStoreError(
-                f"{name} must be an int"
-            )
+            raise MemgraphKnowledgeStoreError(f"{name} must be an int")
 
 
 # ---------------------------------------------------------------------------
@@ -809,9 +735,7 @@ def memgraph_client_factory(
         raise MemgraphKnowledgeStoreError(
             "gqlalchemy is not installed; see NEW_PIP_DEPENDENCIES"
         ) from exc
-    return Memgraph(
-        host=host, port=port, username=username, password=password
-    )
+    return Memgraph(host=host, port=port, username=username, password=password)
 
 
 _QUERY_SURFACE: tuple[str, ...] = ALL_QUERIES

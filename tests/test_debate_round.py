@@ -39,10 +39,7 @@ from intelligence_engine.agents.debate_round import (
 )
 
 _MODULE_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "intelligence_engine"
-    / "agents"
-    / "debate_round.py"
+    Path(__file__).resolve().parents[1] / "intelligence_engine" / "agents" / "debate_round.py"
 )
 
 
@@ -105,10 +102,7 @@ def _approve_speaker() -> _ScriptedSpeaker:
                 "Markets favourable.\nRECOMMENDATION: APPROVE\n"
                 "RATIONALE: alpha decay still positive",
             ),
-            "bob": (
-                "Risk acceptable.\nRECOMMENDATION: APPROVE\n"
-                "RATIONALE: drawdown under cap",
-            ),
+            "bob": ("Risk acceptable.\nRECOMMENDATION: APPROVE\nRATIONALE: drawdown under cap",),
         }
     )
 
@@ -155,9 +149,7 @@ def test_no_forbidden_imports() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 root = alias.name.split(".")[0]
-                assert root not in forbidden, (
-                    f"forbidden top-level import: {alias.name}"
-                )
+                assert root not in forbidden, f"forbidden top-level import: {alias.name}"
         elif isinstance(node, ast.ImportFrom):
             mod = node.module or ""
             root = mod.split(".")[0]
@@ -178,15 +170,11 @@ def test_no_engine_cross_imports() -> None:
         if isinstance(node, ast.ImportFrom):
             mod = node.module or ""
             root = mod.split(".")[0]
-            assert root not in forbidden_roots, (
-                f"forbidden engine cross-import: {mod}"
-            )
+            assert root not in forbidden_roots, f"forbidden engine cross-import: {mod}"
         elif isinstance(node, ast.Import):
             for alias in node.names:
                 root = alias.name.split(".")[0]
-                assert root not in forbidden_roots, (
-                    f"forbidden engine cross-import: {alias.name}"
-                )
+                assert root not in forbidden_roots, f"forbidden engine cross-import: {alias.name}"
 
 
 def test_does_not_construct_typed_bus_events() -> None:
@@ -344,9 +332,7 @@ def test_debate_round_config_rejects_empty_terminator(
     two_agents: tuple[DebateAgent, DebateAgent],
 ) -> None:
     with pytest.raises(DebateRoundError):
-        DebateRoundConfig(
-            topic="t", agents=two_agents, max_rounds=1, terminator_marker=""
-        )
+        DebateRoundConfig(topic="t", agents=two_agents, max_rounds=1, terminator_marker="")
 
 
 def test_min_rounds_constant() -> None:
@@ -699,9 +685,7 @@ def test_custom_extractor_rejects_oversized_rationale(
 def test_custom_extractor_rejects_non_tuple_return(
     config: DebateRoundConfig,
 ) -> None:
-    def bad(
-        _turns: tuple[DebateTurn, ...], _cfg: DebateRoundConfig
-    ):
+    def bad(_turns: tuple[DebateTurn, ...], _cfg: DebateRoundConfig):
         return "not-a-tuple"
 
     with pytest.raises(DebateRoundError):
@@ -715,9 +699,7 @@ def test_custom_extractor_rejects_non_tuple_return(
 def test_custom_extractor_rejects_wrong_arity(
     config: DebateRoundConfig,
 ) -> None:
-    def bad(
-        _turns: tuple[DebateTurn, ...], _cfg: DebateRoundConfig
-    ):
+    def bad(_turns: tuple[DebateTurn, ...], _cfg: DebateRoundConfig):
         return ("APPROVE", "ok")  # missing votes
 
     with pytest.raises(DebateRoundError):

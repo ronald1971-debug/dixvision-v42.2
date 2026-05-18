@@ -69,20 +69,14 @@ def test_explicit_domain_routes_to_matching_adapter():
     paper = _StubAdapter("paper")
     burner = _StubAdapter("memecoin")
     router.register(domain=TradingDomain.NORMAL, venue="paper", adapter=paper)
-    router.register(
-        domain=TradingDomain.MEMECOIN, venue="paper", adapter=burner
-    )
-    assert (
-        router.adapter_for(_signal(domain="MEMECOIN", venue="paper")) is burner
-    )
+    router.register(domain=TradingDomain.MEMECOIN, venue="paper", adapter=burner)
+    assert router.adapter_for(_signal(domain="MEMECOIN", venue="paper")) is burner
 
 
 def test_normal_signal_cannot_reach_memecoin_adapter():
     router = AdapterRouter()
     burner = _StubAdapter("memecoin")
-    router.register(
-        domain=TradingDomain.MEMECOIN, venue="paper", adapter=burner
-    )
+    router.register(domain=TradingDomain.MEMECOIN, venue="paper", adapter=burner)
     with pytest.raises(RouterError):
         router.adapter_for(_signal(domain="NORMAL", venue="paper"))
 
@@ -118,19 +112,13 @@ def test_register_duplicate_raises():
 def test_register_blank_venue_raises():
     router = AdapterRouter()
     with pytest.raises(ValueError):
-        router.register(
-            domain=TradingDomain.NORMAL, venue="", adapter=_StubAdapter("x")
-        )
+        router.register(domain=TradingDomain.NORMAL, venue="", adapter=_StubAdapter("x"))
 
 
 def test_venues_listed_per_domain():
     router = AdapterRouter()
-    router.register(
-        domain=TradingDomain.NORMAL, venue="binance", adapter=_StubAdapter("b")
-    )
-    router.register(
-        domain=TradingDomain.NORMAL, venue="kraken", adapter=_StubAdapter("k")
-    )
+    router.register(domain=TradingDomain.NORMAL, venue="binance", adapter=_StubAdapter("b"))
+    router.register(domain=TradingDomain.NORMAL, venue="kraken", adapter=_StubAdapter("k"))
     router.register(
         domain=TradingDomain.MEMECOIN,
         venue="paper",

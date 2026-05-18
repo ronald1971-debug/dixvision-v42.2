@@ -151,10 +151,7 @@ def test_forbidden_token_table_is_non_empty() -> None:
     """Sanity: the forbidden token list isn't accidentally cleared."""
 
     assert len(al.FORBIDDEN_AI_PROVIDER_TOKENS) >= 5
-    assert all(
-        isinstance(t, str) and t == t.lower()
-        for t in al.FORBIDDEN_AI_PROVIDER_TOKENS
-    )
+    assert all(isinstance(t, str) and t == t.lower() for t in al.FORBIDDEN_AI_PROVIDER_TOKENS)
 
 
 def test_chat_widget_static_relatives_are_documented() -> None:

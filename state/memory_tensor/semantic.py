@@ -166,34 +166,19 @@ class SemanticMemoryStore:
         nprobe: int = 1,
     ) -> None:
         if not isinstance(dim, int):
-            raise TypeError(
-                "SemanticMemoryStore.dim must be int, "
-                f"got {type(dim).__name__}"
-            )
+            raise TypeError(f"SemanticMemoryStore.dim must be int, got {type(dim).__name__}")
         if dim <= 0:
-            raise ValueError(
-                f"SemanticMemoryStore.dim must be positive, got {dim!r}"
-            )
+            raise ValueError(f"SemanticMemoryStore.dim must be positive, got {dim!r}")
         if not isinstance(max_size, int):
             raise TypeError(
-                "SemanticMemoryStore.max_size must be int, "
-                f"got {type(max_size).__name__}"
+                f"SemanticMemoryStore.max_size must be int, got {type(max_size).__name__}"
             )
         if max_size <= 0:
-            raise ValueError(
-                "SemanticMemoryStore.max_size must be positive, "
-                f"got {max_size!r}"
-            )
+            raise ValueError(f"SemanticMemoryStore.max_size must be positive, got {max_size!r}")
         if not isinstance(nprobe, int):
-            raise TypeError(
-                "SemanticMemoryStore.nprobe must be int, "
-                f"got {type(nprobe).__name__}"
-            )
+            raise TypeError(f"SemanticMemoryStore.nprobe must be int, got {type(nprobe).__name__}")
         if nprobe <= 0:
-            raise ValueError(
-                "SemanticMemoryStore.nprobe must be positive, "
-                f"got {nprobe!r}"
-            )
+            raise ValueError(f"SemanticMemoryStore.nprobe must be positive, got {nprobe!r}")
 
         # Centroids: validate every row (same guards as Episode.embedding).
         validated_centroids: tuple[tuple[float, ...], ...]
@@ -204,14 +189,12 @@ class SemanticMemoryStore:
             for i, c in enumerate(centroids):
                 if not isinstance(c, tuple):
                     raise TypeError(
-                        f"SemanticMemoryStore.centroids[{i}] must be tuple, "
-                        f"got {type(c).__name__}"
+                        f"SemanticMemoryStore.centroids[{i}] must be tuple, got {type(c).__name__}"
                     )
                 validate_embedding(c, field=f"SemanticMemoryStore.centroids[{i}]")
                 if len(c) != dim:
                     raise ValueError(
-                        f"SemanticMemoryStore.centroids[{i}] has dim "
-                        f"{len(c)}, expected {dim}"
+                        f"SemanticMemoryStore.centroids[{i}] has dim {len(c)}, expected {dim}"
                     )
                 tmp.append(c)
             validated_centroids = tuple(tmp)
@@ -227,9 +210,7 @@ class SemanticMemoryStore:
         self._episodes: dict[str, Episode] = {}
         self._norms: dict[str, float] = {}
         self._centroids = validated_centroids
-        self._centroid_norms: tuple[float, ...] = tuple(
-            _l2_norm(c) for c in validated_centroids
-        )
+        self._centroid_norms: tuple[float, ...] = tuple(_l2_norm(c) for c in validated_centroids)
         self._nprobe = nprobe
         # episode_id -> centroid index (only populated in IVF mode)
         self._buckets: dict[str, int] = {}
@@ -276,8 +257,7 @@ class SemanticMemoryStore:
         """Insert ``episode``; evict the oldest by ``(ts_ns, episode_id)``."""
         if not isinstance(episode, Episode):
             raise TypeError(
-                "SemanticMemoryStore.add expects Episode, "
-                f"got {type(episode).__name__}"
+                f"SemanticMemoryStore.add expects Episode, got {type(episode).__name__}"
             )
         if episode.dim != self._dim:
             raise ValueError(
@@ -286,8 +266,7 @@ class SemanticMemoryStore:
             )
         if episode.episode_id in self._episodes:
             raise ValueError(
-                "SemanticMemoryStore.add: episode_id already present: "
-                f"{episode.episode_id!r}"
+                f"SemanticMemoryStore.add: episode_id already present: {episode.episode_id!r}"
             )
 
         if len(self._episodes) >= self._max_size:
@@ -299,9 +278,7 @@ class SemanticMemoryStore:
         self._episodes[episode.episode_id] = episode
         self._norms[episode.episode_id] = _l2_norm(episode.embedding)
         if self._centroids:
-            self._buckets[episode.episode_id] = self._best_centroid(
-                episode.embedding
-            )
+            self._buckets[episode.episode_id] = self._best_centroid(episode.embedding)
 
     def delete(self, episode_id: str) -> bool:
         """Remove an episode by id. Returns ``True`` if it was present."""
@@ -338,8 +315,7 @@ class SemanticMemoryStore:
         """Return up to ``query.k`` nearest neighbours by cosine distance."""
         if not isinstance(query, MemoryQuery):
             raise TypeError(
-                "SemanticMemoryStore.search expects MemoryQuery, "
-                f"got {type(query).__name__}"
+                f"SemanticMemoryStore.search expects MemoryQuery, got {type(query).__name__}"
             )
         if query.dim != self._dim:
             raise ValueError(
@@ -359,20 +335,14 @@ class SemanticMemoryStore:
                 centroid_rank.append((d, i))
             centroid_rank.sort(key=lambda t: (t[0], t[1]))
             probed = {idx for _, idx in centroid_rank[: self._nprobe]}
-            candidates = [
-                ep_id
-                for ep_id, c_idx in self._buckets.items()
-                if c_idx in probed
-            ]
+            candidates = [ep_id for ep_id, c_idx in self._buckets.items() if c_idx in probed]
         else:
             candidates = list(self._episodes.keys())
 
         scored: list[tuple[float, int, str, Episode]] = []
         for ep_id in candidates:
             ep = self._episodes[ep_id]
-            d = _cosine_distance(
-                ep.embedding, q_emb, self._norms[ep_id], norm_q
-            )
+            d = _cosine_distance(ep.embedding, q_emb, self._norms[ep_id], norm_q)
             scored.append((d, ep.ts_ns, ep_id, ep))
 
         scored.sort(key=lambda t: (t[0], t[1], t[2]))
@@ -441,29 +411,22 @@ class SemanticMemoryStore:
             "centroids": [list(c) for c in self._centroids],
             "episodes": episodes_payload,
         }
-        return json.dumps(blob, sort_keys=True, separators=(",", ":")).encode(
-            "utf-8"
-        )
+        return json.dumps(blob, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
     @classmethod
     def deserialize(cls, blob: bytes) -> SemanticMemoryStore:
         """Round-trip the bytes produced by :meth:`serialize`."""
         if not isinstance(blob, (bytes, bytearray)):
             raise TypeError(
-                "SemanticMemoryStore.deserialize expects bytes, "
-                f"got {type(blob).__name__}"
+                f"SemanticMemoryStore.deserialize expects bytes, got {type(blob).__name__}"
             )
         try:
             obj = json.loads(blob.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise ValueError(
-                f"SemanticMemoryStore.deserialize: invalid blob: {exc}"
-            ) from exc
+            raise ValueError(f"SemanticMemoryStore.deserialize: invalid blob: {exc}") from exc
 
         if not isinstance(obj, dict):
-            raise ValueError(
-                "SemanticMemoryStore.deserialize: top-level must be object"
-            )
+            raise ValueError("SemanticMemoryStore.deserialize: top-level must be object")
         version = obj.get("version")
         if version != _SERIALIZATION_VERSION:
             raise ValueError(
@@ -477,8 +440,7 @@ class SemanticMemoryStore:
         episodes = obj.get("episodes")
         if not isinstance(dim, int):
             raise ValueError(
-                "SemanticMemoryStore.deserialize: 'dim' must be int, "
-                f"got {type(dim).__name__}"
+                f"SemanticMemoryStore.deserialize: 'dim' must be int, got {type(dim).__name__}"
             )
         if not isinstance(max_size, int):
             raise ValueError(
@@ -491,20 +453,14 @@ class SemanticMemoryStore:
                 f"got {type(nprobe).__name__}"
             )
         if not isinstance(centroids_raw, list):
-            raise ValueError(
-                "SemanticMemoryStore.deserialize: 'centroids' must be list"
-            )
+            raise ValueError("SemanticMemoryStore.deserialize: 'centroids' must be list")
         if not isinstance(episodes, list):
-            raise ValueError(
-                "SemanticMemoryStore.deserialize: 'episodes' must be list"
-            )
+            raise ValueError("SemanticMemoryStore.deserialize: 'episodes' must be list")
 
         centroids: list[tuple[float, ...]] = []
         for i, row in enumerate(centroids_raw):
             if not isinstance(row, list):
-                raise ValueError(
-                    f"SemanticMemoryStore.deserialize: centroids[{i}] must be list"
-                )
+                raise ValueError(f"SemanticMemoryStore.deserialize: centroids[{i}] must be list")
             centroids.append(tuple(float(x) for x in row))
 
         store = cls(
@@ -515,32 +471,23 @@ class SemanticMemoryStore:
         )
         for i, row in enumerate(episodes):
             if not isinstance(row, dict):
-                raise ValueError(
-                    f"SemanticMemoryStore.deserialize: episodes[{i}] must be object"
-                )
+                raise ValueError(f"SemanticMemoryStore.deserialize: episodes[{i}] must be object")
             ts_ns = row.get("ts_ns")
             episode_id = row.get("episode_id")
             embedding = row.get("embedding")
             payload = row.get("payload", {})
             if not isinstance(ts_ns, int):
-                raise ValueError(
-                    f"episodes[{i}].ts_ns must be int, got {type(ts_ns).__name__}"
-                )
+                raise ValueError(f"episodes[{i}].ts_ns must be int, got {type(ts_ns).__name__}")
             if not isinstance(episode_id, str):
                 raise ValueError(
-                    f"episodes[{i}].episode_id must be str, "
-                    f"got {type(episode_id).__name__}"
+                    f"episodes[{i}].episode_id must be str, got {type(episode_id).__name__}"
                 )
             if not isinstance(embedding, list):
-                raise ValueError(
-                    f"episodes[{i}].embedding must be list"
-                )
+                raise ValueError(f"episodes[{i}].embedding must be list")
             emb_tuple = tuple(float(x) for x in embedding)
             validate_embedding(emb_tuple, field=f"episodes[{i}].embedding")
             if not isinstance(payload, dict):
-                raise ValueError(
-                    f"episodes[{i}].payload must be object"
-                )
+                raise ValueError(f"episodes[{i}].payload must be object")
             ep = Episode(
                 ts_ns=ts_ns,
                 episode_id=episode_id,

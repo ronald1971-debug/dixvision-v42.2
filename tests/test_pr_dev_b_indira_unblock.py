@@ -289,15 +289,11 @@ def test_intelligence_engine_set_learning_gate_swaps_atomically():
     engine = IntelligenceEngine(
         microstructure_plugins=(MicrostructureV1(),),
     )
-    engine.set_learning_gate(
-        LearningGate(policy_supplier=lambda: open_policy)
-    )
+    engine.set_learning_gate(LearningGate(policy_supplier=lambda: open_policy))
     emitted_open = engine.on_market(_signal_tick(ts=1))
     assert len(emitted_open) == 1
 
-    engine.set_learning_gate(
-        LearningGate(policy_supplier=lambda: closed_policy)
-    )
+    engine.set_learning_gate(LearningGate(policy_supplier=lambda: closed_policy))
     emitted_closed = engine.on_market(_signal_tick(ts=2))
     assert emitted_closed == ()
 

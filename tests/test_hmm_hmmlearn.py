@@ -449,9 +449,7 @@ def test_result_rejects_posterior_components_mismatch() -> None:
         _valid_result(
             viterbi_path=(0, 1, 2),
             posteriors=(
-                HMMStatePosterior(
-                    step_index=0, state_probabilities=(0.5, 0.5)
-                ),
+                HMMStatePosterior(step_index=0, state_probabilities=(0.5, 0.5)),
                 _valid_posterior(step_index=1),
                 _valid_posterior(step_index=2),
             ),
@@ -582,9 +580,7 @@ class _FakeEngine:
         ts_ns: int,
         callback: HMMInferenceCallback,
     ) -> HMMInferenceResult:
-        callback.on_inference_start(
-            ts_ns=ts_ns, spec=spec, arguments=arguments
-        )
+        callback.on_inference_start(ts_ns=ts_ns, spec=spec, arguments=arguments)
         for post in self._result.posteriors:
             callback.on_step_posterior(ts_ns=ts_ns, posterior=post)
         return self._result
@@ -645,15 +641,9 @@ def test_analyse_meta_includes_provenance() -> None:
     assert record.meta["random_seed"] == "0"
     assert record.meta["n_components"] == str(spec.n_components)
     assert record.meta["n_features"] == str(spec.n_features)
-    assert record.meta["observation_count"] == str(
-        len(args.observations)
-    )
-    assert record.meta["viterbi_length"] == str(
-        len(record.result.viterbi_path)
-    )
-    assert record.meta["posterior_count"] == str(
-        len(record.result.posteriors)
-    )
+    assert record.meta["observation_count"] == str(len(args.observations))
+    assert record.meta["viterbi_length"] == str(len(record.result.viterbi_path))
+    assert record.meta["posterior_count"] == str(len(record.result.posteriors))
 
 
 def test_analyse_caller_meta_does_not_override_provenance() -> None:
@@ -932,14 +922,8 @@ def test_null_callback_methods_return_none() -> None:
     spec = _valid_spec()
     args = _valid_arguments()
     result = _valid_result()
-    assert (
-        cb.on_inference_start(ts_ns=0, spec=spec, arguments=args)
-        is None
-    )
-    assert (
-        cb.on_step_posterior(ts_ns=0, posterior=_valid_posterior())
-        is None
-    )
+    assert cb.on_inference_start(ts_ns=0, spec=spec, arguments=args) is None
+    assert cb.on_step_posterior(ts_ns=0, posterior=_valid_posterior()) is None
     assert cb.on_inference_end(ts_ns=0, result=result) is None
 
 
@@ -963,11 +947,7 @@ def test_hmmlearn_engine_factory_raises_when_dep_missing() -> None:
 # ---------------------------------------------------------------------------
 
 
-_MODULE_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "intelligence_engine"
-    / "hmm_hmmlearn.py"
-)
+_MODULE_PATH = Path(__file__).resolve().parents[1] / "intelligence_engine" / "hmm_hmmlearn.py"
 
 
 def _module_ast() -> ast.Module:
@@ -987,36 +967,29 @@ def _top_level_imports(tree: ast.Module) -> list[str]:
 
 
 def test_no_top_level_hmmlearn_import() -> None:
-    assert all(
-        not name.startswith("hmmlearn")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("hmmlearn") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_numpy_import() -> None:
-    assert all(
-        not name.startswith("numpy")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("numpy") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_scipy_import() -> None:
-    assert all(
-        not name.startswith("scipy")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("scipy") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_sklearn_import() -> None:
-    assert all(
-        not name.startswith("sklearn")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("sklearn") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_io_imports() -> None:
     banned = {
-        "subprocess", "socket", "urllib", "requests", "httpx", "aiohttp",
+        "subprocess",
+        "socket",
+        "urllib",
+        "requests",
+        "httpx",
+        "aiohttp",
     }
     assert not (banned & set(_top_level_imports(_module_ast())))
 
@@ -1038,9 +1011,7 @@ def test_no_engine_cross_imports_in_code() -> None:
     tree = _module_ast()
     code_only_segments: list[str] = []
     for node in ast.walk(tree):
-        if isinstance(
-            node, (ast.Import, ast.ImportFrom, ast.Attribute, ast.Name)
-        ):
+        if isinstance(node, (ast.Import, ast.ImportFrom, ast.Attribute, ast.Name)):
             code_only_segments.append(ast.dump(node))
     blob = "\n".join(code_only_segments)
     for needle in (
@@ -1052,9 +1023,7 @@ def test_no_engine_cross_imports_in_code() -> None:
         assert needle not in blob, needle
 
 
-def _find_enclosing_function(
-    tree: ast.Module, target: ast.AST
-) -> ast.FunctionDef | None:
+def _find_enclosing_function(tree: ast.Module, target: ast.AST) -> ast.FunctionDef | None:
     for func in ast.walk(tree):
         if isinstance(func, ast.FunctionDef):
             for descendant in ast.walk(func):
@@ -1068,19 +1037,12 @@ def test_hmmlearn_import_only_inside_factory() -> None:
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             mod = node.module if isinstance(node, ast.ImportFrom) else None
-            names = (
-                [a.name for a in node.names]
-                if isinstance(node, ast.Import)
-                else [mod or ""]
-            )
+            names = [a.name for a in node.names] if isinstance(node, ast.Import) else [mod or ""]
             for name in names:
-                if name.startswith(
-                    ("hmmlearn", "numpy", "scipy", "sklearn")
-                ):
+                if name.startswith(("hmmlearn", "numpy", "scipy", "sklearn")):
                     parent = _find_enclosing_function(tree, node)
                     assert parent is not None, (
-                        f"top-level {name} import — must be inside "
-                        "hmmlearn_gaussian_engine factory"
+                        f"top-level {name} import — must be inside hmmlearn_gaussian_engine factory"
                     )
                     assert parent.name == "hmmlearn_gaussian_engine", (
                         f"{name} imported in {parent.name!r} — must "
@@ -1101,7 +1063,4 @@ def test_module_reload_is_idempotent() -> None:
 
     assert mod1.ANALYSIS_SOURCE == mod2.ANALYSIS_SOURCE
     assert mod1.MAX_N_COMPONENTS == mod2.MAX_N_COMPONENTS
-    assert (
-        mod1.HMMModelKind.GAUSSIAN
-        is mod2.HMMModelKind.GAUSSIAN
-    )
+    assert mod1.HMMModelKind.GAUSSIAN is mod2.HMMModelKind.GAUSSIAN

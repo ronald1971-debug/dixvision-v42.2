@@ -105,12 +105,8 @@ _MAX_AGGS: Final[int] = 32
 _MAX_COLUMNS: Final[int] = 256
 _MAX_NAME_LEN: Final[int] = 128
 
-_VALID_AGG_OPS: Final[frozenset[str]] = frozenset(
-    {"count", "sum", "avg", "min", "max"}
-)
-_VALID_PERCENTILES: Final[frozenset[float]] = frozenset(
-    {0.5, 0.9, 0.95, 0.99}
-)
+_VALID_AGG_OPS: Final[frozenset[str]] = frozenset({"count", "sum", "avg", "min", "max"})
+_VALID_PERCENTILES: Final[frozenset[float]] = frozenset({0.5, 0.9, 0.95, 0.99})
 
 
 def _check_name(name: str, *, kind: str) -> str:
@@ -119,13 +115,9 @@ def _check_name(name: str, *, kind: str) -> str:
     if not name:
         raise ValueError(f"{kind} must not be empty")
     if len(name) > _MAX_NAME_LEN:
-        raise ValueError(
-            f"{kind}={name!r} exceeds max length {_MAX_NAME_LEN}"
-        )
+        raise ValueError(f"{kind}={name!r} exceeds max length {_MAX_NAME_LEN}")
     if not name.replace("_", "").isalnum():
-        raise ValueError(
-            f"{kind}={name!r} must be alphanumeric (underscores allowed)"
-        )
+        raise ValueError(f"{kind}={name!r} must be alphanumeric (underscores allowed)")
     return name
 
 
@@ -170,10 +162,7 @@ class InProcessAnalyticsBackend:
             raise TypeError("rows must be a tuple")
         for index, row in enumerate(self.rows):
             if not isinstance(row, Mapping):
-                raise TypeError(
-                    f"rows[{index}] must be Mapping, "
-                    f"got {type(row).__name__!r}"
-                )
+                raise TypeError(f"rows[{index}] must be Mapping, got {type(row).__name__!r}")
 
     def execute(
         self,
@@ -188,11 +177,7 @@ class InProcessAnalyticsBackend:
                 filtered.append(dict(row))
 
         # 2. ORDER BY for INV-15 byte-identical replay.
-        filtered.sort(
-            key=lambda r: tuple(
-                _sort_key(r.get(col)) for col in request._sort_columns
-            )
-        )
+        filtered.sort(key=lambda r: tuple(_sort_key(r.get(col)) for col in request._sort_columns))
 
         # 3. LIMIT.
         if request.limit is not None:
@@ -268,9 +253,7 @@ class QueryRequest:
         if not self.columns:
             raise ValueError("columns must not be empty")
         if len(self.columns) > _MAX_COLUMNS:
-            raise ValueError(
-                f"columns length {len(self.columns)} > max {_MAX_COLUMNS}"
-            )
+            raise ValueError(f"columns length {len(self.columns)} > max {_MAX_COLUMNS}")
         for col in self.columns:
             _check_name(col, kind="column")
 
@@ -303,15 +286,10 @@ class QueryRequest:
     ) -> None:
         unknown = set(self.columns) - available
         if unknown and available:
-            raise ValueError(
-                f"query references unknown columns: {sorted(unknown)}"
-            )
+            raise ValueError(f"query references unknown columns: {sorted(unknown)}")
         filter_unknown = set(self.filters.keys()) - available
         if filter_unknown and available:
-            raise ValueError(
-                f"query filters reference unknown columns: "
-                f"{sorted(filter_unknown)}"
-            )
+            raise ValueError(f"query filters reference unknown columns: {sorted(filter_unknown)}")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -341,13 +319,9 @@ class QueryResult:
                 raise TypeError(f"rows[{index}] must be tuple")
             if len(row) != len(self.request_columns):
                 raise ValueError(
-                    f"rows[{index}] has {len(row)} fields, "
-                    f"expected {len(self.request_columns)}"
+                    f"rows[{index}] has {len(row)} fields, expected {len(self.request_columns)}"
                 )
-        if (
-            not isinstance(self.result_digest, str)
-            or len(self.result_digest) != 32
-        ):
+        if not isinstance(self.result_digest, str) or len(self.result_digest) != 32:
             raise ValueError("result_digest must be a 32-char hex string")
 
     def row_count(self) -> int:
@@ -373,9 +347,7 @@ class AggregateSpec:
 
     def __post_init__(self) -> None:
         if self.op not in _VALID_AGG_OPS:
-            raise ValueError(
-                f"op={self.op!r} not in {sorted(_VALID_AGG_OPS)}"
-            )
+            raise ValueError(f"op={self.op!r} not in {sorted(_VALID_AGG_OPS)}")
         _check_name(self.column, kind="aggregate column")
         _check_name(self.alias, kind="aggregate alias")
 
@@ -394,10 +366,7 @@ class GroupBySpec:
         if not isinstance(self.group_keys, tuple):
             raise TypeError("group_keys must be a tuple")
         if len(self.group_keys) > _MAX_GROUP_KEYS:
-            raise ValueError(
-                f"group_keys length {len(self.group_keys)} > max "
-                f"{_MAX_GROUP_KEYS}"
-            )
+            raise ValueError(f"group_keys length {len(self.group_keys)} > max {_MAX_GROUP_KEYS}")
         for key in self.group_keys:
             _check_name(key, kind="group_keys")
         if not isinstance(self.aggregates, tuple):
@@ -405,10 +374,7 @@ class GroupBySpec:
         if not self.aggregates:
             raise ValueError("aggregates must not be empty")
         if len(self.aggregates) > _MAX_AGGS:
-            raise ValueError(
-                f"aggregates length {len(self.aggregates)} > max "
-                f"{_MAX_AGGS}"
-            )
+            raise ValueError(f"aggregates length {len(self.aggregates)} > max {_MAX_AGGS}")
         if not isinstance(self.filters, Mapping):
             raise TypeError("filters must be a Mapping")
         for key in self.filters:
@@ -435,9 +401,7 @@ class LedgerAnalytics:
 
     def __post_init__(self) -> None:
         if not isinstance(self.backend, AnalyticsBackend):
-            raise TypeError(
-                "backend must implement AnalyticsBackend Protocol"
-            )
+            raise TypeError("backend must implement AnalyticsBackend Protocol")
 
     # ------------------------------------------------------------------
     # Primitive query — projection + filter + limit
@@ -445,9 +409,7 @@ class LedgerAnalytics:
 
     def fetch_rows(self, request: QueryRequest) -> QueryResult:
         rows = self.backend.execute(request)
-        materialised = tuple(
-            tuple(row.get(col) for col in request.columns) for row in rows
-        )
+        materialised = tuple(tuple(row.get(col) for col in request.columns) for row in rows)
         return QueryResult(
             request_table=request.table,
             request_columns=request.columns,
@@ -502,16 +464,12 @@ class LedgerAnalytics:
         """
         _check_name(column, kind="percentile column")
         if percentile not in _VALID_PERCENTILES:
-            raise ValueError(
-                f"percentile={percentile} not in "
-                f"{sorted(_VALID_PERCENTILES)}"
-            )
+            raise ValueError(f"percentile={percentile} not in {sorted(_VALID_PERCENTILES)}")
         rows = self.backend.execute(request)
         values = sorted(
             row[column]
             for row in rows
-            if isinstance(row.get(column), (int, float))
-            and not isinstance(row.get(column), bool)
+            if isinstance(row.get(column), (int, float)) and not isinstance(row.get(column), bool)
         )
         if not values:
             return None
@@ -542,21 +500,13 @@ class LedgerAnalytics:
             key = tuple(row.get(k) for k in spec.group_keys)
             groups.setdefault(key, []).append(row)
 
-        result_columns = spec.group_keys + tuple(
-            agg.alias for agg in spec.aggregates
-        )
+        result_columns = spec.group_keys + tuple(agg.alias for agg in spec.aggregates)
         result_rows: list[tuple[object, ...]] = []
-        for key in sorted(
-            groups, key=lambda k: tuple(_sort_key(v) for v in k)
-        ):
+        for key in sorted(groups, key=lambda k: tuple(_sort_key(v) for v in k)):
             bucket = groups[key]
             agg_values: list[object] = []
             for agg in spec.aggregates:
-                values = [
-                    row.get(agg.column)
-                    for row in bucket
-                    if row.get(agg.column) is not None
-                ]
+                values = [row.get(agg.column) for row in bucket if row.get(agg.column) is not None]
                 agg_values.append(_apply_agg(agg.op, values))
             result_rows.append(tuple(key) + tuple(agg_values))
 
@@ -688,17 +638,12 @@ class _DuckDBBackend:
             clauses = [f"{key} = ?" for key in sorted_keys]
             where_clause = " WHERE " + " AND ".join(clauses)
             params.extend(request.filters[key] for key in sorted_keys)
-        order_columns = (
-            request.order_by if request.order_by else request.columns
-        )
+        order_columns = request.order_by if request.order_by else request.columns
         order_clause = " ORDER BY " + ", ".join(order_columns)
         limit_clause = ""
         if request.limit is not None:
             limit_clause = f" LIMIT {int(request.limit)}"
-        sql = (
-            f"SELECT {columns} FROM {request.table}"
-            f"{where_clause}{order_clause}{limit_clause}"
-        )
+        sql = f"SELECT {columns} FROM {request.table}{where_clause}{order_clause}{limit_clause}"
         cursor = self._connection.execute(sql, params)
         try:
             description = cursor.description or []
@@ -708,6 +653,4 @@ class _DuckDBBackend:
             # DuckDBPyConnection doesn't expose .close() per row; the
             # caller can close the connection when done.
             pass
-        return tuple(
-            dict(zip(col_names, row, strict=False)) for row in rows
-        )
+        return tuple(dict(zip(col_names, row, strict=False)) for row in rows)

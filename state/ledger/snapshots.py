@@ -201,12 +201,7 @@ class SnapshotSummary:
 
     @property
     def total_rows(self) -> int:
-        return (
-            self.signal_rows
-            + self.execution_rows
-            + self.system_rows
-            + self.hazard_rows
-        )
+        return self.signal_rows + self.execution_rows + self.system_rows + self.hazard_rows
 
 
 @dataclass(frozen=True, slots=True)
@@ -263,8 +258,7 @@ def parse_meta_json(blob: str) -> Mapping[str, str]:
     raw = json.loads(blob)
     if not isinstance(raw, dict):
         raise ValueError(
-            "snapshots.parse_meta_json: expected JSON object, "
-            f"got {type(raw).__name__}"
+            f"snapshots.parse_meta_json: expected JSON object, got {type(raw).__name__}"
         )
     return MappingProxyType({str(k): str(v) for k, v in raw.items()})
 
@@ -353,10 +347,7 @@ def split_events_by_kind(
             assert isinstance(ev, HazardEvent)
             hazards.append(ev)
         else:
-            raise ValueError(
-                "snapshots.split_events_by_kind: unknown EventKind "
-                f"{ev.kind!r}"
-            )
+            raise ValueError(f"snapshots.split_events_by_kind: unknown EventKind {ev.kind!r}")
     return tuple(signals), tuple(executions), tuple(systems), tuple(hazards)
 
 
@@ -422,9 +413,7 @@ class LedgerSnapshotWriter:
             )
         signals, executions, systems, hazards = split_events_by_kind(events)
         signals_rows = tuple(signal_event_to_row(ev) for ev in signals)
-        executions_rows = tuple(
-            execution_event_to_row(ev) for ev in executions
-        )
+        executions_rows = tuple(execution_event_to_row(ev) for ev in executions)
         systems_rows = tuple(system_event_to_row(ev) for ev in systems)
         hazards_rows = tuple(hazard_event_to_row(ev) for ev in hazards)
         self._transport.write_tables(

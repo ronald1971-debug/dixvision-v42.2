@@ -100,11 +100,7 @@ class NewsFanout:
         for hazard in self.sensor.on_news(news):
             self.hazard_sink(hazard)
 
-        belief = (
-            self.current_belief()
-            if self.current_belief is not None
-            else None
-        )
+        belief = self.current_belief() if self.current_belief is not None else None
         signal = project_news(news, current_belief=belief)
         if signal is not None:
             self.signal_sink(signal)

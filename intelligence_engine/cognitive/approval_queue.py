@@ -88,9 +88,7 @@ class ApprovalQueue:
 
     id_factory: Callable[[], str] = field(default=default_id_factory)
     ts_ns: Callable[[], int] = field(default_factory=lambda: lambda: 0)
-    _rows: dict[str, ApprovalRequestApi] = field(
-        default_factory=dict, init=False, repr=False
-    )
+    _rows: dict[str, ApprovalRequestApi] = field(default_factory=dict, init=False, repr=False)
     _order: list[str] = field(default_factory=list, init=False, repr=False)
     _lock: threading.Lock = field(
         default_factory=threading.Lock, init=False, repr=False, compare=False
@@ -115,15 +113,10 @@ class ApprovalQueue:
         ``COGNITIVE_CHECKPOINT`` ledger row.
         """
 
-        ts = (
-            requested_at_ts_ns
-            if requested_at_ts_ns is not None
-            else self.ts_ns()
-        )
+        ts = requested_at_ts_ns if requested_at_ts_ns is not None else self.ts_ns()
         if proposal.side is ApprovalSideApi.HOLD:
             raise ValueError(
-                "HOLD proposals must not be queued — the parser should "
-                "reject them upstream"
+                "HOLD proposals must not be queued — the parser should reject them upstream"
             )
 
         with self._lock:
@@ -133,9 +126,7 @@ class ApprovalQueue:
                 # production uuid4 collision probability is
                 # negligible but a deterministic test factory could
                 # collide if mis-seeded.
-                raise RuntimeError(
-                    f"approval id collision: {req_id!r}"
-                )
+                raise RuntimeError(f"approval id collision: {req_id!r}")
             row = ApprovalRequestApi(
                 request_id=req_id,
                 thread_id=thread_id,
@@ -168,15 +159,12 @@ class ApprovalQueue:
                 raise ApprovalNotFoundError(request_id)
             if row.status is not ApprovalStatusApi.PENDING:
                 raise ApprovalAlreadyDecidedError(
-                    f"approval {request_id!r} is already "
-                    f"{row.status.value}"
+                    f"approval {request_id!r} is already {row.status.value}"
                 )
             updated = row.model_copy(
                 update={
                     "status": (
-                        ApprovalStatusApi.APPROVED
-                        if approved
-                        else ApprovalStatusApi.REJECTED
+                        ApprovalStatusApi.APPROVED if approved else ApprovalStatusApi.REJECTED
                     ),
                     "decided_at_ts_ns": self.ts_ns(),
                     "decided_by": decided_by,
@@ -205,13 +193,9 @@ class ApprovalQueue:
         full audit trail for the dashboard's history panel."""
 
         with self._lock:
-            rows: Iterable[ApprovalRequestApi] = (
-                self._rows[k] for k in self._order
-            )
+            rows: Iterable[ApprovalRequestApi] = (self._rows[k] for k in self._order)
             if not include_decided:
-                rows = (
-                    r for r in rows if r.status is ApprovalStatusApi.PENDING
-                )
+                rows = (r for r in rows if r.status is ApprovalStatusApi.PENDING)
             return tuple(rows)
 
     def __len__(self) -> int:
@@ -246,8 +230,6 @@ class ApprovalQueue:
             self._order.clear()
             for req_id, row in rows:
                 if req_id in self._rows:
-                    raise RuntimeError(
-                        f"projection rehydrate: duplicate approval id {req_id!r}"
-                    )
+                    raise RuntimeError(f"projection rehydrate: duplicate approval id {req_id!r}")
                 self._rows[req_id] = row
                 self._order.append(req_id)

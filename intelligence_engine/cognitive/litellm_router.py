@@ -182,8 +182,7 @@ class ChatMessage:
             raise TypeError("ChatMessage.role must be str")
         if self.role not in _VALID_ROLES:
             raise ValueError(
-                f"ChatMessage.role must be one of {sorted(_VALID_ROLES)!r};"
-                f" got {self.role!r}"
+                f"ChatMessage.role must be one of {sorted(_VALID_ROLES)!r}; got {self.role!r}"
             )
         if not isinstance(self.content, str):
             raise TypeError("ChatMessage.content must be str")
@@ -221,32 +220,23 @@ class LLMRequest:
             raise ValueError("LLMRequest.messages must be non-empty")
         for i, msg in enumerate(self.messages):
             if not isinstance(msg, ChatMessage):
-                raise TypeError(
-                    f"LLMRequest.messages[{i}] must be a ChatMessage"
-                )
-        if isinstance(self.max_tokens, bool) or not isinstance(
-            self.max_tokens, int
-        ):
+                raise TypeError(f"LLMRequest.messages[{i}] must be a ChatMessage")
+        if isinstance(self.max_tokens, bool) or not isinstance(self.max_tokens, int):
             raise TypeError("LLMRequest.max_tokens must be int")
         if self.max_tokens <= 0:
             raise ValueError("LLMRequest.max_tokens must be > 0")
-        if isinstance(self.temperature, bool) or not isinstance(
-            self.temperature, (int, float)
-        ):
+        if isinstance(self.temperature, bool) or not isinstance(self.temperature, (int, float)):
             raise TypeError("LLMRequest.temperature must be int|float")
         if not (0.0 <= float(self.temperature) <= 2.0):
             raise ValueError("LLMRequest.temperature must be in [0.0, 2.0]")
-        if isinstance(self.timeout_s, bool) or not isinstance(
-            self.timeout_s, (int, float)
-        ):
+        if isinstance(self.timeout_s, bool) or not isinstance(self.timeout_s, (int, float)):
             raise TypeError("LLMRequest.timeout_s must be int|float")
         ts = float(self.timeout_s)
         if ts <= 0.0:
             raise ValueError("LLMRequest.timeout_s must be > 0")
         if ts > MAX_TIMEOUT_S:
             raise ValueError(
-                f"LLMRequest.timeout_s must be <= {MAX_TIMEOUT_S}"
-                f" (S-12 hard ceiling); got {ts}"
+                f"LLMRequest.timeout_s must be <= {MAX_TIMEOUT_S} (S-12 hard ceiling); got {ts}"
             )
 
 
@@ -271,9 +261,7 @@ class LLMUsage:
                 raise TypeError(f"LLMUsage.{fname} must be int")
             if v < 0:
                 raise ValueError(f"LLMUsage.{fname} must be >= 0")
-        if isinstance(self.cost_usd, bool) or not isinstance(
-            self.cost_usd, (int, float)
-        ):
+        if isinstance(self.cost_usd, bool) or not isinstance(self.cost_usd, (int, float)):
             raise TypeError("LLMUsage.cost_usd must be int|float")
         cost = float(self.cost_usd)
         # NaN check — `cost != cost` is the canonical idiom.
@@ -335,9 +323,7 @@ class LLMResponse:
             raise ValueError("LLMResponse.attempts must be non-empty")
         for i, a in enumerate(self.attempts):
             if not isinstance(a, str) or not a:
-                raise ValueError(
-                    f"LLMResponse.attempts[{i}] must be non-empty str"
-                )
+                raise ValueError(f"LLMResponse.attempts[{i}] must be non-empty str")
         if self.attempts[-1] != self.provider_id:
             raise ValueError(
                 "LLMResponse.attempts[-1] must equal provider_id; got "
@@ -459,10 +445,7 @@ class LiteLLMRouter:
         if not callable(self.provider_resolver):
             raise TypeError("LiteLLMRouter.provider_resolver must be callable")
         if not isinstance(self.transport, LLMTransport):
-            raise TypeError(
-                "LiteLLMRouter.transport must implement the LLMTransport"
-                " Protocol"
-            )
+            raise TypeError("LiteLLMRouter.transport must implement the LLMTransport Protocol")
         if not callable(self.fallback_audit):
             raise TypeError("LiteLLMRouter.fallback_audit must be callable")
         if not callable(self.cost_ledger):
@@ -508,9 +491,7 @@ class LiteLLMRouter:
         if ts_ns <= 0:
             raise ValueError("LiteLLMRouter.complete: ts_ns must be positive")
         if not isinstance(request_id, str) or not request_id:
-            raise ValueError(
-                "LiteLLMRouter.complete: request_id must be non-empty str"
-            )
+            raise ValueError("LiteLLMRouter.complete: request_id must be non-empty str")
 
         providers: Sequence[AIProvider] = self.provider_resolver()
         if not isinstance(providers, tuple):
@@ -520,8 +501,7 @@ class LiteLLMRouter:
             )
         if not providers:
             raise NoEligibleProviderError(
-                "LiteLLMRouter: provider_resolver returned no eligible"
-                " providers"
+                "LiteLLMRouter: provider_resolver returned no eligible providers"
             )
 
         attempts: list[str] = []
@@ -529,8 +509,7 @@ class LiteLLMRouter:
         for provider in providers:
             if not isinstance(provider, AIProvider):
                 raise TypeError(
-                    "LiteLLMRouter.provider_resolver must return"
-                    " tuple[AIProvider, ...]"
+                    "LiteLLMRouter.provider_resolver must return tuple[AIProvider, ...]"
                 )
             attempts.append(provider.id)
             try:
@@ -632,16 +611,12 @@ class _LiteLLMCompletionTransport:
     ) -> tuple[str, LLMUsage]:
         import litellm  # noqa: PLC0415
 
-        timeout_cls = _safe_attr(litellm, "Timeout") or _safe_attr(
-            litellm, "APITimeoutError"
-        )
+        timeout_cls = _safe_attr(litellm, "Timeout") or _safe_attr(litellm, "APITimeoutError")
         rate_limit_cls = _safe_attr(litellm, "RateLimitError")
         service_unavailable_cls = _safe_attr(litellm, "ServiceUnavailableError")
         api_connection_cls = _safe_attr(litellm, "APIConnectionError")
 
-        msgs = [
-            {"role": m.role, "content": m.content} for m in request.messages
-        ]
+        msgs = [{"role": m.role, "content": m.content} for m in request.messages]
         try:
             resp = litellm.completion(
                 model=provider.endpoint,
@@ -681,8 +656,7 @@ def _unpack_litellm_response(resp: Any) -> tuple[str, LLMUsage]:
     content = _dig(resp, ("choices", 0, "message", "content"))
     if not isinstance(content, str):
         raise RuntimeError(
-            "_LiteLLMCompletionTransport: litellm response missing"
-            " choices[0].message.content"
+            "_LiteLLMCompletionTransport: litellm response missing choices[0].message.content"
         )
     usage_obj = _dig(resp, ("usage",))
     prompt_tokens = int(_dig(usage_obj, ("prompt_tokens",)) or 0)

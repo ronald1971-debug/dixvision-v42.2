@@ -128,16 +128,12 @@ def test_spec_rejects_num_sites_bool() -> None:
 
 
 def test_spec_rejects_num_observations_negative() -> None:
-    with pytest.raises(
-        ValueError, match="num_observations must be non-negative"
-    ):
+    with pytest.raises(ValueError, match="num_observations must be non-negative"):
         _valid_spec(num_observations=-1)
 
 
 def test_spec_rejects_num_observations_above_max() -> None:
-    with pytest.raises(
-        ValueError, match="num_observations must be <="
-    ):
+    with pytest.raises(ValueError, match="num_observations must be <="):
         _valid_spec(num_observations=MAX_OBSERVATION_LEN + 1)
 
 
@@ -200,16 +196,12 @@ def test_args_is_frozen_and_slotted() -> None:
 
 
 def test_args_rejects_non_enum_inference_kind() -> None:
-    with pytest.raises(
-        TypeError, match="inference_kind must be SVIInferenceKind"
-    ):
+    with pytest.raises(TypeError, match="inference_kind must be SVIInferenceKind"):
         _valid_args(inference_kind="SVI")  # type: ignore[arg-type]
 
 
 def test_args_rejects_negative_random_seed() -> None:
-    with pytest.raises(
-        ValueError, match="random_seed must be non-negative"
-    ):
+    with pytest.raises(ValueError, match="random_seed must be non-negative"):
         _valid_args(random_seed=-1)
 
 
@@ -255,9 +247,7 @@ def test_args_accepts_empty_observations() -> None:
 
 def test_args_rejects_observations_above_max() -> None:
     with pytest.raises(ValueError, match="observations must have <="):
-        _valid_args(
-            observations=tuple([1.0] * (MAX_OBSERVATION_LEN + 1))
-        )
+        _valid_args(observations=tuple([1.0] * (MAX_OBSERVATION_LEN + 1)))
 
 
 def test_args_rejects_non_float_observation() -> None:
@@ -423,9 +413,7 @@ def test_result_is_frozen_and_slotted() -> None:
 
 def test_result_rejects_non_tuple_summaries() -> None:
     with pytest.raises(TypeError, match="site_summaries must be a tuple"):
-        _valid_result(
-            site_summaries=[_valid_summary()]
-        )  # type: ignore[arg-type]
+        _valid_result(site_summaries=[_valid_summary()])  # type: ignore[arg-type]
 
 
 def test_result_rejects_empty_summaries() -> None:
@@ -434,9 +422,7 @@ def test_result_rejects_empty_summaries() -> None:
 
 
 def test_result_rejects_too_many_summaries() -> None:
-    too_many = tuple(
-        _valid_summary(name=f"s{i}") for i in range(MAX_NUM_SITES + 1)
-    )
+    too_many = tuple(_valid_summary(name=f"s{i}") for i in range(MAX_NUM_SITES + 1))
     with pytest.raises(ValueError, match="site_summaries must have <="):
         _valid_result(site_summaries=too_many)
 
@@ -446,9 +432,7 @@ def test_result_rejects_non_summary_entries() -> None:
         TypeError,
         match="site_summaries entries must be SVISiteSummary",
     ):
-        _valid_result(
-            site_summaries=(_valid_summary(), "x")
-        )  # type: ignore[arg-type]
+        _valid_result(site_summaries=(_valid_summary(), "x"))  # type: ignore[arg-type]
 
 
 def test_result_rejects_duplicate_site_names() -> None:
@@ -653,9 +637,7 @@ def test_analyser_rejects_non_protocol_engine() -> None:
     class _NotEngine:
         pass
 
-    with pytest.raises(
-        TypeError, match="engine must implement the SVIInferenceEngine"
-    ):
+    with pytest.raises(TypeError, match="engine must implement the SVIInferenceEngine"):
         PyroSVIAnalyser(engine=_NotEngine())  # type: ignore[arg-type]
 
 
@@ -730,9 +712,7 @@ def test_analyser_rejects_non_int_ts_ns() -> None:
 
 def test_analyser_rejects_negative_ts_ns() -> None:
     a = PyroSVIAnalyser(engine=_FakeEngine())
-    with pytest.raises(
-        SVIAnalyserConfigError, match="ts_ns must be non-negative"
-    ):
+    with pytest.raises(SVIAnalyserConfigError, match="ts_ns must be non-negative"):
         a.analyse(
             spec=_valid_spec(),
             arguments=_valid_args(),
@@ -743,9 +723,7 @@ def test_analyser_rejects_negative_ts_ns() -> None:
 
 def test_analyser_rejects_empty_analysis_id() -> None:
     a = PyroSVIAnalyser(engine=_FakeEngine())
-    with pytest.raises(
-        SVIAnalyserConfigError, match="analysis_id must be non-empty"
-    ):
+    with pytest.raises(SVIAnalyserConfigError, match="analysis_id must be non-empty"):
         a.analyse(
             spec=_valid_spec(),
             arguments=_valid_args(),
@@ -768,8 +746,12 @@ def test_analyser_rejects_long_analysis_id() -> None:
 def test_analyser_rejects_engine_returning_wrong_type() -> None:
     class _BadEngine:
         def infer(
-            self, *, spec: SVIModelSpec, arguments: SVIInferenceArguments,
-            ts_ns: int, callback: SVIInferenceCallback,
+            self,
+            *,
+            spec: SVIModelSpec,
+            arguments: SVIInferenceArguments,
+            ts_ns: int,
+            callback: SVIInferenceCallback,
         ) -> SVIInferenceResult:
             return "not a result"  # type: ignore[return-value]
 
@@ -786,8 +768,12 @@ def test_analyser_rejects_engine_returning_wrong_type() -> None:
 def test_analyser_rejects_mismatched_site_count() -> None:
     class _MismatchEngine:
         def infer(
-            self, *, spec: SVIModelSpec, arguments: SVIInferenceArguments,
-            ts_ns: int, callback: SVIInferenceCallback,
+            self,
+            *,
+            spec: SVIModelSpec,
+            arguments: SVIInferenceArguments,
+            ts_ns: int,
+            callback: SVIInferenceCallback,
         ) -> SVIInferenceResult:
             return SVIInferenceResult(
                 site_summaries=(_valid_summary(name="only_one"),),
@@ -813,9 +799,7 @@ def test_analyser_rejects_non_callback() -> None:
     class _NotCB:
         pass
 
-    with pytest.raises(
-        TypeError, match="callback must implement the SVIInferenceCallback"
-    ):
+    with pytest.raises(TypeError, match="callback must implement the SVIInferenceCallback"):
         a.analyse(
             spec=_valid_spec(),
             arguments=_valid_args(),
@@ -832,18 +816,27 @@ def test_analyser_threads_custom_callback() -> None:
 
     class _Recorder:
         def on_inference_start(
-            self, *, ts_ns: int, spec: SVIModelSpec,
+            self,
+            *,
+            ts_ns: int,
+            spec: SVIModelSpec,
             arguments: SVIInferenceArguments,
         ) -> None:
             start_seen.append(spec)
 
         def on_site_summary(
-            self, *, ts_ns: int, summary: SVISiteSummary,
+            self,
+            *,
+            ts_ns: int,
+            summary: SVISiteSummary,
         ) -> None:
             summaries_seen.append(summary)
 
         def on_inference_end(
-            self, *, ts_ns: int, result: SVIInferenceResult,
+            self,
+            *,
+            ts_ns: int,
+            result: SVIInferenceResult,
         ) -> None:
             end_seen.append(result)
 
@@ -866,14 +859,17 @@ def test_analyser_threads_custom_callback() -> None:
 
 
 def _run_once(
-    *, seed: int = 42, num_sites: int = 2,
+    *,
+    seed: int = 42,
+    num_sites: int = 2,
     kind: SVIInferenceKind = SVIInferenceKind.SVI,
 ) -> SVIInferenceRecord:
     a = PyroSVIAnalyser(engine=_FakeEngine())
     return a.analyse(
         spec=_valid_spec(num_sites=num_sites),
         arguments=_valid_args(
-            inference_kind=kind, random_seed=seed,
+            inference_kind=kind,
+            random_seed=seed,
         ),
         ts_ns=999,
         analysis_id="inv15",
@@ -945,11 +941,7 @@ def test_pyro_svi_engine_factory_signature() -> None:
 # ---------------------------------------------------------------------------
 
 
-_MODULE_PATH = (
-    Path(__file__).resolve().parent.parent
-    / "intelligence_engine"
-    / "svi_pyro.py"
-)
+_MODULE_PATH = Path(__file__).resolve().parent.parent / "intelligence_engine" / "svi_pyro.py"
 
 
 def _module_ast() -> ast.Module:
@@ -983,8 +975,13 @@ def test_ast_no_top_level_numpy_import() -> None:
 
 def test_ast_no_top_level_io_imports() -> None:
     forbidden = {
-        "subprocess", "socket", "urllib", "requests",
-        "httpx", "aiohttp", "asyncio",
+        "subprocess",
+        "socket",
+        "urllib",
+        "requests",
+        "httpx",
+        "aiohttp",
+        "asyncio",
     }
     assert forbidden.isdisjoint(_top_level_imports())
 
@@ -1008,9 +1005,7 @@ def test_ast_no_cross_engine_imports() -> None:
         elif isinstance(node, ast.ImportFrom):
             if node.module:
                 seen.add(node.module.split(".")[0])
-    assert forbidden.isdisjoint(seen), (
-        f"forbidden imports in svi_pyro.py: {forbidden & seen!r}"
-    )
+    assert forbidden.isdisjoint(seen), f"forbidden imports in svi_pyro.py: {forbidden & seen!r}"
 
 
 def test_ast_vendor_imports_confined_to_factory() -> None:

@@ -168,9 +168,7 @@ def test_compile_template_rejects_no_slots() -> None:
 
 def test_compile_template_rejects_duplicate_slot_name() -> None:
     with pytest.raises(GuidanceParseError):
-        compile_template(
-            "{{regex 'x' pattern='a'}} {{regex 'x' pattern='b'}}"
-        )
+        compile_template("{{regex 'x' pattern='a'}} {{regex 'x' pattern='b'}}")
 
 
 def test_compile_template_rejects_non_str() -> None:
@@ -213,9 +211,7 @@ def test_match_completion_happy_path() -> None:
 
 
 def test_match_completion_preserves_slot_order() -> None:
-    t = compile_template(
-        "{{regex 'a' pattern='\\d+'}}-{{regex 'b' pattern='\\d+'}}"
-    )
+    t = compile_template("{{regex 'a' pattern='\\d+'}}-{{regex 'b' pattern='\\d+'}}")
     out = match_completion(t, "1-2")
     assert list(out.keys()) == ["a", "b"]
 
@@ -312,9 +308,7 @@ def test_no_top_level_guidance_import() -> None:
         if stripped.startswith(("import guidance", "from guidance")):
             indent = len(line) - len(stripped)
             if indent == 0:
-                raise AssertionError(
-                    f"guidance must be a lazy seam — no top-level: {line!r}"
-                )
+                raise AssertionError(f"guidance must be a lazy seam — no top-level: {line!r}")
 
 
 def test_no_top_level_transformers_or_llama_cpp_import() -> None:
@@ -328,19 +322,14 @@ def test_no_top_level_transformers_or_llama_cpp_import() -> None:
             )
         ):
             raise AssertionError(
-                f"transformers/llama_cpp must be lazy seams — no top-level: "
-                f"{line!r}"
+                f"transformers/llama_cpp must be lazy seams — no top-level: {line!r}"
             )
 
 
 def test_no_top_level_torch_or_numpy_import() -> None:
     for line in _module_source().splitlines():
-        if line.startswith(
-            ("import torch", "from torch", "import numpy", "from numpy")
-        ):
-            raise AssertionError(
-                f"torch/numpy must be lazy seams — no top-level: {line!r}"
-            )
+        if line.startswith(("import torch", "from torch", "import numpy", "from numpy")):
+            raise AssertionError(f"torch/numpy must be lazy seams — no top-level: {line!r}")
 
 
 def test_no_forbidden_top_level_imports() -> None:
@@ -373,6 +362,4 @@ def test_no_typed_event_constructors() -> None:
     )
     src = _module_source()
     for ctor in forbidden_ctors:
-        assert ctor not in src, (
-            f"adapter must not construct typed events: {ctor!r}"
-        )
+        assert ctor not in src, f"adapter must not construct typed events: {ctor!r}"

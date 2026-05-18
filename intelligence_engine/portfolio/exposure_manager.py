@@ -50,8 +50,7 @@ class ExposureManager:
             raise ValueError("ExposureManager.apply_fill: symbol must be non-empty")
         if side not in ("BUY", "SELL"):
             raise ValueError(
-                f"ExposureManager.apply_fill: side must be 'BUY' or 'SELL', "
-                f"got {side!r}"
+                f"ExposureManager.apply_fill: side must be 'BUY' or 'SELL', got {side!r}"
             )
         # NB: phrased as ``not (x >= 0.0)`` rather than ``x < 0.0`` so NaN
         # — which compares False against every numeric under IEEE 754 — is
@@ -69,9 +68,7 @@ class ExposureManager:
                 f"got {notional_usd!r}"
             )
         if ts_ns <= 0:
-            raise ValueError(
-                "ExposureManager.apply_fill: ts_ns must be positive"
-            )
+            raise ValueError("ExposureManager.apply_fill: ts_ns must be positive")
         if ts_ns < self._last_update_ns:
             raise ValueError(
                 "ExposureManager.apply_fill: out-of-order ts_ns "

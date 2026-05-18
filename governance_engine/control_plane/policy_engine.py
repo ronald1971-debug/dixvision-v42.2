@@ -91,23 +91,19 @@ def _compile_decision_table() -> DecisionTable:
 
     for mode in SystemMode:
         for action in OperatorAction:
-            table[(action, mode, _WILDCARD_SUB_KIND)] = _compile_default(
-                action, mode
-            )
+            table[(action, mode, _WILDCARD_SUB_KIND)] = _compile_default(action, mode)
 
     # Lifecycle ACTIVE in SAFE is the one payload-keyed exception.
     for mode in SystemMode:
         for sub_kind in _PLUGIN_LIFECYCLE_SUB_KINDS:
-            table[
-                (OperatorAction.REQUEST_PLUGIN_LIFECYCLE, mode, sub_kind)
-            ] = _compile_plugin_lifecycle(mode, sub_kind)
+            table[(OperatorAction.REQUEST_PLUGIN_LIFECYCLE, mode, sub_kind)] = (
+                _compile_plugin_lifecycle(mode, sub_kind)
+            )
 
     return table
 
 
-def _compile_default(
-    action: OperatorAction, mode: SystemMode
-) -> tuple[bool, str]:
+def _compile_default(action: OperatorAction, mode: SystemMode) -> tuple[bool, str]:
     """Verdict for ``(action, mode, "*")``."""
 
     if mode is SystemMode.LOCKED:
@@ -134,9 +130,7 @@ def _compile_default(
     return False, "POLICY_UNKNOWN_ACTION"
 
 
-def _compile_plugin_lifecycle(
-    mode: SystemMode, sub_kind: str
-) -> tuple[bool, str]:
+def _compile_plugin_lifecycle(mode: SystemMode, sub_kind: str) -> tuple[bool, str]:
     """Verdict for ``(REQUEST_PLUGIN_LIFECYCLE, mode, sub_kind)``."""
 
     if mode is SystemMode.LOCKED:
@@ -150,14 +144,10 @@ def _hash_decision_table(table: DecisionTable) -> str:
     """Stable SHA-256 over the canonical-sorted decision table."""
 
     h = hashlib.sha256()
-    for key in sorted(
-        table, key=lambda k: (k[0].value, int(k[1]), k[2])
-    ):
+    for key in sorted(table, key=lambda k: (k[0].value, int(k[1]), k[2])):
         action, mode, sub_kind = key
         allowed, code = table[key]
-        h.update(
-            f"{action.value}|{int(mode)}|{sub_kind}|{int(allowed)}|{code}\n".encode()
-        )
+        h.update(f"{action.value}|{int(mode)}|{sub_kind}|{int(allowed)}|{code}\n".encode())
     return h.hexdigest()
 
 
@@ -200,18 +190,14 @@ class PolicyEngine:
         self, kind: ConstraintKind, *, scope: ConstraintScope | None = None
     ) -> tuple[Constraint, ...]:
         return tuple(
-            c
-            for c in self._constraints
-            if c.kind is kind and (scope is None or c.scope is scope)
+            c for c in self._constraints if c.kind is kind and (scope is None or c.scope is scope)
         )
 
     # ------------------------------------------------------------------
     # Mode transition gate
     # ------------------------------------------------------------------
 
-    def permit_mode_transition(
-        self, request: ModeTransitionRequest
-    ) -> tuple[bool, str]:
+    def permit_mode_transition(self, request: ModeTransitionRequest) -> tuple[bool, str]:
         """Apply the policy half of the mode-transition gate.
 
         Returns ``(approved, rejection_code)``. The Mode FSM legality
@@ -232,10 +218,7 @@ class PolicyEngine:
         current = request.current_mode
 
         if target in (SystemMode.LIVE, SystemMode.AUTO):
-            forward = (
-                current is not SystemMode.LOCKED
-                and int(target) > int(current)
-            )
+            forward = current is not SystemMode.LOCKED and int(target) > int(current)
             if forward and not request.operator_authorized:
                 return False, "POLICY_OPERATOR_REQUIRED"
 
@@ -264,13 +247,9 @@ class PolicyEngine:
         """
 
         sub_kind = _extract_sub_kind(request)
-        verdict = self._decision_table.get(
-            (request.action, current_mode, sub_kind)
-        )
+        verdict = self._decision_table.get((request.action, current_mode, sub_kind))
         if verdict is None:
-            verdict = self._decision_table[
-                (request.action, current_mode, _WILDCARD_SUB_KIND)
-            ]
+            verdict = self._decision_table[(request.action, current_mode, _WILDCARD_SUB_KIND)]
         return verdict
 
 
@@ -300,9 +279,7 @@ def install_policy_table(
     )
 
 
-def verify_policy_table_hash(
-    policy: PolicyEngine, ledger: LedgerAuthorityWriter
-) -> None:
+def verify_policy_table_hash(policy: PolicyEngine, ledger: LedgerAuthorityWriter) -> None:
     """Fail-closed check that the most recent installed table matches.
 
     SAFE-47: if the ledger declares a different table hash than the

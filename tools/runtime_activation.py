@@ -147,40 +147,27 @@ class RegisteredTransition:
 
     def __post_init__(self) -> None:
         if not isinstance(self.node_id, str) or not self.node_id:
-            raise ActivationError(
-                "node_id must be a non-empty str"
-            )
+            raise ActivationError("node_id must be a non-empty str")
         if len(self.node_id) > MAX_NODE_ID_LEN:
             raise ActivationError(
-                f"node_id length {len(self.node_id)} exceeds "
-                f"MAX_NODE_ID_LEN={MAX_NODE_ID_LEN}"
+                f"node_id length {len(self.node_id)} exceeds MAX_NODE_ID_LEN={MAX_NODE_ID_LEN}"
             )
         if not isinstance(self.src, LifecycleState):
-            raise ActivationError(
-                f"src must be a LifecycleState, got {type(self.src).__name__}"
-            )
+            raise ActivationError(f"src must be a LifecycleState, got {type(self.src).__name__}")
         if not isinstance(self.dst, LifecycleState):
-            raise ActivationError(
-                f"dst must be a LifecycleState, got {type(self.dst).__name__}"
-            )
+            raise ActivationError(f"dst must be a LifecycleState, got {type(self.dst).__name__}")
         if not isinstance(self.reason, str):
-            raise ActivationError(
-                f"reason must be a str, got {type(self.reason).__name__}"
-            )
+            raise ActivationError(f"reason must be a str, got {type(self.reason).__name__}")
         if len(self.reason) > MAX_REASON_LEN:
             raise ActivationError(
-                f"reason length {len(self.reason)} exceeds "
-                f"MAX_REASON_LEN={MAX_REASON_LEN}"
+                f"reason length {len(self.reason)} exceeds MAX_REASON_LEN={MAX_REASON_LEN}"
             )
         if not isinstance(self.version_after, int):
             raise ActivationError(
-                "version_after must be an int, got "
-                f"{type(self.version_after).__name__}"
+                f"version_after must be an int, got {type(self.version_after).__name__}"
             )
         if self.version_after < 1:
-            raise ActivationError(
-                f"version_after must be >= 1, got {self.version_after}"
-            )
+            raise ActivationError(f"version_after must be >= 1, got {self.version_after}")
 
     def canonical(self) -> dict[str, object]:
         return {
@@ -208,22 +195,15 @@ class ActivationSnapshot:
 
     def __post_init__(self) -> None:
         if not isinstance(self.states, tuple):
-            raise ActivationError(
-                f"states must be a tuple, got {type(self.states).__name__}"
-            )
+            raise ActivationError(f"states must be a tuple, got {type(self.states).__name__}")
         if not isinstance(self.transitions, tuple):
             raise ActivationError(
-                "transitions must be a tuple, got "
-                f"{type(self.transitions).__name__}"
+                f"transitions must be a tuple, got {type(self.transitions).__name__}"
             )
         if not isinstance(self.version, int):
-            raise ActivationError(
-                f"version must be an int, got {type(self.version).__name__}"
-            )
+            raise ActivationError(f"version must be an int, got {type(self.version).__name__}")
         if self.version < 0:
-            raise ActivationError(
-                f"version must be >= 0, got {self.version}"
-            )
+            raise ActivationError(f"version must be >= 0, got {self.version}")
         seen_ids: set[str] = set()
         for entry in self.states:
             if not (
@@ -233,13 +213,10 @@ class ActivationSnapshot:
                 and isinstance(entry[1], LifecycleState)
             ):
                 raise ActivationError(
-                    "every states entry must be a (str, LifecycleState) "
-                    f"tuple, got {entry!r}"
+                    f"every states entry must be a (str, LifecycleState) tuple, got {entry!r}"
                 )
             if entry[0] in seen_ids:
-                raise ActivationError(
-                    f"duplicate node_id {entry[0]!r} in states"
-                )
+                raise ActivationError(f"duplicate node_id {entry[0]!r} in states")
             seen_ids.add(entry[0])
 
         sorted_states = tuple(sorted(self.states, key=lambda kv: kv[0]))
@@ -249,8 +226,7 @@ class ActivationSnapshot:
     def canonical(self) -> dict[str, object]:
         return {
             "states": [
-                {"node_id": node_id, "state": state.value}
-                for node_id, state in self.states
+                {"node_id": node_id, "state": state.value} for node_id, state in self.states
             ],
             "transitions": [t.canonical() for t in self.transitions],
             "version": self.version,
@@ -292,9 +268,7 @@ class ActivationSnapshot:
                 LifecycleState.DEGRADED,
             }
         )
-        return frozenset(
-            node_id for node_id, state in self.states if state in active
-        )
+        return frozenset(node_id for node_id, state in self.states if state in active)
 
     def dormant_node_ids(self) -> frozenset[str]:
         """Return node_ids in DECLARED / DORMANT / STOPPED states.
@@ -312,19 +286,13 @@ class ActivationSnapshot:
                 LifecycleState.STOPPED,
             }
         )
-        return frozenset(
-            node_id for node_id, state in self.states if state in dormant
-        )
+        return frozenset(node_id for node_id, state in self.states if state in dormant)
 
     def wired_node_ids(self) -> frozenset[str]:
         """Return node_ids in the WIRED state — declared and
         connected but not yet started."""
 
-        return frozenset(
-            node_id
-            for node_id, state in self.states
-            if state is LifecycleState.WIRED
-        )
+        return frozenset(node_id for node_id, state in self.states if state is LifecycleState.WIRED)
 
     def node_count(self) -> int:
         return len(self.states)
@@ -362,12 +330,9 @@ class RuntimeActivationRegistry:
     def __post_init__(self) -> None:
         if not callable(self.audit_sink):
             raise ActivationError("audit_sink must be callable")
-        if self.topology is not None and not isinstance(
-            self.topology, RuntimeTopology
-        ):
+        if self.topology is not None and not isinstance(self.topology, RuntimeTopology):
             raise ActivationError(
-                "topology must be a RuntimeTopology or None, got "
-                f"{type(self.topology).__name__}"
+                f"topology must be a RuntimeTopology or None, got {type(self.topology).__name__}"
             )
 
     # -- registration ------------------------------------------------------
@@ -390,29 +355,18 @@ class RuntimeActivationRegistry:
         self._validate_node_id(node_id)
         if not isinstance(initial_state, LifecycleState):
             raise ActivationError(
-                "initial_state must be a LifecycleState, got "
-                f"{type(initial_state).__name__}"
+                f"initial_state must be a LifecycleState, got {type(initial_state).__name__}"
             )
         if not isinstance(reason, str):
-            raise ActivationError(
-                f"reason must be a str, got {type(reason).__name__}"
-            )
+            raise ActivationError(f"reason must be a str, got {type(reason).__name__}")
         if len(reason) > MAX_REASON_LEN:
             raise ActivationError(
-                f"reason length {len(reason)} exceeds "
-                f"MAX_REASON_LEN={MAX_REASON_LEN}"
+                f"reason length {len(reason)} exceeds MAX_REASON_LEN={MAX_REASON_LEN}"
             )
-        if (
-            self.topology is not None
-            and self.topology.find_node(node_id) is None
-        ):
-            raise ActivationError(
-                f"node_id {node_id!r} is not declared in the topology"
-            )
+        if self.topology is not None and self.topology.find_node(node_id) is None:
+            raise ActivationError(f"node_id {node_id!r} is not declared in the topology")
         if len(self._states) >= MAX_REGISTERED_NODES:
-            raise ActivationError(
-                f"registry is full ({MAX_REGISTERED_NODES} nodes)"
-            )
+            raise ActivationError(f"registry is full ({MAX_REGISTERED_NODES} nodes)")
 
         previous = self._states.get(node_id)
         if previous is None:
@@ -466,17 +420,13 @@ class RuntimeActivationRegistry:
         self._validate_node_id(node_id)
         if not isinstance(new_state, LifecycleState):
             raise ActivationError(
-                "new_state must be a LifecycleState, got "
-                f"{type(new_state).__name__}"
+                f"new_state must be a LifecycleState, got {type(new_state).__name__}"
             )
         if not isinstance(reason, str):
-            raise ActivationError(
-                f"reason must be a str, got {type(reason).__name__}"
-            )
+            raise ActivationError(f"reason must be a str, got {type(reason).__name__}")
         if len(reason) > MAX_REASON_LEN:
             raise ActivationError(
-                f"reason length {len(reason)} exceeds "
-                f"MAX_REASON_LEN={MAX_REASON_LEN}"
+                f"reason length {len(reason)} exceeds MAX_REASON_LEN={MAX_REASON_LEN}"
             )
 
         current = self._states.get(node_id)
@@ -491,9 +441,7 @@ class RuntimeActivationRegistry:
                     "violation_kind": "transition_unregistered",
                 },
             )
-            raise ActivationViolation(
-                f"transition called for unregistered node {node_id!r}"
-            )
+            raise ActivationViolation(f"transition called for unregistered node {node_id!r}")
 
         if not is_legal_transition(current, new_state):
             self._emit_audit(
@@ -508,21 +456,15 @@ class RuntimeActivationRegistry:
                 },
             )
             raise ActivationViolation(
-                f"illegal transition for {node_id!r}: "
-                f"{current.value} -> {new_state.value}"
+                f"illegal transition for {node_id!r}: {current.value} -> {new_state.value}"
             )
 
         if len(self._transitions) >= MAX_TRANSITION_HISTORY:
-            raise ActivationError(
-                f"transition history is full "
-                f"({MAX_TRANSITION_HISTORY} entries)"
-            )
+            raise ActivationError(f"transition history is full ({MAX_TRANSITION_HISTORY} entries)")
 
         self._states[node_id] = new_state
         self._version += 1
-        self._record_transition(
-            node_id=node_id, src=current, dst=new_state, reason=reason
-        )
+        self._record_transition(node_id=node_id, src=current, dst=new_state, reason=reason)
 
     # -- read surface -----------------------------------------------------
 
@@ -543,9 +485,7 @@ class RuntimeActivationRegistry:
         """
 
         return ActivationSnapshot(
-            states=tuple(
-                sorted(self._states.items(), key=lambda kv: kv[0])
-            ),
+            states=tuple(sorted(self._states.items(), key=lambda kv: kv[0])),
             transitions=tuple(self._transitions),
             version=self._version,
         )
@@ -574,15 +514,12 @@ class RuntimeActivationRegistry:
 
     def _validate_node_id(self, node_id: str) -> None:
         if not isinstance(node_id, str):
-            raise ActivationError(
-                f"node_id must be a str, got {type(node_id).__name__}"
-            )
+            raise ActivationError(f"node_id must be a str, got {type(node_id).__name__}")
         if not node_id:
             raise ActivationError("node_id must not be empty")
         if len(node_id) > MAX_NODE_ID_LEN:
             raise ActivationError(
-                f"node_id length {len(node_id)} exceeds "
-                f"MAX_NODE_ID_LEN={MAX_NODE_ID_LEN}"
+                f"node_id length {len(node_id)} exceeds MAX_NODE_ID_LEN={MAX_NODE_ID_LEN}"
             )
 
     def _record_transition(
@@ -611,9 +548,7 @@ class RuntimeActivationRegistry:
             },
         )
 
-    def _emit_audit(
-        self, kind: str, payload: Mapping[str, object]
-    ) -> None:
+    def _emit_audit(self, kind: str, payload: Mapping[str, object]) -> None:
         try:
             self.audit_sink(kind, dict(payload))
         except Exception as exc:  # noqa: BLE001 - sink must never block primary path
@@ -664,16 +599,12 @@ def replay_transitions(
     """
 
     if not isinstance(transitions, Sequence):
-        raise ActivationError(
-            "transitions must be a Sequence, got "
-            f"{type(transitions).__name__}"
-        )
+        raise ActivationError(f"transitions must be a Sequence, got {type(transitions).__name__}")
     registry = build_registry(topology=topology)
     for transition in transitions:
         if not isinstance(transition, RegisteredTransition):
             raise ActivationError(
-                "every transition must be a RegisteredTransition, got "
-                f"{type(transition).__name__}"
+                f"every transition must be a RegisteredTransition, got {type(transition).__name__}"
             )
         current = registry.state_of(transition.node_id)
         if current is None:

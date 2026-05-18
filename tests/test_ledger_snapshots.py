@@ -138,6 +138,7 @@ def _materialise_result(result: SnapshotReadResult) -> tuple[Event, ...]:
     hazards = [_row_to_hazard_event(r) for r in result.hazard_rows]
     return tuple(signals + executions + systems + hazards)
 
+
 # ---------------------------------------------------------------------------
 # Sample events
 # ---------------------------------------------------------------------------
@@ -334,10 +335,7 @@ class TestPureProjections:
         # The two inputs are equal because dict equality is unordered…
         assert ev_a == ev_b
         # …but more importantly the serialised row bytes are byte-identical.
-        assert (
-            signal_event_to_row(ev_a)["meta_json"]
-            == signal_event_to_row(ev_b)["meta_json"]
-        )
+        assert signal_event_to_row(ev_a)["meta_json"] == signal_event_to_row(ev_b)["meta_json"]
 
 
 # ---------------------------------------------------------------------------
@@ -352,9 +350,7 @@ class TestSplitEventsByKind:
         c = _signal(ts_ns=3)
         d = _system(ts_ns=4)
         e = _hazard(ts_ns=5)
-        signals, executions, systems, hazards = split_events_by_kind(
-            (a, b, c, d, e)
-        )
+        signals, executions, systems, hazards = split_events_by_kind((a, b, c, d, e))
         assert signals == (a, c)
         assert executions == (b,)
         assert systems == (d,)
@@ -521,9 +517,7 @@ class TestPyarrowTransport:
                 b1 = f1.read_bytes()
                 b2 = f2.read_bytes()
                 b3 = f3.read_bytes()
-                assert b1 == b2 == b3, (
-                    f"INV-15 violation on suffix={suffix!r}: bytes diverged"
-                )
+                assert b1 == b2 == b3, f"INV-15 violation on suffix={suffix!r}: bytes diverged"
 
     def test_pyarrow_meta_insertion_order_invariant(self) -> None:
         """Two events with the same meta but different Python dict
@@ -662,8 +656,7 @@ class TestASTGuards:
         for name in _top_level_imports(_MODULE_AST):
             root = name.split(".")[0]
             assert root not in banned, (
-                f"snapshots.py must not import banned module {name!r} "
-                "(INV-15)"
+                f"snapshots.py must not import banned module {name!r} (INV-15)"
             )
 
     def test_no_engine_cross_imports(self) -> None:
@@ -710,8 +703,7 @@ class TestASTGuards:
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
                 name = node.func.id
                 assert name not in banned_construction, (
-                    f"snapshots.py must not construct {name!r} "
-                    "(Triad Lock / authority symmetry)"
+                    f"snapshots.py must not construct {name!r} (Triad Lock / authority symmetry)"
                 )
 
 

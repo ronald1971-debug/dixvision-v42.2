@@ -167,9 +167,7 @@ def test_audit_or_raise_diagnostic_lists_unexpected(
     routes = sorted(registrar.expected_all())
     routes.append(("GET", "/api/unexpected/leaf"))
     app = _stub_app(routes)
-    with pytest.raises(
-        RuntimeError, match="unexpected routes:.*GET /api/unexpected/leaf"
-    ):
+    with pytest.raises(RuntimeError, match="unexpected routes:.*GET /api/unexpected/leaf"):
         registrar.audit_or_raise(app)
 
 
@@ -210,8 +208,7 @@ def test_real_server_app_passes_boot_audit() -> None:
 
     report = _ROUTE_REGISTRAR.audit(app)
     assert report.ok is True, (
-        f"server.app inventory drifted: "
-        f"missing={report.missing} unexpected={report.unexpected}"
+        f"server.app inventory drifted: missing={report.missing} unexpected={report.unexpected}"
     )
 
 
@@ -246,9 +243,7 @@ def test_admin_route_inventory_endpoint_groups_by_domain() -> None:
         "pages",
         "openapi",
     ]
-    admin_routes = next(d for d in payload["domains"] if d["name"] == "admin")[
-        "routes"
-    ]
+    admin_routes = next(d for d in payload["domains"] if d["name"] == "admin")["routes"]
     assert {
         "method": "GET",
         "path": "/api/admin/route_inventory",

@@ -96,9 +96,7 @@ def test_quote_raises_on_5xx() -> None:
     def handler(req: httpx.Request) -> httpx.Response:
         return httpx.Response(500, text="boom")
 
-    with _client(httpx.MockTransport(handler)) as c, pytest.raises(
-        UniswapXError, match="HTTP 500"
-    ):
+    with _client(httpx.MockTransport(handler)) as c, pytest.raises(UniswapXError, match="HTTP 500"):
         c.quote(
             QuoteRequest(
                 chain_id=1,
@@ -115,8 +113,9 @@ def test_quote_raises_on_missing_order_field() -> None:
     def handler(req: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"unrelated": "payload"})
 
-    with _client(httpx.MockTransport(handler)) as c, pytest.raises(
-        UniswapXError, match="missing 'order'"
+    with (
+        _client(httpx.MockTransport(handler)) as c,
+        pytest.raises(UniswapXError, match="missing 'order'"),
     ):
         c.quote(
             QuoteRequest(

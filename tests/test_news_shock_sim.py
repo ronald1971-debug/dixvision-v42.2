@@ -126,9 +126,7 @@ def test_fills_count_encodes_latency_to_shock() -> None:
     for n in (1, 10, 100):
         out = sim.step(
             seed=0,
-            scenario=_scenario(
-                num_steps=n, shock_probability_per_step=0.0
-            ),
+            scenario=_scenario(num_steps=n, shock_probability_per_step=0.0),
         )
         assert out.rule_fired == "no_shock"
         assert out.fills_count == n
@@ -149,9 +147,7 @@ def test_fills_count_encodes_latency_to_shock() -> None:
     for seed in range(40):
         out = sim.step(
             seed=seed,
-            scenario=_scenario(
-                num_steps=50, shock_probability_per_step=0.5
-            ),
+            scenario=_scenario(num_steps=50, shock_probability_per_step=0.5),
         )
         if out.rule_fired == "no_shock":
             assert out.fills_count == 50

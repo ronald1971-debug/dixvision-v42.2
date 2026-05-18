@@ -23,9 +23,7 @@ class LearningEngine(OfflineEngine):
         plugin_slots: Mapping[str, Sequence[Plugin]] | None = None,
         cron: str = "0 */1 * * *",
     ) -> None:
-        self.plugin_slots: Mapping[str, Sequence[Plugin]] = dict(
-            plugin_slots or {}
-        )
+        self.plugin_slots: Mapping[str, Sequence[Plugin]] = dict(plugin_slots or {})
         self._cron = cron
 
     def schedule(self) -> str:

@@ -86,9 +86,8 @@ class _IntentSigner(Protocol):
     imports this module via ``governance_engine.engine``).
     """
 
-    def sign(
-        self, *, content_hash: str, governance_decision_id: str
-    ) -> str: ...
+    def sign(self, *, content_hash: str, governance_decision_id: str) -> str: ...
+
 
 __all__ = [
     "DEFAULT_HARNESS_ORIGIN",
@@ -129,9 +128,7 @@ class ConfidenceCapAudit:
     applied: bool
 
 
-DEFAULT_HARNESS_ORIGIN: Final[str] = (
-    "intelligence_engine.signal_pipeline.orchestrator"
-)
+DEFAULT_HARNESS_ORIGIN: Final[str] = "intelligence_engine.signal_pipeline.orchestrator"
 """Default origin stamped on harness-approved intents.
 
 Must be a member of :data:`AUTHORISED_INTENT_ORIGINS`. The default
@@ -267,9 +264,7 @@ def apply_signal_trust_cap_with_audit(
             applied=False,
         )
     if promotion_store is not None:
-        effective_trust = promotion_store.effective_trust(
-            signal.signal_source, signal.signal_trust
-        )
+        effective_trust = promotion_store.effective_trust(signal.signal_source, signal.signal_trust)
     else:
         effective_trust = signal.signal_trust
     if registry is not None:
@@ -369,9 +364,7 @@ def approve_signal_for_execution(
         # ``mark_approved`` call below from running with a bad value.
         from core.contracts.execution_intent import UnauthorizedOriginError
 
-        raise UnauthorizedOriginError(
-            f"unauthorised harness origin: {origin!r}"
-        )
+        raise UnauthorizedOriginError(f"unauthorised harness origin: {origin!r}")
     # Paper-S5 governance gate -- clamp external-producer confidence
     # to the per-source cap before sealing the intent. Internal
     # producers pass through as a no-op. Paper-S6 -- the optional
@@ -388,9 +381,7 @@ def approve_signal_for_execution(
         signal=signal,
     )
     governance_decision_id = (
-        decision_id
-        if decision_id is not None
-        else f"{HARNESS_DECISION_ID_PREFIX}:{ts_ns}"
+        decision_id if decision_id is not None else f"{HARNESS_DECISION_ID_PREFIX}:{ts_ns}"
     )
     decision_signature = ""
     if signer is not None:

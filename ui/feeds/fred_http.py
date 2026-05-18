@@ -90,13 +90,9 @@ def make_fred_observations_url(
     }
     if limit is not None:
         if limit <= 0:
-            raise ValueError(
-                "make_fred_observations_url: limit must be positive"
-            )
+            raise ValueError("make_fred_observations_url: limit must be positive")
         params["limit"] = str(limit)
-    return f"{base.rstrip('/')}/series/observations?" + urllib.parse.urlencode(
-        params
-    )
+    return f"{base.rstrip('/')}/series/observations?" + urllib.parse.urlencode(params)
 
 
 def _parse_observation_date(raw: str | None) -> int | None:
@@ -364,9 +360,7 @@ class FredHTTPPump:
         if reconnect_delay_s <= 0:
             raise ValueError("FredHTTPPump: reconnect_delay_s must be positive")
         if reconnect_delay_max_s < reconnect_delay_s:
-            raise ValueError(
-                "FredHTTPPump: reconnect_delay_max_s must be >= reconnect_delay_s"
-            )
+            raise ValueError("FredHTTPPump: reconnect_delay_max_s must be >= reconnect_delay_s")
         if not source:
             raise ValueError("FredHTTPPump: source must be non-empty")
         if not api_key:

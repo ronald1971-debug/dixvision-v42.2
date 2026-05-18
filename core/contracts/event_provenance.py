@@ -178,8 +178,7 @@ def assert_event_provenance(event: Event, *, strict: bool = True) -> None:
     expected = EVENT_PRODUCERS.get(type(event))
     if expected is None:
         raise EventProvenanceError(
-            f"unknown event class {type(event).__name__!r}; "
-            "add it to EVENT_PRODUCERS"
+            f"unknown event class {type(event).__name__!r}; add it to EVENT_PRODUCERS"
         )
     producer = getattr(event, "produced_by_engine", "")
     if not producer:

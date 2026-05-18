@@ -33,9 +33,7 @@ def client():
         ui_server.STATE.development_mode_policy = DevelopmentModePolicy(
             development_enabled=ui_server.STATE.development_mode_enabled,
             trading_allowed=True,
-            mode=(
-                ui_server.STATE.governance.state_transitions.current_mode()
-            ),
+            mode=(ui_server.STATE.governance.state_transitions.current_mode()),
         )
         ui_server.STATE.execution.set_development_mode_policy(
             ui_server.STATE.development_mode_policy
@@ -51,9 +49,7 @@ def test_root_routes_to_live_dashboard(client):
     """
     r = client.get("/", follow_redirects=False)
     if ui_server._DASH2_AVAILABLE:
-        assert r.status_code == 307, (
-            "/ must redirect to /dash2/ when the React build is present"
-        )
+        assert r.status_code == 307, "/ must redirect to /dash2/ when the React build is present"
         assert r.headers["location"] == "/dash2/"
     else:
         assert r.status_code == 200

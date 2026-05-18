@@ -66,11 +66,7 @@ def _deserialize_strategy_record(payload: Mapping[str, str]) -> StrategyRecord:
     composed_raw = payload.get("composed_from", "")
     why_raw = payload.get("why", "")
     mutable_raw = payload.get("mutable_parameters", "")
-    parameters = {
-        k.removeprefix("param."): v
-        for k, v in payload.items()
-        if k.startswith("param.")
-    }
+    parameters = {k.removeprefix("param."): v for k, v in payload.items() if k.startswith("param.")}
     parameter_bounds: dict[str, tuple[float, float]] = {}
     for k, v in payload.items():
         if not k.startswith("bound."):
@@ -89,9 +85,7 @@ def _deserialize_strategy_record(payload: Mapping[str, str]) -> StrategyRecord:
         why=tuple(why_raw.split("\x1f")) if why_raw else (),
         created_ts_ns=int(payload["created_ts_ns"]),
         last_transition_ts_ns=int(payload["last_transition_ts_ns"]),
-        mutable_parameters=tuple(mutable_raw.split("\x1f"))
-        if mutable_raw
-        else (),
+        mutable_parameters=tuple(mutable_raw.split("\x1f")) if mutable_raw else (),
         parameter_bounds=parameter_bounds,
     )
 
@@ -125,13 +119,9 @@ class StrategyRegistry:
     def get(self, strategy_id: str) -> StrategyRecord | None:
         return self._records.get(strategy_id)
 
-    def all_in(
-        self, lifecycle: StrategyLifecycle
-    ) -> tuple[StrategyRecord, ...]:
+    def all_in(self, lifecycle: StrategyLifecycle) -> tuple[StrategyRecord, ...]:
         """All records currently in ``lifecycle`` (insertion order)."""
-        return tuple(
-            r for r in self._records.values() if r.lifecycle is lifecycle
-        )
+        return tuple(r for r in self._records.values() if r.lifecycle is lifecycle)
 
     def __contains__(self, strategy_id: str) -> bool:
         return strategy_id in self._records
@@ -169,14 +159,10 @@ class StrategyRegistry:
         mutable = tuple(mutable_parameters)
         for k in bounds:
             if k not in mutable:
-                raise ValueError(
-                    f"parameter_bounds key {k!r} not in mutable_parameters"
-                )
+                raise ValueError(f"parameter_bounds key {k!r} not in mutable_parameters")
         for k, (lo, hi) in bounds.items():
             if lo > hi:
-                raise ValueError(
-                    f"parameter_bounds[{k!r}]: lo {lo} > hi {hi}"
-                )
+                raise ValueError(f"parameter_bounds[{k!r}]: lo {lo} > hi {hi}")
 
         record = StrategyRecord(
             strategy_id=strategy_id,
@@ -224,9 +210,7 @@ class StrategyRegistry:
         record = self._records.get(strategy_id)
         if record is None:
             raise KeyError(f"unknown strategy: {strategy_id}")
-        if not is_legal_transition(
-            prev=record.lifecycle, new=new_lifecycle
-        ):
+        if not is_legal_transition(prev=record.lifecycle, new=new_lifecycle):
             raise StrategyLifecycleError(
                 f"illegal transition {record.lifecycle.value} → "
                 f"{new_lifecycle.value} for {strategy_id}"
@@ -300,8 +284,7 @@ class StrategyRegistry:
             )
         if parameter not in record.mutable_parameters:
             raise StrategyLifecycleError(
-                f"parameter {parameter!r} is not in the mutable "
-                f"whitelist for {strategy_id}"
+                f"parameter {parameter!r} is not in the mutable whitelist for {strategy_id}"
             )
 
         next_params = dict(record.parameters)

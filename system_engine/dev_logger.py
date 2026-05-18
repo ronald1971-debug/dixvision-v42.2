@@ -103,8 +103,7 @@ class DevFormatConfig:
             value = getattr(self, name)
             if not isinstance(value, bool):
                 raise LoggingError(
-                    f"DevFormatConfig.{name} must be bool "
-                    f"(got {type(value).__name__})"
+                    f"DevFormatConfig.{name} must be bool (got {type(value).__name__})"
                 )
 
 
@@ -151,13 +150,10 @@ def format_dev_line(line: LogLine, config: DevFormatConfig) -> str:
     """
 
     if not isinstance(line, LogLine):
-        raise LoggingError(
-            f"format_dev_line requires LogLine (got {type(line).__name__})"
-        )
+        raise LoggingError(f"format_dev_line requires LogLine (got {type(line).__name__})")
     if not isinstance(config, DevFormatConfig):
         raise LoggingError(
-            f"format_dev_line requires DevFormatConfig "
-            f"(got {type(config).__name__})"
+            f"format_dev_line requires DevFormatConfig (got {type(config).__name__})"
         )
 
     parts: list[str] = [f"ts_ns={line.ts_ns}"]
@@ -209,15 +205,11 @@ class DevLogger:
         if not isinstance(self.engine_id, str) or not self.engine_id:
             raise LoggingError("engine_id must be a non-empty string")
         if self.tier not in _ALLOWED_TIERS:
-            raise LoggingError(
-                f"tier must be one of {sorted(_ALLOWED_TIERS)}"
-            )
+            raise LoggingError(f"tier must be one of {sorted(_ALLOWED_TIERS)}")
         if not callable(self.text_sink):
             raise LoggingError("text_sink must be callable")
         if self.min_level not in _LEVEL_RANK:
-            raise LoggingError(
-                f"min_level must be a LogLevel (got {self.min_level!r})"
-            )
+            raise LoggingError(f"min_level must be a LogLevel (got {self.min_level!r})")
         if not isinstance(self.config, DevFormatConfig):
             raise LoggingError("config must be a DevFormatConfig")
 

@@ -242,9 +242,7 @@ def _validate_prop_value(value: Any) -> None:
         return
     if isinstance(value, int | float | str):
         return
-    raise KnowledgeGraphError(
-        f"prop value must be JSON-primitive, got {type(value).__name__}"
-    )
+    raise KnowledgeGraphError(f"prop value must be JSON-primitive, got {type(value).__name__}")
 
 
 class InMemoryGraphTransport:
@@ -304,9 +302,7 @@ class InMemoryGraphTransport:
     # MERGE handlers.
     # ------------------------------------------------------------------
 
-    def _merge_node(
-        self, label: str, params: Mapping[str, Any]
-    ) -> Sequence[Mapping[str, Any]]:
+    def _merge_node(self, label: str, params: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
         node_id = self._require_str(params, ("strategy_id", "regime_id", "failure_id"))
         ts_ns = self._require_int(params, "ts_ns")
         props: dict[str, Any] = {"ts_ns": ts_ns}
@@ -330,9 +326,7 @@ class InMemoryGraphTransport:
             self._nodes[node_id] = (label, dict(props))
         return ({"id": node_id},)
 
-    def _merge_edge(
-        self, params: Mapping[str, Any]
-    ) -> Sequence[Mapping[str, Any]]:
+    def _merge_edge(self, params: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
         src = self._require_str(params, ("src_id",))
         dst = self._require_str(params, ("dst_id",))
         if src == dst:
@@ -352,9 +346,7 @@ class InMemoryGraphTransport:
     # Read handlers.
     # ------------------------------------------------------------------
 
-    def _fetch_node(
-        self, params: Mapping[str, Any]
-    ) -> Sequence[Mapping[str, Any]]:
+    def _fetch_node(self, params: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
         node_id = self._require_str(params, ("node_id",))
         node = self._nodes.get(node_id)
         if node is None:
@@ -362,9 +354,7 @@ class InMemoryGraphTransport:
         label, props = node
         return ({"label": label, "props": dict(sorted(props.items()))},)
 
-    def _fetch_outgoing(
-        self, params: Mapping[str, Any]
-    ) -> Sequence[Mapping[str, Any]]:
+    def _fetch_outgoing(self, params: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
         node_id = self._require_str(params, ("node_id",))
         rows: list[dict[str, Any]] = []
         for (src, dst), edge_props in self._edges.items():
@@ -380,9 +370,7 @@ class InMemoryGraphTransport:
         rows.sort(key=lambda r: r["target"])
         return tuple(rows)
 
-    def _fetch_incoming(
-        self, params: Mapping[str, Any]
-    ) -> Sequence[Mapping[str, Any]]:
+    def _fetch_incoming(self, params: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
         node_id = self._require_str(params, ("node_id",))
         rows: list[dict[str, Any]] = []
         for (src, dst), edge_props in self._edges.items():
@@ -398,9 +386,7 @@ class InMemoryGraphTransport:
         rows.sort(key=lambda r: r["source"])
         return tuple(rows)
 
-    def _fetch_causal_chain(
-        self, params: Mapping[str, Any]
-    ) -> Sequence[Mapping[str, Any]]:
+    def _fetch_causal_chain(self, params: Mapping[str, Any]) -> Sequence[Mapping[str, Any]]:
         src = self._require_str(params, ("src_id",))
         max_depth = self._require_int(params, "max_depth")
         if max_depth <= 0:
@@ -409,7 +395,7 @@ class InMemoryGraphTransport:
             return ()
         # Adjacency in sorted target order to pin INV-15 enumeration.
         adjacency: dict[str, list[str]] = {}
-        for (s, t) in self._edges:
+        for s, t in self._edges:
             adjacency.setdefault(s, []).append(t)
         for neighbours in adjacency.values():
             neighbours.sort()
@@ -466,9 +452,7 @@ class InMemoryGraphTransport:
             if key in params:
                 value = params[key]
                 if not isinstance(value, str) or not value:
-                    raise KnowledgeGraphError(
-                        f"param {key!r} must be a non-empty str"
-                    )
+                    raise KnowledgeGraphError(f"param {key!r} must be a non-empty str")
                 return value
         raise KnowledgeGraphError(f"missing required str param: one of {keys!r}")
 
@@ -659,9 +643,7 @@ class KnowledgeGraph:
             for row in rows
         )
 
-    def fetch_causal_chain(
-        self, *, source_id: str, max_depth: int
-    ) -> tuple[CausalChain, ...]:
+    def fetch_causal_chain(self, *, source_id: str, max_depth: int) -> tuple[CausalChain, ...]:
         """Enumerate ``CAUSED_BY`` chains rooted at ``source_id``.
 
         Returns chains sorted by ``(length, lexicographic)`` so the
@@ -731,9 +713,7 @@ class KnowledgeGraph:
             "nodes": nodes,
             "edges": edges,
         }
-        return json.dumps(
-            payload, sort_keys=True, separators=(",", ":")
-        ).encode("utf-8")
+        return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
     @classmethod
     def deserialize(cls, blob: bytes) -> KnowledgeGraph:
@@ -832,9 +812,7 @@ def neo4j_driver_factory(
     try:
         from neo4j import GraphDatabase  # noqa: PLC0415
     except ImportError as exc:  # pragma: no cover - exercised when dep absent
-        raise KnowledgeGraphError(
-            "neo4j is not installed; see NEW_PIP_DEPENDENCIES"
-        ) from exc
+        raise KnowledgeGraphError("neo4j is not installed; see NEW_PIP_DEPENDENCIES") from exc
     return GraphDatabase.driver(uri, auth=(user, password or ""))
 
 

@@ -106,9 +106,7 @@ def test_pending_then_approve_resolves_to_approved() -> None:
     rows = projection_rows_from_payloads(
         [
             _pending_row(approval_id="a-1"),
-            _decision_row(
-                kind=APPROVED_KIND, approval_id="a-1", ts_ns="2500"
-            ),
+            _decision_row(kind=APPROVED_KIND, approval_id="a-1", ts_ns="2500"),
         ]
     )
     assert len(rows) == 1
@@ -157,9 +155,7 @@ def test_insertion_order_preserved_across_mixed_kinds() -> None:
 
 
 def test_orphan_decision_row_is_skipped() -> None:
-    rows = projection_rows_from_payloads(
-        [_decision_row(kind=APPROVED_KIND, approval_id="ghost")]
-    )
+    rows = projection_rows_from_payloads([_decision_row(kind=APPROVED_KIND, approval_id="ghost")])
     assert rows == ()
 
 
@@ -231,9 +227,7 @@ def _deterministic_id_factory() -> Callable[[], str]:
     return _next
 
 
-def _build_runtime_pair() -> tuple[
-    LedgerAuthorityWriter, ApprovalQueue, list[int]
-]:
+def _build_runtime_pair() -> tuple[LedgerAuthorityWriter, ApprovalQueue, list[int]]:
     """Set up a queue + ledger pair, mirroring the live wiring in
     ``ui.cognitive_chat_runtime``.
 
@@ -263,9 +257,7 @@ def _ledger_submit(
 ) -> str:
     """Mirror what ``CognitiveChatRuntime.handle_turn`` does on submit."""
 
-    queued = queue.submit(
-        thread_id=thread_id, proposal=proposal, requested_at_ts_ns=ts_ns
-    )
+    queued = queue.submit(thread_id=thread_id, proposal=proposal, requested_at_ts_ns=ts_ns)
     ledger.append(
         ts_ns=ts_ns,
         kind=PENDING_KIND,
@@ -306,9 +298,7 @@ def _ledger_decide(
 
 
 def _proposal(symbol: str, side: ApprovalSideApi, *, conf: float) -> ProposedSignalApi:
-    return ProposedSignalApi(
-        symbol=symbol, side=side, confidence=conf, rationale=f"why-{symbol}"
-    )
+    return ProposedSignalApi(symbol=symbol, side=side, confidence=conf, rationale=f"why-{symbol}")
 
 
 def test_restart_safety_round_trip() -> None:

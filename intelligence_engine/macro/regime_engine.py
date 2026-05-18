@@ -77,29 +77,21 @@ class MacroRegimeEngineConfig:
         if not (0.0 < self.correlation_crisis <= 1.0):
             raise ValueError("correlation_crisis must be in (0, 1]")
         if not (0.0 < self.vol_risk_off <= self.vol_crisis):
-            raise ValueError(
-                "vol_risk_off must be in (0, vol_crisis]"
-            )
+            raise ValueError("vol_risk_off must be in (0, vol_crisis]")
         if not (-1.0 <= self.breadth_risk_off < 0.0):
             raise ValueError("breadth_risk_off must be in [-1, 0)")
         if self.credit_risk_off_bps < 0:
             raise ValueError("credit_risk_off_bps must be non-negative")
         if not (0.0 < self.vol_risk_on <= self.vol_risk_off):
-            raise ValueError(
-                "vol_risk_on must be in (0, vol_risk_off]"
-            )
+            raise ValueError("vol_risk_on must be in (0, vol_risk_off]")
         if not (0.0 < self.breadth_risk_on <= 1.0):
             raise ValueError("breadth_risk_on must be in (0, 1]")
         if self.credit_risk_on_bps < 0:
             raise ValueError("credit_risk_on_bps must be non-negative")
         if self.credit_risk_on_bps > self.credit_risk_off_bps:
-            raise ValueError(
-                "credit_risk_on_bps must not exceed credit_risk_off_bps"
-            )
+            raise ValueError("credit_risk_on_bps must not exceed credit_risk_off_bps")
         if not (0.0 <= self.confidence_floor <= self.confidence_ceiling <= 1.0):
-            raise ValueError(
-                "confidence floor/ceiling must satisfy 0 <= floor <= ceiling <= 1"
-            )
+            raise ValueError("confidence floor/ceiling must satisfy 0 <= floor <= ceiling <= 1")
 
 
 def _default_config_path() -> Path:
@@ -237,9 +229,7 @@ class MacroRegimeEngine:
             vol_room = cfg.vol_risk_on - snapshot.vol_index
             breadth_room = snapshot.breadth - cfg.breadth_risk_on
             confidence = min(
-                _shape_confidence(
-                    vol_room, 10.0, cfg.confidence_floor, cfg.confidence_ceiling
-                ),
+                _shape_confidence(vol_room, 10.0, cfg.confidence_floor, cfg.confidence_ceiling),
                 _shape_confidence(
                     breadth_room,
                     0.5,

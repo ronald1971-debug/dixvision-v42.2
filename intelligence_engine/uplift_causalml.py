@@ -178,30 +178,20 @@ class UpliftEstimand:
     def __post_init__(self) -> None:
         if not isinstance(self.features, tuple):
             raise TypeError(
-                "UpliftEstimand.features must be a tuple, got "
-                f"{type(self.features).__name__}"
+                f"UpliftEstimand.features must be a tuple, got {type(self.features).__name__}"
             )
         if not self.features:
-            raise ValueError(
-                "UpliftEstimand.features must be non-empty"
-            )
+            raise ValueError("UpliftEstimand.features must be non-empty")
         for f in self.features:
             if not isinstance(f, str) or not f:
                 raise ValueError(
-                    "UpliftEstimand.features entries must be non-empty "
-                    f"strings, got {f!r}"
+                    f"UpliftEstimand.features entries must be non-empty strings, got {f!r}"
                 )
         if not self.treatment:
-            raise ValueError(
-                "UpliftEstimand.treatment must be non-empty"
-            )
+            raise ValueError("UpliftEstimand.treatment must be non-empty")
         if not self.outcome:
-            raise ValueError(
-                "UpliftEstimand.outcome must be non-empty"
-            )
-        if not isinstance(self.n_treatment_arms, int) or isinstance(
-            self.n_treatment_arms, bool
-        ):
+            raise ValueError("UpliftEstimand.outcome must be non-empty")
+        if not isinstance(self.n_treatment_arms, int) or isinstance(self.n_treatment_arms, bool):
             raise TypeError(
                 "UpliftEstimand.n_treatment_arms must be int, got "
                 f"{type(self.n_treatment_arms).__name__}"
@@ -217,9 +207,7 @@ class UpliftEstimand:
                 f"{MAX_N_TREATMENT!r}, got {self.n_treatment_arms!r}"
             )
         if not self.data_digest:
-            raise ValueError(
-                "UpliftEstimand.data_digest must be non-empty"
-            )
+            raise ValueError("UpliftEstimand.data_digest must be non-empty")
         if len(self.data_digest) > MAX_DATA_DIGEST_LEN:
             raise ValueError(
                 "UpliftEstimand.data_digest must be <= "
@@ -245,37 +233,27 @@ class UpliftArguments:
                 "UpliftLearnerKind, got "
                 f"{type(self.learner_kind).__name__}"
             )
-        if not isinstance(self.random_seed, int) or isinstance(
-            self.random_seed, bool
-        ):
+        if not isinstance(self.random_seed, int) or isinstance(self.random_seed, bool):
             raise TypeError(
-                "UpliftArguments.random_seed must be int, got "
-                f"{type(self.random_seed).__name__}"
+                f"UpliftArguments.random_seed must be int, got {type(self.random_seed).__name__}"
             )
         if self.random_seed < 0:
             raise ValueError(
-                "UpliftArguments.random_seed must be non-negative, "
-                f"got {self.random_seed!r}"
+                f"UpliftArguments.random_seed must be non-negative, got {self.random_seed!r}"
             )
         if self.n_samples < MIN_N_SAMPLES:
             raise ValueError(
-                f"UpliftArguments.n_samples must be >= "
-                f"{MIN_N_SAMPLES!r}, got {self.n_samples!r}"
+                f"UpliftArguments.n_samples must be >= {MIN_N_SAMPLES!r}, got {self.n_samples!r}"
             )
         if self.n_samples > MAX_N_SAMPLES:
             raise ValueError(
-                f"UpliftArguments.n_samples must be <= "
-                f"{MAX_N_SAMPLES!r}, got {self.n_samples!r}"
+                f"UpliftArguments.n_samples must be <= {MAX_N_SAMPLES!r}, got {self.n_samples!r}"
             )
         if self.n_segments < 1:
-            raise ValueError(
-                "UpliftArguments.n_segments must be >= 1, got "
-                f"{self.n_segments!r}"
-            )
+            raise ValueError(f"UpliftArguments.n_segments must be >= 1, got {self.n_segments!r}")
         if self.n_segments > MAX_SEGMENTS:
             raise ValueError(
-                "UpliftArguments.n_segments must be <= "
-                f"{MAX_SEGMENTS!r}, got {self.n_segments!r}"
+                f"UpliftArguments.n_segments must be <= {MAX_SEGMENTS!r}, got {self.n_segments!r}"
             )
 
 
@@ -289,39 +267,30 @@ class UpliftSegmentResult:
     segment_p_value: float
 
     def __post_init__(self) -> None:
-        if not isinstance(self.segment_id, int) or isinstance(
-            self.segment_id, bool
-        ):
+        if not isinstance(self.segment_id, int) or isinstance(self.segment_id, bool):
             raise TypeError(
-                "UpliftSegmentResult.segment_id must be int, got "
-                f"{type(self.segment_id).__name__}"
+                f"UpliftSegmentResult.segment_id must be int, got {type(self.segment_id).__name__}"
             )
         if self.segment_id < 0:
             raise ValueError(
-                "UpliftSegmentResult.segment_id must be non-negative, "
-                f"got {self.segment_id!r}"
+                f"UpliftSegmentResult.segment_id must be non-negative, got {self.segment_id!r}"
             )
-        if not isinstance(self.segment_size, int) or isinstance(
-            self.segment_size, bool
-        ):
+        if not isinstance(self.segment_size, int) or isinstance(self.segment_size, bool):
             raise TypeError(
                 "UpliftSegmentResult.segment_size must be int, got "
                 f"{type(self.segment_size).__name__}"
             )
         if self.segment_size < 0:
             raise ValueError(
-                "UpliftSegmentResult.segment_size must be "
-                f"non-negative, got {self.segment_size!r}"
+                f"UpliftSegmentResult.segment_size must be non-negative, got {self.segment_size!r}"
             )
         if not math.isfinite(self.segment_ate):
             raise ValueError(
-                "UpliftSegmentResult.segment_ate must be finite, "
-                f"got {self.segment_ate!r}"
+                f"UpliftSegmentResult.segment_ate must be finite, got {self.segment_ate!r}"
             )
         if not math.isfinite(self.segment_p_value):
             raise ValueError(
-                "UpliftSegmentResult.segment_p_value must be finite, "
-                f"got {self.segment_p_value!r}"
+                f"UpliftSegmentResult.segment_p_value must be finite, got {self.segment_p_value!r}"
             )
         if not (0.0 <= self.segment_p_value <= 1.0):
             raise ValueError(
@@ -341,8 +310,7 @@ class UpliftAnalysisResult:
     def __post_init__(self) -> None:
         if not math.isfinite(self.overall_ate):
             raise ValueError(
-                "UpliftAnalysisResult.overall_ate must be finite, "
-                f"got {self.overall_ate!r}"
+                f"UpliftAnalysisResult.overall_ate must be finite, got {self.overall_ate!r}"
             )
         if not math.isfinite(self.overall_std_error):
             raise ValueError(
@@ -356,8 +324,7 @@ class UpliftAnalysisResult:
             )
         if not isinstance(self.segments, tuple):
             raise TypeError(
-                "UpliftAnalysisResult.segments must be a tuple, got "
-                f"{type(self.segments).__name__}"
+                f"UpliftAnalysisResult.segments must be a tuple, got {type(self.segments).__name__}"
             )
         if len(self.segments) > MAX_SEGMENTS:
             raise ValueError(
@@ -385,22 +352,14 @@ class UpliftAnalysisRecord:
     meta: Mapping[str, str]
 
     def __post_init__(self) -> None:
-        if not isinstance(self.ts_ns, int) or isinstance(
-            self.ts_ns, bool
-        ):
+        if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
             raise TypeError(
-                "UpliftAnalysisRecord.ts_ns must be int, got "
-                f"{type(self.ts_ns).__name__}"
+                f"UpliftAnalysisRecord.ts_ns must be int, got {type(self.ts_ns).__name__}"
             )
         if self.ts_ns < 0:
-            raise ValueError(
-                "UpliftAnalysisRecord.ts_ns must be non-negative, "
-                f"got {self.ts_ns!r}"
-            )
+            raise ValueError(f"UpliftAnalysisRecord.ts_ns must be non-negative, got {self.ts_ns!r}")
         if not self.analysis_id:
-            raise ValueError(
-                "UpliftAnalysisRecord.analysis_id must be non-empty"
-            )
+            raise ValueError("UpliftAnalysisRecord.analysis_id must be non-empty")
         if len(self.analysis_id) > MAX_ANALYSIS_ID_LEN:
             raise ValueError(
                 "UpliftAnalysisRecord.analysis_id must be <= "
@@ -408,9 +367,7 @@ class UpliftAnalysisRecord:
                 f"{len(self.analysis_id)!r}"
             )
         if not self.source:
-            raise ValueError(
-                "UpliftAnalysisRecord.source must be non-empty"
-            )
+            raise ValueError("UpliftAnalysisRecord.source must be non-empty")
         if not isinstance(self.estimand, UpliftEstimand):
             raise TypeError(
                 "UpliftAnalysisRecord.estimand must be "
@@ -426,9 +383,7 @@ class UpliftAnalysisRecord:
                 "UpliftAnalysisRecord.analysis_digest must be a "
                 f"16-hex-char digest, got {self.analysis_digest!r}"
             )
-        if not all(
-            c in "0123456789abcdef" for c in self.analysis_digest
-        ):
+        if not all(c in "0123456789abcdef" for c in self.analysis_digest):
             raise ValueError(
                 "UpliftAnalysisRecord.analysis_digest must be "
                 f"lowercase hex, got {self.analysis_digest!r}"
@@ -551,12 +506,9 @@ def _compute_analysis_digest(
 ) -> str:
     """16-hex-char content hash of the canonical analysis summary."""
 
-    meta_pairs = "|".join(
-        f"{k}={v}" for k, v in sorted(arguments.meta.items())
-    )
+    meta_pairs = "|".join(f"{k}={v}" for k, v in sorted(arguments.meta.items()))
     segments_str = ";".join(
-        f"{s.segment_id}:{s.segment_size}:{s.segment_ate!r}:"
-        f"{s.segment_p_value!r}"
+        f"{s.segment_id}:{s.segment_size}:{s.segment_ate!r}:{s.segment_p_value!r}"
         for s in result.segments
     )
     payload = "|".join(
@@ -625,18 +577,15 @@ class CausalMLUpliftAnalyser:
             )
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
             raise TypeError(
-                "CausalMLUpliftAnalyser.analyse.ts_ns must be int, "
-                f"got {type(ts_ns).__name__}"
+                f"CausalMLUpliftAnalyser.analyse.ts_ns must be int, got {type(ts_ns).__name__}"
             )
         if ts_ns < 0:
             raise UpliftAnalyserConfigError(
-                "CausalMLUpliftAnalyser.analyse.ts_ns must be "
-                f"non-negative, got {ts_ns!r}"
+                f"CausalMLUpliftAnalyser.analyse.ts_ns must be non-negative, got {ts_ns!r}"
             )
         if not analysis_id:
             raise UpliftAnalyserConfigError(
-                "CausalMLUpliftAnalyser.analyse.analysis_id must be "
-                "non-empty"
+                "CausalMLUpliftAnalyser.analyse.analysis_id must be non-empty"
             )
         if len(analysis_id) > MAX_ANALYSIS_ID_LEN:
             raise UpliftAnalyserConfigError(
@@ -645,10 +594,7 @@ class CausalMLUpliftAnalyser:
                 f"{len(analysis_id)!r}"
             )
 
-        cb = (
-            callback if callback is not None
-            else null_uplift_analysis_callback()
-        )
+        cb = callback if callback is not None else null_uplift_analysis_callback()
         if not isinstance(cb, UpliftAnalysisCallback):
             raise TypeError(
                 "CausalMLUpliftAnalyser.analyse.callback must implement "

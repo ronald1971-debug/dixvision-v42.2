@@ -85,9 +85,7 @@ _ENTRY_LOGIC: dict[str, EntryLogic] = {
     ),
 }
 
-CANONICAL_ENTRY_LOGIC: MappingProxyType[str, EntryLogic] = MappingProxyType(
-    _ENTRY_LOGIC
-)
+CANONICAL_ENTRY_LOGIC: MappingProxyType[str, EntryLogic] = MappingProxyType(_ENTRY_LOGIC)
 
 # ---------------------------------------------------------------------------
 # ExitLogic catalogue
@@ -128,9 +126,7 @@ _EXIT_LOGIC: dict[str, ExitLogic] = {
     ),
 }
 
-CANONICAL_EXIT_LOGIC: MappingProxyType[str, ExitLogic] = MappingProxyType(
-    _EXIT_LOGIC
-)
+CANONICAL_EXIT_LOGIC: MappingProxyType[str, ExitLogic] = MappingProxyType(_EXIT_LOGIC)
 
 # ---------------------------------------------------------------------------
 # RiskModel catalogue
@@ -179,9 +175,7 @@ _RISK_MODELS: dict[str, RiskModel] = {
     ),
 }
 
-CANONICAL_RISK_MODELS: MappingProxyType[str, RiskModel] = MappingProxyType(
-    _RISK_MODELS
-)
+CANONICAL_RISK_MODELS: MappingProxyType[str, RiskModel] = MappingProxyType(_RISK_MODELS)
 
 # ---------------------------------------------------------------------------
 # Timeframe catalogue
@@ -210,9 +204,7 @@ _TIMEFRAMES: dict[str, Timeframe] = {
     ),
 }
 
-CANONICAL_TIMEFRAMES: MappingProxyType[str, Timeframe] = MappingProxyType(
-    _TIMEFRAMES
-)
+CANONICAL_TIMEFRAMES: MappingProxyType[str, Timeframe] = MappingProxyType(_TIMEFRAMES)
 
 # ---------------------------------------------------------------------------
 # MarketCondition catalogue
@@ -253,8 +245,8 @@ _MARKET_CONDITIONS: dict[str, MarketCondition] = {
     ),
 }
 
-CANONICAL_MARKET_CONDITIONS: MappingProxyType[str, MarketCondition] = (
-    MappingProxyType(_MARKET_CONDITIONS)
+CANONICAL_MARKET_CONDITIONS: MappingProxyType[str, MarketCondition] = MappingProxyType(
+    _MARKET_CONDITIONS
 )
 
 # ---------------------------------------------------------------------------
@@ -279,8 +271,8 @@ _DECOMPOSITIONS: dict[str, StrategyDecomposition] = {
     ),
 }
 
-CANONICAL_DECOMPOSITIONS: MappingProxyType[str, StrategyDecomposition] = (
-    MappingProxyType(_DECOMPOSITIONS)
+CANONICAL_DECOMPOSITIONS: MappingProxyType[str, StrategyDecomposition] = MappingProxyType(
+    _DECOMPOSITIONS
 )
 
 

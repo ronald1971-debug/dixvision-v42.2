@@ -82,9 +82,7 @@ def test_module_has_no_forbidden_top_level_imports() -> None:
                 )
         elif isinstance(node, ast.ImportFrom):
             mod = (node.module or "").split(".", 1)[0]
-            assert mod not in forbidden, (
-                f"top-level from-import of {node.module} forbidden"
-            )
+            assert mod not in forbidden, f"top-level from-import of {node.module} forbidden"
 
 
 def test_module_has_no_clock_calls() -> None:
@@ -119,19 +117,13 @@ def test_module_has_no_engine_cross_imports() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 root = alias.name.split(".", 1)[0]
-                assert root not in forbidden_roots, (
-                    f"OFFLINE module must not import {alias.name}"
-                )
+                assert root not in forbidden_roots, f"OFFLINE module must not import {alias.name}"
         elif isinstance(node, ast.ImportFrom):
-            mod = (node.module or "")
+            mod = node.module or ""
             root = mod.split(".", 1)[0]
-            assert root not in forbidden_roots, (
-                f"OFFLINE module must not import from {mod}"
-            )
+            assert root not in forbidden_roots, f"OFFLINE module must not import from {mod}"
             if mod.startswith("intelligence_engine.meta_controller.hot_path"):
-                raise AssertionError(
-                    f"OFFLINE module must not import from {mod}"
-                )
+                raise AssertionError(f"OFFLINE module must not import from {mod}")
 
 
 def test_module_has_no_random_or_prng() -> None:
@@ -139,10 +131,7 @@ def test_module_has_no_random_or_prng() -> None:
     tree = ast.parse(src)
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
-            mod = (
-                getattr(node, "module", None)
-                or (node.names[0].name if node.names else "")
-            )
+            mod = getattr(node, "module", None) or (node.names[0].name if node.names else "")
             mod_root = (mod or "").split(".", 1)[0]
             assert mod_root != "random", "no PRNG in deterministic OFFLINE module"
 
@@ -173,9 +162,7 @@ def test_polars_lazy_import_lives_inside_compute_regime_stats() -> None:
 
 
 def test_module_globals_do_not_leak_polars() -> None:
-    assert "polars" not in vars(rs), (
-        "polars must not leak into module globals after lazy import"
-    )
+    assert "polars" not in vars(rs), "polars must not leak into module globals after lazy import"
     assert "pl" not in vars(rs)
 
 
@@ -192,9 +179,7 @@ def test_module_imports_without_polars_in_sys_modules() -> None:
     if "learning_engine.analytics.regime_stats" in sys.modules:
         del sys.modules["learning_engine.analytics.regime_stats"]
     try:
-        mod = importlib.import_module(
-            "learning_engine.analytics.regime_stats"
-        )
+        mod = importlib.import_module("learning_engine.analytics.regime_stats")
         assert mod.NEW_PIP_DEPENDENCIES == ("polars",)
         assert "polars" not in sys.modules, (
             "module import pulled polars in despite lazy-import contract"
@@ -499,9 +484,7 @@ def test_compute_regime_stats_loser_zero_winners() -> None:
 
 def test_compute_regime_stats_zero_pnl_is_not_winner() -> None:
     """Zero PnL must not count as a winner (strict ``> 0``)."""
-    rows = [
-        _row(regime=MacroRegime.NEUTRAL, pnl_usd=0.0, qty=1.0, fill_price=1.0)
-    ]
+    rows = [_row(regime=MacroRegime.NEUTRAL, pnl_usd=0.0, qty=1.0, fill_price=1.0)]
     report = compute_regime_stats(rows)
     assert report.by_regime[0].n_winners == 0
     assert report.by_regime[0].win_rate == 0.0

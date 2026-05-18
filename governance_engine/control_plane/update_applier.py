@@ -58,10 +58,7 @@ class UpdateApplier:
         """
 
         if decision.verdict is not UpdateVerdict.RATIFY:
-            raise ValueError(
-                f"UpdateApplier.apply requires RATIFY, got "
-                f"{decision.verdict.value}"
-            )
+            raise ValueError(f"UpdateApplier.apply requires RATIFY, got {decision.verdict.value}")
         return self._registry.apply_parameter_update(
             strategy_id=update.strategy_id,
             parameter=update.parameter,

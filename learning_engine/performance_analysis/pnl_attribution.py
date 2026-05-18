@@ -91,21 +91,13 @@ class AttributedTrade:
 
     def __post_init__(self) -> None:
         if not isinstance(self.trade, BacktestTrade):
-            raise TypeError(
-                "trade must be BacktestTrade; got "
-                f"{type(self.trade).__name__}"
-            )
+            raise TypeError(f"trade must be BacktestTrade; got {type(self.trade).__name__}")
         if not isinstance(self.signal_price, (int, float)):
-            raise TypeError(
-                "signal_price must be float; got "
-                f"{type(self.signal_price).__name__}"
-            )
+            raise TypeError(f"signal_price must be float; got {type(self.signal_price).__name__}")
         if self.signal_price != self.signal_price:  # NaN check (IEEE-754)
             raise ValueError("signal_price must not be NaN")
         if self.signal_price <= 0.0:
-            raise ValueError(
-                f"signal_price must be > 0; got {self.signal_price}"
-            )
+            raise ValueError(f"signal_price must be > 0; got {self.signal_price}")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -141,14 +133,9 @@ class PnLAttribution:
         if self.n_trades < 0:
             raise ValueError(f"n_trades must be >= 0; got {self.n_trades}")
         if self.notional_usd < 0.0:
-            raise ValueError(
-                f"notional_usd must be >= 0; got {self.notional_usd}"
-            )
+            raise ValueError(f"notional_usd must be >= 0; got {self.notional_usd}")
         if self.fee_pnl_usd > 0.0:
-            raise ValueError(
-                "fee_pnl_usd must be <= 0 (fees are costs); got "
-                f"{self.fee_pnl_usd}"
-            )
+            raise ValueError(f"fee_pnl_usd must be <= 0 (fees are costs); got {self.fee_pnl_usd}")
 
     def slippage_bps(self) -> float:
         """Slippage in basis points relative to notional.
@@ -214,10 +201,7 @@ def attribute_pnl(trades: Iterable[AttributedTrade]) -> PnLAttribution:
 
     for at in trades:
         if not isinstance(at, AttributedTrade):
-            raise TypeError(
-                "trades must contain AttributedTrade; got "
-                f"{type(at).__name__}"
-            )
+            raise TypeError(f"trades must contain AttributedTrade; got {type(at).__name__}")
         t = at.trade
         sign = _side_sign(t.side)
         notional_i = abs(t.qty * t.price)
@@ -263,10 +247,7 @@ def attribute_pnl_by_symbol(
     buckets: dict[str, list[AttributedTrade]] = {}
     for at in trades:
         if not isinstance(at, AttributedTrade):
-            raise TypeError(
-                "trades must contain AttributedTrade; got "
-                f"{type(at).__name__}"
-            )
+            raise TypeError(f"trades must contain AttributedTrade; got {type(at).__name__}")
         buckets.setdefault(at.trade.symbol, []).append(at)
 
     return {sym: attribute_pnl(rows) for sym, rows in buckets.items()}

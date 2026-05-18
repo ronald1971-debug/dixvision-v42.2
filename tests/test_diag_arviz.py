@@ -217,16 +217,12 @@ def test_args_is_frozen_and_slotted() -> None:
 
 
 def test_args_rejects_non_enum_diagnostic_kind() -> None:
-    with pytest.raises(
-        TypeError, match="diagnostic_kind must be ArviZDiagnosticKind"
-    ):
+    with pytest.raises(TypeError, match="diagnostic_kind must be ArviZDiagnosticKind"):
         _valid_args(diagnostic_kind="summary")  # type: ignore[arg-type]
 
 
 def test_args_rejects_negative_random_seed() -> None:
-    with pytest.raises(
-        ValueError, match="random_seed must be non-negative"
-    ):
+    with pytest.raises(ValueError, match="random_seed must be non-negative"):
         _valid_args(random_seed=-1)
 
 
@@ -431,16 +427,12 @@ def test_summary_accepts_equal_hdi_bounds() -> None:
 
 
 def test_summary_rejects_negative_ess_bulk() -> None:
-    with pytest.raises(
-        ValueError, match="ess_bulk must be non-negative"
-    ):
+    with pytest.raises(ValueError, match="ess_bulk must be non-negative"):
         _valid_summary(ess_bulk=-1.0)
 
 
 def test_summary_rejects_negative_ess_tail() -> None:
-    with pytest.raises(
-        ValueError, match="ess_tail must be non-negative"
-    ):
+    with pytest.raises(ValueError, match="ess_tail must be non-negative"):
         _valid_summary(ess_tail=-1.0)
 
 
@@ -491,25 +483,17 @@ def test_result_is_frozen_and_slotted() -> None:
 
 def test_result_rejects_non_tuple_summaries() -> None:
     with pytest.raises(TypeError, match="variable_summaries must be a tuple"):
-        _valid_result(
-            variable_summaries=[_valid_summary()]
-        )  # type: ignore[arg-type]
+        _valid_result(variable_summaries=[_valid_summary()])  # type: ignore[arg-type]
 
 
 def test_result_rejects_empty_summaries() -> None:
-    with pytest.raises(
-        ValueError, match="variable_summaries must be non-empty"
-    ):
+    with pytest.raises(ValueError, match="variable_summaries must be non-empty"):
         _valid_result(variable_summaries=())
 
 
 def test_result_rejects_too_many_summaries() -> None:
-    too_many = tuple(
-        _valid_summary(name=f"v{i}") for i in range(MAX_NUM_VARS + 1)
-    )
-    with pytest.raises(
-        ValueError, match="variable_summaries must have <="
-    ):
+    too_many = tuple(_valid_summary(name=f"v{i}") for i in range(MAX_NUM_VARS + 1))
+    with pytest.raises(ValueError, match="variable_summaries must have <="):
         _valid_result(variable_summaries=too_many)
 
 
@@ -518,9 +502,7 @@ def test_result_rejects_non_summary_entries() -> None:
         TypeError,
         match="variable_summaries entries must be ArviZVariableSummary",
     ):
-        _valid_result(
-            variable_summaries=(_valid_summary(), "x")
-        )  # type: ignore[arg-type]
+        _valid_result(variable_summaries=(_valid_summary(), "x"))  # type: ignore[arg-type]
 
 
 def test_result_rejects_duplicate_variable_names() -> None:
@@ -544,9 +526,7 @@ def test_result_rejects_bool_num_divergences() -> None:
 
 
 def test_result_rejects_negative_num_divergences() -> None:
-    with pytest.raises(
-        ValueError, match="num_divergences must be non-negative"
-    ):
+    with pytest.raises(ValueError, match="num_divergences must be non-negative"):
         _valid_result(num_divergences=-1)
 
 
@@ -623,9 +603,7 @@ def test_record_rejects_non_spec() -> None:
 
 
 def test_record_rejects_non_result() -> None:
-    with pytest.raises(
-        TypeError, match="result must be ArviZDiagnosticResult"
-    ):
+    with pytest.raises(TypeError, match="result must be ArviZDiagnosticResult"):
         _valid_record(result="x")  # type: ignore[arg-type]
 
 
@@ -722,9 +700,7 @@ def test_analyser_rejects_non_protocol_engine() -> None:
     class _NotEngine:
         pass
 
-    with pytest.raises(
-        TypeError, match="engine must implement the ArviZDiagnosticEngine"
-    ):
+    with pytest.raises(TypeError, match="engine must implement the ArviZDiagnosticEngine"):
         ArviZDiagnosticAnalyser(engine=_NotEngine())  # type: ignore[arg-type]
 
 
@@ -779,9 +755,7 @@ def test_analyser_rejects_non_spec() -> None:
 
 def test_analyser_rejects_non_args() -> None:
     a = ArviZDiagnosticAnalyser(engine=_FakeEngine())
-    with pytest.raises(
-        TypeError, match="arguments must be ArviZDiagnosticArguments"
-    ):
+    with pytest.raises(TypeError, match="arguments must be ArviZDiagnosticArguments"):
         a.analyse(
             spec=_valid_spec(),
             arguments="x",  # type: ignore[arg-type]
@@ -803,9 +777,7 @@ def test_analyser_rejects_non_int_ts_ns() -> None:
 
 def test_analyser_rejects_negative_ts_ns() -> None:
     a = ArviZDiagnosticAnalyser(engine=_FakeEngine())
-    with pytest.raises(
-        ArviZAnalyserConfigError, match="ts_ns must be non-negative"
-    ):
+    with pytest.raises(ArviZAnalyserConfigError, match="ts_ns must be non-negative"):
         a.analyse(
             spec=_valid_spec(),
             arguments=_valid_args(),
@@ -816,9 +788,7 @@ def test_analyser_rejects_negative_ts_ns() -> None:
 
 def test_analyser_rejects_empty_analysis_id() -> None:
     a = ArviZDiagnosticAnalyser(engine=_FakeEngine())
-    with pytest.raises(
-        ArviZAnalyserConfigError, match="analysis_id must be non-empty"
-    ):
+    with pytest.raises(ArviZAnalyserConfigError, match="analysis_id must be non-empty"):
         a.analyse(
             spec=_valid_spec(),
             arguments=_valid_args(),
@@ -829,9 +799,7 @@ def test_analyser_rejects_empty_analysis_id() -> None:
 
 def test_analyser_rejects_long_analysis_id() -> None:
     a = ArviZDiagnosticAnalyser(engine=_FakeEngine())
-    with pytest.raises(
-        ArviZAnalyserConfigError, match="analysis_id must be <="
-    ):
+    with pytest.raises(ArviZAnalyserConfigError, match="analysis_id must be <="):
         a.analyse(
             spec=_valid_spec(),
             arguments=_valid_args(),
@@ -843,18 +811,17 @@ def test_analyser_rejects_long_analysis_id() -> None:
 def test_analyser_rejects_engine_returning_wrong_type() -> None:
     class _BadEngine:
         def diagnose(
-            self, *, spec: ArviZPosteriorSpec,
+            self,
+            *,
+            spec: ArviZPosteriorSpec,
             arguments: ArviZDiagnosticArguments,
-            ts_ns: int, callback: ArviZDiagnosticCallback,
+            ts_ns: int,
+            callback: ArviZDiagnosticCallback,
         ) -> ArviZDiagnosticResult:
             return "not a result"  # type: ignore[return-value]
 
-    a = ArviZDiagnosticAnalyser(
-        engine=_BadEngine()
-    )  # type: ignore[arg-type]
-    with pytest.raises(
-        TypeError, match="must return ArviZDiagnosticResult"
-    ):
+    a = ArviZDiagnosticAnalyser(engine=_BadEngine())  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="must return ArviZDiagnosticResult"):
         a.analyse(
             spec=_valid_spec(),
             arguments=_valid_args(),
@@ -866,18 +833,19 @@ def test_analyser_rejects_engine_returning_wrong_type() -> None:
 def test_analyser_rejects_mismatched_variable_count() -> None:
     class _MismatchEngine:
         def diagnose(
-            self, *, spec: ArviZPosteriorSpec,
+            self,
+            *,
+            spec: ArviZPosteriorSpec,
             arguments: ArviZDiagnosticArguments,
-            ts_ns: int, callback: ArviZDiagnosticCallback,
+            ts_ns: int,
+            callback: ArviZDiagnosticCallback,
         ) -> ArviZDiagnosticResult:
             return ArviZDiagnosticResult(
                 variable_summaries=(_valid_summary(name="only_one"),),
                 num_divergences=0,
             )
 
-    a = ArviZDiagnosticAnalyser(
-        engine=_MismatchEngine()
-    )  # type: ignore[arg-type]
+    a = ArviZDiagnosticAnalyser(engine=_MismatchEngine())  # type: ignore[arg-type]
     with pytest.raises(
         ArviZAnalyserConfigError,
         match="variable_summaries length",
@@ -916,18 +884,27 @@ def test_analyser_threads_custom_callback() -> None:
 
     class _Recorder:
         def on_diagnostic_start(
-            self, *, ts_ns: int, spec: ArviZPosteriorSpec,
+            self,
+            *,
+            ts_ns: int,
+            spec: ArviZPosteriorSpec,
             arguments: ArviZDiagnosticArguments,
         ) -> None:
             start_seen.append(spec)
 
         def on_variable_summary(
-            self, *, ts_ns: int, summary: ArviZVariableSummary,
+            self,
+            *,
+            ts_ns: int,
+            summary: ArviZVariableSummary,
         ) -> None:
             summaries_seen.append(summary)
 
         def on_diagnostic_end(
-            self, *, ts_ns: int, result: ArviZDiagnosticResult,
+            self,
+            *,
+            ts_ns: int,
+            result: ArviZDiagnosticResult,
         ) -> None:
             end_seen.append(result)
 
@@ -950,14 +927,19 @@ def test_analyser_threads_custom_callback() -> None:
 
 
 def _run_once(
-    *, seed: int = 42, num_vars: int = 2, hdi_prob: float = 0.94,
+    *,
+    seed: int = 42,
+    num_vars: int = 2,
+    hdi_prob: float = 0.94,
     kind: ArviZDiagnosticKind = ArviZDiagnosticKind.SUMMARY,
 ) -> ArviZDiagnosticRecord:
     a = ArviZDiagnosticAnalyser(engine=_FakeEngine())
     return a.analyse(
         spec=_valid_spec(num_vars=num_vars),
         arguments=_valid_args(
-            diagnostic_kind=kind, random_seed=seed, hdi_prob=hdi_prob,
+            diagnostic_kind=kind,
+            random_seed=seed,
+            hdi_prob=hdi_prob,
         ),
         ts_ns=999,
         analysis_id="inv15",
@@ -1035,11 +1017,7 @@ def test_arviz_diagnostic_engine_factory_signature() -> None:
 # ---------------------------------------------------------------------------
 
 
-_MODULE_PATH = (
-    Path(__file__).resolve().parent.parent
-    / "intelligence_engine"
-    / "diag_arviz.py"
-)
+_MODULE_PATH = Path(__file__).resolve().parent.parent / "intelligence_engine" / "diag_arviz.py"
 
 
 def _module_ast() -> ast.Module:
@@ -1073,8 +1051,13 @@ def test_ast_no_top_level_xarray_import() -> None:
 
 def test_ast_no_top_level_io_imports() -> None:
     forbidden = {
-        "subprocess", "socket", "urllib", "requests",
-        "httpx", "aiohttp", "asyncio",
+        "subprocess",
+        "socket",
+        "urllib",
+        "requests",
+        "httpx",
+        "aiohttp",
+        "asyncio",
     }
     assert forbidden.isdisjoint(_top_level_imports())
 
@@ -1098,9 +1081,7 @@ def test_ast_no_cross_engine_imports() -> None:
         elif isinstance(node, ast.ImportFrom):
             if node.module:
                 seen.add(node.module.split(".")[0])
-    assert forbidden.isdisjoint(seen), (
-        f"forbidden imports in diag_arviz.py: {forbidden & seen!r}"
-    )
+    assert forbidden.isdisjoint(seen), f"forbidden imports in diag_arviz.py: {forbidden & seen!r}"
 
 
 def test_ast_vendor_imports_confined_to_factory() -> None:
@@ -1112,10 +1093,7 @@ def test_ast_vendor_imports_confined_to_factory() -> None:
     other_imports: set[str] = set()
 
     for node in ast.walk(tree):
-        if (
-            isinstance(node, ast.FunctionDef)
-            and node.name == "arviz_diagnostic_engine"
-        ):
+        if isinstance(node, ast.FunctionDef) and node.name == "arviz_diagnostic_engine":
             for sub in ast.walk(node):
                 if isinstance(sub, ast.Import):
                     for alias in sub.names:

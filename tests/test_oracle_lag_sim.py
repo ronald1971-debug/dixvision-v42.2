@@ -81,12 +81,12 @@ def test_rule_fired_thresholds() -> None:
     """rule_fired classifies lag-ratio into 4 buckets."""
     sim = OracleLag()
     cases = [
-        (4, "fresh"),       # 4/100 = 0.04 < 0.05
+        (4, "fresh"),  # 4/100 = 0.04 < 0.05
         (5, "slight_lag"),  # 5/100 = 0.05 (>= 0.05, < 0.20)
         (19, "slight_lag"),
         (20, "moderate_lag"),  # 20/100 = 0.20
         (49, "moderate_lag"),
-        (50, "severe_lag"),    # 50/100 = 0.50
+        (50, "severe_lag"),  # 50/100 = 0.50
         (100, "severe_lag"),
     ]
     for lag, expected in cases:
@@ -232,9 +232,7 @@ def test_missing_meta_keys_rejected() -> None:
     ):
         meta = dict(base.meta)
         meta.pop(k)
-        bad = RealityScenario(
-            scenario_id="S", ts_ns=1, initial_state_hash="h", meta=meta
-        )
+        bad = RealityScenario(scenario_id="S", ts_ns=1, initial_state_hash="h", meta=meta)
         with pytest.raises(ValueError, match=k):
             OracleLag().step(seed=0, scenario=bad)
 

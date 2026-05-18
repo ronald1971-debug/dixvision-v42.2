@@ -72,9 +72,7 @@ class PendingBuffer:
     _items: OrderedDict[str, PendingItem] = field(
         default_factory=OrderedDict, repr=False, compare=False
     )
-    _lock: Lock = field(
-        default_factory=Lock, repr=False, compare=False
-    )
+    _lock: Lock = field(default_factory=Lock, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if self.capacity < 1:
@@ -106,15 +104,10 @@ class PendingBuffer:
                 return False
             if len(self._items) >= self.capacity:
                 if not self.evict_oldest_when_full:
-                    raise HitlBufferFull(
-                        f"PendingBuffer full at capacity"
-                        f" {self.capacity}"
-                    )
+                    raise HitlBufferFull(f"PendingBuffer full at capacity {self.capacity}")
                 # FIFO evict
                 self._items.popitem(last=False)
-            self._items[hitl_id] = PendingItem(
-                hitl_id=hitl_id, curated=curated
-            )
+            self._items[hitl_id] = PendingItem(hitl_id=hitl_id, curated=curated)
             return True
 
     def pending(self) -> tuple[PendingItem, ...]:

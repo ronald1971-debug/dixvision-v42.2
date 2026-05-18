@@ -118,9 +118,7 @@ def test_per_source_cap_more_restrictive_wins() -> None:
             ),
         }
     )
-    sig = _signal(
-        confidence=0.95, trust=SignalTrust.EXTERNAL_LOW, source="SRC-X"
-    )
+    sig = _signal(confidence=0.95, trust=SignalTrust.EXTERNAL_LOW, source="SRC-X")
     out = apply_signal_trust_cap(sig, registry=registry)
     assert out.confidence == 0.3
 
@@ -140,9 +138,7 @@ def test_per_source_cap_more_permissive_is_clamped_to_class_default() -> None:
             ),
         }
     )
-    sig = _signal(
-        confidence=0.95, trust=SignalTrust.EXTERNAL_LOW, source="SRC-Y"
-    )
+    sig = _signal(confidence=0.95, trust=SignalTrust.EXTERNAL_LOW, source="SRC-Y")
     out = apply_signal_trust_cap(sig, registry=registry)
     assert out.confidence == DEFAULT_LOW_CAP
 
@@ -161,18 +157,14 @@ def test_registry_trust_disagreement_takes_more_restrictive() -> None:
             ),
         }
     )
-    sig = _signal(
-        confidence=0.95, trust=SignalTrust.EXTERNAL_LOW, source="SRC-Z"
-    )
+    sig = _signal(confidence=0.95, trust=SignalTrust.EXTERNAL_LOW, source="SRC-Z")
     out = apply_signal_trust_cap(sig, registry=registry)
     assert out.confidence == DEFAULT_LOW_CAP
 
 
 def test_unregistered_source_falls_back_to_class_default() -> None:
     registry = _registry(sources={})
-    sig = _signal(
-        confidence=0.95, trust=SignalTrust.EXTERNAL_LOW, source="SRC-UNKNOWN"
-    )
+    sig = _signal(confidence=0.95, trust=SignalTrust.EXTERNAL_LOW, source="SRC-UNKNOWN")
     out = apply_signal_trust_cap(sig, registry=registry)
     assert out.confidence == DEFAULT_LOW_CAP
 
@@ -226,9 +218,7 @@ def test_approve_signal_with_per_source_override() -> None:
         trust=SignalTrust.EXTERNAL_LOW,
         source="SRC-PIN",
     )
-    intent = approve_signal_for_execution(
-        sig, ts_ns=_TS_NS, registry=registry
-    )
+    intent = approve_signal_for_execution(sig, ts_ns=_TS_NS, registry=registry)
     assert intent.signal.confidence == 0.2
 
 

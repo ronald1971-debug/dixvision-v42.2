@@ -100,9 +100,7 @@ def test_random_legal_paths_replay_identically() -> None:
 
     assert len(replay) == len(live)
     for sid in [f"strat-{n}" for n in range(50)]:
-        assert replay.get(sid) == live.get(sid), (
-            f"replay diverged on {sid}"
-        )
+        assert replay.get(sid) == live.get(sid), f"replay diverged on {sid}"
 
 
 def test_random_legal_paths_double_replay_is_idempotent() -> None:
@@ -184,16 +182,12 @@ def test_random_illegal_transitions_do_not_mutate_state() -> None:
                 ts_ns=999,
                 reason="illegal-attempt",
             )
-            raise AssertionError(
-                f"illegal {prev.value} → {new.value} did not raise"
-            )
+            raise AssertionError(f"illegal {prev.value} → {new.value} did not raise")
         except StrategyLifecycleError:
             pass
 
         # State + ledger must be byte-identical to pre-attempt.
-        assert reg.get(sid) == record_before, (
-            f"state mutated on illegal {prev.value} → {new.value}"
-        )
+        assert reg.get(sid) == record_before, f"state mutated on illegal {prev.value} → {new.value}"
         assert len(ledger.read()) == rows_before, (
             f"ledger row appended on illegal {prev.value} → {new.value}"
         )
@@ -241,9 +235,7 @@ def test_many_strategies_in_flight_do_not_cross_contaminate() -> None:
     for sid, want in expected.items():
         rec = reg.get(sid)
         assert rec is not None, f"missing {sid}"
-        assert rec.lifecycle is want, (
-            f"{sid}: lifecycle drift — want {want}, got {rec.lifecycle}"
-        )
+        assert rec.lifecycle is want, f"{sid}: lifecycle drift — want {want}, got {rec.lifecycle}"
 
 
 def test_strategies_filter_returns_only_lifecycle_match() -> None:
@@ -271,13 +263,9 @@ def test_strategies_filter_returns_only_lifecycle_match() -> None:
             assert r.lifecycle is state, (
                 f"all_in({state}) returned {r.strategy_id} in {r.lifecycle}"
             )
-            assert r.strategy_id not in seen, (
-                f"{r.strategy_id} returned by two states"
-            )
+            assert r.strategy_id not in seen, f"{r.strategy_id} returned by two states"
             seen[r.strategy_id] = state
-    assert len(seen) == len(reg), (
-        "all_in walk did not cover every registered strategy"
-    )
+    assert len(seen) == len(reg), "all_in walk did not cover every registered strategy"
 
 
 # ---------------------------------------------------------------------------
@@ -322,9 +310,7 @@ def test_transition_rejects_empty_reason_under_fuzz() -> None:
                 )
             except ValueError:
                 continue
-            raise AssertionError(
-                f"empty reason accepted on {prev.value} → {new.value}"
-            )
+            raise AssertionError(f"empty reason accepted on {prev.value} → {new.value}")
 
 
 def test_transition_unknown_strategy_always_raises_keyerror() -> None:

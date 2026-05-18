@@ -293,12 +293,8 @@ def test_propose_intent_rejects_malformed_enum():
     decision = state.propose_intent(request)
     assert decision.approved is False
     assert decision.rejection_code == "INTENT_INVALID_ENUM"
-    assert any(
-        r.kind == "INTENT_TRANSITION_REJECTED" for r in ledger.read()
-    )
-    assert all(
-        r.kind != INTENT_TRANSITION_KIND for r in ledger.read()
-    )
+    assert any(r.kind == "INTENT_TRANSITION_REJECTED" for r in ledger.read())
+    assert all(r.kind != INTENT_TRANSITION_KIND for r in ledger.read())
 
 
 # ---------------------------------------------------------------------------
@@ -317,9 +313,7 @@ def test_operator_bridge_request_intent_approved_and_ledger_replays():
                 INTENT_KEY_OBJECTIVE: "RISK_ADJUSTED_GROWTH",
                 INTENT_KEY_RISK_MODE: "BALANCED",
                 INTENT_KEY_HORIZON: "SHORT_TERM",
-                INTENT_KEY_FOCUS: encode_focus(
-                    ("crypto_microstructure", "fx_carry")
-                ),
+                INTENT_KEY_FOCUS: encode_focus(("crypto_microstructure", "fx_carry")),
                 INTENT_KEY_REASON: "weekly review",
             },
         )
@@ -401,9 +395,7 @@ def test_operator_bridge_request_intent_locked_is_rejected():
     )
     assert decision.approved is False
     assert decision.rejection_code == "POLICY_LOCKED"
-    assert all(
-        r.kind != INTENT_TRANSITION_KIND for r in eng.ledger.read()
-    )
+    assert all(r.kind != INTENT_TRANSITION_KIND for r in eng.ledger.read())
 
 
 # ---------------------------------------------------------------------------

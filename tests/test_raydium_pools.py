@@ -291,17 +291,11 @@ def test_poll_swallows_sink_exception() -> None:
 
 def test_poller_rejects_invalid_config() -> None:
     with pytest.raises(ValueError):
-        RaydiumPoolPoller(
-            lambda _s: None, clock_ns=lambda: 0, url=""
-        )
+        RaydiumPoolPoller(lambda _s: None, clock_ns=lambda: 0, url="")
     with pytest.raises(ValueError):
-        RaydiumPoolPoller(
-            lambda _s: None, clock_ns=lambda: 0, poll_interval_s=0
-        )
+        RaydiumPoolPoller(lambda _s: None, clock_ns=lambda: 0, poll_interval_s=0)
     with pytest.raises(ValueError):
-        RaydiumPoolPoller(
-            lambda _s: None, clock_ns=lambda: 0, retry_delay_s=0
-        )
+        RaydiumPoolPoller(lambda _s: None, clock_ns=lambda: 0, retry_delay_s=0)
     with pytest.raises(ValueError):
         RaydiumPoolPoller(
             lambda _s: None,

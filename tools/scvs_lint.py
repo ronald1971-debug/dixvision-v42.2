@@ -51,9 +51,7 @@ def main(argv: list[str]) -> int:
 
     registry = load_source_registry(registry_path)
 
-    discover_roots = [
-        repo_root / r for r in _DEFAULT_ROOTS if (repo_root / r).is_dir()
-    ]
+    discover_roots = [repo_root / r for r in _DEFAULT_ROOTS if (repo_root / r).is_dir()]
     declarations = discover_consumption_declarations(discover_roots)
 
     violations = validate_scvs(registry, declarations)

@@ -215,10 +215,7 @@ def test_pump_increments_errors_and_recovers_after_failure() -> None:
             for _ in range(200):
                 # Keep going until we observed at least one error AND
                 # at least one good poll.
-                if (
-                    pump.status().errors >= 1
-                    and pump.status().observations_received >= 1
-                ):
+                if pump.status().errors >= 1 and pump.status().observations_received >= 1:
                     break
                 await asyncio.sleep(0.001)
             stop.set()
@@ -339,10 +336,7 @@ def test_pump_isolates_sink_exceptions() -> None:
 
         async def _stopper() -> None:
             for _ in range(200):
-                if (
-                    pump.status().errors >= 1
-                    and pump.status().observations_received >= 1
-                ):
+                if pump.status().errors >= 1 and pump.status().observations_received >= 1:
                     break
                 await asyncio.sleep(0.001)
             stop.set()
@@ -413,9 +407,7 @@ def test_pump_stops_promptly_when_stop_set() -> None:
                 await asyncio.sleep(0.001)
             stop.set()
 
-        await asyncio.wait_for(
-            asyncio.gather(pump.run(stop), _stopper()), timeout=5.0
-        )
+        await asyncio.wait_for(asyncio.gather(pump.run(stop), _stopper()), timeout=5.0)
         return pump.status()
 
     status = asyncio.run(_scenario())

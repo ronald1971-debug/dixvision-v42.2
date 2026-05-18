@@ -400,9 +400,7 @@ def test_compose_deep_merge_preserves_unrelated_keys() -> None:
         groups=(
             ConfigGroup(
                 name="db",
-                options=(
-                    ConfigOption(name="prod", values={"db": {"host": "prod"}}),
-                ),
+                options=(ConfigOption(name="prod", values={"db": {"host": "prod"}}),),
             ),
         ),
     )
@@ -524,10 +522,7 @@ def test_compose_defaults_value_must_be_str() -> None:
 
 def test_compose_overrides_cap() -> None:
     schema = ConfigSchema(name="App", base={}, groups=())
-    many = tuple(
-        Override(path=f"x.k{i}", value=i)
-        for i in range(MAX_OVERRIDES + 1)
-    )
+    many = tuple(Override(path=f"x.k{i}", value=i) for i in range(MAX_OVERRIDES + 1))
     with pytest.raises(ConfigError):
         compose(schema, defaults={}, overrides=many)
 
@@ -629,9 +624,7 @@ def test_enable_hydra_factory_rejects_unknown_override_keys() -> None:
 # ---------------------------------------------------------------------------
 
 
-_MODULE_PATH = (
-    Path(__file__).resolve().parents[1] / "tools" / "hydra_config.py"
-)
+_MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "hydra_config.py"
 
 
 def _module_ast() -> ast.Module:
@@ -689,9 +682,7 @@ def test_no_top_level_engine_imports() -> None:
             assert not name.startswith(prefix), name
 
 
-def _find_enclosing_function(
-    tree: ast.Module, target: ast.AST
-) -> ast.FunctionDef | None:
+def _find_enclosing_function(tree: ast.Module, target: ast.AST) -> ast.FunctionDef | None:
     for func in ast.walk(tree):
         if isinstance(func, ast.FunctionDef):
             for descendant in ast.walk(func):
@@ -705,21 +696,15 @@ def test_hydra_import_only_inside_factory() -> None:
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             mod = node.module if isinstance(node, ast.ImportFrom) else None
-            names = (
-                [a.name for a in node.names]
-                if isinstance(node, ast.Import)
-                else [mod or ""]
-            )
+            names = [a.name for a in node.names] if isinstance(node, ast.Import) else [mod or ""]
             for name in names:
                 if name in ("hydra", "omegaconf"):
                     parent = _find_enclosing_function(tree, node)
                     assert parent is not None, (
-                        f"top-level {name} import — must be inside "
-                        "enable_hydra_factory"
+                        f"top-level {name} import — must be inside enable_hydra_factory"
                     )
                     assert parent.name == "enable_hydra_factory", (
-                        f"{name} imported in {parent.name!r} — must be "
-                        "inside enable_hydra_factory"
+                        f"{name} imported in {parent.name!r} — must be inside enable_hydra_factory"
                     )
 
 

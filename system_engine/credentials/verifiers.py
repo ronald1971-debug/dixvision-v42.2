@@ -103,10 +103,7 @@ VERIFIERS: Mapping[str, VerifierSpec] = MappingProxyType(
             # Gemini / Google AI Studio uses ?key= query auth, not
             # Authorization header. The {key} placeholder is filled
             # in via :func:`urllib.parse.quote` in :func:`_build_request`.
-            url=(
-                "https://generativelanguage.googleapis.com/v1beta/models"
-                "?key={key}"
-            ),
+            url=("https://generativelanguage.googleapis.com/v1beta/models?key={key}"),
             primary_env_var="GEMINI_API_KEY",
             auth_style="query",
         ),
@@ -164,10 +161,7 @@ VERIFIERS: Mapping[str, VerifierSpec] = MappingProxyType(
             # endpoint that's permissioned identically to a real
             # series fetch — 200 if the key is valid, 400 + JSON
             # error body if not.
-            url=(
-                "https://api.stlouisfed.org/fred/sources"
-                "?api_key={key}&file_type=json"
-            ),
+            url=("https://api.stlouisfed.org/fred/sources?api_key={key}&file_type=json"),
             primary_env_var="FRED_API_KEY",
             auth_style="query",
         ),
@@ -223,10 +217,7 @@ def _build_request(spec: VerifierSpec, key: str) -> urllib.request.Request:
         )
     if spec.auth_style == "header":
         if not spec.header_name:
-            raise ValueError(
-                "VerifierSpec.header_name is required when "
-                "auth_style == 'header'"
-            )
+            raise ValueError("VerifierSpec.header_name is required when auth_style == 'header'")
         return urllib.request.Request(
             spec.url,
             headers={

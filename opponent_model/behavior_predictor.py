@@ -101,10 +101,7 @@ class BehaviorPredictorConfig:
         }
         for name, value in positives.items():
             if not (value > 0.0):
-                raise ValueError(
-                    f"BehaviorPredictorConfig.{name} must be positive, "
-                    f"got {value!r}"
-                )
+                raise ValueError(f"BehaviorPredictorConfig.{name} must be positive, got {value!r}")
 
         non_negatives = {
             "slow_cancel_to_fill_max": self.slow_cancel_to_fill_max,
@@ -113,8 +110,7 @@ class BehaviorPredictorConfig:
         for name, value in non_negatives.items():
             if not (value >= 0.0):
                 raise ValueError(
-                    f"BehaviorPredictorConfig.{name} must be non-negative, "
-                    f"got {value!r}"
+                    f"BehaviorPredictorConfig.{name} must be non-negative, got {value!r}"
                 )
 
         if not (0.0 <= self.momentum_imbalance_min <= 1.0):
@@ -143,11 +139,7 @@ class BehaviorPredictorConfig:
 
 
 def _default_config_path() -> Path:
-    return (
-        Path(__file__).resolve().parents[1]
-        / "registry"
-        / "opponent_behavior.yaml"
-    )
+    return Path(__file__).resolve().parents[1] / "registry" / "opponent_behavior.yaml"
 
 
 def load_behavior_predictor_config(
@@ -159,28 +151,18 @@ def load_behavior_predictor_config(
     with p.open("r", encoding="utf-8") as fh:
         raw: Any = yaml.safe_load(fh)
     if not isinstance(raw, dict):
-        raise ValueError(
-            f"opponent_behavior config at {p} must be a YAML mapping"
-        )
+        raise ValueError(f"opponent_behavior config at {p} must be a YAML mapping")
     fields = {f.name for f in dataclasses.fields(BehaviorPredictorConfig)}
     missing = fields - raw.keys()
     if missing:
-        raise ValueError(
-            f"opponent_behavior config at {p} missing fields: "
-            f"{sorted(missing)}"
-        )
+        raise ValueError(f"opponent_behavior config at {p} missing fields: {sorted(missing)}")
     extra = raw.keys() - fields
     if extra:
-        raise ValueError(
-            f"opponent_behavior config at {p} has unknown fields: "
-            f"{sorted(extra)}"
-        )
+        raise ValueError(f"opponent_behavior config at {p} has unknown fields: {sorted(extra)}")
     return BehaviorPredictorConfig(**{name: float(raw[name]) for name in fields})
 
 
-def _shape_confidence(
-    excess: float, span: float, floor: float, ceiling: float
-) -> float:
+def _shape_confidence(excess: float, span: float, floor: float, ceiling: float) -> float:
     """Map a non-negative excess into ``[floor, ceiling]``.
 
     ``excess`` is the unclamped distance the observation cleared its
@@ -221,9 +203,7 @@ class BehaviorPredictor:
     def config(self) -> BehaviorPredictorConfig:
         return self._config
 
-    def classify(
-        self, observation: OpponentObservation
-    ) -> OpponentClassification:
+    def classify(self, observation: OpponentObservation) -> OpponentClassification:
         """Return the dominant :class:`OpponentArchetype` classification."""
 
         cfg = self._config
@@ -233,10 +213,8 @@ class BehaviorPredictor:
         # 1. HFT_MAKER — first-match. ALL three signals must trip.
         if (
             observation.cancel_to_fill_ratio >= cfg.hft_cancel_to_fill_min
-            and observation.top_of_book_refresh_rate_hz
-            >= cfg.hft_refresh_rate_hz_min
-            and observation.avg_resting_size_usd
-            <= cfg.hft_resting_size_usd_max
+            and observation.top_of_book_refresh_rate_hz >= cfg.hft_refresh_rate_hz_min
+            and observation.avg_resting_size_usd <= cfg.hft_resting_size_usd_max
         ):
             # Confidence keyed off whichever dimension cleared by the
             # widest fraction. ``span`` is the threshold itself for the
@@ -246,8 +224,7 @@ class BehaviorPredictor:
                 observation.cancel_to_fill_ratio - cfg.hft_cancel_to_fill_min
             ) / cfg.hft_cancel_to_fill_min
             refresh_frac = (
-                observation.top_of_book_refresh_rate_hz
-                - cfg.hft_refresh_rate_hz_min
+                observation.top_of_book_refresh_rate_hz - cfg.hft_refresh_rate_hz_min
             ) / cfg.hft_refresh_rate_hz_min
             # Smaller resting size = stronger HFT_MAKER signal.
             resting_frac = (
@@ -287,11 +264,7 @@ class BehaviorPredictor:
             ) / cfg.sweeper_spread_bps_max
             best_frac = max(taker_frac, spread_frac)
             confidence = _shape_confidence(best_frac, 1.0, floor, ceiling)
-            rule = (
-                "sweeper_size_print"
-                if taker_frac >= spread_frac
-                else "sweeper_narrow_book"
-            )
+            rule = "sweeper_size_print" if taker_frac >= spread_frac else "sweeper_narrow_book"
             return OpponentClassification(
                 archetype=OpponentArchetype.SWEEPER,
                 confidence=confidence,
@@ -305,23 +278,17 @@ class BehaviorPredictor:
         abs_imbalance = abs(observation.aggressor_imbalance)
         if (
             abs_imbalance >= cfg.momentum_imbalance_min
-            and observation.avg_taker_size_usd
-            >= cfg.momentum_taker_size_usd_min
+            and observation.avg_taker_size_usd >= cfg.momentum_taker_size_usd_min
         ):
-            imb_frac = (
-                abs_imbalance - cfg.momentum_imbalance_min
-            ) / max(1.0 - cfg.momentum_imbalance_min, 1e-9)
+            imb_frac = (abs_imbalance - cfg.momentum_imbalance_min) / max(
+                1.0 - cfg.momentum_imbalance_min, 1e-9
+            )
             size_frac = (
-                observation.avg_taker_size_usd
-                - cfg.momentum_taker_size_usd_min
+                observation.avg_taker_size_usd - cfg.momentum_taker_size_usd_min
             ) / cfg.momentum_taker_size_usd_min
             best_frac = max(imb_frac, size_frac)
             confidence = _shape_confidence(best_frac, 1.0, floor, ceiling)
-            rule = (
-                "momentum_imbalance"
-                if imb_frac >= size_frac
-                else "momentum_size"
-            )
+            rule = "momentum_imbalance" if imb_frac >= size_frac else "momentum_size"
             return OpponentClassification(
                 archetype=OpponentArchetype.MOMENTUM_TAKER,
                 confidence=confidence,
@@ -333,16 +300,13 @@ class BehaviorPredictor:
         # slow refresh.
         if (
             observation.cancel_to_fill_ratio <= cfg.slow_cancel_to_fill_max
-            and observation.top_of_book_refresh_rate_hz
-            <= cfg.slow_refresh_rate_hz_max
-            and observation.avg_resting_size_usd
-            >= cfg.slow_resting_size_usd_min
+            and observation.top_of_book_refresh_rate_hz <= cfg.slow_refresh_rate_hz_max
+            and observation.avg_resting_size_usd >= cfg.slow_resting_size_usd_min
         ):
             # Bigger resting size = stronger signal; lower cancel/fill
             # and refresh = stronger signal too.
             resting_frac = (
-                observation.avg_resting_size_usd
-                - cfg.slow_resting_size_usd_min
+                observation.avg_resting_size_usd - cfg.slow_resting_size_usd_min
             ) / cfg.slow_resting_size_usd_min
             cancel_span = max(cfg.slow_cancel_to_fill_max, 1e-9)
             cancel_frac = (
@@ -350,8 +314,7 @@ class BehaviorPredictor:
             ) / cancel_span
             refresh_span = max(cfg.slow_refresh_rate_hz_max, 1e-9)
             refresh_frac = (
-                cfg.slow_refresh_rate_hz_max
-                - observation.top_of_book_refresh_rate_hz
+                cfg.slow_refresh_rate_hz_max - observation.top_of_book_refresh_rate_hz
             ) / refresh_span
             best_frac = max(resting_frac, cancel_frac, refresh_frac)
             confidence = _shape_confidence(best_frac, 1.0, floor, ceiling)
@@ -386,10 +349,7 @@ class BehaviorPredictor:
         if classification.archetype is OpponentArchetype.NOISE:
             confidence = self._config.noise_action_confidence
         else:
-            scaled = (
-                classification.confidence
-                * self._config.prediction_confidence_scale
-            )
+            scaled = classification.confidence * self._config.prediction_confidence_scale
             # ``classification.confidence`` is already in [0, 1] and
             # ``prediction_confidence_scale`` is in (0, 1] so the
             # product is in [0, 1] without explicit clamping. Clamp

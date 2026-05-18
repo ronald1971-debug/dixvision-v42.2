@@ -177,9 +177,7 @@ def test_each_mode_is_observably_distinct() -> None:
             eff.oversight_kind,
         )
         if key in seen:
-            raise AssertionError(
-                f"{mode.name} is behaviourally identical to {seen[key].name}"
-            )
+            raise AssertionError(f"{mode.name} is behaviourally identical to {seen[key].name}")
         seen[key] = mode
 
 

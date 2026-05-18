@@ -78,18 +78,10 @@ def test_higher_decay_higher_cost() -> None:
     # USD alive (cheap level 0). At decay=0.5/elapsed=10 only the
     # outer levels survive, so the same 5k order has to walk to
     # higher offsets and pay more.
-    s_low = _scenario(
-        decay_rate=0.05, elapsed_seconds=10.0, order_size_usd=5_000.0
-    )
-    s_high = _scenario(
-        decay_rate=0.5, elapsed_seconds=10.0, order_size_usd=5_000.0
-    )
-    cost_low = sum(
-        -runner.step(seed=k, scenario=s_low).pnl_usd for k in range(20)
-    )
-    cost_high = sum(
-        -runner.step(seed=k, scenario=s_high).pnl_usd for k in range(20)
-    )
+    s_low = _scenario(decay_rate=0.05, elapsed_seconds=10.0, order_size_usd=5_000.0)
+    s_high = _scenario(decay_rate=0.5, elapsed_seconds=10.0, order_size_usd=5_000.0)
+    cost_low = sum(-runner.step(seed=k, scenario=s_low).pnl_usd for k in range(20))
+    cost_high = sum(-runner.step(seed=k, scenario=s_high).pnl_usd for k in range(20))
     assert cost_high > cost_low
 
 
@@ -224,9 +216,7 @@ def test_invalid_config_rejected() -> None:
 def test_distribution_over_seeds_varies() -> None:
     s = _scenario()
     runner = OrderBookDecay()
-    pnls = {
-        runner.step(seed=k, scenario=s).pnl_usd for k in range(50)
-    }
+    pnls = {runner.step(seed=k, scenario=s).pnl_usd for k in range(50)}
     # 5% jitter over 50 seeds must produce > 1 distinct outcome.
     assert len(pnls) >= 5
 

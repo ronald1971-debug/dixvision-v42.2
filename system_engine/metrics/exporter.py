@@ -173,18 +173,14 @@ def _validate_metric_value(value: object, *, field_name: str) -> float:
     if isinstance(value, bool):
         raise TypeError(f"{field_name} must be numeric, got bool")
     if not isinstance(value, (int, float)):
-        raise TypeError(
-            f"{field_name} must be numeric, got {type(value).__name__!r}"
-        )
+        raise TypeError(f"{field_name} must be numeric, got {type(value).__name__!r}")
     numeric = float(value)
     if numeric != numeric:  # NaN check
         raise ValueError(f"{field_name} must be finite, got NaN")
     if numeric in (float("inf"), float("-inf")):
         raise ValueError(f"{field_name} must be finite, got {value!r}")
     if abs(numeric) > MAX_METRIC_VALUE:
-        raise ValueError(
-            f"{field_name} magnitude exceeds {MAX_METRIC_VALUE}: {numeric!r}"
-        )
+        raise ValueError(f"{field_name} magnitude exceeds {MAX_METRIC_VALUE}: {numeric!r}")
     return numeric
 
 
@@ -197,26 +193,19 @@ def _validate_metric_value(value: object, *, field_name: str) -> float:
 class MetricsSink(Protocol):
     """Lower-level write surface for the six required metric series."""
 
-    def inc_executions(self, *, symbol: str, side: str, status: str) -> None:
-        ...
+    def inc_executions(self, *, symbol: str, side: str, status: str) -> None: ...
 
-    def set_pnl_usd(self, *, symbol: str, value: float) -> None:
-        ...
+    def set_pnl_usd(self, *, symbol: str, value: float) -> None: ...
 
-    def observe_execution_latency_ns(self, value: float) -> None:
-        ...
+    def observe_execution_latency_ns(self, value: float) -> None: ...
 
-    def inc_hazard(self, *, kind: str, severity: str) -> None:
-        ...
+    def inc_hazard(self, *, kind: str, severity: str) -> None: ...
 
-    def inc_governance(self, *, verdict: str) -> None:
-        ...
+    def inc_governance(self, *, verdict: str) -> None: ...
 
-    def set_health_state(self, value: float) -> None:
-        ...
+    def set_health_state(self, value: float) -> None: ...
 
-    def render(self) -> bytes:
-        ...
+    def render(self) -> bytes: ...
 
 
 # ---------------------------------------------------------------------------
@@ -229,18 +218,14 @@ class MetricsSink(Protocol):
 class _CounterState:
     """Mutable counter state keyed by sorted (label_name, label_value)."""
 
-    samples: dict[tuple[tuple[str, str], ...], float] = dataclasses.field(
-        default_factory=dict
-    )
+    samples: dict[tuple[tuple[str, str], ...], float] = dataclasses.field(default_factory=dict)
 
 
 @dataclasses.dataclass(slots=True)
 class _GaugeState:
     """Mutable gauge state keyed by sorted (label_name, label_value)."""
 
-    samples: dict[tuple[tuple[str, str], ...], float] = dataclasses.field(
-        default_factory=dict
-    )
+    samples: dict[tuple[tuple[str, str], ...], float] = dataclasses.field(default_factory=dict)
 
 
 @dataclasses.dataclass(slots=True)
@@ -281,21 +266,14 @@ class InProcessMetricsSink:
         )
         if not buckets:
             raise ValueError("execution_latency_buckets_ns must be non-empty")
-        if any(
-            not isinstance(b, (int, float)) or isinstance(b, bool)
-            for b in buckets
-        ):
+        if any(not isinstance(b, (int, float)) or isinstance(b, bool) for b in buckets):
             raise TypeError("execution_latency_buckets_ns must be numeric")
         if any(b <= 0 for b in buckets):
-            raise ValueError(
-                "execution_latency_buckets_ns must be strictly positive"
-            )
+            raise ValueError("execution_latency_buckets_ns must be strictly positive")
         # buckets[1:] is intentionally one shorter than buckets.
         pairs = zip(buckets, buckets[1:])  # noqa: B905
         if any(b1 >= b2 for b1, b2 in pairs):
-            raise ValueError(
-                "execution_latency_buckets_ns must be strictly increasing"
-            )
+            raise ValueError("execution_latency_buckets_ns must be strictly increasing")
 
         self._lock = threading.Lock()
         self._counters: dict[str, _CounterState] = {
@@ -323,9 +301,7 @@ class InProcessMetricsSink:
             PNL_USD: "Realised PnL in USD by symbol.",
             EXECUTION_LATENCY_NS: "Execution latency distribution (ns).",
             HAZARD_EVENTS_TOTAL: "Total hazard events by kind/severity.",
-            GOVERNANCE_APPROVALS_TOTAL: (
-                "Total governance approvals by verdict."
-            ),
+            GOVERNANCE_APPROVALS_TOTAL: ("Total governance approvals by verdict."),
             HEALTH_STATE: "Aggregated system health state in [0, 1].",
         }
 
@@ -333,9 +309,7 @@ class InProcessMetricsSink:
     # Write surface
     # ------------------------------------------------------------------
 
-    def inc_executions(
-        self, *, symbol: str, side: str, status: str
-    ) -> None:
+    def inc_executions(self, *, symbol: str, side: str, status: str) -> None:
         key = (
             ("side", sanitize_label_value(side)),
             ("status", sanitize_label_value(status)),
@@ -352,14 +326,9 @@ class InProcessMetricsSink:
             self._gauges[PNL_USD].samples[key] = validated
 
     def observe_execution_latency_ns(self, value: float) -> None:
-        validated = _validate_metric_value(
-            value, field_name="execution_latency_ns"
-        )
+        validated = _validate_metric_value(value, field_name="execution_latency_ns")
         if validated < 0:
-            raise ValueError(
-                "execution_latency_ns must be non-negative, "
-                f"got {validated!r}"
-            )
+            raise ValueError(f"execution_latency_ns must be non-negative, got {validated!r}")
         with self._lock:
             histogram = self._histograms[EXECUTION_LATENCY_NS]
             histogram.count += 1
@@ -386,9 +355,7 @@ class InProcessMetricsSink:
     def set_health_state(self, value: float) -> None:
         validated = _validate_metric_value(value, field_name="health_state")
         if not 0.0 <= validated <= 1.0:
-            raise ValueError(
-                f"health_state must be in [0, 1], got {validated!r}"
-            )
+            raise ValueError(f"health_state must be in [0, 1], got {validated!r}")
         with self._lock:
             self._gauges[HEALTH_STATE].samples[()] = validated
 
@@ -547,12 +514,8 @@ def _render_histogram_block(
     count: int = state["count"]
     for upper_bound, bucket_count in zip(buckets, bucket_counts, strict=True):
         upper_text = repr(float(upper_bound))
-        lines.append(
-            f'{name}_bucket{{le="{upper_text}"}} {_format_value(float(bucket_count))}'
-        )
-    lines.append(
-        f'{name}_bucket{{le="+Inf"}} {_format_value(float(count))}'
-    )
+        lines.append(f'{name}_bucket{{le="{upper_text}"}} {_format_value(float(bucket_count))}')
+    lines.append(f'{name}_bucket{{le="+Inf"}} {_format_value(float(count))}')
     lines.append(f"{name}_sum {_format_value(sum_value)}")
     lines.append(f"{name}_count {_format_value(float(count))}")
     return lines
@@ -678,9 +641,7 @@ class _PrometheusMetricsSink:
         self._health_gauge = health_gauge
         self._generate_latest = generate_latest
 
-    def inc_executions(
-        self, *, symbol: str, side: str, status: str
-    ) -> None:
+    def inc_executions(self, *, symbol: str, side: str, status: str) -> None:
         self._executions_counter.labels(
             symbol=sanitize_label_value(symbol),
             side=sanitize_label_value(side),
@@ -689,19 +650,12 @@ class _PrometheusMetricsSink:
 
     def set_pnl_usd(self, *, symbol: str, value: float) -> None:
         validated = _validate_metric_value(value, field_name="pnl_usd")
-        self._pnl_gauge.labels(
-            symbol=sanitize_label_value(symbol)
-        ).set(validated)
+        self._pnl_gauge.labels(symbol=sanitize_label_value(symbol)).set(validated)
 
     def observe_execution_latency_ns(self, value: float) -> None:
-        validated = _validate_metric_value(
-            value, field_name="execution_latency_ns"
-        )
+        validated = _validate_metric_value(value, field_name="execution_latency_ns")
         if validated < 0:
-            raise ValueError(
-                "execution_latency_ns must be non-negative, "
-                f"got {validated!r}"
-            )
+            raise ValueError(f"execution_latency_ns must be non-negative, got {validated!r}")
         self._latency_histogram.observe(validated)
 
     def inc_hazard(self, *, kind: str, severity: str) -> None:
@@ -711,16 +665,12 @@ class _PrometheusMetricsSink:
         ).inc()
 
     def inc_governance(self, *, verdict: str) -> None:
-        self._governance_counter.labels(
-            verdict=sanitize_label_value(verdict)
-        ).inc()
+        self._governance_counter.labels(verdict=sanitize_label_value(verdict)).inc()
 
     def set_health_state(self, value: float) -> None:
         validated = _validate_metric_value(value, field_name="health_state")
         if not 0.0 <= validated <= 1.0:
-            raise ValueError(
-                f"health_state must be in [0, 1], got {validated!r}"
-            )
+            raise ValueError(f"health_state must be in [0, 1], got {validated!r}")
         self._health_gauge.set(validated)
 
     def render(self) -> bytes:
@@ -749,10 +699,7 @@ class MetricsExporter:
 
     def __init__(self, sink: MetricsSink) -> None:
         if not isinstance(sink, MetricsSink):
-            raise TypeError(
-                "sink must implement MetricsSink, got "
-                f"{type(sink).__name__!r}"
-            )
+            raise TypeError(f"sink must implement MetricsSink, got {type(sink).__name__!r}")
         self._sink = sink
 
     @property
@@ -781,18 +728,11 @@ class MetricsExporter:
         """
 
         if not isinstance(event, ExecutionEvent):
-            raise TypeError(
-                "event must be ExecutionEvent, got "
-                f"{type(event).__name__!r}"
-            )
+            raise TypeError(f"event must be ExecutionEvent, got {type(event).__name__!r}")
 
-        side_text = (
-            event.side.value if isinstance(event.side, Side) else str(event.side)
-        )
+        side_text = event.side.value if isinstance(event.side, Side) else str(event.side)
         status_text = (
-            event.status.value
-            if isinstance(event.status, ExecutionStatus)
-            else str(event.status)
+            event.status.value if isinstance(event.status, ExecutionStatus) else str(event.status)
         )
 
         self._sink.inc_executions(
@@ -811,10 +751,7 @@ class MetricsExporter:
         """Project a :class:`HazardEvent` onto the hazard counter."""
 
         if not isinstance(event, HazardEvent):
-            raise TypeError(
-                "event must be HazardEvent, got "
-                f"{type(event).__name__!r}"
-            )
+            raise TypeError(f"event must be HazardEvent, got {type(event).__name__!r}")
         severity_text = (
             event.severity.value
             if isinstance(event.severity, HazardSeverity)
@@ -830,10 +767,7 @@ class MetricsExporter:
         """
 
         if not isinstance(decision, GovernanceDecision):
-            raise TypeError(
-                "decision must be GovernanceDecision, got "
-                f"{type(decision).__name__!r}"
-            )
+            raise TypeError(f"decision must be GovernanceDecision, got {type(decision).__name__!r}")
         verdict = "APPROVED" if decision.approved else "REJECTED"
         self._sink.inc_governance(verdict=verdict)
 

@@ -176,30 +176,18 @@ class SandboxConfig:
                 f"{MAX_TOTAL_TIMESTEPS!r}, got {self.total_timesteps!r}"
             )
         if self.n_steps <= 0:
-            raise ValueError(
-                "SandboxConfig.n_steps must be positive, got "
-                f"{self.n_steps!r}"
-            )
-        if (
-            not math.isfinite(self.learning_rate)
-            or self.learning_rate <= 0.0
-        ):
+            raise ValueError(f"SandboxConfig.n_steps must be positive, got {self.n_steps!r}")
+        if not math.isfinite(self.learning_rate) or self.learning_rate <= 0.0:
             raise ValueError(
                 "SandboxConfig.learning_rate must be a positive finite "
                 f"number, got {self.learning_rate!r}"
             )
-        if (
-            not math.isfinite(self.gamma)
-            or not (0.0 < self.gamma <= 1.0)
-        ):
+        if not math.isfinite(self.gamma) or not (0.0 < self.gamma <= 1.0):
             raise ValueError(
-                "SandboxConfig.gamma must be a finite number in "
-                f"(0.0, 1.0], got {self.gamma!r}"
+                f"SandboxConfig.gamma must be a finite number in (0.0, 1.0], got {self.gamma!r}"
             )
         if not self.target_strategy_id:
-            raise ValueError(
-                "SandboxConfig.target_strategy_id must be non-empty"
-            )
+            raise ValueError("SandboxConfig.target_strategy_id must be non-empty")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -233,10 +221,7 @@ class SandboxMetrics:
                 "SandboxMetrics.mean_episode_reward must be finite, "
                 f"got {self.mean_episode_reward!r}"
             )
-        if (
-            not math.isfinite(self.mean_episode_length)
-            or self.mean_episode_length < 0.0
-        ):
+        if not math.isfinite(self.mean_episode_length) or self.mean_episode_length < 0.0:
             raise ValueError(
                 "SandboxMetrics.mean_episode_length must be a "
                 "non-negative finite number, got "
@@ -272,8 +257,7 @@ class SandboxResult:
             )
         if not isinstance(self.metrics, SandboxMetrics):
             raise TypeError(
-                "SandboxResult.metrics must be a SandboxMetrics, got "
-                f"{type(self.metrics).__name__}"
+                f"SandboxResult.metrics must be a SandboxMetrics, got {type(self.metrics).__name__}"
             )
         if len(self.policy_digest) != 16:
             raise ValueError(
@@ -282,8 +266,7 @@ class SandboxResult:
             )
         if not all(c in "0123456789abcdef" for c in self.policy_digest):
             raise ValueError(
-                "SandboxResult.policy_digest must be lowercase hex, "
-                f"got {self.policy_digest!r}"
+                f"SandboxResult.policy_digest must be lowercase hex, got {self.policy_digest!r}"
             )
 
 
@@ -297,9 +280,7 @@ class SandboxCallback(Protocol):
     """SB3-shape lifecycle callback (collapsed into one Protocol so the
     AST tests can pin "no top-level SB3 import")."""
 
-    def on_training_start(
-        self, *, ts_ns: int, total_timesteps: int
-    ) -> None: ...
+    def on_training_start(self, *, ts_ns: int, total_timesteps: int) -> None: ...
 
     def on_step(
         self,
@@ -320,9 +301,7 @@ class SandboxCallback(Protocol):
         episode_length: int,
     ) -> None: ...
 
-    def on_training_end(
-        self, *, ts_ns: int, metrics: SandboxMetrics
-    ) -> None: ...
+    def on_training_end(self, *, ts_ns: int, metrics: SandboxMetrics) -> None: ...
 
 
 @runtime_checkable
@@ -430,9 +409,7 @@ def _compute_policy_digest(
 
     # ``repr`` of every numeric so cross-host float formatting agrees;
     # sorted ``meta`` items so dict insertion order is irrelevant.
-    meta_pairs = "|".join(
-        f"{k}={v}" for k, v in sorted(config.meta.items())
-    )
+    meta_pairs = "|".join(f"{k}={v}" for k, v in sorted(config.meta.items()))
     payload = "|".join(
         (
             f"proposal_id={proposal_id}",
@@ -502,8 +479,7 @@ class EvolutionSandbox:
             )
         if not isinstance(config, SandboxConfig):
             raise TypeError(
-                "EvolutionSandbox.train.config must be SandboxConfig, "
-                f"got {type(config).__name__}"
+                f"EvolutionSandbox.train.config must be SandboxConfig, got {type(config).__name__}"
             )
         if not isinstance(episode_config, EpisodeConfig):
             raise TypeError(
@@ -511,29 +487,19 @@ class EvolutionSandbox:
                 f"EpisodeConfig, got {type(episode_config).__name__}"
             )
         if not isinstance(seed, int) or isinstance(seed, bool):
-            raise TypeError(
-                "EvolutionSandbox.train.seed must be int, got "
-                f"{type(seed).__name__}"
-            )
+            raise TypeError(f"EvolutionSandbox.train.seed must be int, got {type(seed).__name__}")
         if seed < 0:
             raise SandboxConfigError(
-                f"EvolutionSandbox.train.seed must be non-negative, "
-                f"got {seed!r}"
+                f"EvolutionSandbox.train.seed must be non-negative, got {seed!r}"
             )
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
-            raise TypeError(
-                "EvolutionSandbox.train.ts_ns must be int, got "
-                f"{type(ts_ns).__name__}"
-            )
+            raise TypeError(f"EvolutionSandbox.train.ts_ns must be int, got {type(ts_ns).__name__}")
         if ts_ns < 0:
             raise SandboxConfigError(
-                f"EvolutionSandbox.train.ts_ns must be non-negative, "
-                f"got {ts_ns!r}"
+                f"EvolutionSandbox.train.ts_ns must be non-negative, got {ts_ns!r}"
             )
         if not proposal_id:
-            raise SandboxConfigError(
-                "EvolutionSandbox.train.proposal_id must be non-empty"
-            )
+            raise SandboxConfigError("EvolutionSandbox.train.proposal_id must be non-empty")
         if len(proposal_id) > MAX_PROPOSAL_ID_LEN:
             raise SandboxConfigError(
                 "EvolutionSandbox.train.proposal_id must be <= "
@@ -557,9 +523,7 @@ class EvolutionSandbox:
             )
 
         env = DIXStrategyEnv(dynamics)
-        cb.on_training_start(
-            ts_ns=ts_ns, total_timesteps=config.total_timesteps
-        )
+        cb.on_training_start(ts_ns=ts_ns, total_timesteps=config.total_timesteps)
         metrics = self.trainer.train(
             env,
             episode_config=episode_config,
@@ -570,8 +534,7 @@ class EvolutionSandbox:
         )
         if not isinstance(metrics, SandboxMetrics):
             raise TypeError(
-                "PolicyTrainer.train must return SandboxMetrics, got "
-                f"{type(metrics).__name__}"
+                f"PolicyTrainer.train must return SandboxMetrics, got {type(metrics).__name__}"
             )
         cb.on_training_end(ts_ns=ts_ns, metrics=metrics)
 
@@ -727,12 +690,8 @@ def sb3_ppo_trainer(
             episodes = 0
             if logger is not None:
                 name_to_value = getattr(logger, "name_to_value", {})
-                mean_reward = float(
-                    name_to_value.get("rollout/ep_rew_mean", 0.0)
-                )
-                mean_length = float(
-                    name_to_value.get("rollout/ep_len_mean", 0.0)
-                )
+                mean_reward = float(name_to_value.get("rollout/ep_rew_mean", 0.0))
+                mean_length = float(name_to_value.get("rollout/ep_len_mean", 0.0))
             best_reward = mean_reward
 
             # Persist the trained policy bytes via the operator-

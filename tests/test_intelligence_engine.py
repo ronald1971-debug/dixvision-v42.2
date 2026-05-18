@@ -116,9 +116,7 @@ def test_intelligence_engine_no_plugins_emits_nothing():
 
 def test_intelligence_engine_runs_loaded_plugin():
     engine = IntelligenceEngine(
-        microstructure_plugins=(
-            MicrostructureV1(lifecycle=PluginLifecycle.ACTIVE),
-        )
+        microstructure_plugins=(MicrostructureV1(lifecycle=PluginLifecycle.ACTIVE),)
     )
     out = engine.on_market(_tick("EURUSD", 99.99, 100.01, 100.10))
     assert len(out) == 1
@@ -128,9 +126,7 @@ def test_intelligence_engine_runs_loaded_plugin():
 
 def test_intelligence_engine_skips_disabled_plugins():
     engine = IntelligenceEngine(
-        microstructure_plugins=(
-            MicrostructureV1(lifecycle=PluginLifecycle.DISABLED),
-        )
+        microstructure_plugins=(MicrostructureV1(lifecycle=PluginLifecycle.DISABLED),)
     )
     assert engine.on_market(_tick("EURUSD", 99.99, 100.01, 100.10)) == ()
 
@@ -143,9 +139,7 @@ def test_intelligence_engine_process_passthrough_for_signals():
 
 def test_intelligence_engine_process_ignores_non_signal_events():
     engine = IntelligenceEngine()
-    haz = HazardEvent(
-        ts_ns=11, code="K", severity=HazardSeverity.LOW, source="system"
-    )
+    haz = HazardEvent(ts_ns=11, code="K", severity=HazardSeverity.LOW, source="system")
     assert engine.process(haz) == ()
 
 
@@ -202,9 +196,7 @@ def test_end_to_end_tick_drives_filled_execution_when_active():
     )
     execution = ExecutionEngine()
 
-    tick = MarketTick(
-        ts_ns=200, symbol="BTCUSDT", bid=49_990.0, ask=50_010.0, last=50_050.0
-    )
+    tick = MarketTick(ts_ns=200, symbol="BTCUSDT", bid=49_990.0, ask=50_010.0, last=50_050.0)
     execution.on_market(tick)
     signals = intel.on_market(tick)
     assert len(signals) == 1
@@ -226,9 +218,7 @@ def test_end_to_end_replay_determinism():
 
     def run() -> tuple[SignalEvent, ...]:
         intel = IntelligenceEngine(
-            microstructure_plugins=(
-                MicrostructureV1(lifecycle=PluginLifecycle.ACTIVE),
-            )
+            microstructure_plugins=(MicrostructureV1(lifecycle=PluginLifecycle.ACTIVE),)
         )
         out: list[SignalEvent] = []
         for i in range(5):

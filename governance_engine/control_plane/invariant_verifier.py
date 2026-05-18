@@ -153,19 +153,12 @@ class SolverResult:
 
     def __post_init__(self) -> None:
         if not isinstance(self.verdict, SolverVerdict):
-            raise TypeError(
-                "SolverResult.verdict must be a SolverVerdict"
-            )
+            raise TypeError("SolverResult.verdict must be a SolverVerdict")
         for k, v in self.counterexample.items():
             if not isinstance(k, str) or not k:
-                raise ValueError(
-                    "SolverResult.counterexample keys must be"
-                    " non-empty str"
-                )
+                raise ValueError("SolverResult.counterexample keys must be non-empty str")
             if not isinstance(v, str):
-                raise TypeError(
-                    "SolverResult.counterexample values must be str"
-                )
+                raise TypeError("SolverResult.counterexample values must be str")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -191,28 +184,16 @@ class VerificationReport:
 
     def __post_init__(self) -> None:
         if not isinstance(self.invariant_id, str):
-            raise TypeError(
-                "VerificationReport.invariant_id must be str"
-            )
+            raise TypeError("VerificationReport.invariant_id must be str")
         if not self.invariant_id:
-            raise ValueError(
-                "VerificationReport.invariant_id must be non-empty"
-            )
+            raise ValueError("VerificationReport.invariant_id must be non-empty")
         if not isinstance(self.status, VerificationStatus):
-            raise TypeError(
-                "VerificationReport.status must be a VerificationStatus"
-            )
+            raise TypeError("VerificationReport.status must be a VerificationStatus")
         for k, v in self.counterexample.items():
             if not isinstance(k, str) or not k:
-                raise ValueError(
-                    "VerificationReport.counterexample keys must be"
-                    " non-empty str"
-                )
+                raise ValueError("VerificationReport.counterexample keys must be non-empty str")
             if not isinstance(v, str):
-                raise TypeError(
-                    "VerificationReport.counterexample values"
-                    " must be str"
-                )
+                raise TypeError("VerificationReport.counterexample values must be str")
 
     @property
     def holds(self) -> bool:
@@ -241,36 +222,18 @@ class PositionLimitProblem:
     exposure_cap: float
 
     def __post_init__(self) -> None:
-        if not isinstance(self.max_position, (int, float)) or isinstance(
-            self.max_position, bool
-        ):
-            raise TypeError(
-                "PositionLimitProblem.max_position must be numeric"
-            )
+        if not isinstance(self.max_position, (int, float)) or isinstance(self.max_position, bool):
+            raise TypeError("PositionLimitProblem.max_position must be numeric")
         if self.max_position <= 0.0:
-            raise ValueError(
-                "PositionLimitProblem.max_position must be positive"
-            )
-        if not isinstance(self.max_leverage, (int, float)) or isinstance(
-            self.max_leverage, bool
-        ):
-            raise TypeError(
-                "PositionLimitProblem.max_leverage must be numeric"
-            )
+            raise ValueError("PositionLimitProblem.max_position must be positive")
+        if not isinstance(self.max_leverage, (int, float)) or isinstance(self.max_leverage, bool):
+            raise TypeError("PositionLimitProblem.max_leverage must be numeric")
         if self.max_leverage < 1.0:
-            raise ValueError(
-                "PositionLimitProblem.max_leverage must be >= 1"
-            )
-        if not isinstance(self.exposure_cap, (int, float)) or isinstance(
-            self.exposure_cap, bool
-        ):
-            raise TypeError(
-                "PositionLimitProblem.exposure_cap must be numeric"
-            )
+            raise ValueError("PositionLimitProblem.max_leverage must be >= 1")
+        if not isinstance(self.exposure_cap, (int, float)) or isinstance(self.exposure_cap, bool):
+            raise TypeError("PositionLimitProblem.exposure_cap must be numeric")
         if self.exposure_cap <= 0.0:
-            raise ValueError(
-                "PositionLimitProblem.exposure_cap must be positive"
-            )
+            raise ValueError("PositionLimitProblem.exposure_cap must be positive")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -294,28 +257,18 @@ class AutonomyEscalationProblem:
 
     def __post_init__(self) -> None:
         if not self.mode_ranks:
-            raise ValueError(
-                "AutonomyEscalationProblem.mode_ranks must be"
-                " non-empty"
-            )
+            raise ValueError("AutonomyEscalationProblem.mode_ranks must be non-empty")
         ranks_sorted = tuple(sorted(set(self.mode_ranks)))
         if ranks_sorted != self.mode_ranks:
             raise ValueError(
-                "AutonomyEscalationProblem.mode_ranks must be"
-                " unique + sorted ascending"
+                "AutonomyEscalationProblem.mode_ranks must be unique + sorted ascending"
             )
         rank_set = set(self.mode_ranks)
         for src, dst in self.allowed_edges:
             if not isinstance(src, int) or isinstance(src, bool):
-                raise TypeError(
-                    "AutonomyEscalationProblem.allowed_edges entries"
-                    " must be int pairs"
-                )
+                raise TypeError("AutonomyEscalationProblem.allowed_edges entries must be int pairs")
             if not isinstance(dst, int) or isinstance(dst, bool):
-                raise TypeError(
-                    "AutonomyEscalationProblem.allowed_edges entries"
-                    " must be int pairs"
-                )
+                raise TypeError("AutonomyEscalationProblem.allowed_edges entries must be int pairs")
             if src not in rank_set or dst not in rank_set:
                 raise ValueError(
                     f"AutonomyEscalationProblem.allowed_edges"
@@ -348,41 +301,26 @@ class GovernanceBypassProblem:
 
     def __post_init__(self) -> None:
         if not self.nodes:
-            raise ValueError(
-                "GovernanceBypassProblem.nodes must be non-empty"
-            )
+            raise ValueError("GovernanceBypassProblem.nodes must be non-empty")
         nodes_sorted = tuple(sorted(set(self.nodes)))
         if nodes_sorted != self.nodes:
-            raise ValueError(
-                "GovernanceBypassProblem.nodes must be unique + sorted"
-            )
+            raise ValueError("GovernanceBypassProblem.nodes must be unique + sorted")
         gov_sorted = tuple(sorted(set(self.governance_nodes)))
         if gov_sorted != self.governance_nodes:
-            raise ValueError(
-                "GovernanceBypassProblem.governance_nodes must be"
-                " unique + sorted"
-            )
+            raise ValueError("GovernanceBypassProblem.governance_nodes must be unique + sorted")
         node_set = set(self.nodes)
         for g in self.governance_nodes:
             if g not in node_set:
-                raise ValueError(
-                    f"GovernanceBypassProblem.governance_nodes:"
-                    f" unknown node {g!r}"
-                )
+                raise ValueError(f"GovernanceBypassProblem.governance_nodes: unknown node {g!r}")
         for src, dst in self.edges:
             if src not in node_set or dst not in node_set:
                 raise ValueError(
-                    f"GovernanceBypassProblem.edges references unknown"
-                    f" node: ({src!r}, {dst!r})"
+                    f"GovernanceBypassProblem.edges references unknown node: ({src!r}, {dst!r})"
                 )
         if self.source not in node_set:
-            raise ValueError(
-                f"GovernanceBypassProblem.source unknown: {self.source!r}"
-            )
+            raise ValueError(f"GovernanceBypassProblem.source unknown: {self.source!r}")
         if self.sink not in node_set:
-            raise ValueError(
-                f"GovernanceBypassProblem.sink unknown: {self.sink!r}"
-            )
+            raise ValueError(f"GovernanceBypassProblem.sink unknown: {self.sink!r}")
         if self.source in set(self.governance_nodes):
             raise ValueError(
                 "GovernanceBypassProblem.source must not be a"
@@ -399,20 +337,11 @@ class GovernanceBypassProblem:
 class SMTBackend(Protocol):
     """Pluggable SMT backend behind :class:`InvariantVerifier`."""
 
-    def check_position_limit(
-        self, problem: PositionLimitProblem
-    ) -> SolverResult:
-        ...
+    def check_position_limit(self, problem: PositionLimitProblem) -> SolverResult: ...
 
-    def check_autonomy_escalation(
-        self, problem: AutonomyEscalationProblem
-    ) -> SolverResult:
-        ...
+    def check_autonomy_escalation(self, problem: AutonomyEscalationProblem) -> SolverResult: ...
 
-    def check_governance_bypass(
-        self, problem: GovernanceBypassProblem
-    ) -> SolverResult:
-        ...
+    def check_governance_bypass(self, problem: GovernanceBypassProblem) -> SolverResult: ...
 
 
 # --------------------------------------------------------------------
@@ -442,9 +371,7 @@ class InProcessSMTBackend:
 
     __slots__ = ()
 
-    def check_position_limit(
-        self, problem: PositionLimitProblem
-    ) -> SolverResult:
+    def check_position_limit(self, problem: PositionLimitProblem) -> SolverResult:
         # The invariant: forall p in [0, max_position], forall
         # l in [1, max_leverage], p * l <= exposure_cap.
         # Negation is satisfiable iff max_position * max_leverage
@@ -462,9 +389,7 @@ class InProcessSMTBackend:
             )
         return SolverResult(verdict=SolverVerdict.UNSAT)
 
-    def check_autonomy_escalation(
-        self, problem: AutonomyEscalationProblem
-    ) -> SolverResult:
+    def check_autonomy_escalation(self, problem: AutonomyEscalationProblem) -> SolverResult:
         # The invariant: every promotion edge steps exactly one rank.
         # Negation is satisfiable iff any allowed edge has
         # to_rank > from_rank + 1.
@@ -480,9 +405,7 @@ class InProcessSMTBackend:
                 )
         return SolverResult(verdict=SolverVerdict.UNSAT)
 
-    def check_governance_bypass(
-        self, problem: GovernanceBypassProblem
-    ) -> SolverResult:
+    def check_governance_bypass(self, problem: GovernanceBypassProblem) -> SolverResult:
         # The invariant: no path from source to sink that avoids
         # every governance node. Negation: BFS from source, skipping
         # governance nodes; if sink is reachable, a bypass exists.
@@ -558,9 +481,7 @@ def _sort_key(kv: tuple[str, str]) -> tuple[str, str]:
 def _sorted_meta(
     payload: Mapping[str, str],
 ) -> Mapping[str, str]:
-    return MappingProxyType(
-        dict(sorted(payload.items(), key=_sort_key))
-    )
+    return MappingProxyType(dict(sorted(payload.items(), key=_sort_key)))
 
 
 def _verdict_to_status(verdict: SolverVerdict) -> VerificationStatus:
@@ -580,10 +501,7 @@ def _detail_for_holds(invariant: str) -> str:
 
 
 def _detail_for_unknown(invariant: str) -> str:
-    return (
-        f"{invariant}: solver returned UNKNOWN — treat as VIOLATED"
-        f" until investigated"
-    )
+    return f"{invariant}: solver returned UNKNOWN — treat as VIOLATED until investigated"
 
 
 class InvariantVerifier:
@@ -690,25 +608,15 @@ def z3_backend_factory(
     """
 
     if not isinstance(timeout_ms, int) or timeout_ms <= 0:
-        raise ValueError(
-            "z3_backend_factory.timeout_ms must be a positive int"
-        )
-    if (
-        not isinstance(random_seed, int)
-        or random_seed < 0
-        or isinstance(random_seed, bool)
-    ):
-        raise ValueError(
-            "z3_backend_factory.random_seed must be a non-negative int"
-        )
+        raise ValueError("z3_backend_factory.timeout_ms must be a positive int")
+    if not isinstance(random_seed, int) or random_seed < 0 or isinstance(random_seed, bool):
+        raise ValueError("z3_backend_factory.random_seed must be a non-negative int")
 
     try:
         # Lazy import — never run at module load time.
         import z3  # type: ignore[import-not-found]
     except ImportError as exc:
-        raise RuntimeError(
-            "z3_backend_factory: z3-solver not installed"
-        ) from exc
+        raise RuntimeError("z3_backend_factory: z3-solver not installed") from exc
 
     return _Z3SMTBackend(
         z3_module=z3,
@@ -773,9 +681,7 @@ class _Z3SMTBackend:
             return SolverResult(verdict=SolverVerdict.UNSAT)
         return SolverResult(verdict=SolverVerdict.UNKNOWN)
 
-    def check_position_limit(
-        self, problem: PositionLimitProblem
-    ) -> SolverResult:
+    def check_position_limit(self, problem: PositionLimitProblem) -> SolverResult:
         z3 = self._z3
         solver = self._new_solver()
         position = z3.Real("position")
@@ -788,27 +694,22 @@ class _Z3SMTBackend:
         solver.add(position * leverage > problem.exposure_cap)
         return self._project_verdict(solver, ("leverage", "position"))
 
-    def check_autonomy_escalation(
-        self, problem: AutonomyEscalationProblem
-    ) -> SolverResult:
+    def check_autonomy_escalation(self, problem: AutonomyEscalationProblem) -> SolverResult:
         z3 = self._z3
         solver = self._new_solver()
         from_rank = z3.Int("from_rank")
         to_rank = z3.Int("to_rank")
-        edge_disjuncts = z3.Or(
-            *[
-                z3.And(from_rank == src, to_rank == dst)
-                for src, dst in problem.allowed_edges
-            ]
-        ) if problem.allowed_edges else z3.BoolVal(False)
+        edge_disjuncts = (
+            z3.Or(*[z3.And(from_rank == src, to_rank == dst) for src, dst in problem.allowed_edges])
+            if problem.allowed_edges
+            else z3.BoolVal(False)
+        )
         solver.add(edge_disjuncts)
         # Violation: it's a promotion that skips a rank.
         solver.add(to_rank > from_rank + 1)
         return self._project_verdict(solver, ("from_rank", "to_rank"))
 
-    def check_governance_bypass(
-        self, problem: GovernanceBypassProblem
-    ) -> SolverResult:
+    def check_governance_bypass(self, problem: GovernanceBypassProblem) -> SolverResult:
         # Z3 graph reachability via bounded-step encoding. The
         # bypass query is decidable in pure-Python with BFS; we
         # delegate to InProcess for determinism + speed. The real

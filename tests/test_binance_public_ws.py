@@ -46,10 +46,7 @@ from ui.feeds.runner import FeedRunner
 
 def test_make_combined_stream_url_basic() -> None:
     url = make_combined_stream_url(["BTCUSDT", "ETHUSDT"])
-    assert url == (
-        f"{BINANCE_PUBLIC_WS_BASE}/stream"
-        "?streams=btcusdt@ticker/ethusdt@ticker"
-    )
+    assert url == (f"{BINANCE_PUBLIC_WS_BASE}/stream?streams=btcusdt@ticker/ethusdt@ticker")
 
 
 def test_make_combined_stream_url_lowercases_and_trims() -> None:
@@ -445,9 +442,7 @@ def test_runner_start_during_pump_init_does_not_spawn_orphan_thread() -> None:
     def _idle() -> None:
         block.wait(timeout=5.0)
 
-    fake_thread = threading.Thread(
-        target=_idle, name="bug0001-fake-pump-init", daemon=True
-    )
+    fake_thread = threading.Thread(target=_idle, name="bug0001-fake-pump-init", daemon=True)
     fake_thread.start()
     try:
         # Reach into the runner to mirror exactly the window the bug

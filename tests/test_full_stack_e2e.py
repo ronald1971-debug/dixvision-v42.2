@@ -94,9 +94,7 @@ def test_post_signal_writes_signal_audit_row(client):
     # paired EXECUTION_AUDIT row.
     response_executions = body.get("executions", [])
     if response_executions:
-        assert (
-            after_execution >= before_execution + len(response_executions)
-        ), (
+        assert after_execution >= before_execution + len(response_executions), (
             "POST /api/signal returned executions but at least one "
             "EXECUTION_AUDIT row is missing from the authority ledger"
         )
@@ -143,9 +141,7 @@ def test_post_tick_writes_audit_rows_for_emitted_events(client):
         f"only gained {after_signal - before_signal} SIGNAL_AUDIT "
         "rows; the intelligence -> governance audit path regressed."
     )
-    assert (
-        after_execution - before_execution >= len(response_executions)
-    ), (
+    assert after_execution - before_execution >= len(response_executions), (
         "POST /api/tick emitted "
         f"{len(response_executions)} executions but the authority "
         "ledger only gained "
@@ -201,10 +197,8 @@ def test_full_stack_e2e_signal_then_tick(client):
     body = events.json()
     kinds = [event["kind"] for event in body["events"]]
     assert "MARKET_TICK" in kinds, (
-        "POST /api/tick did not append a MARKET_TICK to the operator "
-        "event ring"
+        "POST /api/tick did not append a MARKET_TICK to the operator event ring"
     )
     assert any(kind == "SIGNAL_EVENT" for kind in kinds), (
-        "POST /api/signal did not append a SIGNAL_EVENT to the "
-        "operator event ring"
+        "POST /api/signal did not append a SIGNAL_EVENT to the operator event ring"
     )

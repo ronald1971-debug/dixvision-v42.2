@@ -260,9 +260,7 @@ def test_confidence_components_surface_in_output() -> None:
     assert out.confidence_components.strength == pytest.approx(0.9)
     assert out.confidence_components.signal_count == 4
     # Policy sees the composite confidence (modulo safety_modifier=1.0 here).
-    assert out.primary_decision.confidence == pytest.approx(
-        out.confidence_components.composite
-    )
+    assert out.primary_decision.confidence == pytest.approx(out.confidence_components.composite)
 
 
 def test_sizer_kelly_cap_flows_through_policy() -> None:

@@ -124,15 +124,11 @@ def test_binding_rejects_invalid_inputs(kwargs, match):
 
 
 def test_pearson_perfect_positive():
-    assert _pearson([1.0, 2.0, 3.0, 4.0], [10.0, 20.0, 30.0, 40.0]) == pytest.approx(
-        1.0, abs=1e-12
-    )
+    assert _pearson([1.0, 2.0, 3.0, 4.0], [10.0, 20.0, 30.0, 40.0]) == pytest.approx(1.0, abs=1e-12)
 
 
 def test_pearson_perfect_negative():
-    assert _pearson([1.0, 2.0, 3.0, 4.0], [4.0, 3.0, 2.0, 1.0]) == pytest.approx(
-        -1.0, abs=1e-12
-    )
+    assert _pearson([1.0, 2.0, 3.0, 4.0], [4.0, 3.0, 2.0, 1.0]) == pytest.approx(-1.0, abs=1e-12)
 
 
 def test_pearson_zero_variance_returns_none():
@@ -427,12 +423,8 @@ def test_replay_determinism():
     breakdowns = _perfectly_positive_window()
     bindings = (_binding(),)
     cfg = _cfg()
-    a = propose_weight_updates(
-        ts_ns=10**9, breakdowns=breakdowns, bindings=bindings, config=cfg
-    )
-    b = propose_weight_updates(
-        ts_ns=10**9, breakdowns=breakdowns, bindings=bindings, config=cfg
-    )
+    a = propose_weight_updates(ts_ns=10**9, breakdowns=breakdowns, bindings=bindings, config=cfg)
+    b = propose_weight_updates(ts_ns=10**9, breakdowns=breakdowns, bindings=bindings, config=cfg)
     assert a == b
 
 

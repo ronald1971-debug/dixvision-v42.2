@@ -187,9 +187,7 @@ def test_redact_passthrough_when_no_key_field() -> None:
         ("2024", "A01", "2024-12-01"),
     ],
 )
-def test_period_to_date_known_codes(
-    year: str, period: str, expected: str
-) -> None:
+def test_period_to_date_known_codes(year: str, period: str, expected: str) -> None:
     assert _period_to_observation_date(year, period) == expected
 
 
@@ -404,9 +402,9 @@ def test_parse_no_results_key_returns_empty() -> None:
 
 
 def test_parse_series_not_list_returns_empty() -> None:
-    payload = json.dumps(
-        {"status": "REQUEST_SUCCEEDED", "Results": {"series": "x"}}
-    ).encode("utf-8")
+    payload = json.dumps({"status": "REQUEST_SUCCEEDED", "Results": {"series": "x"}}).encode(
+        "utf-8"
+    )
     assert parse_bls_payload(payload, ts_ns=1) == ()
 
 
@@ -419,9 +417,7 @@ def test_parse_skips_non_dict_series_entry() -> None:
                     "not-a-dict",
                     {
                         "seriesID": "CPIAUCSL",
-                        "data": [
-                            {"year": "2024", "period": "M01", "value": "1.0"}
-                        ],
+                        "data": [{"year": "2024", "period": "M01", "value": "1.0"}],
                     },
                 ]
             },

@@ -143,9 +143,7 @@ def test_canonical_row_bytes_form() -> None:
         payload={"to": "PAPER"},
         prev_hash=GENESIS_PREV_HASH,
     )
-    expected = (
-        f"0\x1e123\x1eMODE\x1eto=PAPER\x1e{GENESIS_PREV_HASH}"
-    ).encode()
+    expected = (f"0\x1e123\x1eMODE\x1eto=PAPER\x1e{GENESIS_PREV_HASH}").encode()
     assert body == expected
 
 
@@ -219,9 +217,7 @@ def test_writer_compat_row_bytes_match() -> None:
 def test_writer_compat_chain_hash_matches() -> None:
     import hashlib
 
-    body = canonical_row_bytes(
-        0, 1_000_000, "MODE", {"to": "PAPER"}, GENESIS_PREV_HASH
-    )
+    body = canonical_row_bytes(0, 1_000_000, "MODE", {"to": "PAPER"}, GENESIS_PREV_HASH)
     mine = compute_chain_hash(GENESIS_PREV_HASH, body)
     theirs = hashlib.sha256(GENESIS_PREV_HASH.encode("ascii") + body).hexdigest()
     assert mine == theirs
@@ -326,9 +322,7 @@ def test_verify_entries_single_genesis_row_is_ok() -> None:
 
 
 def test_verify_entries_long_chain_is_ok() -> None:
-    chain = _build_chain(
-        [(1_000 + i, "MODE", {"to": "PAPER", "step": str(i)}) for i in range(50)]
-    )
+    chain = _build_chain([(1_000 + i, "MODE", {"to": "PAPER", "step": str(i)}) for i in range(50)])
     r = verify_entries(chain)
     assert r.ok
     assert r.total == 50
@@ -358,9 +352,7 @@ def test_verify_detects_bad_genesis() -> None:
 
 
 def test_verify_detects_bad_prev_hash() -> None:
-    chain = _build_chain(
-        [(1_000, "MODE", {"to": "PAPER"}), (2_000, "STRATEGY", {"id": "s1"})]
-    )
+    chain = _build_chain([(1_000, "MODE", {"to": "PAPER"}), (2_000, "STRATEGY", {"id": "s1"})])
     bad = list(chain)
     bad[1] = LedgerEntry(
         seq=chain[1].seq,
@@ -395,9 +387,7 @@ def test_verify_detects_payload_tamper() -> None:
 
 
 def test_verify_detects_kind_tamper() -> None:
-    chain = _build_chain(
-        [(1_000, "MODE", {"to": "PAPER"}), (2_000, "STRATEGY", {"id": "s1"})]
-    )
+    chain = _build_chain([(1_000, "MODE", {"to": "PAPER"}), (2_000, "STRATEGY", {"id": "s1"})])
     bad = list(chain)
     bad[1] = LedgerEntry(
         seq=chain[1].seq,
@@ -432,9 +422,7 @@ def test_verify_detects_ts_tamper() -> None:
 
 
 def test_verify_detects_seq_gap() -> None:
-    chain = _build_chain(
-        [(1_000, "MODE", {"to": "PAPER"}), (2_000, "STRATEGY", {"id": "s1"})]
-    )
+    chain = _build_chain([(1_000, "MODE", {"to": "PAPER"}), (2_000, "STRATEGY", {"id": "s1"})])
     bad = list(chain)
     bad[1] = LedgerEntry(
         seq=5,
@@ -620,9 +608,7 @@ def _write_sqlite_chain(
 
 
 def test_verify_sqlite_clean_chain(tmp_path: Path) -> None:
-    chain = _build_chain(
-        [(1_000 + i, "MODE", {"to": "PAPER", "step": str(i)}) for i in range(20)]
-    )
+    chain = _build_chain([(1_000 + i, "MODE", {"to": "PAPER", "step": str(i)}) for i in range(20)])
     db = tmp_path / "ledger.sqlite"
     _write_sqlite_chain(db, chain)
     r = verify_sqlite(db)
@@ -631,9 +617,7 @@ def test_verify_sqlite_clean_chain(tmp_path: Path) -> None:
 
 
 def test_verify_sqlite_tampered_payload(tmp_path: Path) -> None:
-    chain = _build_chain(
-        [(1_000, "MODE", {"to": "PAPER"}), (2_000, "STRATEGY", {"id": "s1"})]
-    )
+    chain = _build_chain([(1_000, "MODE", {"to": "PAPER"}), (2_000, "STRATEGY", {"id": "s1"})])
     db = tmp_path / "ledger.sqlite"
     _write_sqlite_chain(db, chain)
     conn = sqlite3.connect(str(db))
@@ -651,9 +635,7 @@ def test_verify_sqlite_tampered_payload(tmp_path: Path) -> None:
 
 
 def test_verify_sqlite_three_run_byte_identical(tmp_path: Path) -> None:
-    chain = _build_chain(
-        [(1_000 + i, "MODE", {"to": "PAPER", "step": str(i)}) for i in range(10)]
-    )
+    chain = _build_chain([(1_000 + i, "MODE", {"to": "PAPER", "step": str(i)}) for i in range(10)])
     db = tmp_path / "ledger.sqlite"
     _write_sqlite_chain(db, chain)
     a = verify_sqlite(db)
@@ -673,9 +655,7 @@ def test_verify_sqlite_missing_file_raises(tmp_path: Path) -> None:
 
 
 HASH_CHAIN_PATH = Path(hc.__file__)
-INTEGRITY_PATH = Path(
-    importlib.import_module("state.ledger.integrity").__file__ or ""
-)
+INTEGRITY_PATH = Path(importlib.import_module("state.ledger.integrity").__file__ or "")
 
 FORBIDDEN_TOPLEVEL_IMPORTS = {
     "time",
@@ -755,10 +735,7 @@ def _has_typed_event_ctor(path: Path) -> set[str]:
             func = node.func
             if isinstance(func, ast.Name) and func.id in TYPED_EVENT_CONSTRUCTORS:
                 found.add(func.id)
-            if (
-                isinstance(func, ast.Attribute)
-                and func.attr in TYPED_EVENT_CONSTRUCTORS
-            ):
+            if isinstance(func, ast.Attribute) and func.attr in TYPED_EVENT_CONSTRUCTORS:
                 found.add(func.attr)
             self.generic_visit(node)
 

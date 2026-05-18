@@ -129,9 +129,7 @@ def test_confidence_clamped_to_unit_interval() -> None:
 
 
 def test_version_omitted_is_accepted() -> None:
-    r = parse_tradingview_alert_payload(
-        {"ticker": "BTCUSDT", "side": "BUY"}, ts_ns=1
-    )
+    r = parse_tradingview_alert_payload({"ticker": "BTCUSDT", "side": "BUY"}, ts_ns=1)
     assert r is not None
 
 

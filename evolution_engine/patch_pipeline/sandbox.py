@@ -61,11 +61,7 @@ class SandboxStage:
             ts_ns=ts_ns,
             stage=PatchStage.SANDBOX,
             passed=passed,
-            detail=(
-                "sandbox clean"
-                if passed
-                else f"forbidden: {','.join(forbidden)}"
-            ),
+            detail=("sandbox clean" if passed else f"forbidden: {','.join(forbidden)}"),
             meta={"accepted": str(len(accepted)), "forbidden": str(len(forbidden))},
         )
         return result, verdict

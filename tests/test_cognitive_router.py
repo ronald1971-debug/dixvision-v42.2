@@ -39,11 +39,7 @@ from system_engine.scvs.source_registry import (
     load_source_registry,
 )
 
-REGISTRY_PATH = (
-    Path(__file__).resolve().parent.parent
-    / "registry"
-    / "data_source_registry.yaml"
-)
+REGISTRY_PATH = Path(__file__).resolve().parent.parent / "registry" / "data_source_registry.yaml"
 
 
 def _registry(*decls: SourceDeclaration) -> SourceRegistry:
@@ -187,8 +183,7 @@ def test_select_providers_for_each_task_class_uses_declared_requirements() -> No
         out = select_providers(registry, t)
         # The provider with this task's exact requirement is included.
         assert sid in {p.id for p in out}, (
-            f"{t.value} did not select its own minimum-capability"
-            f" provider {sid}"
+            f"{t.value} did not select its own minimum-capability provider {sid}"
         )
 
 

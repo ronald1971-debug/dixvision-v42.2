@@ -133,9 +133,7 @@ CANONICAL_ROLE_ORDER: tuple[CouncilRole, ...] = (
 # ---------------------------------------------------------------------------
 
 
-RECOMMENDATION_LABELS: frozenset[str] = frozenset(
-    {"APPROVE", "REJECT", "ESCALATE", "ABSTAIN"}
-)
+RECOMMENDATION_LABELS: frozenset[str] = frozenset({"APPROVE", "REJECT", "ESCALATE", "ABSTAIN"})
 DEFAULT_RECOMMENDATION: str = "ABSTAIN"
 DEFAULT_RATIONALE: str = "no consensus reached"
 
@@ -203,43 +201,28 @@ class CouncilAgent:
         if not isinstance(self.goal, str) or not self.goal.strip():
             raise CouncilError("CouncilAgent.goal must be non-empty str")
         if len(self.goal) > MAX_GOAL_LEN:
-            raise CouncilError(
-                f"CouncilAgent.goal length > {MAX_GOAL_LEN}"
-            )
+            raise CouncilError(f"CouncilAgent.goal length > {MAX_GOAL_LEN}")
         if not isinstance(self.backstory, str) or not self.backstory.strip():
             raise CouncilError("CouncilAgent.backstory must be non-empty str")
         if len(self.backstory) > MAX_BACKSTORY_LEN:
-            raise CouncilError(
-                f"CouncilAgent.backstory length > {MAX_BACKSTORY_LEN}"
-            )
+            raise CouncilError(f"CouncilAgent.backstory length > {MAX_BACKSTORY_LEN}")
         if not isinstance(self.expected_output_keys, tuple):
-            raise CouncilError(
-                "CouncilAgent.expected_output_keys must be tuple"
-            )
+            raise CouncilError("CouncilAgent.expected_output_keys must be tuple")
         if not self.expected_output_keys:
-            raise CouncilError(
-                "CouncilAgent.expected_output_keys must be non-empty"
-            )
+            raise CouncilError("CouncilAgent.expected_output_keys must be non-empty")
         if len(self.expected_output_keys) > MAX_OUTPUT_KEYS:
-            raise CouncilError(
-                "CouncilAgent.expected_output_keys count > "
-                f"{MAX_OUTPUT_KEYS}"
-            )
+            raise CouncilError(f"CouncilAgent.expected_output_keys count > {MAX_OUTPUT_KEYS}")
         for k in self.expected_output_keys:
             if not isinstance(k, str) or not k.strip():
                 raise CouncilError(
-                    "CouncilAgent.expected_output_keys entries must be "
-                    "non-empty str"
+                    "CouncilAgent.expected_output_keys entries must be non-empty str"
                 )
             if len(k) > MAX_OUTPUT_KEY_LEN:
                 raise CouncilError(
-                    "CouncilAgent.expected_output_keys entry length > "
-                    f"{MAX_OUTPUT_KEY_LEN}"
+                    f"CouncilAgent.expected_output_keys entry length > {MAX_OUTPUT_KEY_LEN}"
                 )
         if len(set(self.expected_output_keys)) != len(self.expected_output_keys):
-            raise CouncilError(
-                "CouncilAgent.expected_output_keys must be unique"
-            )
+            raise CouncilError("CouncilAgent.expected_output_keys must be unique")
         # Arbiter is constrained to advertise the two reserved keys so
         # the orchestrator can deterministically project the council's
         # recommendation + rationale from its output.
@@ -279,15 +262,11 @@ class CouncilTask:
         if not isinstance(self.task_id, str) or not self.task_id.strip():
             raise CouncilError("CouncilTask.task_id must be non-empty str")
         if len(self.task_id) > MAX_OUTPUT_KEY_LEN:
-            raise CouncilError(
-                f"CouncilTask.task_id length > {MAX_OUTPUT_KEY_LEN}"
-            )
+            raise CouncilError(f"CouncilTask.task_id length > {MAX_OUTPUT_KEY_LEN}")
         if not isinstance(self.description, str) or not self.description.strip():
             raise CouncilError("CouncilTask.description must be non-empty str")
         if len(self.description) > MAX_DESCRIPTION_LEN:
-            raise CouncilError(
-                f"CouncilTask.description length > {MAX_DESCRIPTION_LEN}"
-            )
+            raise CouncilError(f"CouncilTask.description length > {MAX_DESCRIPTION_LEN}")
         if not isinstance(self.role_owner, CouncilRole):
             raise CouncilError("CouncilTask.role_owner must be CouncilRole")
 
@@ -310,54 +289,32 @@ class CouncilConfig:
         if not isinstance(self.topic, str) or not self.topic.strip():
             raise CouncilError("CouncilConfig.topic must be non-empty str")
         if len(self.topic) > MAX_TOPIC_LEN:
-            raise CouncilError(
-                f"CouncilConfig.topic length > {MAX_TOPIC_LEN}"
-            )
+            raise CouncilError(f"CouncilConfig.topic length > {MAX_TOPIC_LEN}")
         if not isinstance(self.agents, tuple):
-            raise CouncilError(
-                "CouncilConfig.agents must be tuple"
-            )
+            raise CouncilError("CouncilConfig.agents must be tuple")
         if len(self.agents) < MIN_AGENTS:
-            raise CouncilError(
-                f"CouncilConfig.agents requires >= {MIN_AGENTS} entries"
-            )
+            raise CouncilError(f"CouncilConfig.agents requires >= {MIN_AGENTS} entries")
         if len(self.agents) > MAX_AGENTS:
-            raise CouncilError(
-                f"CouncilConfig.agents allows <= {MAX_AGENTS} entries"
-            )
+            raise CouncilError(f"CouncilConfig.agents allows <= {MAX_AGENTS} entries")
         for a in self.agents:
             if not isinstance(a, CouncilAgent):
-                raise CouncilError(
-                    "CouncilConfig.agents entries must be CouncilAgent"
-                )
+                raise CouncilError("CouncilConfig.agents entries must be CouncilAgent")
         roles = [a.role for a in self.agents]
         if len(set(roles)) != len(roles):
-            raise CouncilError(
-                "CouncilConfig.agents must have unique roles"
-            )
+            raise CouncilError("CouncilConfig.agents must have unique roles")
         if CouncilRole.ARBITER not in set(roles):
-            raise CouncilError(
-                "CouncilConfig.agents must include the ARBITER role"
-            )
+            raise CouncilError("CouncilConfig.agents must include the ARBITER role")
         if not isinstance(self.tasks, tuple):
-            raise CouncilError(
-                "CouncilConfig.tasks must be tuple"
-            )
+            raise CouncilError("CouncilConfig.tasks must be tuple")
         if len(self.tasks) < MIN_TASKS:
-            raise CouncilError(
-                f"CouncilConfig.tasks requires >= {MIN_TASKS} entries"
-            )
+            raise CouncilError(f"CouncilConfig.tasks requires >= {MIN_TASKS} entries")
         if len(self.tasks) > MAX_TASKS:
-            raise CouncilError(
-                f"CouncilConfig.tasks allows <= {MAX_TASKS} entries"
-            )
+            raise CouncilError(f"CouncilConfig.tasks allows <= {MAX_TASKS} entries")
         task_ids: list[str] = []
         role_set = set(roles)
         for t in self.tasks:
             if not isinstance(t, CouncilTask):
-                raise CouncilError(
-                    "CouncilConfig.tasks entries must be CouncilTask"
-                )
+                raise CouncilError("CouncilConfig.tasks entries must be CouncilTask")
             if t.role_owner not in role_set:
                 raise CouncilError(
                     f"CouncilTask({t.task_id!r}).role_owner "
@@ -365,9 +322,7 @@ class CouncilConfig:
                 )
             task_ids.append(t.task_id)
         if len(set(task_ids)) != len(task_ids):
-            raise CouncilError(
-                "CouncilConfig.tasks must have unique task_ids"
-            )
+            raise CouncilError("CouncilConfig.tasks must have unique task_ids")
         if self.tasks[-1].role_owner is not CouncilRole.ARBITER:
             raise CouncilError(
                 "CouncilConfig.tasks[-1] must be owned by ARBITER "
@@ -469,9 +424,7 @@ def _validate_speaker_output(
         if not isinstance(v, str):
             raise CouncilError(f"output[{k!r}] must be str")
         if len(v) > MAX_OUTPUT_VALUE_LEN:
-            raise CouncilError(
-                f"output[{k!r}] length {len(v)} > {MAX_OUTPUT_VALUE_LEN}"
-            )
+            raise CouncilError(f"output[{k!r}] length {len(v)} > {MAX_OUTPUT_VALUE_LEN}")
         cleaned[k] = v
     return MappingProxyType(dict(sorted(cleaned.items())))
 
@@ -584,13 +537,9 @@ def run_council(
     if not isinstance(config, CouncilConfig):
         raise CouncilError("run_council: config must be CouncilConfig")
     if not isinstance(speaker, StructuredSpeaker):
-        raise CouncilError(
-            "run_council: speaker must implement the StructuredSpeaker Protocol"
-        )
+        raise CouncilError("run_council: speaker must implement the StructuredSpeaker Protocol")
 
-    agents_by_role: dict[CouncilRole, CouncilAgent] = {
-        a.role: a for a in config.agents
-    }
+    agents_by_role: dict[CouncilRole, CouncilAgent] = {a.role: a for a in config.agents}
 
     results: list[CouncilTaskResult] = []
     for task in config.tasks:
@@ -650,13 +599,9 @@ def crewai_speaker_factory(
     byte-identical replayable."""
 
     if not callable(completion):
-        raise CouncilError(
-            "crewai_speaker_factory: completion must be callable"
-        )
+        raise CouncilError("crewai_speaker_factory: completion must be callable")
     if not isinstance(system_prompt_prefix, str):
-        raise CouncilError(
-            "crewai_speaker_factory: system_prompt_prefix must be str"
-        )
+        raise CouncilError("crewai_speaker_factory: system_prompt_prefix must be str")
 
     @dataclass(frozen=True, slots=True)
     class _CrewAISpeaker:
@@ -674,9 +619,7 @@ def crewai_speaker_factory(
             system_lines: list[str] = []
             if self.system_prompt_prefix:
                 system_lines.append(self.system_prompt_prefix)
-            system_lines.append(
-                f"You are the council's {agent.role.value} agent."
-            )
+            system_lines.append(f"You are the council's {agent.role.value} agent.")
             system_lines.append(f"GOAL: {agent.goal}")
             system_lines.append(f"BACKSTORY: {agent.backstory}")
             system_lines.append(
@@ -687,8 +630,7 @@ def crewai_speaker_factory(
             context_lines: list[str] = [f"Topic: {topic}"]
             for r in prior_results:
                 context_lines.append(
-                    f"- {r.role.value}/{r.task_id}: "
-                    f"{dict(sorted(r.output.items()))}"
+                    f"- {r.role.value}/{r.task_id}: {dict(sorted(r.output.items()))}"
                 )
             context_lines.append(f"TASK: {task.description}")
             return self.completion(

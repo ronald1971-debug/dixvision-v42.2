@@ -263,9 +263,7 @@ def test_pump_reconnects_on_connect_error() -> None:
         if attempts["n"] == 1:
             raise RuntimeError("first attempt fails")
         if attempts["n"] == 2:
-            return _FakeConn(
-                [{"txType": "create", "mint": "M2"}]
-            )
+            return _FakeConn([{"txType": "create", "mint": "M2"}])
         return _FakeConn([])
 
     pump = PumpFunLaunchPump(
@@ -299,9 +297,7 @@ def test_pump_swallows_sink_exception() -> None:
         raise RuntimeError("sink boom")
 
     async def fake_connect(_url: str) -> _FakeConn:
-        return _FakeConn(
-            [{"txType": "create", "mint": "BoomMint"}]
-        )
+        return _FakeConn([{"txType": "create", "mint": "BoomMint"}])
 
     pump = PumpFunLaunchPump(
         angry_sink,

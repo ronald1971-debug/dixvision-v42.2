@@ -46,9 +46,7 @@ class SystemState:
 
     def snapshot(self, ts_ns: int) -> SystemStateSnapshot:
         heartbeats = tuple(sorted(self._heartbeats.items()))
-        hazards = tuple(
-            self._open_hazards[k] for k in sorted(self._open_hazards.keys())
-        )
+        hazards = tuple(self._open_hazards[k] for k in sorted(self._open_hazards.keys()))
         return SystemStateSnapshot(
             ts_ns=ts_ns,
             heartbeats=heartbeats,

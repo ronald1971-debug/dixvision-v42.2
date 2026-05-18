@@ -25,9 +25,7 @@ def _obs(
     score: float,
     future_return: float,
 ) -> ScoredObservation:
-    return ScoredObservation(
-        ts_ns=ts_ns, symbol=symbol, score=score, future_return=future_return
-    )
+    return ScoredObservation(ts_ns=ts_ns, symbol=symbol, score=score, future_return=future_return)
 
 
 # ---------------------------------------------------------------------------

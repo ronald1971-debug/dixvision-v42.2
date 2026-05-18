@@ -66,14 +66,9 @@ class SizingComponents:
         for name in ("confidence_factor", "risk_factor", "pre_cap_size", "final_size"):
             v = getattr(self, name)
             if not (0.0 <= v <= 1.0):
-                raise ValueError(
-                    f"SizingComponents.{name} must be in [0, 1]: {v}"
-                )
+                raise ValueError(f"SizingComponents.{name} must be in [0, 1]: {v}")
         if self.regime_factor < 0.0:
-            raise ValueError(
-                f"SizingComponents.regime_factor must be >= 0: "
-                f"{self.regime_factor}"
-            )
+            raise ValueError(f"SizingComponents.regime_factor must be >= 0: {self.regime_factor}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,9 +88,7 @@ class PositionSizerConfig:
         for name in ("base_fraction", "kelly_cap"):
             v = getattr(self, name)
             if not (0.0 <= v <= 1.0):
-                raise ValueError(
-                    f"PositionSizerConfig.{name} must be in [0, 1]: {v}"
-                )
+                raise ValueError(f"PositionSizerConfig.{name} must be in [0, 1]: {v}")
         for name in (
             "trend_multiplier",
             "range_multiplier",
@@ -103,18 +96,14 @@ class PositionSizerConfig:
         ):
             v = getattr(self, name)
             if v < 0.0:
-                raise ValueError(
-                    f"PositionSizerConfig.{name} must be >= 0: {v}"
-                )
+                raise ValueError(f"PositionSizerConfig.{name} must be >= 0: {v}")
         if not (0.0 <= self.confidence_floor <= 1.0):
             raise ValueError(
-                f"PositionSizerConfig.confidence_floor must be in [0, 1]: "
-                f"{self.confidence_floor}"
+                f"PositionSizerConfig.confidence_floor must be in [0, 1]: {self.confidence_floor}"
             )
         if not (0.0 <= self.risk_damping <= 1.0):
             raise ValueError(
-                f"PositionSizerConfig.risk_damping must be in [0, 1]: "
-                f"{self.risk_damping}"
+                f"PositionSizerConfig.risk_damping must be in [0, 1]: {self.risk_damping}"
             )
 
     def multiplier_for(self, regime: Regime) -> float:
@@ -147,10 +136,7 @@ def load_position_sizer_config(path: str | Path) -> PositionSizerConfig:
     """
     raw: Any = yaml.safe_load(Path(path).read_text())
     if not isinstance(raw, dict):
-        raise ValueError(
-            f"position sizer config must be a YAML mapping, got "
-            f"{type(raw).__name__}"
-        )
+        raise ValueError(f"position sizer config must be a YAML mapping, got {type(raw).__name__}")
     required = {
         "base_fraction",
         "kelly_cap",
@@ -162,14 +148,10 @@ def load_position_sizer_config(path: str | Path) -> PositionSizerConfig:
     }
     missing = required - raw.keys()
     if missing:
-        raise ValueError(
-            f"position sizer config missing keys: {sorted(missing)}"
-        )
+        raise ValueError(f"position sizer config missing keys: {sorted(missing)}")
     extra = raw.keys() - (required | {"version"})
     if extra:
-        raise ValueError(
-            f"position sizer config has unknown keys: {sorted(extra)}"
-        )
+        raise ValueError(f"position sizer config has unknown keys: {sorted(extra)}")
     kwargs: dict[str, Any] = {
         "base_fraction": float(raw["base_fraction"]),
         "kelly_cap": float(raw["kelly_cap"]),
@@ -230,18 +212,14 @@ def compute_position_size(
         return SizingComponents(
             confidence_factor=0.0,
             regime_factor=config.multiplier_for(regime),
-            risk_factor=_clamp01(
-                1.0 - config.risk_damping * _clamp01(pressure.risk)
-            ),
+            risk_factor=_clamp01(1.0 - config.risk_damping * _clamp01(pressure.risk)),
             pre_cap_size=0.0,
             final_size=0.0,
             rationale=_RATIONALE_BELOW_FLOOR,
         )
 
     regime_factor = config.multiplier_for(regime)
-    risk_factor = _clamp01(
-        1.0 - config.risk_damping * _clamp01(pressure.risk)
-    )
+    risk_factor = _clamp01(1.0 - config.risk_damping * _clamp01(pressure.risk))
 
     if regime_factor == 0.0:
         return SizingComponents(
@@ -253,9 +231,7 @@ def compute_position_size(
             rationale=_RATIONALE_REGIME_ZERO,
         )
 
-    pre_cap = _clamp01(
-        config.base_fraction * confidence_clamped * regime_factor * risk_factor
-    )
+    pre_cap = _clamp01(config.base_fraction * confidence_clamped * regime_factor * risk_factor)
     if pre_cap > config.kelly_cap:
         return SizingComponents(
             confidence_factor=confidence_clamped,

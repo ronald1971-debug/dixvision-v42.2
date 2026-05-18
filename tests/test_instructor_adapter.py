@@ -303,11 +303,7 @@ def test_extract_typed_payload_propagates_schema_errors() -> None:
 
 
 def test_inv15_extract_three_run_byte_identical() -> None:
-    text = (
-        "```json\n"
-        '{"symbol":"EURUSD","side":"BUY","confidence":0.62}\n'
-        "```"
-    )
+    text = '```json\n{"symbol":"EURUSD","side":"BUY","confidence":0.62}\n```'
     schema = _basic_schema()
     a = extract_typed_payload(text, schema)
     b = extract_typed_payload(text, schema)
@@ -352,9 +348,7 @@ def _module_source() -> str:
 def test_no_top_level_instructor_import() -> None:
     for line in _module_source().splitlines():
         if line.startswith(("import instructor", "from instructor")):
-            raise AssertionError(
-                f"instructor must be a lazy seam — no top-level: {line!r}"
-            )
+            raise AssertionError(f"instructor must be a lazy seam — no top-level: {line!r}")
 
 
 def test_no_top_level_openai_or_anthropic_import() -> None:
@@ -367,9 +361,7 @@ def test_no_top_level_openai_or_anthropic_import() -> None:
                 "from anthropic",
             )
         ):
-            raise AssertionError(
-                f"openai/anthropic must be lazy seams — no top-level: {line!r}"
-            )
+            raise AssertionError(f"openai/anthropic must be lazy seams — no top-level: {line!r}")
 
 
 def test_no_top_level_pydantic_import() -> None:
@@ -410,6 +402,4 @@ def test_no_typed_event_constructors() -> None:
     )
     src = _module_source()
     for ctor in forbidden_ctors:
-        assert ctor not in src, (
-            f"adapter must not construct typed events: {ctor!r}"
-        )
+        assert ctor not in src, f"adapter must not construct typed events: {ctor!r}"

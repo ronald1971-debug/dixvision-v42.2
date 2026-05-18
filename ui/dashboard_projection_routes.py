@@ -293,18 +293,12 @@ def _liquidation_snapshot(symbol: str) -> LiqSnapshot:
         price = current_price * (1.0 + i * 0.01)
         dist = abs(i)
         oi_long = (
-            max(0.0, 18_000_000.0 - dist * 1_500_000.0 + math.cos(i) * 1.0e6)
-            if i < 0
-            else 0.0
+            max(0.0, 18_000_000.0 - dist * 1_500_000.0 + math.cos(i) * 1.0e6) if i < 0 else 0.0
         )
         oi_short = (
-            max(0.0, 16_000_000.0 - dist * 1_400_000.0 + math.sin(i) * 1.0e6)
-            if i > 0
-            else 0.0
+            max(0.0, 16_000_000.0 - dist * 1_400_000.0 + math.sin(i) * 1.0e6) if i > 0 else 0.0
         )
-        bands.append(
-            LiqBand(price=price, oi_long_usd=oi_long, oi_short_usd=oi_short)
-        )
+        bands.append(LiqBand(price=price, oi_long_usd=oi_long, oi_short_usd=oi_short))
     return LiqSnapshot(
         symbol=symbol,
         current_price=current_price,

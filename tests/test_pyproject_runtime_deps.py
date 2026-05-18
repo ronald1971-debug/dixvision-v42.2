@@ -94,9 +94,7 @@ REQUIRED_INCLUDE_PATTERNS = frozenset(
 
 def test_packages_find_covers_runtime_imports() -> None:
     pyproject = _load_pyproject()
-    include = frozenset(
-        pyproject["tool"]["setuptools"]["packages"]["find"]["include"]
-    )
+    include = frozenset(pyproject["tool"]["setuptools"]["packages"]["find"]["include"])
     missing = REQUIRED_INCLUDE_PATTERNS - include
     assert not missing, (
         "Phase-6 P0-1 regression: the following top-level packages are "

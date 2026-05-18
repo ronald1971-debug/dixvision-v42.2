@@ -78,9 +78,7 @@ def _registry_no_eligible() -> SourceRegistry:
     # Has an AI row but it lacks the 'reasoning' capability.
     return SourceRegistry(
         version="test",
-        sources=(
-            _ai_row(source_id="prov-x", capabilities=("realtime_search",)),
-        ),
+        sources=(_ai_row(source_id="prov-x", capabilities=("realtime_search",)),),
     )
 
 
@@ -355,8 +353,7 @@ def test_adapter_source_does_not_name_a_vendor() -> None:
             for token in forbidden:
                 if token in value:
                     raise AssertionError(
-                        f"forbidden vendor token {token!r} appears in"
-                        f" string literal: {value!r}"
+                        f"forbidden vendor token {token!r} appears in string literal: {value!r}"
                     )
 
 

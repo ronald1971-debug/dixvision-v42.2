@@ -88,9 +88,7 @@ def _scenarios(draw: st.DrawFn) -> RealityScenario:
             )
         ),
         ts_ns=draw(st.integers(min_value=1, max_value=2**62)),
-        initial_state_hash=draw(
-            st.text(min_size=1, max_size=32, alphabet="0123456789abcdef")
-        ),
+        initial_state_hash=draw(st.text(min_size=1, max_size=32, alphabet="0123456789abcdef")),
     )
 
 

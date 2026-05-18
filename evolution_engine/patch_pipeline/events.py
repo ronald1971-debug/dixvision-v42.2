@@ -39,9 +39,7 @@ PATCH_EVENT_SOURCE_PROPOSAL: str = "evolution.patch_pipeline.proposal"
 PATCH_EVENT_SOURCE_VERDICT: str = "evolution.patch_pipeline.verdict"
 PATCH_EVENT_SOURCE_DECISION: str = "governance.patch_pipeline.decision"
 
-_LEGAL_DECISIONS: frozenset[str] = frozenset(
-    {"APPROVED", "REJECTED", "ROLLED_BACK"}
-)
+_LEGAL_DECISIONS: frozenset[str] = frozenset({"APPROVED", "REJECTED", "ROLLED_BACK"})
 
 
 # ---------------------------------------------------------------------------
@@ -69,13 +67,9 @@ def proposal_as_system_event(
     if not source:
         raise ValueError("proposal_as_system_event: source must be non-empty")
     if not proposal.patch_id:
-        raise ValueError(
-            "proposal_as_system_event: patch_id must be non-empty"
-        )
+        raise ValueError("proposal_as_system_event: patch_id must be non-empty")
     if ts_ns_override is not None and ts_ns_override < 0:
-        raise ValueError(
-            "proposal_as_system_event: ts_ns_override must be non-negative"
-        )
+        raise ValueError("proposal_as_system_event: ts_ns_override must be non-negative")
     body = {
         "version": PATCH_EVENT_VERSION,
         "patch_id": proposal.patch_id,
@@ -101,14 +95,11 @@ def proposal_from_system_event(event: SystemEvent) -> PatchProposal:
     """Reverse of :func:`proposal_as_system_event` (replay-parity)."""
     if event.sub_kind is not SystemEventKind.PATCH_PROPOSED:
         raise ValueError(
-            "proposal_from_system_event: event must be PATCH_PROPOSED; "
-            f"got {event.sub_kind}"
+            f"proposal_from_system_event: event must be PATCH_PROPOSED; got {event.sub_kind}"
         )
     raw = event.payload.get("proposal")
     if not isinstance(raw, str) or not raw:
-        raise ValueError(
-            "proposal_from_system_event: payload missing 'proposal' string"
-        )
+        raise ValueError("proposal_from_system_event: payload missing 'proposal' string")
     body = json.loads(raw)
     return PatchProposal(
         ts_ns=int(body["ts_ns"]),
@@ -163,14 +154,11 @@ def verdict_from_system_event(
     """Reverse of :func:`verdict_as_system_event` (replay-parity)."""
     if event.sub_kind is not SystemEventKind.PATCH_STAGE_VERDICT:
         raise ValueError(
-            "verdict_from_system_event: event must be PATCH_STAGE_VERDICT; "
-            f"got {event.sub_kind}"
+            f"verdict_from_system_event: event must be PATCH_STAGE_VERDICT; got {event.sub_kind}"
         )
     raw = event.payload.get("verdict")
     if not isinstance(raw, str) or not raw:
-        raise ValueError(
-            "verdict_from_system_event: payload missing 'verdict' string"
-        )
+        raise ValueError("verdict_from_system_event: payload missing 'verdict' string")
     body = json.loads(raw)
     verdict = StageVerdict(
         ts_ns=int(body["ts_ns"]),
@@ -197,9 +185,7 @@ def decision_as_system_event(
     if not source:
         raise ValueError("decision_as_system_event: source must be non-empty")
     if not decision.patch_id:
-        raise ValueError(
-            "decision_as_system_event: patch_id must be non-empty"
-        )
+        raise ValueError("decision_as_system_event: patch_id must be non-empty")
     if decision.decision not in _LEGAL_DECISIONS:
         raise ValueError(
             "decision_as_system_event: decision must be one of "
@@ -231,14 +217,11 @@ def decision_from_system_event(
     """Reverse of :func:`decision_as_system_event` (replay-parity)."""
     if event.sub_kind is not SystemEventKind.PATCH_DECISION:
         raise ValueError(
-            "decision_from_system_event: event must be PATCH_DECISION; "
-            f"got {event.sub_kind}"
+            f"decision_from_system_event: event must be PATCH_DECISION; got {event.sub_kind}"
         )
     raw = event.payload.get("decision")
     if not isinstance(raw, str) or not raw:
-        raise ValueError(
-            "decision_from_system_event: payload missing 'decision' string"
-        )
+        raise ValueError("decision_from_system_event: payload missing 'decision' string")
     body = json.loads(raw)
     return PatchApprovalDecision(
         ts_ns=int(body["ts_ns"]),

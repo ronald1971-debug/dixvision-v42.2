@@ -256,9 +256,7 @@ def test_inmemory_weight_bounds():
 def test_inmemory_missing_required_param():
     transport = InMemoryMemgraphTransport()
     with pytest.raises(MemgraphKnowledgeStoreError):
-        transport.run(
-            kgq.MERGE_STRATEGY, version=1, lifecycle="DRAFT", ts_ns=1
-        )
+        transport.run(kgq.MERGE_STRATEGY, version=1, lifecycle="DRAFT", ts_ns=1)
 
 
 def test_coordinator_int_param_rejects_bool():
@@ -522,6 +520,7 @@ def test_memgraph_factory_validation():
 def test_memgraph_factory_raises_when_missing():
     try:
         import gqlalchemy  # noqa: F401, PLC0415
+
         pytest.skip("gqlalchemy installed; factory error path not exercised here")
     except ImportError:
         with pytest.raises(MemgraphKnowledgeStoreError):
@@ -657,8 +656,7 @@ def test_ast_no_inline_cypher_in_logic_module():
             if any(kw in text for kw in ("MATCH ", "MERGE ", "CREATE ", "RETURN ")):
                 if "$" in text:
                     pytest.fail(
-                        f"inline cypher detected in state.knowledge_store_memgraph: "
-                        f"{text[:80]!r}"
+                        f"inline cypher detected in state.knowledge_store_memgraph: {text[:80]!r}"
                     )
 
 
@@ -669,10 +667,7 @@ def test_ast_query_module_constants_only():
             pytest.fail("f-strings forbidden in knowledge_store_memgraph_queries")
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
             if node.func.attr in {"format", "format_map"}:
-                pytest.fail(
-                    f"runtime string formatting forbidden in queries: "
-                    f"{ast.dump(node)}"
-                )
+                pytest.fail(f"runtime string formatting forbidden in queries: {ast.dump(node)}")
 
 
 # ---------------------------------------------------------------------------

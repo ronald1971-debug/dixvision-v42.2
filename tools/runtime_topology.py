@@ -66,15 +66,9 @@ MAX_EDGES_PER_TOPOLOGY: Final[int] = 16_384
 MAX_VERSION_LEN: Final[int] = 32
 MAX_NOTE_LEN: Final[int] = 256
 
-NODE_ID_PATTERN: Final[re.Pattern[str]] = re.compile(
-    r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*$"
-)
-CAPABILITY_PATTERN: Final[re.Pattern[str]] = re.compile(
-    r"^[a-z][a-z0-9_]*(?:\.[a-z0-9_]+)*$"
-)
-VERSION_PATTERN: Final[re.Pattern[str]] = re.compile(
-    r"^[A-Za-z0-9_.-]+$"
-)
+NODE_ID_PATTERN: Final[re.Pattern[str]] = re.compile(r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*$")
+CAPABILITY_PATTERN: Final[re.Pattern[str]] = re.compile(r"^[a-z][a-z0-9_]*(?:\.[a-z0-9_]+)*$")
+VERSION_PATTERN: Final[re.Pattern[str]] = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
 class TopologyError(ValueError):
@@ -162,29 +156,19 @@ class LifecycleState(Enum):
 
 
 _LEGAL_TRANSITIONS: Final[Mapping[LifecycleState, frozenset[LifecycleState]]] = {
-    LifecycleState.DECLARED: frozenset(
-        {LifecycleState.WIRED, LifecycleState.DORMANT}
-    ),
-    LifecycleState.WIRED: frozenset(
-        {LifecycleState.STARTED, LifecycleState.DORMANT}
-    ),
+    LifecycleState.DECLARED: frozenset({LifecycleState.WIRED, LifecycleState.DORMANT}),
+    LifecycleState.WIRED: frozenset({LifecycleState.STARTED, LifecycleState.DORMANT}),
     LifecycleState.STARTED: frozenset(
         {LifecycleState.HEALTHY, LifecycleState.DEGRADED, LifecycleState.STOPPED}
     ),
-    LifecycleState.HEALTHY: frozenset(
-        {LifecycleState.DEGRADED, LifecycleState.STOPPED}
-    ),
-    LifecycleState.DEGRADED: frozenset(
-        {LifecycleState.HEALTHY, LifecycleState.STOPPED}
-    ),
+    LifecycleState.HEALTHY: frozenset({LifecycleState.DEGRADED, LifecycleState.STOPPED}),
+    LifecycleState.DEGRADED: frozenset({LifecycleState.HEALTHY, LifecycleState.STOPPED}),
     LifecycleState.STOPPED: frozenset({LifecycleState.WIRED}),
     LifecycleState.DORMANT: frozenset({LifecycleState.WIRED}),
 }
 
 
-def is_legal_transition(
-    src: LifecycleState, dst: LifecycleState
-) -> bool:
+def is_legal_transition(src: LifecycleState, dst: LifecycleState) -> bool:
     """Return ``True`` iff ``src -> dst`` is a legal lifecycle move.
 
     The transition table is exposed as a pure function so PR-RT-2 can
@@ -226,33 +210,22 @@ class RuntimeNode:
 
     def __post_init__(self) -> None:
         if not isinstance(self.node_id, str):
-            raise TopologyError(
-                f"node_id must be a str, got {type(self.node_id).__name__}"
-            )
+            raise TopologyError(f"node_id must be a str, got {type(self.node_id).__name__}")
         if not self.node_id:
             raise TopologyError("node_id must not be empty")
         if len(self.node_id) > MAX_NODE_ID_LEN:
             raise TopologyError(
-                f"node_id length {len(self.node_id)} exceeds "
-                f"MAX_NODE_ID_LEN={MAX_NODE_ID_LEN}"
+                f"node_id length {len(self.node_id)} exceeds MAX_NODE_ID_LEN={MAX_NODE_ID_LEN}"
             )
         if not NODE_ID_PATTERN.match(self.node_id):
-            raise TopologyError(
-                f"node_id {self.node_id!r} does not match "
-                f"NODE_ID_PATTERN"
-            )
+            raise TopologyError(f"node_id {self.node_id!r} does not match NODE_ID_PATTERN")
         if not isinstance(self.kind, NodeKind):
-            raise TopologyError(
-                f"kind must be a NodeKind, got {type(self.kind).__name__}"
-            )
+            raise TopologyError(f"kind must be a NodeKind, got {type(self.kind).__name__}")
         if not isinstance(self.tier, NodeTier):
-            raise TopologyError(
-                f"tier must be a NodeTier, got {type(self.tier).__name__}"
-            )
+            raise TopologyError(f"tier must be a NodeTier, got {type(self.tier).__name__}")
         if not isinstance(self.declared_version, str):
             raise TopologyError(
-                "declared_version must be a str, got "
-                f"{type(self.declared_version).__name__}"
+                f"declared_version must be a str, got {type(self.declared_version).__name__}"
             )
         if not self.declared_version:
             raise TopologyError("declared_version must not be empty")
@@ -263,13 +236,11 @@ class RuntimeNode:
             )
         if not VERSION_PATTERN.match(self.declared_version):
             raise TopologyError(
-                f"declared_version {self.declared_version!r} does not "
-                f"match VERSION_PATTERN"
+                f"declared_version {self.declared_version!r} does not match VERSION_PATTERN"
             )
         if not isinstance(self.capabilities, frozenset):
             raise TopologyError(
-                "capabilities must be a frozenset, got "
-                f"{type(self.capabilities).__name__}"
+                f"capabilities must be a frozenset, got {type(self.capabilities).__name__}"
             )
         if len(self.capabilities) > MAX_CAPABILITIES_PER_NODE:
             raise TopologyError(
@@ -279,8 +250,7 @@ class RuntimeNode:
         for capability in self.capabilities:
             if not isinstance(capability, str):
                 raise TopologyError(
-                    "every capability must be a str, got "
-                    f"{type(capability).__name__}"
+                    f"every capability must be a str, got {type(capability).__name__}"
                 )
             if not capability:
                 raise TopologyError("capability must not be empty")
@@ -290,10 +260,7 @@ class RuntimeNode:
                     f"MAX_CAPABILITY_LEN={MAX_CAPABILITY_LEN}"
                 )
             if not CAPABILITY_PATTERN.match(capability):
-                raise TopologyError(
-                    f"capability {capability!r} does not match "
-                    f"CAPABILITY_PATTERN"
-                )
+                raise TopologyError(f"capability {capability!r} does not match CAPABILITY_PATTERN")
 
     def canonical(self) -> dict[str, object]:
         """Return a canonical dict representation for digesting.
@@ -328,44 +295,25 @@ class RuntimeEdge:
 
     def __post_init__(self) -> None:
         if not isinstance(self.source_id, str):
-            raise TopologyError(
-                "source_id must be a str, got "
-                f"{type(self.source_id).__name__}"
-            )
+            raise TopologyError(f"source_id must be a str, got {type(self.source_id).__name__}")
         if not NODE_ID_PATTERN.match(self.source_id):
-            raise TopologyError(
-                f"source_id {self.source_id!r} does not match "
-                f"NODE_ID_PATTERN"
-            )
+            raise TopologyError(f"source_id {self.source_id!r} does not match NODE_ID_PATTERN")
         if not isinstance(self.target_id, str):
-            raise TopologyError(
-                "target_id must be a str, got "
-                f"{type(self.target_id).__name__}"
-            )
+            raise TopologyError(f"target_id must be a str, got {type(self.target_id).__name__}")
         if not NODE_ID_PATTERN.match(self.target_id):
-            raise TopologyError(
-                f"target_id {self.target_id!r} does not match "
-                f"NODE_ID_PATTERN"
-            )
+            raise TopologyError(f"target_id {self.target_id!r} does not match NODE_ID_PATTERN")
         if self.source_id == self.target_id:
             raise TopologyError(
-                f"self-loop is not allowed (source_id == target_id "
-                f"== {self.source_id!r})"
+                f"self-loop is not allowed (source_id == target_id == {self.source_id!r})"
             )
         if not isinstance(self.relation, EdgeRelation):
             raise TopologyError(
-                "relation must be an EdgeRelation, got "
-                f"{type(self.relation).__name__}"
+                f"relation must be an EdgeRelation, got {type(self.relation).__name__}"
             )
         if not isinstance(self.note, str):
-            raise TopologyError(
-                f"note must be a str, got {type(self.note).__name__}"
-            )
+            raise TopologyError(f"note must be a str, got {type(self.note).__name__}")
         if len(self.note) > MAX_NOTE_LEN:
-            raise TopologyError(
-                f"note length {len(self.note)} exceeds "
-                f"MAX_NOTE_LEN={MAX_NOTE_LEN}"
-            )
+            raise TopologyError(f"note length {len(self.note)} exceeds MAX_NOTE_LEN={MAX_NOTE_LEN}")
 
     def canonical(self) -> dict[str, object]:
         return {
@@ -402,13 +350,9 @@ class RuntimeTopology:
 
     def __post_init__(self) -> None:
         if not isinstance(self.nodes, tuple):
-            raise TopologyError(
-                f"nodes must be a tuple, got {type(self.nodes).__name__}"
-            )
+            raise TopologyError(f"nodes must be a tuple, got {type(self.nodes).__name__}")
         if not isinstance(self.edges, tuple):
-            raise TopologyError(
-                f"edges must be a tuple, got {type(self.edges).__name__}"
-            )
+            raise TopologyError(f"edges must be a tuple, got {type(self.edges).__name__}")
         if len(self.nodes) > MAX_NODES_PER_TOPOLOGY:
             raise TopologyError(
                 f"node count {len(self.nodes)} exceeds "
@@ -424,13 +368,10 @@ class RuntimeTopology:
         for node in self.nodes:
             if not isinstance(node, RuntimeNode):
                 raise TopologyError(
-                    "every entry of nodes must be a RuntimeNode, got "
-                    f"{type(node).__name__}"
+                    f"every entry of nodes must be a RuntimeNode, got {type(node).__name__}"
                 )
             if node.node_id in seen_node_ids:
-                raise TopologyError(
-                    f"duplicate node_id {node.node_id!r}"
-                )
+                raise TopologyError(f"duplicate node_id {node.node_id!r}")
             seen_node_ids.add(node.node_id)
 
         sorted_nodes = tuple(sorted(self.nodes, key=lambda n: n.node_id))
@@ -441,18 +382,15 @@ class RuntimeTopology:
         for edge in self.edges:
             if not isinstance(edge, RuntimeEdge):
                 raise TopologyError(
-                    "every entry of edges must be a RuntimeEdge, got "
-                    f"{type(edge).__name__}"
+                    f"every entry of edges must be a RuntimeEdge, got {type(edge).__name__}"
                 )
             if edge.source_id not in seen_node_ids:
                 raise TopologyError(
-                    f"edge source_id {edge.source_id!r} does not match "
-                    f"any node_id in nodes"
+                    f"edge source_id {edge.source_id!r} does not match any node_id in nodes"
                 )
             if edge.target_id not in seen_node_ids:
                 raise TopologyError(
-                    f"edge target_id {edge.target_id!r} does not match "
-                    f"any node_id in nodes"
+                    f"edge target_id {edge.target_id!r} does not match any node_id in nodes"
                 )
             key = (edge.source_id, edge.target_id, edge.relation.value)
             if key in seen_edge_keys:
@@ -521,16 +459,12 @@ class RuntimeTopology:
 
     def nodes_by_tier(self, tier: NodeTier) -> tuple[RuntimeNode, ...]:
         if not isinstance(tier, NodeTier):
-            raise TopologyError(
-                f"tier must be a NodeTier, got {type(tier).__name__}"
-            )
+            raise TopologyError(f"tier must be a NodeTier, got {type(tier).__name__}")
         return tuple(n for n in self.nodes if n.tier is tier)
 
     def nodes_by_kind(self, kind: NodeKind) -> tuple[RuntimeNode, ...]:
         if not isinstance(kind, NodeKind):
-            raise TopologyError(
-                f"kind must be a NodeKind, got {type(kind).__name__}"
-            )
+            raise TopologyError(f"kind must be a NodeKind, got {type(kind).__name__}")
         return tuple(n for n in self.nodes if n.kind is kind)
 
     def edges_from(self, source_id: str) -> tuple[RuntimeEdge, ...]:
@@ -549,12 +483,8 @@ class RuntimeTopology:
         """
 
         if not isinstance(capability, str):
-            raise TopologyError(
-                f"capability must be a str, got {type(capability).__name__}"
-            )
-        return tuple(
-            n for n in self.nodes if capability in n.capabilities
-        )
+            raise TopologyError(f"capability must be a str, got {type(capability).__name__}")
+        return tuple(n for n in self.nodes if capability in n.capabilities)
 
 
 # ---------------------------------------------------------------------------
@@ -607,10 +537,7 @@ def enable_runtime_topology_factory(
     """
 
     if overrides is not None and not isinstance(overrides, Mapping):
-        raise TopologyError(
-            "overrides must be a Mapping or None, got "
-            f"{type(overrides).__name__}"
-        )
+        raise TopologyError(f"overrides must be a Mapping or None, got {type(overrides).__name__}")
     config = dict(overrides) if overrides else {}
     return RuntimeTopologyFactory(backend="stdlib", config=config)
 
@@ -629,14 +556,9 @@ class RuntimeTopologyFactory:
 
     def __post_init__(self) -> None:
         if not isinstance(self.backend, str):
-            raise TopologyError(
-                f"backend must be a str, got {type(self.backend).__name__}"
-            )
+            raise TopologyError(f"backend must be a str, got {type(self.backend).__name__}")
         if self.backend not in {"stdlib"}:
-            raise TopologyError(
-                f"backend {self.backend!r} is not supported "
-                "(expected 'stdlib')"
-            )
+            raise TopologyError(f"backend {self.backend!r} is not supported (expected 'stdlib')")
 
     def build(
         self,

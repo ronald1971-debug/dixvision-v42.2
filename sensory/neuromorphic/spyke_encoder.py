@@ -164,23 +164,17 @@ class SpikeTrain:
                 raise SpykeEncoderError("SpikeTrain.events must be SpikeEvent")
             if ev.neuron_idx >= self.num_neurons:
                 raise SpykeEncoderError(
-                    f"SpikeTrain event neuron_idx {ev.neuron_idx} "
-                    f">= num_neurons {self.num_neurons}"
+                    f"SpikeTrain event neuron_idx {ev.neuron_idx} >= num_neurons {self.num_neurons}"
                 )
             if ev.time_step >= self.num_steps:
                 raise SpykeEncoderError(
-                    f"SpikeTrain event time_step {ev.time_step} "
-                    f">= num_steps {self.num_steps}"
+                    f"SpikeTrain event time_step {ev.time_step} >= num_steps {self.num_steps}"
                 )
         keys = [(ev.time_step, ev.neuron_idx) for ev in self.events]
         if keys != sorted(keys):
-            raise SpykeEncoderError(
-                "SpikeTrain.events must be sorted by (time_step, neuron_idx)"
-            )
+            raise SpykeEncoderError("SpikeTrain.events must be sorted by (time_step, neuron_idx)")
         if len(keys) != len(set(keys)):
-            raise SpykeEncoderError(
-                "SpikeTrain.events must be unique on (time_step, neuron_idx)"
-            )
+            raise SpykeEncoderError("SpikeTrain.events must be unique on (time_step, neuron_idx)")
         if not self.digest:
             object.__setattr__(self, "digest", _digest(self))
 
@@ -193,9 +187,7 @@ class SpikeTrain:
         Useful for Norse / snnTorch consumers that want a per-step
         binary vector. Outer axis is time. Inner axis is neuron.
         """
-        rows = tuple(
-            tuple(0 for _ in range(self.num_neurons)) for _ in range(self.num_steps)
-        )
+        rows = tuple(tuple(0 for _ in range(self.num_neurons)) for _ in range(self.num_steps))
         # We rebuild rows because tuples are immutable.
         out: list[list[int]] = [list(r) for r in rows]
         for ev in self.events:
@@ -258,21 +250,15 @@ def _validate_features(features: Sequence[float]) -> tuple[float, ...]:
     out: list[float] = []
     for i, f in enumerate(features):
         if isinstance(f, bool):
-            raise SpykeEncoderError(
-                f"features[{i}] must not be bool"
-            )
+            raise SpykeEncoderError(f"features[{i}] must not be bool")
         if not isinstance(f, (int, float)):
-            raise SpykeEncoderError(
-                f"features[{i}] must be a real number, got {type(f).__name__}"
-            )
+            raise SpykeEncoderError(f"features[{i}] must be a real number, got {type(f).__name__}")
         if f != f:  # NaN check without math.isnan import dance.
             raise SpykeEncoderError(f"features[{i}] is NaN")
         if f in (float("inf"), float("-inf")):
             raise SpykeEncoderError(f"features[{i}] is infinite")
         if f < 0.0 or f > 1.0:
-            raise SpykeEncoderError(
-                f"features[{i}]={f!r} must be in [0.0, 1.0]"
-            )
+            raise SpykeEncoderError(f"features[{i}]={f!r} must be in [0.0, 1.0]")
         out.append(float(f))
     return tuple(out)
 

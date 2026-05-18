@@ -54,8 +54,7 @@ class BacktestStage:
             stage=PatchStage.BACKTEST,
             passed=passed,
             detail=(
-                f"runs={summary.runs} sharpe={summary.sharpe:.3f} "
-                f"dd={summary.max_drawdown:.3f}"
+                f"runs={summary.runs} sharpe={summary.sharpe:.3f} dd={summary.max_drawdown:.3f}"
             ),
             meta={
                 "runs": str(summary.runs),

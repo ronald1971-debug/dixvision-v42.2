@@ -118,8 +118,7 @@ class SourceManager:
         decl = self._lookup(source_id)
         if not decl.enabled:
             raise ValueError(
-                f"source {source_id!r} is enabled=false; "
-                "cannot record data for a placeholder row"
+                f"source {source_id!r} is enabled=false; cannot record data for a placeholder row"
             )
         self._state.setdefault(source_id, _SourceState()).last_data_ns = ts_ns
 
@@ -151,9 +150,7 @@ class SourceManager:
             )
         return tuple(out)
 
-    def observe(
-        self, now_ns: int
-    ) -> tuple[tuple[SystemEvent, ...], tuple[HazardEvent, ...]]:
+    def observe(self, now_ns: int) -> tuple[tuple[SystemEvent, ...], tuple[HazardEvent, ...]]:
         """Advance the FSM to ``now_ns`` and return the emitted events.
 
         * ``SystemEvent`` rows are emitted on every status transition
@@ -220,9 +217,7 @@ class SourceManager:
         return decl
 
     @staticmethod
-    def _classify(
-        st: _SourceState, now_ns: int, threshold_ns: int
-    ) -> SourceStatus:
+    def _classify(st: _SourceState, now_ns: int, threshold_ns: int) -> SourceStatus:
         if st.last_heartbeat_ns == 0:
             return SourceStatus.UNKNOWN
         if threshold_ns == 0:

@@ -76,14 +76,10 @@ class ExecutionDecision:
     def __post_init__(self) -> None:
         if not (0.0 <= self.size_fraction <= 1.0):
             raise ValueError(
-                f"ExecutionDecision.size_fraction must be in [0, 1]: "
-                f"{self.size_fraction}"
+                f"ExecutionDecision.size_fraction must be in [0, 1]: {self.size_fraction}"
             )
         if not (0.0 <= self.confidence <= 1.0):
-            raise ValueError(
-                f"ExecutionDecision.confidence must be in [0, 1]: "
-                f"{self.confidence}"
-            )
+            raise ValueError(f"ExecutionDecision.confidence must be in [0, 1]: {self.confidence}")
 
 
 # ---------------------------------------------------------------------------

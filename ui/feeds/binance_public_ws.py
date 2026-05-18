@@ -63,9 +63,7 @@ DEFAULT_SYMBOLS: tuple[str, ...] = ("btcusdt", "ethusdt")
 VENUE_TAG = "BINANCE"
 
 
-def make_combined_stream_url(
-    symbols: Sequence[str], *, stream: str = "ticker"
-) -> str:
+def make_combined_stream_url(symbols: Sequence[str], *, stream: str = "ticker") -> str:
     """Build the combined-stream URL for the given symbols.
 
     Returns ``"{BASE}/stream?streams=btcusdt@ticker/ethusdt@ticker"``
@@ -74,16 +72,12 @@ def make_combined_stream_url(
     not alphanumeric (Binance only accepts ``[A-Za-z0-9]+``).
     """
     if not symbols:
-        raise ValueError(
-            "make_combined_stream_url: at least one symbol required"
-        )
+        raise ValueError("make_combined_stream_url: at least one symbol required")
     cleaned: list[str] = []
     for raw in symbols:
         s = raw.lower().strip()
         if not s or not s.isalnum():
-            raise ValueError(
-                f"make_combined_stream_url: invalid symbol {raw!r}"
-            )
+            raise ValueError(f"make_combined_stream_url: invalid symbol {raw!r}")
         cleaned.append(s)
     parts = "/".join(f"{s}@{stream}" for s in cleaned)
     return f"{BINANCE_PUBLIC_WS_BASE}/stream?streams={parts}"
@@ -170,6 +164,7 @@ async def _default_connect(url: str) -> _WSConnection:
     without ``websockets`` installed (tests, lint, etc.)."""
 
     import websockets  # local import; heavy dependency
+
     return await websockets.connect(url)  # type: ignore[return-value]
 
 
@@ -205,17 +200,12 @@ class BinancePublicWSPump:
         venue: str = VENUE_TAG,
     ) -> None:
         if not symbols:
-            raise ValueError(
-                "BinancePublicWSPump: at least one symbol required"
-            )
+            raise ValueError("BinancePublicWSPump: at least one symbol required")
         if reconnect_delay_s <= 0:
-            raise ValueError(
-                "BinancePublicWSPump: reconnect_delay_s must be positive"
-            )
+            raise ValueError("BinancePublicWSPump: reconnect_delay_s must be positive")
         if reconnect_delay_max_s < reconnect_delay_s:
             raise ValueError(
-                "BinancePublicWSPump: reconnect_delay_max_s must be >= "
-                "reconnect_delay_s"
+                "BinancePublicWSPump: reconnect_delay_max_s must be >= reconnect_delay_s"
             )
         self._symbols: tuple[str, ...] = tuple(s.upper() for s in symbols)
         self._sink = sink
@@ -285,8 +275,7 @@ class BinancePublicWSPump:
                 except Exception:  # noqa: BLE001 - log + reconnect
                     self._errors += 1
                     LOG.exception(
-                        "binance_public_ws: connection failure; "
-                        "reconnecting in %.1fs",
+                        "binance_public_ws: connection failure; reconnecting in %.1fs",
                         delay,
                     )
                 finally:
@@ -298,9 +287,7 @@ class BinancePublicWSPump:
                 if self._stop_event.is_set():
                     break
                 try:
-                    await asyncio.wait_for(
-                        self._stop_event.wait(), timeout=delay
-                    )
+                    await asyncio.wait_for(self._stop_event.wait(), timeout=delay)
                 except TimeoutError:
                     pass
                 delay = min(delay * 2, self._reconnect_delay_max_s)
@@ -326,9 +313,7 @@ class BinancePublicWSPump:
         except (json.JSONDecodeError, ValueError):
             self._errors += 1
             return
-        tick = parse_24hr_ticker(
-            payload, ts_ns=self._clock_ns(), venue=self._venue
-        )
+        tick = parse_24hr_ticker(payload, ts_ns=self._clock_ns(), venue=self._venue)
         if tick is None:
             return
         self._ticks_received += 1

@@ -38,9 +38,7 @@ from governance_engine.control_plane.ledger_authority_writer import (
 )
 
 
-def _intent_payload(
-    objective: str, risk_mode: str, horizon: str, focus: str
-) -> dict[str, str]:
+def _intent_payload(objective: str, risk_mode: str, horizon: str, focus: str) -> dict[str, str]:
     return {
         INTENT_KEY_OBJECTIVE: objective,
         INTENT_KEY_RISK_MODE: risk_mode,
@@ -62,9 +60,7 @@ def test_sqlite_backend_survives_restart_with_chain_intact(tmp_path: Path) -> No
     e1 = first.append(
         ts_ns=1_001,
         kind=INTENT_TRANSITION_KIND,
-        payload=_intent_payload(
-            "CAPITAL_PRESERVATION", "DEFENSIVE", "INTRADAY", ""
-        ),
+        payload=_intent_payload("CAPITAL_PRESERVATION", "DEFENSIVE", "INTRADAY", ""),
     )
     head_before = first.head_hash()
     assert e0.prev_hash == GENESIS_PREV_HASH
@@ -136,9 +132,7 @@ def test_system_intent_recovers_across_restart(tmp_path: Path) -> None:
     first.append(
         ts_ns=100,
         kind=INTENT_TRANSITION_KIND,
-        payload=_intent_payload(
-            "YIELD_OPTIMIZATION", "AGGRESSIVE", "SWING", ""
-        ),
+        payload=_intent_payload("YIELD_OPTIMIZATION", "AGGRESSIVE", "SWING", ""),
     )
     first.append(
         ts_ns=200,
@@ -148,9 +142,7 @@ def test_system_intent_recovers_across_restart(tmp_path: Path) -> None:
     first.append(
         ts_ns=300,
         kind=INTENT_TRANSITION_KIND,
-        payload=_intent_payload(
-            "CAPITAL_PRESERVATION", "DEFENSIVE", "INTRADAY", ""
-        ),
+        payload=_intent_payload("CAPITAL_PRESERVATION", "DEFENSIVE", "INTRADAY", ""),
     )
     expected_intent = derive_system_intent(first.read())
     assert expected_intent != DEFAULT_SYSTEM_INTENT

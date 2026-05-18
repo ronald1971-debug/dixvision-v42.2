@@ -47,9 +47,7 @@ from intelligence_engine.agents.crew_strategy_council import (  # noqa: E402
     run_council,
 )
 
-SOURCE_PATH = (
-    REPO_ROOT / "intelligence_engine" / "agents" / "crew_strategy_council.py"
-)
+SOURCE_PATH = REPO_ROOT / "intelligence_engine" / "agents" / "crew_strategy_council.py"
 SOURCE_TEXT = SOURCE_PATH.read_text(encoding="utf-8")
 SOURCE_TREE = ast.parse(SOURCE_TEXT)
 
@@ -96,9 +94,7 @@ def _walk_module_imports() -> set[str]:
 def test_no_forbidden_top_level_imports() -> None:
     top = _walk_module_imports()
     for mod in _FORBIDDEN_TOP_LEVEL:
-        assert mod not in top, (
-            f"crew_strategy_council.py must not top-level import {mod!r}"
-        )
+        assert mod not in top, f"crew_strategy_council.py must not top-level import {mod!r}"
 
 
 def test_no_engine_cross_imports() -> None:
@@ -186,9 +182,7 @@ def test_canonical_role_order() -> None:
 
 
 def test_recommendation_labels_constant() -> None:
-    assert RECOMMENDATION_LABELS == frozenset(
-        {"APPROVE", "REJECT", "ESCALATE", "ABSTAIN"}
-    )
+    assert RECOMMENDATION_LABELS == frozenset({"APPROVE", "REJECT", "ESCALATE", "ABSTAIN"})
 
 
 def test_arbiter_reserved_keys() -> None:
@@ -278,9 +272,7 @@ def test_council_agent_rejects_empty_keys() -> None:
 
 def test_council_agent_rejects_too_many_keys() -> None:
     with pytest.raises(CouncilError):
-        _agent(
-            expected_output_keys=tuple(f"k{i}" for i in range(MAX_OUTPUT_KEYS + 1))
-        )
+        _agent(expected_output_keys=tuple(f"k{i}" for i in range(MAX_OUTPUT_KEYS + 1)))
 
 
 def test_council_agent_rejects_blank_key() -> None:
@@ -484,13 +476,9 @@ def test_council_config_rejects_too_many_agents() -> None:
     # above MAX_AGENTS.
     too_many: list[CouncilAgent] = []
     for i in range(MAX_AGENTS + 1):
-        role = (
-            CouncilRole.ARBITER if i == 0 else CouncilRole.SIGNAL_ANALYST
-        )
+        role = CouncilRole.ARBITER if i == 0 else CouncilRole.SIGNAL_ANALYST
         keys: tuple[str, ...] = (
-            ("recommendation", "rationale")
-            if role is CouncilRole.ARBITER
-            else (f"k{i}",)
+            ("recommendation", "rationale") if role is CouncilRole.ARBITER else (f"k{i}",)
         )
         too_many.append(
             CouncilAgent(
@@ -560,10 +548,7 @@ def test_council_config_rejects_too_few_tasks() -> None:
 
 
 def test_council_config_rejects_too_many_tasks() -> None:
-    tasks = tuple(
-        _task(f"t{i}", f"d{i}", CouncilRole.SIGNAL_ANALYST)
-        for i in range(MAX_TASKS)
-    ) + (
+    tasks = tuple(_task(f"t{i}", f"d{i}", CouncilRole.SIGNAL_ANALYST) for i in range(MAX_TASKS)) + (
         _task("t_final", "synth", CouncilRole.ARBITER),
     )
     # That's MAX_TASKS + 1
@@ -919,9 +904,7 @@ def test_run_council_propagates_prior_results_in_order() -> None:
             topic: str,
             prior_results: tuple[CouncilTaskResult, ...],
         ) -> Mapping[str, str]:
-            seen.append(
-                (task.task_id, tuple(r.task_id for r in prior_results))
-            )
+            seen.append((task.task_id, tuple(r.task_id for r in prior_results)))
             return _stub_replies()[task.task_id]
 
     cfg = _canonical_config()
@@ -953,9 +936,7 @@ def test_crewai_speaker_factory_rejects_non_str_prefix() -> None:
 
 
 def test_crewai_speaker_factory_returns_speaker() -> None:
-    speaker = crewai_speaker_factory(
-        completion=lambda **_: {"verdict": "bull", "evidence": "ok"}
-    )
+    speaker = crewai_speaker_factory(completion=lambda **_: {"verdict": "bull", "evidence": "ok"})
     assert isinstance(speaker, StructuredSpeaker)
 
 

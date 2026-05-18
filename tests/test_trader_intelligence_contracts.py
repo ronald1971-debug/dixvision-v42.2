@@ -88,9 +88,7 @@ def test_philosophy_profile_structural_equality():
 
 def test_philosophy_profile_inequality_on_field_change():
     base = PhilosophyProfile(trader_id="t1", risk_attitude=RiskAttitude.BALANCED)
-    other = PhilosophyProfile(
-        trader_id="t1", risk_attitude=RiskAttitude.AGGRESSIVE
-    )
+    other = PhilosophyProfile(trader_id="t1", risk_attitude=RiskAttitude.AGGRESSIVE)
     assert base != other
 
 
@@ -158,12 +156,8 @@ def test_trader_model_signature_order_matters():
     silently swap entry/exit/risk components.
     """
 
-    a = TraderModel(
-        trader_id="t1", source_feed="SRC-A", strategy_signatures=("a", "b")
-    )
-    b = TraderModel(
-        trader_id="t1", source_feed="SRC-A", strategy_signatures=("b", "a")
-    )
+    a = TraderModel(trader_id="t1", source_feed="SRC-A", strategy_signatures=("a", "b"))
+    b = TraderModel(trader_id="t1", source_feed="SRC-A", strategy_signatures=("b", "a"))
     assert a != b
 
 

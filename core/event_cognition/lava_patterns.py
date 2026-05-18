@@ -194,9 +194,7 @@ def _validate_port_id(port_id: str) -> None:
     if not port_id:
         raise LavaPortError("port_id must be non-empty")
     if len(port_id) > _PORT_ID_MAX_LEN:
-        raise LavaPortError(
-            f"port_id length must be ≤ {_PORT_ID_MAX_LEN}"
-        )
+        raise LavaPortError(f"port_id length must be ≤ {_PORT_ID_MAX_LEN}")
 
 
 class LavaInPort(Generic[PayloadT]):
@@ -226,14 +224,10 @@ class LavaInPort(Generic[PayloadT]):
         if capacity < 1:
             raise LavaPortError("capacity must be ≥ 1")
         if capacity > _PORT_CAPACITY_MAX:
-            raise LavaPortError(
-                f"capacity must be ≤ {_PORT_CAPACITY_MAX}"
-            )
+            raise LavaPortError(f"capacity must be ≤ {_PORT_CAPACITY_MAX}")
         self.port_id: str = port_id
         self.capacity: int = capacity
-        self._queue: asyncio.Queue[LavaSpike[PayloadT] | None] = (
-            asyncio.Queue(maxsize=capacity)
-        )
+        self._queue: asyncio.Queue[LavaSpike[PayloadT] | None] = asyncio.Queue(maxsize=capacity)
         self._bound_out_port_id: str = ""
         self._closed: bool = False
 
@@ -265,8 +259,7 @@ class LavaInPort(Generic[PayloadT]):
         _validate_port_id(out_port_id)
         if self._bound_out_port_id:
             raise LavaPortError(
-                f"in_port {self.port_id!r} already bound to "
-                f"{self._bound_out_port_id!r}"
+                f"in_port {self.port_id!r} already bound to {self._bound_out_port_id!r}"
             )
         self._bound_out_port_id = out_port_id
 
@@ -278,13 +271,9 @@ class LavaInPort(Generic[PayloadT]):
         """
 
         if not isinstance(spike, LavaSpike):
-            raise LavaPortError(
-                "LavaInPort.push expects a LavaSpike instance"
-            )
+            raise LavaPortError("LavaInPort.push expects a LavaSpike instance")
         if self._closed:
-            raise LavaPortError(
-                f"in_port {self.port_id!r} is closed"
-            )
+            raise LavaPortError(f"in_port {self.port_id!r} is closed")
         await self._queue.put(spike)
 
     async def receive(self) -> LavaSpike[PayloadT] | None:
@@ -301,10 +290,7 @@ class LavaInPort(Generic[PayloadT]):
         await self._queue.put(None)
 
     def __repr__(self) -> str:  # pragma: no cover - trivial
-        return (
-            f"LavaInPort(port_id={self.port_id!r}, "
-            f"capacity={self.capacity})"
-        )
+        return f"LavaInPort(port_id={self.port_id!r}, capacity={self.capacity})"
 
 
 class LavaOutPort(Generic[PayloadT]):
@@ -354,8 +340,7 @@ class LavaOutPort(Generic[PayloadT]):
             raise LavaPortError("connect expects a LavaInPort instance")
         if in_port in self._sinks:
             raise LavaPortError(
-                f"in_port {in_port.port_id!r} already connected "
-                f"to out_port {self.port_id!r}"
+                f"in_port {in_port.port_id!r} already connected to out_port {self.port_id!r}"
             )
         in_port.bind(self.port_id)
         self._sinks.append(in_port)
@@ -368,13 +353,9 @@ class LavaOutPort(Generic[PayloadT]):
         """
 
         if not isinstance(spike, LavaSpike):
-            raise LavaPortError(
-                "LavaOutPort.send expects a LavaSpike instance"
-            )
+            raise LavaPortError("LavaOutPort.send expects a LavaSpike instance")
         if self._closed:
-            raise LavaPortError(
-                f"out_port {self.port_id!r} is closed"
-            )
+            raise LavaPortError(f"out_port {self.port_id!r} is closed")
         retagged = LavaSpike[PayloadT](
             ts_ns=spike.ts_ns,
             payload=spike.payload,
@@ -393,10 +374,7 @@ class LavaOutPort(Generic[PayloadT]):
             await sink.close()
 
     def __repr__(self) -> str:  # pragma: no cover - trivial
-        return (
-            f"LavaOutPort(port_id={self.port_id!r}, "
-            f"fanout={self.fanout})"
-        )
+        return f"LavaOutPort(port_id={self.port_id!r}, fanout={self.fanout})"
 
 
 # =========================================================== Process
@@ -412,8 +390,7 @@ class _LavaProcessProtocol(Protocol):
 
     process_id: str
 
-    async def run(self) -> None:
-        ...
+    async def run(self) -> None: ...
 
 
 class LavaProcess(Generic[PayloadT]):
@@ -460,47 +437,35 @@ class LavaProcess(Generic[PayloadT]):
         if not process_id:
             raise LavaCompositionError("process_id must be non-empty")
         if len(process_id) > _PROCESS_ID_MAX_LEN:
-            raise LavaCompositionError(
-                f"process_id length must be ≤ {_PROCESS_ID_MAX_LEN}"
-            )
+            raise LavaCompositionError(f"process_id length must be ≤ {_PROCESS_ID_MAX_LEN}")
         if not isinstance(in_ports, tuple):
             raise LavaCompositionError("in_ports must be a tuple")
         if not isinstance(out_ports, tuple):
             raise LavaCompositionError("out_ports must be a tuple")
         for port in in_ports:
             if not isinstance(port, LavaInPort):
-                raise LavaCompositionError(
-                    "in_ports entries must be LavaInPort instances"
-                )
+                raise LavaCompositionError("in_ports entries must be LavaInPort instances")
         for port in out_ports:
             if not isinstance(port, LavaOutPort):
-                raise LavaCompositionError(
-                    "out_ports entries must be LavaOutPort instances"
-                )
+                raise LavaCompositionError("out_ports entries must be LavaOutPort instances")
         # Disallow duplicate port ids inside a single process; the
         # downstream graph cycle check assumes unique identifiers.
         seen_in: set[str] = set()
         for port in in_ports:
             if port.port_id in seen_in:
-                raise LavaCompositionError(
-                    f"duplicate in_port id {port.port_id!r}"
-                )
+                raise LavaCompositionError(f"duplicate in_port id {port.port_id!r}")
             seen_in.add(port.port_id)
         seen_out: set[str] = set()
         for port in out_ports:
             if port.port_id in seen_out:
-                raise LavaCompositionError(
-                    f"duplicate out_port id {port.port_id!r}"
-                )
+                raise LavaCompositionError(f"duplicate out_port id {port.port_id!r}")
             seen_out.add(port.port_id)
         self.process_id: str = process_id
         self.in_ports: tuple[LavaInPort[Any], ...] = in_ports
         self.out_ports: tuple[LavaOutPort[Any], ...] = out_ports
         self._consumed_count: int = 0
         self._emitted_count: int = 0
-        self._spike_listeners: list[
-            Any
-        ] = []  # callables (in_port, spike) -> Awaitable[None]
+        self._spike_listeners: list[Any] = []  # callables (in_port, spike) -> Awaitable[None]
 
     @property
     def consumed_count(self) -> int:
@@ -541,8 +506,7 @@ class LavaProcess(Generic[PayloadT]):
 
         if out_port not in self.out_ports:
             raise LavaCompositionError(
-                f"out_port {out_port.port_id!r} not registered on "
-                f"process {self.process_id!r}"
+                f"out_port {out_port.port_id!r} not registered on process {self.process_id!r}"
             )
         await out_port.send(spike)
         self._emitted_count += 1
@@ -560,9 +524,7 @@ class LavaProcess(Generic[PayloadT]):
         """
 
         if not callable(listener):
-            raise LavaCompositionError(
-                "spike listener must be callable"
-            )
+            raise LavaCompositionError("spike listener must be callable")
         self._spike_listeners.append(listener)
 
     def remove_spike_listener(
@@ -574,9 +536,7 @@ class LavaProcess(Generic[PayloadT]):
         try:
             self._spike_listeners.remove(listener)
         except ValueError as exc:
-            raise LavaCompositionError(
-                "spike listener not registered"
-            ) from exc
+            raise LavaCompositionError("spike listener not registered") from exc
 
     async def _drive_port(self, in_port: LavaInPort[Any]) -> None:
         while True:
@@ -609,9 +569,7 @@ class LavaProcess(Generic[PayloadT]):
                     await out_port.close()
             return
         try:
-            await asyncio.gather(
-                *(self._drive_port(p) for p in self.in_ports)
-            )
+            await asyncio.gather(*(self._drive_port(p) for p in self.in_ports))
         finally:
             for out_port in self.out_ports:
                 await out_port.close()
@@ -685,26 +643,20 @@ class LavaGraph:
         seen_processes: set[str] = set()
         for process in self.processes:
             if not isinstance(process, LavaProcess):
-                raise LavaCompositionError(
-                    "processes entries must be LavaProcess instances"
-                )
+                raise LavaCompositionError("processes entries must be LavaProcess instances")
             if process.process_id in seen_processes:
-                raise LavaCompositionError(
-                    f"duplicate process_id {process.process_id!r}"
-                )
+                raise LavaCompositionError(f"duplicate process_id {process.process_id!r}")
             seen_processes.add(process.process_id)
             for in_port in process.in_ports:
                 if in_port.port_id in self._process_by_in_port:
                     raise LavaCompositionError(
-                        f"in_port {in_port.port_id!r} owned by "
-                        "multiple processes"
+                        f"in_port {in_port.port_id!r} owned by multiple processes"
                     )
                 self._process_by_in_port[in_port.port_id] = process
             for out_port in process.out_ports:
                 if out_port.port_id in self._process_by_out_port:
                     raise LavaCompositionError(
-                        f"out_port {out_port.port_id!r} owned by "
-                        "multiple processes"
+                        f"out_port {out_port.port_id!r} owned by multiple processes"
                     )
                 self._process_by_out_port[out_port.port_id] = process
 
@@ -730,35 +682,26 @@ class LavaGraph:
         """
 
         if not isinstance(out_port, LavaOutPort):
-            raise LavaCompositionError(
-                "connect: out_port must be a LavaOutPort"
-            )
+            raise LavaCompositionError("connect: out_port must be a LavaOutPort")
         if not isinstance(in_port, LavaInPort):
-            raise LavaCompositionError(
-                "connect: in_port must be a LavaInPort"
-            )
+            raise LavaCompositionError("connect: in_port must be a LavaInPort")
         producer = self._process_by_out_port.get(out_port.port_id)
         consumer = self._process_by_in_port.get(in_port.port_id)
-        if producer is None and out_port.port_id not in _external_out_ports(
-            self.edges
-        ):
+        if producer is None and out_port.port_id not in _external_out_ports(self.edges):
             # External producer (e.g. driving the graph from
             # outside) — still allowed, but recorded with empty
             # producer_process_id.
             pass
         if consumer is None:
             raise LavaCompositionError(
-                f"in_port {in_port.port_id!r} not owned by any "
-                "registered process"
+                f"in_port {in_port.port_id!r} not owned by any registered process"
             )
         out_port.connect(in_port)
         self.edges = self.edges + (
             LavaEdge(
                 out_port_id=out_port.port_id,
                 in_port_id=in_port.port_id,
-                producer_process_id=(
-                    producer.process_id if producer else ""
-                ),
+                producer_process_id=(producer.process_id if producer else ""),
                 consumer_process_id=consumer.process_id,
             ),
         )
@@ -768,29 +711,20 @@ class LavaGraph:
 
         # Every in-port owned by a process must be bound.
         for in_port_id, process in self._process_by_in_port.items():
-            in_port = next(
-                p for p in process.in_ports if p.port_id == in_port_id
-            )
+            in_port = next(p for p in process.in_ports if p.port_id == in_port_id)
             if not in_port.is_bound:
                 raise LavaCompositionError(
-                    f"in_port {in_port_id!r} on process "
-                    f"{process.process_id!r} is dangling"
+                    f"in_port {in_port_id!r} on process {process.process_id!r} is dangling"
                 )
         # No process-to-itself or larger cycles. Build a directed
         # graph keyed on process_id.
-        adjacency: dict[str, set[str]] = {
-            p.process_id: set() for p in self.processes
-        }
+        adjacency: dict[str, set[str]] = {p.process_id: set() for p in self.processes}
         for edge in self.edges:
             if not edge.producer_process_id:
                 continue
-            adjacency[edge.producer_process_id].add(
-                edge.consumer_process_id
-            )
+            adjacency[edge.producer_process_id].add(edge.consumer_process_id)
         if _has_cycle(adjacency):
-            raise LavaCompositionError(
-                "LavaGraph contains a cycle — required to be a DAG"
-            )
+            raise LavaCompositionError("LavaGraph contains a cycle — required to be a DAG")
 
 
 def _external_out_ports(edges: tuple[LavaEdge, ...]) -> set[str]:
@@ -807,9 +741,7 @@ def _has_cycle(adjacency: Mapping[str, set[str]]) -> bool:
     for root in adjacency:
         if state[root] != WHITE:
             continue
-        stack: list[tuple[str, list[str]]] = [
-            (root, list(adjacency[root]))
-        ]
+        stack: list[tuple[str, list[str]]] = [(root, list(adjacency[root]))]
         state[root] = GRAY
         while stack:
             node, neighbours = stack[-1]
@@ -846,13 +778,9 @@ class LavaScheduler:
 
     def __post_init__(self) -> None:
         if not isinstance(self.graph, LavaGraph):
-            raise LavaCompositionError(
-                "LavaScheduler.graph must be a LavaGraph"
-            )
+            raise LavaCompositionError("LavaScheduler.graph must be a LavaGraph")
 
-    async def run(
-        self, *, timeout_s: float = _DEFAULT_SCHEDULER_TIMEOUT_S
-    ) -> list[LavaSpike[Any]]:
+    async def run(self, *, timeout_s: float = _DEFAULT_SCHEDULER_TIMEOUT_S) -> list[LavaSpike[Any]]:
         """Drive every process to completion.
 
         Returns the *collected sink spikes* — every spike delivered
@@ -861,22 +789,16 @@ class LavaScheduler:
         return value and read state from registered processes.
         """
 
-        if not isinstance(timeout_s, int | float) or isinstance(
-            timeout_s, bool
-        ):
+        if not isinstance(timeout_s, int | float) or isinstance(timeout_s, bool):
             raise LavaCompositionError("timeout_s must be a number")
         if math.isnan(timeout_s) or math.isinf(timeout_s):
             raise LavaCompositionError("timeout_s must be finite")
         if timeout_s <= 0:
             raise LavaCompositionError("timeout_s must be positive")
         sink_collector: list[LavaSpike[Any]] = []
-        sink_processes = tuple(
-            p for p in self.graph.processes if not p.out_ports
-        )
+        sink_processes = tuple(p for p in self.graph.processes if not p.out_ports)
 
-        async def _collect(
-            _in_port: LavaInPort[Any], spike: LavaSpike[Any]
-        ) -> None:
+        async def _collect(_in_port: LavaInPort[Any], spike: LavaSpike[Any]) -> None:
             sink_collector.append(spike)
 
         for process in sink_processes:

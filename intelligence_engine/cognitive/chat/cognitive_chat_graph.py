@@ -200,8 +200,7 @@ def assemble_cognitive_chat(
     flag = feature_flag if feature_flag is not None else CognitiveChatFeatureFlag()
     if not flag.enabled:
         raise CognitiveChatDisabledError(
-            "cognitive chat is disabled — set"
-            f" {FEATURE_FLAG_ENV_VAR}=true to enable"
+            f"cognitive chat is disabled — set {FEATURE_FLAG_ENV_VAR}=true to enable"
         )
 
     model = RegistryDrivenChatModel(

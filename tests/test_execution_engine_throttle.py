@@ -60,9 +60,7 @@ def _baseline(ts_ns: int = 0) -> RiskSnapshot:
 
 
 def _guard() -> AuthorityGuard:
-    return AuthorityGuard(
-        caller_allowlist=frozenset({"execution_engine", "tests.fixtures"})
-    )
+    return AuthorityGuard(caller_allowlist=frozenset({"execution_engine", "tests.fixtures"}))
 
 
 def test_engine_without_throttle_adapter_dispatches_normally() -> None:

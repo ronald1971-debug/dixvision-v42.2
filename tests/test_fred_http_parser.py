@@ -182,63 +182,34 @@ def test_parse_payload_empty_returns_empty() -> None:
 
 
 def test_parse_payload_malformed_json_returns_empty() -> None:
-    assert (
-        parse_observations_payload(
-            _FRED_MALFORMED_JSON, ts_ns=1, series_id="DGS10"
-        )
-        == ()
-    )
+    assert parse_observations_payload(_FRED_MALFORMED_JSON, ts_ns=1, series_id="DGS10") == ()
 
 
 def test_parse_payload_no_obs_key_returns_empty() -> None:
-    assert (
-        parse_observations_payload(
-            _FRED_NO_OBS_KEY, ts_ns=1, series_id="DGS10"
-        )
-        == ()
-    )
+    assert parse_observations_payload(_FRED_NO_OBS_KEY, ts_ns=1, series_id="DGS10") == ()
 
 
 def test_parse_payload_obs_key_not_list_returns_empty() -> None:
-    assert (
-        parse_observations_payload(
-            _FRED_OBS_NOT_LIST, ts_ns=1, series_id="DGS10"
-        )
-        == ()
-    )
+    assert parse_observations_payload(_FRED_OBS_NOT_LIST, ts_ns=1, series_id="DGS10") == ()
 
 
 def test_parse_payload_top_level_list_returns_empty() -> None:
-    assert (
-        parse_observations_payload(
-            _FRED_DOC_IS_LIST, ts_ns=1, series_id="DGS10"
-        )
-        == ()
-    )
+    assert parse_observations_payload(_FRED_DOC_IS_LIST, ts_ns=1, series_id="DGS10") == ()
 
 
 def test_parse_payload_skips_blank_dates() -> None:
-    obs = parse_observations_payload(
-        _FRED_BAD_DATE, ts_ns=1, series_id="DGS10"
-    )
+    obs = parse_observations_payload(_FRED_BAD_DATE, ts_ns=1, series_id="DGS10")
     assert len(obs) == 1
     assert obs[0].observation_date == "2026-04-19"
 
 
 def test_parse_payload_empty_obs_list_returns_empty() -> None:
-    assert (
-        parse_observations_payload(
-            _FRED_EMPTY_LIST, ts_ns=1, series_id="DGS10"
-        )
-        == ()
-    )
+    assert parse_observations_payload(_FRED_EMPTY_LIST, ts_ns=1, series_id="DGS10") == ()
 
 
 def test_parse_payload_invalid_utf8_returns_empty() -> None:
     bad = b"\xff\xfe\xfd"
-    assert (
-        parse_observations_payload(bad, ts_ns=1, series_id="DGS10") == ()
-    )
+    assert parse_observations_payload(bad, ts_ns=1, series_id="DGS10") == ()
 
 
 def test_parse_payload_rejects_empty_series_id() -> None:
@@ -252,12 +223,8 @@ def test_parse_payload_rejects_empty_series_id() -> None:
 
 
 def test_parse_payload_is_pure() -> None:
-    a = parse_observations_payload(
-        _FRED_TWO_OBS, ts_ns=99, series_id="DGS10", units="Percent"
-    )
-    b = parse_observations_payload(
-        _FRED_TWO_OBS, ts_ns=99, series_id="DGS10", units="Percent"
-    )
+    a = parse_observations_payload(_FRED_TWO_OBS, ts_ns=99, series_id="DGS10", units="Percent")
+    b = parse_observations_payload(_FRED_TWO_OBS, ts_ns=99, series_id="DGS10", units="Percent")
     assert a == b
 
 
@@ -268,17 +235,11 @@ def test_parse_payload_is_pure() -> None:
 
 def test_macro_observation_rejects_empty_required_fields() -> None:
     with pytest.raises(ValueError):
-        MacroObservation(
-            ts_ns=1, source="", series_id="X", observation_date="2026-04-19"
-        )
+        MacroObservation(ts_ns=1, source="", series_id="X", observation_date="2026-04-19")
     with pytest.raises(ValueError):
-        MacroObservation(
-            ts_ns=1, source="FRED", series_id="", observation_date="2026-04-19"
-        )
+        MacroObservation(ts_ns=1, source="FRED", series_id="", observation_date="2026-04-19")
     with pytest.raises(ValueError):
-        MacroObservation(
-            ts_ns=1, source="FRED", series_id="X", observation_date=""
-        )
+        MacroObservation(ts_ns=1, source="FRED", series_id="X", observation_date="")
 
 
 def test_macro_observation_rejects_non_positive_observed_ts_ns() -> None:

@@ -79,8 +79,7 @@ def _ledger_rows() -> list[dict[str, object]]:
     """Snapshot of the in-memory ledger chain (read-only)."""
 
     return [
-        dict(entry.payload, kind=entry.kind)
-        for entry in ui_server.STATE.governance.ledger.read()
+        dict(entry.payload, kind=entry.kind) for entry in ui_server.STATE.governance.ledger.read()
     ]
 
 

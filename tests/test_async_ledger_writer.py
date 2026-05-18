@@ -254,12 +254,8 @@ def test_writer_buffers_until_batch_size_max(tmp_path: Path) -> None:
     p = tmp_path / "ledger.log"
     w = AsyncLedgerWriter(path=p, policy=AsyncWriterPolicy(batch_size_max=3))
     r0 = _record(0)
-    r1 = link_record(
-        seq=1, ts_ns=2, kind="K", payload={"a": "1"}, prev_hash=r0.hash_chain
-    )
-    r2 = link_record(
-        seq=2, ts_ns=3, kind="K", payload={"a": "1"}, prev_hash=r1.hash_chain
-    )
+    r1 = link_record(seq=1, ts_ns=2, kind="K", payload={"a": "1"}, prev_hash=r0.hash_chain)
+    r2 = link_record(seq=2, ts_ns=3, kind="K", payload={"a": "1"}, prev_hash=r1.hash_chain)
     assert w.append(r0, ts_ns=1) is None
     assert w.append(r1, ts_ns=2) is None
     assert w.buffered_count == 2
@@ -281,9 +277,7 @@ def test_writer_buffers_until_flush_interval(tmp_path: Path) -> None:
     )
     r0 = _record(0)
     assert w.append(r0, ts_ns=10) is None
-    r1 = link_record(
-        seq=1, ts_ns=11, kind="K", payload={"a": "1"}, prev_hash=r0.hash_chain
-    )
+    r1 = link_record(seq=1, ts_ns=11, kind="K", payload={"a": "1"}, prev_hash=r0.hash_chain)
     result = w.append(r1, ts_ns=10 + 1_000)
     assert result is not None
     assert result.records_written == 2
@@ -312,9 +306,7 @@ def test_writer_seq_must_be_gap_free(tmp_path: Path) -> None:
     p = tmp_path / "ledger.log"
     w = AsyncLedgerWriter(path=p, policy=AsyncWriterPolicy(fsync_on_flush=False))
     r0 = _record(0)
-    r2 = link_record(
-        seq=2, ts_ns=2, kind="K", payload={"a": "1"}, prev_hash=r0.hash_chain
-    )
+    r2 = link_record(seq=2, ts_ns=2, kind="K", payload={"a": "1"}, prev_hash=r0.hash_chain)
     w.append(r0, ts_ns=1)
     with pytest.raises(ValueError):
         w.append(r2, ts_ns=2)
@@ -324,9 +316,7 @@ def test_writer_ts_ns_must_be_monotone(tmp_path: Path) -> None:
     p = tmp_path / "ledger.log"
     w = AsyncLedgerWriter(path=p, policy=AsyncWriterPolicy(fsync_on_flush=False))
     r0 = _record(0, ts_ns=100)
-    r1 = link_record(
-        seq=1, ts_ns=50, kind="K", payload={"a": "1"}, prev_hash=r0.hash_chain
-    )
+    r1 = link_record(seq=1, ts_ns=50, kind="K", payload={"a": "1"}, prev_hash=r0.hash_chain)
     w.append(r0, ts_ns=100)
     with pytest.raises(ValueError):
         w.append(r1, ts_ns=50)
@@ -387,9 +377,7 @@ def test_replay_file_yields_round_trip_records(tmp_path: Path) -> None:
     prev = GENESIS_PREV_HASH
     originals = []
     for i in range(5):
-        r = link_record(
-            seq=i, ts_ns=i + 1, kind="K", payload={"i": str(i)}, prev_hash=prev
-        )
+        r = link_record(seq=i, ts_ns=i + 1, kind="K", payload={"i": str(i)}, prev_hash=prev)
         originals.append(r)
         w.append(r, ts_ns=i + 1)
         prev = r.hash_chain
@@ -509,14 +497,10 @@ def test_ast_no_forbidden_top_level_imports() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 root = alias.name.split(".")[0]
-                assert root not in forbidden, (
-                    f"forbidden top-level import: {alias.name}"
-                )
+                assert root not in forbidden, f"forbidden top-level import: {alias.name}"
         elif isinstance(node, ast.ImportFrom) and node.module:
             root = node.module.split(".")[0]
-            assert root not in forbidden, (
-                f"forbidden top-level from-import: {node.module}"
-            )
+            assert root not in forbidden, f"forbidden top-level from-import: {node.module}"
 
 
 def test_ast_aiofiles_only_in_lazy_seam() -> None:
@@ -524,8 +508,7 @@ def test_ast_aiofiles_only_in_lazy_seam() -> None:
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name == "enable_aiofiles_factory":
             found = any(
-                isinstance(child, ast.Import)
-                and any(a.name == "aiofiles" for a in child.names)
+                isinstance(child, ast.Import) and any(a.name == "aiofiles" for a in child.names)
                 for child in ast.walk(node)
             )
             assert found, "enable_aiofiles_factory must import aiofiles function-locally"
@@ -569,14 +552,10 @@ def test_ast_no_runtime_tier_imports() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 root = alias.name.split(".")[0]
-                assert root not in forbidden_prefixes, (
-                    f"B1 violation: import {alias.name}"
-                )
+                assert root not in forbidden_prefixes, f"B1 violation: import {alias.name}"
         elif isinstance(node, ast.ImportFrom) and node.module:
             root = node.module.split(".")[0]
-            assert root not in forbidden_prefixes, (
-                f"B1 violation: from {node.module} import …"
-            )
+            assert root not in forbidden_prefixes, f"B1 violation: from {node.module} import …"
 
 
 def test_ast_no_wall_clock_reads() -> None:
@@ -608,9 +587,7 @@ def test_ast_no_wall_clock_reads() -> None:
 
 
 def test_flush_result_is_frozen_and_slotted() -> None:
-    fr = FlushResult(
-        bytes_written=0, records_written=0, last_seq=-1, fsync_called=False
-    )
+    fr = FlushResult(bytes_written=0, records_written=0, last_seq=-1, fsync_called=False)
     with pytest.raises(dataclasses.FrozenInstanceError):
         fr.bytes_written = 1  # type: ignore[misc]
     assert not hasattr(fr, "__dict__")

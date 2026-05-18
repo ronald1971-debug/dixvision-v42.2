@@ -44,7 +44,7 @@ _HOSTILE_PAYLOADS: tuple[bytes | str, ...] = (
     b"true",
     b"123",
     b"[]",
-    b"\"hello\"",
+    b'"hello"',
     b"{}",
     b'{"observations": null}',
     b'{"observations": "not-a-list"}',
@@ -62,7 +62,7 @@ _HOSTILE_PAYLOADS: tuple[bytes | str, ...] = (
     b'{"junk_key": [1,2,3]}',
     b"{",  # malformed JSON
     b"]]]",  # malformed JSON
-    "{\"observations\": []}",
+    '{"observations": []}',
     "",
 )
 
@@ -97,9 +97,7 @@ def test_parse_dropping_invalid_dates_does_not_yield_empty_date_observations() -
         }
     ).encode("utf-8")
 
-    out = parse_observations_payload(
-        payload, ts_ns=2_000, series_id="DGS10"
-    )
+    out = parse_observations_payload(payload, ts_ns=2_000, series_id="DGS10")
 
     # Only the well-formed row survives.
     assert len(out) == 1
@@ -147,12 +145,8 @@ def test_parse_is_pure_byte_identical_replay() -> None:
         payload = _random_well_formed_payload(rng)
         ts_ns = rng.randint(1, 1_000_000_000)
         series = rng.choice(("X", "DGS10", "UNRATE", "CPIAUCNS"))
-        a = parse_observations_payload(
-            payload, ts_ns=ts_ns, series_id=series
-        )
-        b = parse_observations_payload(
-            payload, ts_ns=ts_ns, series_id=series
-        )
+        a = parse_observations_payload(payload, ts_ns=ts_ns, series_id=series)
+        b = parse_observations_payload(payload, ts_ns=ts_ns, series_id=series)
         assert a == b, "parser is not pure under repeated invocation"
 
 
@@ -165,9 +159,7 @@ def test_parse_ts_ns_propagates_unchanged_to_every_observation() -> None:
     rng = random.Random(123)
     payload = _random_well_formed_payload(rng)
     ts_ns = 42_424_242
-    out = parse_observations_payload(
-        payload, ts_ns=ts_ns, series_id="DGS10"
-    )
+    out = parse_observations_payload(payload, ts_ns=ts_ns, series_id="DGS10")
     for o in out:
         assert o.ts_ns == ts_ns
 
@@ -176,9 +168,7 @@ def test_parse_series_id_propagates_unchanged_to_every_observation() -> None:
     """Caller-supplied ``series_id`` must appear verbatim on every row."""
     rng = random.Random(7)
     payload = _random_well_formed_payload(rng)
-    out = parse_observations_payload(
-        payload, ts_ns=1, series_id="UNRATE"
-    )
+    out = parse_observations_payload(payload, ts_ns=1, series_id="UNRATE")
     for o in out:
         assert o.series_id == "UNRATE"
 
@@ -186,9 +176,7 @@ def test_parse_series_id_propagates_unchanged_to_every_observation() -> None:
 def test_parse_default_source_tag_is_FRED() -> None:
     rng = random.Random(11)
     payload = _random_well_formed_payload(rng)
-    out = parse_observations_payload(
-        payload, ts_ns=1, series_id="X"
-    )
+    out = parse_observations_payload(payload, ts_ns=1, series_id="X")
     for o in out:
         assert o.source == SOURCE_TAG == "FRED"
 
@@ -196,9 +184,7 @@ def test_parse_default_source_tag_is_FRED() -> None:
 def test_parse_custom_source_tag_propagates() -> None:
     rng = random.Random(13)
     payload = _random_well_formed_payload(rng)
-    out = parse_observations_payload(
-        payload, ts_ns=1, series_id="X", source="ALT"
-    )
+    out = parse_observations_payload(payload, ts_ns=1, series_id="X", source="ALT")
     for o in out:
         assert o.source == "ALT"
 
@@ -210,9 +196,7 @@ def test_parse_custom_source_tag_propagates() -> None:
 
 def test_parse_rejects_empty_series_id() -> None:
     try:
-        parse_observations_payload(
-            b'{"observations": []}', ts_ns=1, series_id=""
-        )
+        parse_observations_payload(b'{"observations": []}', ts_ns=1, series_id="")
     except ValueError as exc:
         assert "series_id" in str(exc)
         return
@@ -248,9 +232,7 @@ def test_parse_many_iterations_no_invariant_violation() -> None:
         series = rng.choice(("DGS10", "CPIAUCNS", "UNRATE"))
         source = rng.choice(("FRED", "FRED-MIRROR-A"))
 
-        out = parse_observations_payload(
-            payload, ts_ns=ts_ns, series_id=series, source=source
-        )
+        out = parse_observations_payload(payload, ts_ns=ts_ns, series_id=series, source=source)
 
         for o in out:
             assert o.observation_date, "empty observation_date emitted"
@@ -266,10 +248,6 @@ def test_parse_handles_payload_bytes_or_str_identically() -> None:
         payload_bytes = _random_well_formed_payload(rng)
         payload_str = payload_bytes.decode("utf-8")
 
-        a = parse_observations_payload(
-            payload_bytes, ts_ns=42, series_id="X"
-        )
-        b = parse_observations_payload(
-            payload_str, ts_ns=42, series_id="X"
-        )
+        a = parse_observations_payload(payload_bytes, ts_ns=42, series_id="X")
+        b = parse_observations_payload(payload_str, ts_ns=42, series_id="X")
         assert a == b, "bytes vs str inputs diverged"

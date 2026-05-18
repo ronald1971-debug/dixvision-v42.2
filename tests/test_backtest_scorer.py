@@ -75,15 +75,11 @@ def test_authority_no_runtime_imports() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 root = alias.name.split(".")[0]
-                assert root not in forbidden, (
-                    f"forbidden import: {alias.name}"
-                )
+                assert root not in forbidden, f"forbidden import: {alias.name}"
         elif isinstance(node, ast.ImportFrom):
             if node.module is not None:
                 root = node.module.split(".")[0]
-                assert root not in forbidden, (
-                    f"forbidden import: {node.module}"
-                )
+                assert root not in forbidden, f"forbidden import: {node.module}"
 
 
 def test_authority_no_engine_cross_imports() -> None:
@@ -151,17 +147,13 @@ def test_authority_score_is_pure_function() -> None:
                         # Permit math.fsum and tuple methods. The only
                         # blanket ban is on stdlib IO/clock attributes.
                         attr_target = (
-                            sub.func.value.id
-                            if isinstance(sub.func.value, ast.Name)
-                            else None
+                            sub.func.value.id if isinstance(sub.func.value, ast.Name) else None
                         )
                         assert attr_target not in {
                             "time",
                             "datetime",
                             "os",
-                        }, (
-                            f"forbidden attribute call: {attr_target}.{sub.func.attr}"
-                        )
+                        }, f"forbidden attribute call: {attr_target}.{sub.func.attr}"
 
 
 # ---------------------------------------------------------------------------
@@ -453,9 +445,7 @@ def test_total_return_basic() -> None:
 
 def test_max_drawdown_basic() -> None:
     # peak 200 -> trough 100 -> recovers to 150
-    r = _build_result(
-        [(0, 100.0), (1, 200.0), (2, 100.0), (3, 150.0)], []
-    )
+    r = _build_result([(0, 100.0), (1, 200.0), (2, 100.0), (3, 150.0)], [])
     s = score_backtest(r)
     assert math.isclose(s.max_drawdown, 0.5, rel_tol=1e-12)
 
@@ -468,17 +458,13 @@ def test_max_drawdown_zero_on_monotone_rising() -> None:
 
 def test_volatility_constant_returns_zero() -> None:
     # 10% per period, exactly — stddev must be zero.
-    r = _build_result(
-        [(0, 100.0), (1, 110.0), (2, 121.0), (3, 133.1)], []
-    )
+    r = _build_result([(0, 100.0), (1, 110.0), (2, 121.0), (3, 133.1)], [])
     s = score_backtest(r)
     assert math.isclose(s.volatility, 0.0, abs_tol=1e-9)
 
 
 def test_sharpe_constant_returns_zero_volatility_yields_zero() -> None:
-    r = _build_result(
-        [(0, 100.0), (1, 110.0), (2, 121.0), (3, 133.1)], []
-    )
+    r = _build_result([(0, 100.0), (1, 110.0), (2, 121.0), (3, 133.1)], [])
     s = score_backtest(r)
     # Convention: zero volatility -> zero Sharpe (avoid div by zero).
     assert s.sharpe == 0.0
@@ -493,9 +479,7 @@ def test_sortino_no_downside_returns_zero() -> None:
 
 
 def test_sharpe_sign_matches_excess_mean() -> None:
-    r = _build_result(
-        [(0, 100.0), (1, 90.0), (2, 95.0), (3, 80.0)], []
-    )
+    r = _build_result([(0, 100.0), (1, 90.0), (2, 95.0), (3, 80.0)], [])
     s = score_backtest(r)
     assert s.sharpe < 0.0  # negative excess mean -> negative Sharpe
 
@@ -596,9 +580,7 @@ def test_score_rejects_non_positive_equity_value() -> None:
         period_end_ns=10,
         equity_curve=eq_points,
         trades=(),
-        metrics=BacktestMetrics(
-            n_trades=0, win_rate=0.0, total_return=0.0, max_drawdown=0.0
-        ),
+        metrics=BacktestMetrics(n_trades=0, win_rate=0.0, total_return=0.0, max_drawdown=0.0),
     )
     with pytest.raises(BacktestScorerError, match="strictly positive"):
         score_backtest(r)

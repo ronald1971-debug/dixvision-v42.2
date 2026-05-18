@@ -121,9 +121,7 @@ def test_invalid_entry_or_size_rejected() -> None:
     with pytest.raises(ValueError):
         CrowdDensity().step(seed=0, scenario=_scenario(entry_price=0.0))
     with pytest.raises(ValueError):
-        CrowdDensity().step(
-            seed=0, scenario=_scenario(position_size_usd=-1.0)
-        )
+        CrowdDensity().step(seed=0, scenario=_scenario(position_size_usd=-1.0))
 
 
 def test_missing_meta_keys_rejected() -> None:
@@ -155,9 +153,7 @@ def test_distribution_over_seeds_varies() -> None:
     cfg = CrowdDensityConfig(squeeze_threshold=0.4)
     s = _scenario(side="long", crowd_share=0.6, squeeze_intensity=0.6)
     runner = CrowdDensity(cfg)
-    rules = {
-        runner.step(seed=seed, scenario=s).rule_fired for seed in range(200)
-    }
+    rules = {runner.step(seed=seed, scenario=s).rule_fired for seed in range(200)}
     assert "no_squeeze" in rules
     assert "long_squeeze" in rules
 

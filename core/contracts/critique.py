@@ -197,21 +197,14 @@ MAX_REFINEMENTS: Final[int] = 16
 # ---------------------------------------------------------------------------
 
 
-_IDENTIFIER_RE: Final[re.Pattern[str]] = re.compile(
-    r"[A-Za-z_][A-Za-z0-9_]*"
-)
+_IDENTIFIER_RE: Final[re.Pattern[str]] = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
 def _validate_identifier(label: str, value: str) -> None:
     if not isinstance(value, str) or not value:
-        raise StrategyCouncilError(
-            f"{label} must be a non-empty str, got {value!r}"
-        )
+        raise StrategyCouncilError(f"{label} must be a non-empty str, got {value!r}")
     if not _IDENTIFIER_RE.fullmatch(value):
-        raise StrategyCouncilError(
-            f"{label} must match [A-Za-z_][A-Za-z0-9_]*, got "
-            f"{value!r}"
-        )
+        raise StrategyCouncilError(f"{label} must match [A-Za-z_][A-Za-z0-9_]*, got {value!r}")
 
 
 # ---------------------------------------------------------------------------
@@ -248,67 +241,39 @@ class RoleSpec:
 
     def __post_init__(self) -> None:
         if not isinstance(self.role, CriticRole):
-            raise RoleSpecError(
-                "RoleSpec.role must be CriticRole, got "
-                f"{type(self.role).__name__}"
-            )
+            raise RoleSpecError(f"RoleSpec.role must be CriticRole, got {type(self.role).__name__}")
         if not isinstance(self.goal, str) or not self.goal.strip():
-            raise RoleSpecError(
-                "RoleSpec.goal must be a non-empty str"
-            )
+            raise RoleSpecError("RoleSpec.goal must be a non-empty str")
         if len(self.goal) > MAX_GOAL_LEN:
-            raise RoleSpecError(
-                f"RoleSpec.goal length > {MAX_GOAL_LEN}"
-            )
+            raise RoleSpecError(f"RoleSpec.goal length > {MAX_GOAL_LEN}")
         if not isinstance(self.profile, str) or not self.profile.strip():
-            raise RoleSpecError(
-                "RoleSpec.profile must be a non-empty str"
-            )
+            raise RoleSpecError("RoleSpec.profile must be a non-empty str")
         if len(self.profile) > MAX_PROFILE_LEN:
-            raise RoleSpecError(
-                f"RoleSpec.profile length > {MAX_PROFILE_LEN}"
-            )
+            raise RoleSpecError(f"RoleSpec.profile length > {MAX_PROFILE_LEN}")
         if not isinstance(self.payload_keys, tuple):
             raise RoleSpecError(
-                "RoleSpec.payload_keys must be a tuple, got "
-                f"{type(self.payload_keys).__name__}"
+                f"RoleSpec.payload_keys must be a tuple, got {type(self.payload_keys).__name__}"
             )
         if not self.payload_keys:
-            raise RoleSpecError(
-                "RoleSpec.payload_keys must be non-empty"
-            )
+            raise RoleSpecError("RoleSpec.payload_keys must be non-empty")
         if len(self.payload_keys) > MAX_PAYLOAD_KEYS:
-            raise RoleSpecError(
-                "RoleSpec.payload_keys count > "
-                f"{MAX_PAYLOAD_KEYS}"
-            )
+            raise RoleSpecError(f"RoleSpec.payload_keys count > {MAX_PAYLOAD_KEYS}")
         seen: set[str] = set()
         for i, k in enumerate(self.payload_keys):
             try:
-                _validate_identifier(
-                    f"RoleSpec.payload_keys[{i}]", k
-                )
+                _validate_identifier(f"RoleSpec.payload_keys[{i}]", k)
             except StrategyCouncilError as exc:
                 raise RoleSpecError(str(exc)) from exc
             if len(k) > MAX_PAYLOAD_KEY_LEN:
-                raise RoleSpecError(
-                    "RoleSpec.payload_keys entry length > "
-                    f"{MAX_PAYLOAD_KEY_LEN}"
-                )
+                raise RoleSpecError(f"RoleSpec.payload_keys entry length > {MAX_PAYLOAD_KEY_LEN}")
             if k in seen:
-                raise RoleSpecError(
-                    "RoleSpec.payload_keys contains duplicate "
-                    f"{k!r}"
-                )
+                raise RoleSpecError(f"RoleSpec.payload_keys contains duplicate {k!r}")
             seen.add(k)
         if self.role is CriticRole.ARBITER:
-            missing = _RESERVED_ARBITER_KEYS - {
-                _ARBITER_REFINEMENTS_KEY
-            } - set(self.payload_keys)
+            missing = _RESERVED_ARBITER_KEYS - {_ARBITER_REFINEMENTS_KEY} - set(self.payload_keys)
             if missing:
                 raise RoleSpecError(
-                    "ARBITER RoleSpec.payload_keys must include "
-                    f"{sorted(missing)!r}"
+                    f"ARBITER RoleSpec.payload_keys must include {sorted(missing)!r}"
                 )
 
 
@@ -346,34 +311,23 @@ class CriticMessage:
             )
         if not isinstance(self.payload, Mapping):
             raise MessageError(
-                "CriticMessage.payload must be a Mapping, got "
-                f"{type(self.payload).__name__}"
+                f"CriticMessage.payload must be a Mapping, got {type(self.payload).__name__}"
             )
         if not self.payload:
-            raise MessageError(
-                "CriticMessage.payload must be non-empty"
-            )
+            raise MessageError("CriticMessage.payload must be non-empty")
         for k, v in self.payload.items():
             if not isinstance(k, str) or not k:
-                raise MessageError(
-                    "CriticMessage.payload keys must be "
-                    f"non-empty str, got {k!r}"
-                )
+                raise MessageError(f"CriticMessage.payload keys must be non-empty str, got {k!r}")
             if len(k) > MAX_PAYLOAD_KEY_LEN:
                 raise MessageError(
-                    "CriticMessage.payload key length > "
-                    f"{MAX_PAYLOAD_KEY_LEN}: {k!r}"
+                    f"CriticMessage.payload key length > {MAX_PAYLOAD_KEY_LEN}: {k!r}"
                 )
             if not isinstance(v, str):
                 raise MessageError(
-                    f"CriticMessage.payload[{k!r}] must be str, "
-                    f"got {type(v).__name__}"
+                    f"CriticMessage.payload[{k!r}] must be str, got {type(v).__name__}"
                 )
             if len(v) > MAX_PAYLOAD_VALUE_LEN:
-                raise MessageError(
-                    f"CriticMessage.payload[{k!r}] length > "
-                    f"{MAX_PAYLOAD_VALUE_LEN}"
-                )
+                raise MessageError(f"CriticMessage.payload[{k!r}] length > {MAX_PAYLOAD_VALUE_LEN}")
 
 
 # ---------------------------------------------------------------------------
@@ -396,13 +350,11 @@ class CritiqueLog:
     def __post_init__(self) -> None:
         if not isinstance(self.proposal_id, str) or not self.proposal_id:
             raise StrategyCouncilError(
-                "CritiqueLog.proposal_id must be a non-empty str, "
-                f"got {self.proposal_id!r}"
+                f"CritiqueLog.proposal_id must be a non-empty str, got {self.proposal_id!r}"
             )
         if not isinstance(self.messages, tuple):
             raise StrategyCouncilError(
-                "CritiqueLog.messages must be a tuple, got "
-                f"{type(self.messages).__name__}"
+                f"CritiqueLog.messages must be a tuple, got {type(self.messages).__name__}"
             )
         if len(self.messages) != len(CANONICAL_CRITIC_ROLES):
             raise StrategyCouncilError(
@@ -413,8 +365,7 @@ class CritiqueLog:
         for i, msg in enumerate(self.messages):
             if not isinstance(msg, CriticMessage):
                 raise StrategyCouncilError(
-                    f"CritiqueLog.messages[{i}] must be "
-                    f"CriticMessage, got {type(msg).__name__}"
+                    f"CritiqueLog.messages[{i}] must be CriticMessage, got {type(msg).__name__}"
                 )
             if msg.sender_role is not CANONICAL_CRITIC_ROLES[i]:
                 raise StrategyCouncilError(
@@ -427,9 +378,7 @@ class CritiqueLog:
         for msg in self.messages:
             if msg.sender_role is role:
                 return msg
-        raise StrategyCouncilError(
-            f"CritiqueLog.by_role: role {role!r} not in log"
-        )
+        raise StrategyCouncilError(f"CritiqueLog.by_role: role {role!r} not in log")
 
 
 # ---------------------------------------------------------------------------
@@ -458,12 +407,9 @@ class CritiqueConsensus:
     def __post_init__(self) -> None:
         if not isinstance(self.proposal_id, str) or not self.proposal_id:
             raise ConsensusError(
-                "CritiqueConsensus.proposal_id must be a "
-                f"non-empty str, got {self.proposal_id!r}"
+                f"CritiqueConsensus.proposal_id must be a non-empty str, got {self.proposal_id!r}"
             )
-        if not isinstance(
-            self.recommendation, CritiqueRecommendation
-        ):
+        if not isinstance(self.recommendation, CritiqueRecommendation):
             raise ConsensusError(
                 "CritiqueConsensus.recommendation must be a "
                 "CritiqueRecommendation, got "
@@ -471,34 +417,25 @@ class CritiqueConsensus:
             )
         if not isinstance(self.rationale, str):
             raise ConsensusError(
-                "CritiqueConsensus.rationale must be str, got "
-                f"{type(self.rationale).__name__}"
+                f"CritiqueConsensus.rationale must be str, got {type(self.rationale).__name__}"
             )
         if len(self.rationale) > MAX_RATIONALE_LEN:
-            raise ConsensusError(
-                "CritiqueConsensus.rationale length > "
-                f"{MAX_RATIONALE_LEN}"
-            )
+            raise ConsensusError(f"CritiqueConsensus.rationale length > {MAX_RATIONALE_LEN}")
         if not isinstance(self.refinements, tuple):
             raise ConsensusError(
                 "CritiqueConsensus.refinements must be a tuple, "
                 f"got {type(self.refinements).__name__}"
             )
         if len(self.refinements) > MAX_REFINEMENTS:
-            raise ConsensusError(
-                "CritiqueConsensus.refinements count > "
-                f"{MAX_REFINEMENTS}"
-            )
+            raise ConsensusError(f"CritiqueConsensus.refinements count > {MAX_REFINEMENTS}")
         for i, r in enumerate(self.refinements):
             if not isinstance(r, str):
                 raise ConsensusError(
-                    f"CritiqueConsensus.refinements[{i}] must be "
-                    f"str, got {type(r).__name__}"
+                    f"CritiqueConsensus.refinements[{i}] must be str, got {type(r).__name__}"
                 )
             if len(r) > MAX_REFINEMENT_LEN:
                 raise ConsensusError(
-                    f"CritiqueConsensus.refinements[{i}] length > "
-                    f"{MAX_REFINEMENT_LEN}"
+                    f"CritiqueConsensus.refinements[{i}] length > {MAX_REFINEMENT_LEN}"
                 )
 
 
@@ -539,27 +476,19 @@ def _validate_role_bundle(
 ) -> None:
     if not isinstance(bundle, Mapping):
         raise RoleSpecError(
-            "run_critique_round role_bundle must be a Mapping, "
-            f"got {type(bundle).__name__}"
+            f"run_critique_round role_bundle must be a Mapping, got {type(bundle).__name__}"
         )
-    missing = sorted(
-        r.value for r in CANONICAL_CRITIC_ROLES if r not in bundle
-    )
+    missing = sorted(r.value for r in CANONICAL_CRITIC_ROLES if r not in bundle)
     if missing:
-        raise RoleSpecError(
-            "run_critique_round role_bundle missing canonical "
-            f"roles: {missing!r}"
-        )
+        raise RoleSpecError(f"run_critique_round role_bundle missing canonical roles: {missing!r}")
     for role, spec in bundle.items():
         if not isinstance(role, CriticRole):
             raise RoleSpecError(
-                "run_critique_round role_bundle keys must be "
-                f"CriticRole, got {role!r}"
+                f"run_critique_round role_bundle keys must be CriticRole, got {role!r}"
             )
         if not isinstance(spec, RoleSpec):
             raise RoleSpecError(
-                "run_critique_round role_bundle values must be "
-                f"RoleSpec, got {type(spec).__name__}"
+                f"run_critique_round role_bundle values must be RoleSpec, got {type(spec).__name__}"
             )
         if spec.role is not role:
             raise RoleSpecError(
@@ -568,13 +497,10 @@ def _validate_role_bundle(
             )
 
 
-def _coerce_reply(
-    spec: RoleSpec, reply: Mapping[str, str]
-) -> CriticMessage:
+def _coerce_reply(spec: RoleSpec, reply: Mapping[str, str]) -> CriticMessage:
     if not isinstance(reply, Mapping):
         raise MessageError(
-            "StructuredSpeaker.speak must return a Mapping, got "
-            f"{type(reply).__name__}"
+            f"StructuredSpeaker.speak must return a Mapping, got {type(reply).__name__}"
         )
     payload = dict(reply)
     expected = set(spec.payload_keys)
@@ -595,20 +521,14 @@ def _coerce_reply(
     return CriticMessage(sender_role=spec.role, payload=ordered)
 
 
-def _project_consensus(
-    proposal_id: str, arbiter: CriticMessage
-) -> CritiqueConsensus:
+def _project_consensus(proposal_id: str, arbiter: CriticMessage) -> CritiqueConsensus:
     if arbiter.sender_role is not CriticRole.ARBITER:
         raise ConsensusError(
-            "consensus may only be projected from an ARBITER "
-            f"message, got {arbiter.sender_role!r}"
+            f"consensus may only be projected from an ARBITER message, got {arbiter.sender_role!r}"
         )
     rec_raw = arbiter.payload.get(_ARBITER_RECOMMENDATION_KEY)
     if rec_raw is None:
-        raise ConsensusError(
-            "ARBITER message missing "
-            f"{_ARBITER_RECOMMENDATION_KEY!r} key"
-        )
+        raise ConsensusError(f"ARBITER message missing {_ARBITER_RECOMMENDATION_KEY!r} key")
     try:
         recommendation = CritiqueRecommendation(rec_raw)
     except ValueError as exc:
@@ -617,12 +537,8 @@ def _project_consensus(
             f"{rec_raw!r} is not a CritiqueRecommendation label"
         ) from exc
     rationale = arbiter.payload.get(_ARBITER_RATIONALE_KEY, "")
-    refinements_raw = arbiter.payload.get(
-        _ARBITER_REFINEMENTS_KEY, ""
-    )
-    refinements = tuple(
-        line for line in refinements_raw.split("\n") if line
-    )
+    refinements_raw = arbiter.payload.get(_ARBITER_REFINEMENTS_KEY, "")
+    refinements = tuple(line for line in refinements_raw.split("\n") if line)
     return CritiqueConsensus(
         proposal_id=proposal_id,
         recommendation=recommendation,
@@ -654,24 +570,20 @@ def run_critique_round(
 
     if not isinstance(proposal_id, str) or not proposal_id:
         raise StrategyCouncilError(
-            "run_critique_round proposal_id must be a non-empty "
-            f"str, got {proposal_id!r}"
+            f"run_critique_round proposal_id must be a non-empty str, got {proposal_id!r}"
         )
     if not isinstance(proposal, Mapping):
         raise StrategyCouncilError(
-            "run_critique_round proposal must be a Mapping, got "
-            f"{type(proposal).__name__}"
+            f"run_critique_round proposal must be a Mapping, got {type(proposal).__name__}"
         )
     for k, v in proposal.items():
         if not isinstance(k, str) or not k:
             raise StrategyCouncilError(
-                "run_critique_round proposal keys must be "
-                f"non-empty str, got {k!r}"
+                f"run_critique_round proposal keys must be non-empty str, got {k!r}"
             )
         if not isinstance(v, str):
             raise StrategyCouncilError(
-                f"run_critique_round proposal[{k!r}] must be "
-                f"str, got {type(v).__name__}"
+                f"run_critique_round proposal[{k!r}] must be str, got {type(v).__name__}"
             )
     _validate_role_bundle(role_bundle)
     if not isinstance(speaker, StructuredSpeaker):
@@ -688,12 +600,8 @@ def run_critique_round(
         msg = _coerce_reply(spec, reply)
         prior.append(msg)
 
-    log = CritiqueLog(
-        proposal_id=proposal_id, messages=tuple(prior)
-    )
-    consensus = _project_consensus(
-        proposal_id, log.by_role(CriticRole.ARBITER)
-    )
+    log = CritiqueLog(proposal_id=proposal_id, messages=tuple(prior))
+    consensus = _project_consensus(proposal_id, log.by_role(CriticRole.ARBITER))
     return log, consensus
 
 

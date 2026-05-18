@@ -118,30 +118,19 @@ class JetStreamConfig:
 
     def __post_init__(self) -> None:
         if not self.name:
-            raise ValueError(
-                "JetStreamConfig.name must be non-empty"
-            )
+            raise ValueError("JetStreamConfig.name must be non-empty")
         if not isinstance(self.subjects, tuple):
             raise TypeError(
-                "JetStreamConfig.subjects must be tuple; "
-                f"got {type(self.subjects).__name__}"
+                f"JetStreamConfig.subjects must be tuple; got {type(self.subjects).__name__}"
             )
         if not self.subjects:
-            raise ValueError(
-                "JetStreamConfig.subjects must be non-empty"
-            )
+            raise ValueError("JetStreamConfig.subjects must be non-empty")
         for s in self.subjects:
             _validate_subscription_pattern(s)
         if self.max_messages < 0:
-            raise ValueError(
-                "JetStreamConfig.max_messages must be >= 0; "
-                f"got {self.max_messages}"
-            )
+            raise ValueError(f"JetStreamConfig.max_messages must be >= 0; got {self.max_messages}")
         if self.max_age_ns < 0:
-            raise ValueError(
-                "JetStreamConfig.max_age_ns must be >= 0; "
-                f"got {self.max_age_ns}"
-            )
+            raise ValueError(f"JetStreamConfig.max_age_ns must be >= 0; got {self.max_age_ns}")
 
 
 @dataclasses.dataclass(frozen=True, slots=True, order=True)
@@ -161,15 +150,11 @@ class DurableConsumerConfig:
 
     def __post_init__(self) -> None:
         if not self.durable_name:
-            raise ValueError(
-                "DurableConsumerConfig.durable_name must be "
-                "non-empty"
-            )
+            raise ValueError("DurableConsumerConfig.durable_name must be non-empty")
         _validate_subscription_pattern(self.filter_pattern)
         if self.ack_wait_ns < 0:
             raise ValueError(
-                "DurableConsumerConfig.ack_wait_ns must be >= 0; "
-                f"got {self.ack_wait_ns}"
+                f"DurableConsumerConfig.ack_wait_ns must be >= 0; got {self.ack_wait_ns}"
             )
 
 
@@ -185,37 +170,20 @@ class NATSConfig:
 
     def __post_init__(self) -> None:
         if not isinstance(self.servers, tuple):
-            raise TypeError(
-                "NATSConfig.servers must be tuple; "
-                f"got {type(self.servers).__name__}"
-            )
+            raise TypeError(f"NATSConfig.servers must be tuple; got {type(self.servers).__name__}")
         if not self.servers:
-            raise ValueError(
-                "NATSConfig.servers must be non-empty"
-            )
+            raise ValueError("NATSConfig.servers must be non-empty")
         for s in self.servers:
             if not isinstance(s, str) or not s:
-                raise ValueError(
-                    "NATSConfig.servers entries must be "
-                    "non-empty strings"
-                )
+                raise ValueError("NATSConfig.servers entries must be non-empty strings")
         if not self.name:
-            raise ValueError(
-                "NATSConfig.name must be non-empty"
-            )
+            raise ValueError("NATSConfig.name must be non-empty")
         if self.max_reconnect_attempts < 0:
-            raise ValueError(
-                "NATSConfig.max_reconnect_attempts must be >= 0"
-            )
+            raise ValueError("NATSConfig.max_reconnect_attempts must be >= 0")
         if self.reconnect_time_wait_ns <= 0:
-            raise ValueError(
-                "NATSConfig.reconnect_time_wait_ns must be "
-                "positive"
-            )
+            raise ValueError("NATSConfig.reconnect_time_wait_ns must be positive")
         if self.connect_timeout_ns <= 0:
-            raise ValueError(
-                "NATSConfig.connect_timeout_ns must be positive"
-            )
+            raise ValueError("NATSConfig.connect_timeout_ns must be positive")
 
 
 @dataclasses.dataclass(frozen=True, slots=True, order=True)
@@ -231,28 +199,18 @@ class PublishRecord:
     def __post_init__(self) -> None:
         _validate_publish_subject(self.subject_name)
         if not isinstance(self.value, bytes):
-            raise TypeError(
-                "PublishRecord.value must be bytes; "
-                f"got {type(self.value).__name__}"
-            )
+            raise TypeError(f"PublishRecord.value must be bytes; got {type(self.value).__name__}")
         if self.ts_ns < 0:
-            raise ValueError(
-                "PublishRecord.ts_ns must be >= 0; "
-                f"got {self.ts_ns}"
-            )
+            raise ValueError(f"PublishRecord.ts_ns must be >= 0; got {self.ts_ns}")
         if self.reply_subject:
             _validate_publish_subject(self.reply_subject)
         if not isinstance(self.headers, tuple):
             raise TypeError(
-                "PublishRecord.headers must be tuple; "
-                f"got {type(self.headers).__name__}"
+                f"PublishRecord.headers must be tuple; got {type(self.headers).__name__}"
             )
         for h in self.headers:
             if not isinstance(h, tuple) or len(h) != 2:
-                raise TypeError(
-                    "PublishRecord.headers entries must be "
-                    "(str, str) tuples"
-                )
+                raise TypeError("PublishRecord.headers entries must be (str, str) tuples")
 
 
 @dataclasses.dataclass(frozen=True, slots=True, order=True)
@@ -275,33 +233,18 @@ class DeliveredRecord:
 
     def __post_init__(self) -> None:
         if not self.stream_name:
-            raise ValueError(
-                "DeliveredRecord.stream_name must be non-empty"
-            )
+            raise ValueError("DeliveredRecord.stream_name must be non-empty")
         if not self.consumer_name:
-            raise ValueError(
-                "DeliveredRecord.consumer_name must be non-empty"
-            )
+            raise ValueError("DeliveredRecord.consumer_name must be non-empty")
         _validate_publish_subject(self.subject_name)
         if self.seq < 1:
-            raise ValueError(
-                "DeliveredRecord.seq must be >= 1; "
-                f"got {self.seq}"
-            )
+            raise ValueError(f"DeliveredRecord.seq must be >= 1; got {self.seq}")
         if not isinstance(self.value, bytes):
-            raise TypeError(
-                "DeliveredRecord.value must be bytes; "
-                f"got {type(self.value).__name__}"
-            )
+            raise TypeError(f"DeliveredRecord.value must be bytes; got {type(self.value).__name__}")
         if self.ts_ns < 0:
-            raise ValueError(
-                "DeliveredRecord.ts_ns must be >= 0"
-            )
+            raise ValueError("DeliveredRecord.ts_ns must be >= 0")
         if self.deliveries < 0:
-            raise ValueError(
-                "DeliveredRecord.deliveries must be >= 0; "
-                f"got {self.deliveries}"
-            )
+            raise ValueError(f"DeliveredRecord.deliveries must be >= 0; got {self.deliveries}")
 
 
 # ---------------------------------------------------------------------------
@@ -312,10 +255,7 @@ class DeliveredRecord:
 def serialize_record(payload: Mapping[str, object]) -> bytes:
     """Byte-stable JSON codec — same shape as kafka_bus / faust_bus."""
     if not isinstance(payload, Mapping):
-        raise TypeError(
-            "serialize_record requires a Mapping; "
-            f"got {type(payload).__name__}"
-        )
+        raise TypeError(f"serialize_record requires a Mapping; got {type(payload).__name__}")
     return json.dumps(
         dict(payload),
         sort_keys=True,
@@ -326,15 +266,10 @@ def serialize_record(payload: Mapping[str, object]) -> bytes:
 
 def deserialize_record(blob: bytes) -> dict[str, object]:
     if not isinstance(blob, bytes):
-        raise TypeError(
-            "deserialize_record requires bytes; "
-            f"got {type(blob).__name__}"
-        )
+        raise TypeError(f"deserialize_record requires bytes; got {type(blob).__name__}")
     out = json.loads(blob.decode("utf-8"))
     if not isinstance(out, dict):
-        raise TypeError(
-            "deserialize_record only round-trips dict payloads"
-        )
+        raise TypeError("deserialize_record only round-trips dict payloads")
     return out
 
 
@@ -380,62 +315,38 @@ _FORBIDDEN_TOKEN_CHARS = frozenset(" \t\r\n.")
 
 def _validate_publish_subject(name: str) -> None:
     if not isinstance(name, str):
-        raise TypeError(
-            "Subject must be str; "
-            f"got {type(name).__name__}"
-        )
+        raise TypeError(f"Subject must be str; got {type(name).__name__}")
     if not name:
         raise ValueError("Subject must be non-empty")
     tokens = name.split(".")
     for tok in tokens:
         if not tok:
-            raise ValueError(
-                f"Subject {name!r} has empty token"
-            )
+            raise ValueError(f"Subject {name!r} has empty token")
         if tok in ("*", ">"):
-            raise ValueError(
-                "Publish subjects may not contain wildcards; "
-                f"got {name!r}"
-            )
+            raise ValueError(f"Publish subjects may not contain wildcards; got {name!r}")
         for ch in tok:
             if ch in _FORBIDDEN_TOKEN_CHARS:
-                raise ValueError(
-                    f"Subject token {tok!r} contains "
-                    f"forbidden char {ch!r}"
-                )
+                raise ValueError(f"Subject token {tok!r} contains forbidden char {ch!r}")
 
 
 def _validate_subscription_pattern(pattern: str) -> None:
     if not isinstance(pattern, str):
-        raise TypeError(
-            "Subscription pattern must be str; "
-            f"got {type(pattern).__name__}"
-        )
+        raise TypeError(f"Subscription pattern must be str; got {type(pattern).__name__}")
     if not pattern:
-        raise ValueError(
-            "Subscription pattern must be non-empty"
-        )
+        raise ValueError("Subscription pattern must be non-empty")
     tokens = pattern.split(".")
     for i, tok in enumerate(tokens):
         if not tok:
-            raise ValueError(
-                f"Pattern {pattern!r} has empty token"
-            )
+            raise ValueError(f"Pattern {pattern!r} has empty token")
         if tok == ">":
             if i != len(tokens) - 1:
-                raise ValueError(
-                    f"'>' must be the final token in pattern; "
-                    f"got {pattern!r}"
-                )
+                raise ValueError(f"'>' must be the final token in pattern; got {pattern!r}")
             continue
         if tok == "*":
             continue
         for ch in tok:
             if ch in _FORBIDDEN_TOKEN_CHARS:
-                raise ValueError(
-                    f"Pattern token {tok!r} contains "
-                    f"forbidden char {ch!r}"
-                )
+                raise ValueError(f"Pattern token {tok!r} contains forbidden char {ch!r}")
 
 
 def _pattern_matches(pattern: str, subject_name: str) -> bool:
@@ -473,9 +384,7 @@ class InMemoryNATSClient:
     __slots__ = ("_subscriptions", "_publish_counter")
 
     def __init__(self) -> None:
-        self._subscriptions: list[
-            tuple[SubscriptionPattern, object]
-        ] = []
+        self._subscriptions: list[tuple[SubscriptionPattern, object]] = []
         self._publish_counter: int = 0
 
     def subscribe(
@@ -486,20 +395,13 @@ class InMemoryNATSClient:
         if isinstance(pattern, str):
             pattern = SubscriptionPattern(pattern)
         elif not isinstance(pattern, SubscriptionPattern):
-            raise TypeError(
-                "subscribe pattern must be str or "
-                "SubscriptionPattern"
-            )
+            raise TypeError("subscribe pattern must be str or SubscriptionPattern")
         if not callable(callback):
-            raise TypeError(
-                "subscribe callback must be callable"
-            )
+            raise TypeError("subscribe callback must be callable")
         self._subscriptions.append((pattern, callback))
         return pattern
 
-    def unsubscribe(
-        self, pattern: SubscriptionPattern, callback: object
-    ) -> bool:
+    def unsubscribe(self, pattern: SubscriptionPattern, callback: object) -> bool:
         for i, (p, c) in enumerate(self._subscriptions):
             if p == pattern and c is callback:
                 del self._subscriptions[i]
@@ -512,10 +414,7 @@ class InMemoryNATSClient:
         Returns the number of subscribers that received the message.
         """
         if not isinstance(record, PublishRecord):
-            raise TypeError(
-                "publish requires PublishRecord; "
-                f"got {type(record).__name__}"
-            )
+            raise TypeError(f"publish requires PublishRecord; got {type(record).__name__}")
         self._publish_counter += 1
         delivered = 0
         for pattern, callback in list(self._subscriptions):
@@ -566,9 +465,7 @@ class InMemoryJetStream:
         self._streams: dict[str, JetStreamConfig] = {}
         self._messages: dict[str, list[_StreamMessage]] = {}
         # consumers keyed by (stream_name, durable_name)
-        self._consumers: dict[
-            tuple[str, str], _ConsumerState
-        ] = {}
+        self._consumers: dict[tuple[str, str], _ConsumerState] = {}
 
     # ------------------------------------------------------------------
     # Stream management
@@ -576,14 +473,9 @@ class InMemoryJetStream:
 
     def add_stream(self, config: JetStreamConfig) -> None:
         if not isinstance(config, JetStreamConfig):
-            raise TypeError(
-                "add_stream requires JetStreamConfig; "
-                f"got {type(config).__name__}"
-            )
+            raise TypeError(f"add_stream requires JetStreamConfig; got {type(config).__name__}")
         if config.name in self._streams:
-            raise ValueError(
-                f"JetStream {config.name!r} already exists"
-            )
+            raise ValueError(f"JetStream {config.name!r} already exists")
         self._streams[config.name] = config
         self._messages[config.name] = []
 
@@ -595,9 +487,7 @@ class InMemoryJetStream:
             raise KeyError(stream_name)
         return len(self._messages[stream_name])
 
-    def stream_messages(
-        self, stream_name: str
-    ) -> tuple[_StreamMessage, ...]:
+    def stream_messages(self, stream_name: str) -> tuple[_StreamMessage, ...]:
         """Test-only inspector — returns the stream log."""
         if stream_name not in self._messages:
             raise KeyError(stream_name)
@@ -607,36 +497,22 @@ class InMemoryJetStream:
     # Consumer management
     # ------------------------------------------------------------------
 
-    def add_consumer(
-        self, stream_name: str, config: DurableConsumerConfig
-    ) -> None:
+    def add_consumer(self, stream_name: str, config: DurableConsumerConfig) -> None:
         if stream_name not in self._streams:
-            raise KeyError(
-                f"Unknown JetStream {stream_name!r}"
-            )
+            raise KeyError(f"Unknown JetStream {stream_name!r}")
         if not isinstance(config, DurableConsumerConfig):
             raise TypeError(
-                "add_consumer requires DurableConsumerConfig; "
-                f"got {type(config).__name__}"
+                f"add_consumer requires DurableConsumerConfig; got {type(config).__name__}"
             )
         key = (stream_name, config.durable_name)
         if key in self._consumers:
             raise ValueError(
-                f"Consumer {config.durable_name!r} already "
-                f"exists on stream {stream_name!r}"
+                f"Consumer {config.durable_name!r} already exists on stream {stream_name!r}"
             )
         self._consumers[key] = _ConsumerState(config=config)
 
-    def consumer_names(
-        self, stream_name: str
-    ) -> tuple[str, ...]:
-        return tuple(
-            sorted(
-                name
-                for (s, name) in self._consumers
-                if s == stream_name
-            )
-        )
+    def consumer_names(self, stream_name: str) -> tuple[str, ...]:
+        return tuple(sorted(name for (s, name) in self._consumers if s == stream_name))
 
     def consumer_state(
         self, stream_name: str, durable_name: str
@@ -660,16 +536,10 @@ class InMemoryJetStream:
         Applies per-stream retention (max_messages and max_age_ns).
         """
         if not isinstance(record, PublishRecord):
-            raise TypeError(
-                "publish requires PublishRecord; "
-                f"got {type(record).__name__}"
-            )
+            raise TypeError(f"publish requires PublishRecord; got {type(record).__name__}")
         accepted = 0
         for name, cfg in self._streams.items():
-            matched = any(
-                _pattern_matches(p, record.subject_name)
-                for p in cfg.subjects
-            )
+            matched = any(_pattern_matches(p, record.subject_name) for p in cfg.subjects)
             if not matched:
                 continue
             log = self._messages[name]
@@ -725,9 +595,7 @@ class InMemoryJetStream:
         ``pending`` until :meth:`ack` / :meth:`term`.
         """
         if batch <= 0:
-            raise ValueError(
-                f"fetch batch must be positive; got {batch}"
-            )
+            raise ValueError(f"fetch batch must be positive; got {batch}")
         key = (stream_name, durable_name)
         if key not in self._consumers:
             raise KeyError(key)
@@ -737,9 +605,7 @@ class InMemoryJetStream:
         for msg in log:
             if msg.seq <= state.delivered_seq:
                 continue
-            if not _pattern_matches(
-                state.config.filter_pattern, msg.subject_name
-            ):
+            if not _pattern_matches(state.config.filter_pattern, msg.subject_name):
                 continue
             deliveries = state.pending.get(msg.seq, 0) + 1
             state.pending[msg.seq] = deliveries
@@ -774,9 +640,7 @@ class InMemoryJetStream:
         del state.pending[seq]
         floor = state.ack_floor_seq
         # advance ack_floor_seq to the largest contiguous acked seq
-        while (floor + 1) not in state.pending and (
-            floor + 1
-        ) <= state.delivered_seq:
+        while (floor + 1) not in state.pending and (floor + 1) <= state.delivered_seq:
             floor += 1
         state.ack_floor_seq = floor
         return True
@@ -792,9 +656,7 @@ class InMemoryJetStream:
         if seq not in state.pending:
             return False
         # rewind delivered_seq so the message is redelivered
-        state.delivered_seq = min(
-            state.delivered_seq, seq - 1
-        )
+        state.delivered_seq = min(state.delivered_seq, seq - 1)
         return True
 
     def term(
@@ -809,9 +671,7 @@ class InMemoryJetStream:
             return False
         del state.pending[seq]
         floor = state.ack_floor_seq
-        while (floor + 1) not in state.pending and (
-            floor + 1
-        ) <= state.delivered_seq:
+        while (floor + 1) not in state.pending and (floor + 1) <= state.delivered_seq:
             floor += 1
         state.ack_floor_seq = floor
         return True
@@ -837,39 +697,26 @@ class App:
 
     def with_stream(self, config: JetStreamConfig) -> App:
         if not isinstance(config, JetStreamConfig):
-            raise TypeError(
-                "App.with_stream requires JetStreamConfig"
-            )
+            raise TypeError("App.with_stream requires JetStreamConfig")
         for s in self.streams:
             if s.name == config.name:
-                raise ValueError(
-                    f"App stream {config.name!r} already added"
-                )
+                raise ValueError(f"App stream {config.name!r} already added")
         return App(
             streams=self.streams + (config,),
             consumers=self.consumers,
         )
 
-    def with_consumer(
-        self, stream_name: str, config: DurableConsumerConfig
-    ) -> App:
+    def with_consumer(self, stream_name: str, config: DurableConsumerConfig) -> App:
         if not any(s.name == stream_name for s in self.streams):
-            raise ValueError(
-                f"App.with_consumer references unknown stream "
-                f"{stream_name!r}"
-            )
+            raise ValueError(f"App.with_consumer references unknown stream {stream_name!r}")
         for sn, c in self.consumers:
-            if sn == stream_name and c.durable_name == (
-                config.durable_name
-            ):
+            if sn == stream_name and c.durable_name == (config.durable_name):
                 raise ValueError(
-                    f"Consumer {config.durable_name!r} already "
-                    f"on stream {stream_name!r}"
+                    f"Consumer {config.durable_name!r} already on stream {stream_name!r}"
                 )
         return App(
             streams=self.streams,
-            consumers=self.consumers
-            + ((stream_name, config),),
+            consumers=self.consumers + ((stream_name, config),),
         )
 
 
@@ -882,9 +729,7 @@ class AppResult:
 
     def __post_init__(self) -> None:
         if len(self.app_digest) != 32:
-            raise ValueError(
-                "AppResult.app_digest must be 32 hex chars"
-            )
+            raise ValueError("AppResult.app_digest must be 32 hex chars")
 
 
 def run_app(
@@ -901,14 +746,9 @@ def run_app(
     stream + a BLAKE2b-16 digest for INV-15 3-run replay.
     """
     if not isinstance(app, App):
-        raise TypeError(
-            "run_app requires App; "
-            f"got {type(app).__name__}"
-        )
+        raise TypeError(f"run_app requires App; got {type(app).__name__}")
     if batch <= 0:
-        raise ValueError(
-            f"run_app batch must be positive; got {batch}"
-        )
+        raise ValueError(f"run_app batch must be positive; got {batch}")
     js = InMemoryJetStream()
     for cfg in app.streams:
         js.add_stream(cfg)
@@ -927,9 +767,7 @@ def run_app(
             if not chunk:
                 break
             for d in chunk:
-                js.ack(
-                    stream_name, consumer.durable_name, d.seq
-                )
+                js.ack(stream_name, consumer.durable_name, d.seq)
             delivered.extend(chunk)
     return AppResult(
         records=tuple(delivered),
@@ -964,10 +802,7 @@ def _worker_main(
             break
         if not isinstance(item, PublishRecord):
             outbound_q.put(
-                TypeError(
-                    "worker expected PublishRecord or "
-                    f"sentinel; got {type(item).__name__}"
-                )
+                TypeError(f"worker expected PublishRecord or sentinel; got {type(item).__name__}")
             )
             continue
         js.publish(item)
@@ -978,9 +813,7 @@ def _worker_main(
                 batch=64,
             )
             for d in chunk:
-                js.ack(
-                    stream_name, consumer.durable_name, d.seq
-                )
+                js.ack(stream_name, consumer.durable_name, d.seq)
                 outbound_q.put(d)
     outbound_q.put(NATSBusSentinel())
 
@@ -1022,9 +855,7 @@ def nats_client_factory(config: NATSConfig) -> object:
     least one other DIX bus (kafka_bus / faust_bus / redis_store).
     """
     if not isinstance(config, NATSConfig):
-        raise TypeError(
-            "nats_client_factory config must be NATSConfig"
-        )
+        raise TypeError("nats_client_factory config must be NATSConfig")
     raise NotImplementedError(
         "Real nats.aio.Client activation is gated on a "
         "research-acceptance PR documenting shadow-equivalence "
@@ -1035,9 +866,7 @@ def nats_client_factory(config: NATSConfig) -> object:
 def jetstream_factory(config: NATSConfig) -> object:
     """Lazy seam to :class:`nats.js.JetStreamContext`. Same gate."""
     if not isinstance(config, NATSConfig):
-        raise TypeError(
-            "jetstream_factory config must be NATSConfig"
-        )
+        raise TypeError("jetstream_factory config must be NATSConfig")
     raise NotImplementedError(
         "Real nats.js.JetStreamContext activation is gated on a "
         "research-acceptance PR documenting shadow-equivalence "
@@ -1053,7 +882,4 @@ def jetstream_factory(config: NATSConfig) -> object:
 def _validate_records(records: Sequence[object]) -> None:
     for r in records:
         if not isinstance(r, DeliveredRecord):
-            raise TypeError(
-                "expected DeliveredRecord; "
-                f"got {type(r).__name__}"
-            )
+            raise TypeError(f"expected DeliveredRecord; got {type(r).__name__}")

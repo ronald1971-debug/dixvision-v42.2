@@ -174,9 +174,7 @@ def parse_rss_feed(
             guid = link
         if not guid:
             continue
-        summary = _strip_html(
-            _find_first_text(elem, "description", "summary")
-        ).strip()
+        summary = _strip_html(_find_first_text(elem, "description", "summary")).strip()
         published_ts_ns = _parse_pub_date(_find_first_text(elem, "pubDate"))
         try:
             items.append(
@@ -264,18 +262,11 @@ class CoinDeskRSSPump:
         source: str = SOURCE_TAG,
     ) -> None:
         if poll_interval_s <= 0:
-            raise ValueError(
-                "CoinDeskRSSPump: poll_interval_s must be positive"
-            )
+            raise ValueError("CoinDeskRSSPump: poll_interval_s must be positive")
         if reconnect_delay_s <= 0:
-            raise ValueError(
-                "CoinDeskRSSPump: reconnect_delay_s must be positive"
-            )
+            raise ValueError("CoinDeskRSSPump: reconnect_delay_s must be positive")
         if reconnect_delay_max_s < reconnect_delay_s:
-            raise ValueError(
-                "CoinDeskRSSPump: reconnect_delay_max_s must be >= "
-                "reconnect_delay_s"
-            )
+            raise ValueError("CoinDeskRSSPump: reconnect_delay_max_s must be >= reconnect_delay_s")
         if not source:
             raise ValueError("CoinDeskRSSPump: source must be non-empty")
         self._sink = sink
@@ -360,9 +351,7 @@ class CoinDeskRSSPump:
     def _dispatch(self, payload: bytes | str, *, ts_ns: int) -> None:
         """Parse one fetched payload and forward novel items to the sink."""
         try:
-            items = parse_rss_feed(
-                payload, ts_ns=ts_ns, source=self._source
-            )
+            items = parse_rss_feed(payload, ts_ns=ts_ns, source=self._source)
         except Exception:  # noqa: BLE001 - parser is best-effort
             self._errors += 1
             LOG.exception("coindesk_rss: parser failure")

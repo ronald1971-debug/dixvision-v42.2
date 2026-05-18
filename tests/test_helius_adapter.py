@@ -134,9 +134,7 @@ def test_parse_enhanced_transaction_normalises_kind() -> None:
 
 
 def test_parse_enhanced_transaction_unknown_kind_falls_back() -> None:
-    event = parse_enhanced_transaction(
-        {"type": "weird-unknown-thing"}, ts_ns=1
-    )
+    event = parse_enhanced_transaction({"type": "weird-unknown-thing"}, ts_ns=1)
     assert event.kind == "UNKNOWN"
 
 
@@ -210,30 +208,20 @@ def test_diff_holder_snapshots_detects_address_churn() -> None:
 
 def test_diff_holder_snapshots_rejects_empty_asset() -> None:
     with pytest.raises(ValueError):
-        diff_holder_snapshots(
-            "", ts_ns=1, before=[], after=[], top_n=3
-        )
+        diff_holder_snapshots("", ts_ns=1, before=[], after=[], top_n=3)
 
 
 def test_diff_holder_snapshots_rejects_non_positive_top_n() -> None:
     with pytest.raises(ValueError):
-        diff_holder_snapshots(
-            "TOKEN", ts_ns=1, before=[], after=[], top_n=0
-        )
+        diff_holder_snapshots("TOKEN", ts_ns=1, before=[], after=[], top_n=0)
 
 
 def test_diff_holder_snapshots_deterministic_replay() -> None:
     before = _holders(("A", 1.0), ("B", 2.0), ("C", 3.0))
     after = _holders(("A", 2.0), ("B", 1.0), ("D", 4.0))
-    r1 = diff_holder_snapshots(
-        "TOKEN", ts_ns=99, before=before, after=after, top_n=2
-    )
-    r2 = diff_holder_snapshots(
-        "TOKEN", ts_ns=99, before=before, after=after, top_n=2
-    )
-    r3 = diff_holder_snapshots(
-        "TOKEN", ts_ns=99, before=before, after=after, top_n=2
-    )
+    r1 = diff_holder_snapshots("TOKEN", ts_ns=99, before=before, after=after, top_n=2)
+    r2 = diff_holder_snapshots("TOKEN", ts_ns=99, before=before, after=after, top_n=2)
+    r3 = diff_holder_snapshots("TOKEN", ts_ns=99, before=before, after=after, top_n=2)
     assert r1 == r2 == r3
 
 
@@ -267,9 +255,7 @@ def test_adapter_transitions_to_connecting_with_both() -> None:
 
 
 def test_adapter_fetches_enhanced_transactions_returns_events() -> None:
-    transport = InProcessHeliusTransport(
-        enhanced_transactions={"sig-1": _sample_swap()}
-    )
+    transport = InProcessHeliusTransport(enhanced_transactions={"sig-1": _sample_swap()})
     adapter = HeliusAdapter(api_key="k", transport=transport)
     events = adapter.fetch_enhanced_transactions(["sig-1"], ts_ns=1)
     assert len(events) == 1
@@ -307,18 +293,14 @@ def test_adapter_diff_token_holders_fetches_after_via_transport() -> None:
     )
     adapter = HeliusAdapter(api_key="k", transport=transport)
     before = _holders(("A", 50.0), ("B", 50.0))
-    rec = adapter.diff_token_holders(
-        "TOKEN", ts_ns=1, before=before, top_n=2
-    )
+    rec = adapter.diff_token_holders("TOKEN", ts_ns=1, before=before, top_n=2)
     assert rec.top_holder_share_after == pytest.approx(1.0)
 
 
 def test_adapter_diff_token_holders_requires_transport_when_after_omitted() -> None:
     adapter = HeliusAdapter()
     with pytest.raises(RuntimeError):
-        adapter.diff_token_holders(
-            "TOKEN", ts_ns=1, before=[], top_n=2
-        )
+        adapter.diff_token_holders("TOKEN", ts_ns=1, before=[], top_n=2)
 
 
 # ---------------------------------------------------------------------------
@@ -326,9 +308,7 @@ def test_adapter_diff_token_holders_requires_transport_when_after_omitted() -> N
 # ---------------------------------------------------------------------------
 
 
-_HELIUS_PATH = pathlib.Path(
-    "execution_engine/adapters/helius.py"
-).resolve()
+_HELIUS_PATH = pathlib.Path("execution_engine/adapters/helius.py").resolve()
 
 
 def _module_ast() -> ast.Module:
@@ -368,10 +348,7 @@ def test_no_runtime_engine_cross_imports() -> None:
         "learning_engine",
     )
     names = _toplevel_imports(_module_ast())
-    assert all(
-        not any(n.startswith(pref) for pref in forbidden_prefixes)
-        for n in names
-    )
+    assert all(not any(n.startswith(pref) for pref in forbidden_prefixes) for n in names)
 
 
 def test_no_typed_event_construction() -> None:
@@ -382,14 +359,9 @@ def test_no_typed_event_construction() -> None:
             continue
         func = node.func
         if isinstance(func, ast.Name) and func.id in forbidden:
-            raise AssertionError(
-                f"helius.py constructs forbidden typed event: {func.id}"
-            )
+            raise AssertionError(f"helius.py constructs forbidden typed event: {func.id}")
         if isinstance(func, ast.Attribute) and func.attr in forbidden:
-            raise AssertionError(
-                "helius.py constructs forbidden typed event: "
-                f"{func.attr}"
-            )
+            raise AssertionError(f"helius.py constructs forbidden typed event: {func.attr}")
 
 
 def test_no_toplevel_random_or_clock_access() -> None:
@@ -405,7 +377,4 @@ def test_no_toplevel_random_or_clock_access() -> None:
             "random",
             "datetime",
         }:
-            raise AssertionError(
-                f"helius.py uses forbidden clock/random: "
-                f"{value.id}.{node.attr}"
-            )
+            raise AssertionError(f"helius.py uses forbidden clock/random: {value.id}.{node.attr}")

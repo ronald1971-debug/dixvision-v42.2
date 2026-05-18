@@ -1003,9 +1003,7 @@ def _phase_12_topology_drift(advisory: bool) -> tuple[Phase, bool, int]:
         if _registrar_mod is None:
             import importlib.util
 
-            _registrar_path = (
-                REPO_ROOT / "ui" / "harness" / "runtime_registrar.py"
-            )
+            _registrar_path = REPO_ROOT / "ui" / "harness" / "runtime_registrar.py"
             _spec = importlib.util.spec_from_file_location(
                 "_dix_registrar_phase12", _registrar_path
             )
@@ -1019,9 +1017,7 @@ def _phase_12_topology_drift(advisory: bool) -> tuple[Phase, bool, int]:
                 _spec.loader.exec_module(_registrar_mod)
             finally:
                 sys.modules.pop(_spec.name, None)
-        DECLARED_BUT_DORMANT_ALLOWLIST = (
-            _registrar_mod.DECLARED_BUT_DORMANT_ALLOWLIST
-        )
+        DECLARED_BUT_DORMANT_ALLOWLIST = _registrar_mod.DECLARED_BUT_DORMANT_ALLOWLIST
         declared_state_attrs = _registrar_mod.declared_state_attrs
     except Exception as exc:  # pragma: no cover - defensive
         payload["status"] = "skipped"
@@ -1102,13 +1098,9 @@ def _phase_12_topology_drift(advisory: bool) -> tuple[Phase, bool, int]:
 
 def _phase_13_summary(report: ValidationReport) -> dict[str, Any]:
     file_cov = report.coverage_pct(report.file_count, report.file_count)
-    feat_cov = report.coverage_pct(
-        report.implemented_feature_count, report.declared_feature_count
-    )
+    feat_cov = report.coverage_pct(report.implemented_feature_count, report.declared_feature_count)
     src_cov = "100%"  # source ingestion failures already captured per-source
-    inv_cov = report.coverage_pct(
-        report.enforced_invariant_count, report.invariant_count
-    )
+    inv_cov = report.coverage_pct(report.enforced_invariant_count, report.invariant_count)
 
     all_ok = (
         feat_cov == "100%"
@@ -1183,17 +1175,13 @@ def run(advisory: bool = True) -> dict[str, Any]:
 
     p4, feature_status = _phase_4_feature_coverage(feature_to_sources, files)
     report.phases.append(p4)
-    report.implemented_feature_count = sum(
-        1 for s in feature_status.values() if s == "OK"
-    )
+    report.implemented_feature_count = sum(1 for s in feature_status.values() if s == "OK")
     report.feature_count = len(feature_status)
     report.ambiguity = sum(1 for s in feature_status.values() if s == "AMBIGUOUS")
 
     report.phases.append(_phase_5_source_coverage(parsed_sources, feature_to_sources))
 
-    p6, inv_total, inv_enforced = _phase_6_invariant_validation(
-        feature_to_sources, files
-    )
+    p6, inv_total, inv_enforced = _phase_6_invariant_validation(feature_to_sources, files)
     report.phases.append(p6)
     report.invariant_count = inv_total
     report.enforced_invariant_count = inv_enforced

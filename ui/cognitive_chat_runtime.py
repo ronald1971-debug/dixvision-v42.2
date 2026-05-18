@@ -187,9 +187,7 @@ def _request_to_messages(req: ChatTurnRequest) -> list[BaseMessage]:
         elif msg.role is ChatRoleApi.ASSISTANT:
             out.append(AIMessage(content=msg.content))
         else:  # SYSTEM — reserved for PR-5
-            raise ValueError(
-                "system messages are not yet accepted on this surface"
-            )
+            raise ValueError("system messages are not yet accepted on this surface")
     return out
 
 
@@ -201,10 +199,7 @@ def _reply_to_api(reply: BaseMessage) -> ChatMessageApi:
         text = content
     elif isinstance(content, list):
         text = "".join(
-            part.get("text", "")
-            if isinstance(part, dict)
-            else str(part)
-            for part in content
+            part.get("text", "") if isinstance(part, dict) else str(part) for part in content
         )
     else:
         text = str(content)
@@ -248,9 +243,7 @@ class CognitiveChatRuntime:
     # this lock — and definitely not under the process-wide
     # ``STATE.lock`` — so other endpoints stay responsive while a
     # turn is in flight.
-    _init_lock: threading.Lock = field(
-        default_factory=threading.Lock, repr=False, compare=False
-    )
+    _init_lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
 
     def status(self) -> ChatStatusResponse:
         from intelligence_engine.cognitive.chat import FEATURE_FLAG_ENV_VAR
@@ -279,9 +272,7 @@ class CognitiveChatRuntime:
             try:
                 self.bundle = assemble_cognitive_chat(
                     task=self.task,
-                    provider_resolver=_provider_resolver_from_registry(
-                        self.registry, self.task
-                    ),
+                    provider_resolver=_provider_resolver_from_registry(self.registry, self.task),
                     transport=self.transport,
                     ledger_append=self.ledger_append,
                     feature_flag=self.feature_flag,
@@ -292,9 +283,7 @@ class CognitiveChatRuntime:
 
     def turn(self, req: ChatTurnRequest) -> ChatTurnResponse:
         if not self.feature_flag.enabled:
-            raise ChatTurnDisabled(
-                "cognitive chat is disabled on this server"
-            )
+            raise ChatTurnDisabled("cognitive chat is disabled on this server")
         bundle = self._ensure_bundle()
         messages = _request_to_messages(req)
 
@@ -323,9 +312,7 @@ class CognitiveChatRuntime:
         try:
             tup = bundle.saver.get_tuple(config)
             if tup is not None:
-                checkpoint_id = str(
-                    tup.config["configurable"].get("checkpoint_id", "")
-                )
+                checkpoint_id = str(tup.config["configurable"].get("checkpoint_id", ""))
         except Exception:  # noqa: BLE001 — saver introspection is advisory
             checkpoint_id = ""
 
@@ -352,9 +339,7 @@ class CognitiveChatRuntime:
                     "thread_id": queued.thread_id,
                     "symbol": queued.proposal.symbol,
                     "side": queued.proposal.side.value,
-                    "confidence": (
-                        f"{queued.proposal.confidence:.6f}"
-                    ),
+                    "confidence": (f"{queued.proposal.confidence:.6f}"),
                     "rationale": queued.proposal.rationale,
                     "ts_ns": str(queued.requested_at_ts_ns),
                 },
@@ -453,9 +438,7 @@ def build_runtime(
         registry=registry,
         transport=transport if transport is not None else NotConfiguredTransport(),
         ledger_append=build_ledger_append(ledger_writer),
-        feature_flag=(
-            feature_flag if feature_flag is not None else CognitiveChatFeatureFlag()
-        ),
+        feature_flag=(feature_flag if feature_flag is not None else CognitiveChatFeatureFlag()),
         approval_queue=approval_queue,
     )
 

@@ -47,9 +47,7 @@ LOG = logging.getLogger(__name__)
 PUMPPORTAL_WS_URL = "wss://pumpportal.fun/api/data"
 
 #: Subscription frame the gateway expects to flip on new-token streaming.
-SUBSCRIBE_NEW_TOKEN_FRAME: str = json.dumps(
-    {"method": "subscribeNewToken"}, separators=(",", ":")
-)
+SUBSCRIBE_NEW_TOKEN_FRAME: str = json.dumps({"method": "subscribeNewToken"}, separators=(",", ":"))
 
 #: Default reconnect backoff floor + ceiling (seconds).
 DEFAULT_RECONNECT_DELAY_S = 5.0
@@ -91,19 +89,12 @@ def parse_new_token(
     symbol = str(payload.get("symbol") or payload.get("ticker") or "")
     name = str(payload.get("name") or "")
     creator = str(
-        payload.get("traderPublicKey")
-        or payload.get("creator")
-        or payload.get("dev")
-        or ""
+        payload.get("traderPublicKey") or payload.get("creator") or payload.get("dev") or ""
     )
     market_cap_usd = _to_float(
-        _first_present(
-            payload, "marketCapSol", "marketCapUsd", "usdMarketCap"
-        )
+        _first_present(payload, "marketCapSol", "marketCapUsd", "usdMarketCap")
     )
-    liquidity_usd = _to_float(
-        _first_present(payload, "vSolInBondingCurve", "liquidityUsd")
-    )
+    liquidity_usd = _to_float(_first_present(payload, "vSolInBondingCurve", "liquidityUsd"))
     return LaunchEvent(
         ts_ns=ts_ns,
         chain=chain,
@@ -117,9 +108,7 @@ def parse_new_token(
     )
 
 
-def _first_present(
-    payload: Mapping[str, Any], *keys: str
-) -> Any:
+def _first_present(payload: Mapping[str, Any], *keys: str) -> Any:
     """Return the value of the first key whose value is not ``None``.
 
     Unlike a chain of ``or`` operators, this preserves legitimate zero
@@ -210,19 +199,14 @@ class PumpFunLaunchPump:
         if not url:
             raise ValueError("PumpFunLaunchPump: url required")
         if reconnect_delay_s <= 0:
-            raise ValueError(
-                "PumpFunLaunchPump: reconnect_delay_s must be positive"
-            )
+            raise ValueError("PumpFunLaunchPump: reconnect_delay_s must be positive")
         if reconnect_delay_max_s < reconnect_delay_s:
             raise ValueError(
-                "PumpFunLaunchPump: reconnect_delay_max_s must be >= "
-                "reconnect_delay_s"
+                "PumpFunLaunchPump: reconnect_delay_max_s must be >= reconnect_delay_s"
             )
         self._sink = sink
         self._clock_ns = clock_ns
-        self._connect: WSConnect = (
-            connect if connect is not None else _default_connect
-        )
+        self._connect: WSConnect = connect if connect is not None else _default_connect
         self._url = url
         self._reconnect_delay_s = reconnect_delay_s
         self._reconnect_delay_max_s = reconnect_delay_max_s
@@ -279,8 +263,7 @@ class PumpFunLaunchPump:
                 except Exception:  # noqa: BLE001 - log + reconnect
                     self._errors += 1
                     LOG.exception(
-                        "pumpfun_ws: connection failure; "
-                        "reconnect in %.1fs",
+                        "pumpfun_ws: connection failure; reconnect in %.1fs",
                         delay,
                     )
                 finally:
@@ -292,9 +275,7 @@ class PumpFunLaunchPump:
                 if self._stop_event.is_set():
                     break
                 try:
-                    await asyncio.wait_for(
-                        self._stop_event.wait(), timeout=delay
-                    )
+                    await asyncio.wait_for(self._stop_event.wait(), timeout=delay)
                 except TimeoutError:
                     pass
                 delay = min(delay * 2.0, self._reconnect_delay_max_s)
@@ -309,9 +290,7 @@ class PumpFunLaunchPump:
             self._errors += 1
             return
         ts_ns = self._clock_ns()
-        event = parse_new_token(
-            payload, ts_ns=ts_ns, venue=self._venue, chain=self._chain
-        )
+        event = parse_new_token(payload, ts_ns=ts_ns, venue=self._venue, chain=self._chain)
         if event is None:
             return
         try:

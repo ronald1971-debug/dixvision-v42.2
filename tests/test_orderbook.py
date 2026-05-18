@@ -28,9 +28,7 @@ from execution_engine.market_data.orderbook import (
     sortedcontainers_orderbook_factory,
 )
 
-_MODULE_PATH = Path(
-    "execution_engine/market_data/orderbook.py"
-)
+_MODULE_PATH = Path("execution_engine/market_data/orderbook.py")
 
 
 def _level(price: float, qty: float) -> OrderBookLevel:
@@ -158,9 +156,7 @@ class TestL2OrderBookConstruction:
     @pytest.mark.parametrize("bad", [0, -1, -100])
     def test_factory_invalid_depth(self, bad: int) -> None:
         with pytest.raises(ValueError):
-            pure_python_orderbook_factory(
-                symbol="X", venue="Y", max_depth=bad
-            )
+            pure_python_orderbook_factory(symbol="X", venue="Y", max_depth=bad)
 
     def test_factory_invalid_symbol(self) -> None:
         with pytest.raises(ValueError):
@@ -178,9 +174,7 @@ class TestL2OrderBookConstruction:
 
 class TestApplySnapshot:
     def test_seed_basic(self) -> None:
-        book = pure_python_orderbook_factory(
-            symbol="BTCUSDT", venue="binance"
-        )
+        book = pure_python_orderbook_factory(symbol="BTCUSDT", venue="binance")
         snap = book.apply_snapshot(_seed_snapshot())
         assert snap.last_update_id == 100
         assert snap.bids == (
@@ -199,9 +193,7 @@ class TestApplySnapshot:
         assert book.spread() == pytest.approx(1.0)
 
     def test_seed_truncates_by_max_depth(self) -> None:
-        book = pure_python_orderbook_factory(
-            symbol="BTCUSDT", venue="binance", max_depth=2
-        )
+        book = pure_python_orderbook_factory(symbol="BTCUSDT", venue="binance", max_depth=2)
         snap = book.apply_snapshot(_seed_snapshot())
         assert len(snap.bids) == 2
         assert len(snap.asks) == 2
@@ -215,26 +207,20 @@ class TestApplySnapshot:
             asks=(_level(100.0, 0.0), _level(101.0, 2.0)),
             venue="binance",
         )
-        book = pure_python_orderbook_factory(
-            symbol="BTCUSDT", venue="binance"
-        )
+        book = pure_python_orderbook_factory(symbol="BTCUSDT", venue="binance")
         snap = book.apply_snapshot(seed)
         assert snap.bids == (_level(99.0, 1.0),)
         assert snap.asks == (_level(101.0, 2.0),)
 
     def test_seed_symbol_mismatch(self) -> None:
-        book = pure_python_orderbook_factory(
-            symbol="BTCUSDT", venue="binance"
-        )
+        book = pure_python_orderbook_factory(symbol="BTCUSDT", venue="binance")
         seed = _seed_snapshot()
         seed = dataclasses.replace(seed, symbol="ETHUSDT")
         with pytest.raises(ValueError):
             book.apply_snapshot(seed)
 
     def test_seed_venue_mismatch(self) -> None:
-        book = pure_python_orderbook_factory(
-            symbol="BTCUSDT", venue="binance"
-        )
+        book = pure_python_orderbook_factory(symbol="BTCUSDT", venue="binance")
         seed = _seed_snapshot()
         seed = dataclasses.replace(seed, venue="bybit")
         with pytest.raises(ValueError):
@@ -248,9 +234,7 @@ class TestApplySnapshot:
 
 class TestApplyDelta:
     def _book(self) -> L2OrderBook:
-        book = pure_python_orderbook_factory(
-            symbol="BTCUSDT", venue="binance"
-        )
+        book = pure_python_orderbook_factory(symbol="BTCUSDT", venue="binance")
         book.apply_snapshot(_seed_snapshot())
         return book
 
@@ -342,9 +326,7 @@ class TestApplyDelta:
         assert book.last_update_id == 105
 
     def test_apply_delta_without_seed_raises(self) -> None:
-        book = pure_python_orderbook_factory(
-            symbol="BTCUSDT", venue="binance"
-        )
+        book = pure_python_orderbook_factory(symbol="BTCUSDT", venue="binance")
         delta = BookDelta(
             ts_ns=2_000,
             symbol="BTCUSDT",
@@ -365,9 +347,7 @@ class TestApplyDelta:
 
 class TestProjections:
     def test_top_n_bids(self) -> None:
-        book = pure_python_orderbook_factory(
-            symbol="BTCUSDT", venue="binance"
-        )
+        book = pure_python_orderbook_factory(symbol="BTCUSDT", venue="binance")
         book.apply_snapshot(_seed_snapshot())
         assert book.top_n_bids(2) == (
             _level(99.0, 1.0),
@@ -375,25 +355,19 @@ class TestProjections:
         )
 
     def test_top_n_asks(self) -> None:
-        book = pure_python_orderbook_factory(
-            symbol="BTCUSDT", venue="binance"
-        )
+        book = pure_python_orderbook_factory(symbol="BTCUSDT", venue="binance")
         book.apply_snapshot(_seed_snapshot())
         assert book.top_n_asks(1) == (_level(100.0, 1.0),)
 
     def test_top_n_zero(self) -> None:
-        book = pure_python_orderbook_factory(
-            symbol="BTCUSDT", venue="binance"
-        )
+        book = pure_python_orderbook_factory(symbol="BTCUSDT", venue="binance")
         book.apply_snapshot(_seed_snapshot())
         assert book.top_n_bids(0) == ()
         assert book.top_n_asks(0) == ()
 
     @pytest.mark.parametrize("bad", [-1, -10])
     def test_top_n_negative_rejected(self, bad: int) -> None:
-        book = pure_python_orderbook_factory(
-            symbol="BTCUSDT", venue="binance"
-        )
+        book = pure_python_orderbook_factory(symbol="BTCUSDT", venue="binance")
         book.apply_snapshot(_seed_snapshot())
         with pytest.raises(ValueError):
             book.top_n_bids(bad)
@@ -401,18 +375,14 @@ class TestProjections:
             book.top_n_asks(bad)
 
     def test_project_snapshot(self) -> None:
-        book = pure_python_orderbook_factory(
-            symbol="BTCUSDT", venue="binance"
-        )
+        book = pure_python_orderbook_factory(symbol="BTCUSDT", venue="binance")
         book.apply_snapshot(_seed_snapshot())
         snap = book.project_snapshot(ts_ns=999_999)
         assert snap.ts_ns == 999_999
         assert snap.symbol == "BTCUSDT"
 
     def test_empty_book_projections(self) -> None:
-        book = pure_python_orderbook_factory(
-            symbol="BTCUSDT", venue="binance"
-        )
+        book = pure_python_orderbook_factory(symbol="BTCUSDT", venue="binance")
         assert book.best_bid() is None
         assert book.best_ask() is None
         assert book.mid() is None
@@ -560,9 +530,7 @@ class TestApplyResult:
 
 
 class TestSortedContainersFactory:
-    def test_factory_raises_without_sortedcontainers(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_factory_raises_without_sortedcontainers(self, monkeypatch: pytest.MonkeyPatch) -> None:
         original_import = builtins.__import__
 
         def _blocking_import(
@@ -578,9 +546,7 @@ class TestSortedContainersFactory:
 
         monkeypatch.setattr(builtins, "__import__", _blocking_import)
         with pytest.raises(RuntimeError, match="sortedcontainers"):
-            sortedcontainers_orderbook_factory(
-                symbol="BTCUSDT", venue="binance"
-            )
+            sortedcontainers_orderbook_factory(symbol="BTCUSDT", venue="binance")
 
 
 # ----------------------------------------------------------------------
@@ -603,9 +569,7 @@ class TestASTGuards:
                 for alias in node.names:
                     assert not alias.name.startswith("sortedcontainers")
             elif isinstance(node, ast.ImportFrom):
-                assert node.module is None or not (
-                    node.module.startswith("sortedcontainers")
-                )
+                assert node.module is None or not (node.module.startswith("sortedcontainers"))
 
     def test_sortedcontainers_only_imported_in_factory(self) -> None:
         tree = _parse_module()
@@ -618,9 +582,7 @@ class TestASTGuards:
                 found_factory = True
                 src = ast.unparse(node)
                 assert "from sortedcontainers import" in src
-        assert found_factory, (
-            "sortedcontainers_orderbook_factory must exist"
-        )
+        assert found_factory, "sortedcontainers_orderbook_factory must exist"
 
     def test_no_clock_imports(self) -> None:
         tree = _parse_module()

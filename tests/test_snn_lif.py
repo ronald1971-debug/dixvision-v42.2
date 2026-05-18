@@ -109,9 +109,7 @@ def test_authority_no_runtime_imports() -> None:
     }
     for name in _iter_imports(MODULE_AST):
         root = name.split(".")[0]
-        assert (
-            root not in forbidden_roots
-        ), f"forbidden import for sensory tier: {name}"
+        assert root not in forbidden_roots, f"forbidden import for sensory tier: {name}"
 
 
 def test_authority_no_engine_cross_imports() -> None:
@@ -125,9 +123,7 @@ def test_authority_no_engine_cross_imports() -> None:
     }
     for name in _iter_imports(MODULE_AST):
         root = name.split(".")[0]
-        assert (
-            root not in forbidden_roots
-        ), f"forbidden engine cross-import: {name}"
+        assert root not in forbidden_roots, f"forbidden engine cross-import: {name}"
 
 
 def test_authority_no_typed_event_construction() -> None:
@@ -145,17 +141,17 @@ def test_authority_no_typed_event_construction() -> None:
     }
     for node in ast.walk(MODULE_AST):
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-            assert (
-                node.func.id not in forbidden_types
-            ), f"forbidden typed-event construction: {node.func.id}"
+            assert node.func.id not in forbidden_types, (
+                f"forbidden typed-event construction: {node.func.id}"
+            )
 
 
 def test_authority_no_core_events_import() -> None:
     for node in ast.walk(MODULE_AST):
         if isinstance(node, ast.ImportFrom) and node.module:
-            assert (
-                node.module != "core.contracts.events"
-            ), "sensor must not import core.contracts.events"
+            assert node.module != "core.contracts.events", (
+                "sensor must not import core.contracts.events"
+            )
 
 
 def test_module_has_no_module_state() -> None:
@@ -166,9 +162,9 @@ def test_module_has_no_module_state() -> None:
             continue
         attr = getattr(snn_lif, name)
         # Functions, classes, frozen dataclasses, tuples, ints, strs allowed
-        assert not isinstance(
-            attr, (list, dict, set)
-        ), f"snn_lif.{name} is mutable container ({type(attr).__name__})"
+        assert not isinstance(attr, (list, dict, set)), (
+            f"snn_lif.{name} is mutable container ({type(attr).__name__})"
+        )
 
 
 # ================================================================== freezing

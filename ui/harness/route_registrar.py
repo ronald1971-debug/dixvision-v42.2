@@ -349,8 +349,7 @@ class HarnessRouteRegistrar:
 
         if domain not in _DOMAIN_INVENTORY:
             raise KeyError(
-                f"unknown route registrar domain: {domain!r}; "
-                f"expected one of {self.domains()!r}"
+                f"unknown route registrar domain: {domain!r}; expected one of {self.domains()!r}"
             )
         return _DOMAIN_INVENTORY[domain]
 
@@ -419,9 +418,7 @@ class HarnessRouteRegistrar:
 
         by_domain: dict[str, tuple[RouteKey, ...]] = {}
         for domain in self.domains():
-            present = sorted(
-                key for key in self.expected_routes(domain) if key in mounted
-            )
+            present = sorted(key for key in self.expected_routes(domain) if key in mounted)
             by_domain[domain] = tuple(present)
 
         return RouteAuditReport(
@@ -445,14 +442,11 @@ class HarnessRouteRegistrar:
         diagnostics: list[str] = []
         if report.missing:
             missing_str = ", ".join(
-                f"{domain}:{method} {path}"
-                for domain, (method, path) in report.missing
+                f"{domain}:{method} {path}" for domain, (method, path) in report.missing
             )
             diagnostics.append(f"missing routes: {missing_str}")
         if report.unexpected:
-            unexpected_str = ", ".join(
-                f"{method} {path}" for method, path in report.unexpected
-            )
+            unexpected_str = ", ".join(f"{method} {path}" for method, path in report.unexpected)
             diagnostics.append(f"unexpected routes: {unexpected_str}")
         raise RuntimeError(
             "HarnessRouteRegistrar inventory drift — "

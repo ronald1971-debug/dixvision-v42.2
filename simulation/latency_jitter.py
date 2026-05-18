@@ -124,9 +124,7 @@ def _require_side(meta: dict[str, Any]) -> str:
         raise ValueError("RealityScenario.meta missing required key 'side'")
     side = meta["side"]
     if side not in (_BUY, _SELL):
-        raise ValueError(
-            f"meta['side'] must be 'buy' or 'sell', got {side!r}"
-        )
+        raise ValueError(f"meta['side'] must be 'buy' or 'sell', got {side!r}")
     return side
 
 

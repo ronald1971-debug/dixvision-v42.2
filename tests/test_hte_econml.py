@@ -77,9 +77,7 @@ def test_estimator_kind_values() -> None:
     assert HteEstimatorKind.META_LEARNER_S.value == "SLearner"
     assert HteEstimatorKind.META_LEARNER_T.value == "TLearner"
     assert HteEstimatorKind.META_LEARNER_X.value == "XLearner"
-    assert HteEstimatorKind.META_LEARNER_DR.value == (
-        "DRLearner.MetaLearner"
-    )
+    assert HteEstimatorKind.META_LEARNER_DR.value == ("DRLearner.MetaLearner")
     assert HteEstimatorKind.DEEP_IV.value == "DeepIV"
 
 
@@ -446,9 +444,7 @@ class _FakeEstimator:
         ts_ns: int,
         callback: HteAnalysisCallback,
     ) -> HteAnalysisResult:
-        callback.on_analysis_start(
-            ts_ns=ts_ns, estimand=estimand, arguments=arguments
-        )
+        callback.on_analysis_start(ts_ns=ts_ns, estimand=estimand, arguments=arguments)
         for p in self._result.points:
             callback.on_point_ready(ts_ns=ts_ns, point=p)
         return self._result
@@ -459,9 +455,7 @@ class _FakeEstimator:
 # ---------------------------------------------------------------------------
 
 
-def _analyser_inputs() -> tuple[
-    HteEstimand, HteArguments, _FakeEstimator
-]:
+def _analyser_inputs() -> tuple[HteEstimand, HteArguments, _FakeEstimator]:
     return (
         _valid_estimand(),
         _valid_arguments(),
@@ -696,9 +690,7 @@ def test_inv15_digest_changes_when_seed_changes() -> None:
 def test_inv15_digest_changes_when_estimator_kind_changes() -> None:
     estimand = _valid_estimand()
     args_a = _valid_arguments(estimator_kind=HteEstimatorKind.DML)
-    args_b = _valid_arguments(
-        estimator_kind=HteEstimatorKind.CAUSAL_FOREST_DML
-    )
+    args_b = _valid_arguments(estimator_kind=HteEstimatorKind.CAUSAL_FOREST_DML)
     analyser = EconMLHteAnalyser(
         estimator=_FakeEstimator(result=_valid_result()),
     )
@@ -740,12 +732,7 @@ def test_null_callback_methods_return_none() -> None:
     estimand = _valid_estimand()
     args = _valid_arguments()
     result = _valid_result()
-    assert (
-        cb.on_analysis_start(
-            ts_ns=0, estimand=estimand, arguments=args
-        )
-        is None
-    )
+    assert cb.on_analysis_start(ts_ns=0, estimand=estimand, arguments=args) is None
     assert cb.on_point_ready(ts_ns=0, point=_valid_point()) is None
     assert cb.on_analysis_end(ts_ns=0, result=result) is None
 
@@ -770,11 +757,7 @@ def test_econml_estimator_factory_raises_when_dep_missing() -> None:
 # ---------------------------------------------------------------------------
 
 
-_MODULE_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "intelligence_engine"
-    / "hte_econml.py"
-)
+_MODULE_PATH = Path(__file__).resolve().parents[1] / "intelligence_engine" / "hte_econml.py"
 
 
 def _module_ast() -> ast.Module:
@@ -794,36 +777,29 @@ def _top_level_imports(tree: ast.Module) -> list[str]:
 
 
 def test_no_top_level_econml_import() -> None:
-    assert all(
-        not name.startswith("econml")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("econml") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_pandas_import() -> None:
-    assert all(
-        not name.startswith("pandas")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("pandas") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_numpy_import() -> None:
-    assert all(
-        not name.startswith("numpy")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("numpy") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_sklearn_import() -> None:
-    assert all(
-        not name.startswith("sklearn")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("sklearn") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_io_imports() -> None:
     banned = {
-        "subprocess", "socket", "urllib", "requests", "httpx", "aiohttp",
+        "subprocess",
+        "socket",
+        "urllib",
+        "requests",
+        "httpx",
+        "aiohttp",
     }
     assert not (banned & set(_top_level_imports(_module_ast())))
 
@@ -845,9 +821,7 @@ def test_no_engine_cross_imports_in_code() -> None:
     tree = _module_ast()
     code_only_segments: list[str] = []
     for node in ast.walk(tree):
-        if isinstance(
-            node, (ast.Import, ast.ImportFrom, ast.Attribute, ast.Name)
-        ):
+        if isinstance(node, (ast.Import, ast.ImportFrom, ast.Attribute, ast.Name)):
             code_only_segments.append(ast.dump(node))
     blob = "\n".join(code_only_segments)
     for needle in (
@@ -859,9 +833,7 @@ def test_no_engine_cross_imports_in_code() -> None:
         assert needle not in blob, needle
 
 
-def _find_enclosing_function(
-    tree: ast.Module, target: ast.AST
-) -> ast.FunctionDef | None:
+def _find_enclosing_function(tree: ast.Module, target: ast.AST) -> ast.FunctionDef | None:
     for func in ast.walk(tree):
         if isinstance(func, ast.FunctionDef):
             for descendant in ast.walk(func):
@@ -875,23 +847,15 @@ def test_econml_import_only_inside_factory() -> None:
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             mod = node.module if isinstance(node, ast.ImportFrom) else None
-            names = (
-                [a.name for a in node.names]
-                if isinstance(node, ast.Import)
-                else [mod or ""]
-            )
+            names = [a.name for a in node.names] if isinstance(node, ast.Import) else [mod or ""]
             for name in names:
-                if name.startswith(
-                    ("econml", "pandas", "numpy", "sklearn")
-                ):
+                if name.startswith(("econml", "pandas", "numpy", "sklearn")):
                     parent = _find_enclosing_function(tree, node)
                     assert parent is not None, (
-                        f"top-level {name} import — must be inside "
-                        "econml_dml_estimator factory"
+                        f"top-level {name} import — must be inside econml_dml_estimator factory"
                     )
                     assert parent.name == "econml_dml_estimator", (
-                        f"{name} imported in {parent.name!r} — must be "
-                        "inside econml_dml_estimator"
+                        f"{name} imported in {parent.name!r} — must be inside econml_dml_estimator"
                     )
 
 
@@ -908,6 +872,4 @@ def test_module_reload_is_idempotent() -> None:
 
     assert mod1.ANALYSIS_SOURCE == mod2.ANALYSIS_SOURCE
     assert mod1.MAX_N_SAMPLES == mod2.MAX_N_SAMPLES
-    assert (
-        mod1.HteEstimatorKind.DML is mod2.HteEstimatorKind.DML
-    )
+    assert mod1.HteEstimatorKind.DML is mod2.HteEstimatorKind.DML

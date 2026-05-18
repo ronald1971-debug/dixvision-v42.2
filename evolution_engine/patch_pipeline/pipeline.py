@@ -73,14 +73,11 @@ class PatchPipeline:
         prev = self._records[patch_id]
         if new_stage not in LEGAL_PATCH_TRANSITIONS[prev]:
             raise PatchPipelineError(
-                f"illegal transition {prev.value} → {new_stage.value} "
-                f"for patch {patch_id!r}"
+                f"illegal transition {prev.value} → {new_stage.value} for patch {patch_id!r}"
             )
         self._records[patch_id] = new_stage
         self._history[patch_id].append(
-            PatchTransition(
-                ts_ns=ts_ns, prev=prev, new=new_stage, reason=reason
-            )
+            PatchTransition(ts_ns=ts_ns, prev=prev, new=new_stage, reason=reason)
         )
         return self.get(patch_id)
 
@@ -95,11 +92,7 @@ class PatchPipeline:
         self._verdicts[patch_id].append(verdict)
 
     def all_in(self, stage: PatchStage) -> tuple[PatchRecord, ...]:
-        return tuple(
-            self.get(pid)
-            for pid, st in self._records.items()
-            if st is stage
-        )
+        return tuple(self.get(pid) for pid, st in self._records.items() if st is stage)
 
 
 __all__ = [

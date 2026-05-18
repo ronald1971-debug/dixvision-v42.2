@@ -121,9 +121,7 @@ class DeterministicCrawler:
         non-default fields.
         """
 
-        prepared = tuple(
-            _PreparedDocument(seed_id=s, url=u) for s, u in pairs
-        )
+        prepared = tuple(_PreparedDocument(seed_id=s, url=u) for s, u in pairs)
         return cls(documents=prepared)
 
     @classmethod
@@ -153,9 +151,7 @@ class DeterministicCrawler:
         """Return one :class:`RawDocument` per requested seed."""
 
         if ts_ns <= 0:
-            raise ValueError(
-                "DeterministicCrawler.fetch ts_ns must be positive"
-            )
+            raise ValueError("DeterministicCrawler.fetch ts_ns must be positive")
         table = self._by_seed()
         out: list[RawDocument] = []
         for seed_id in seeds:

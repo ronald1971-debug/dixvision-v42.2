@@ -87,9 +87,7 @@ def test_verify_route_unauthorized(client, monkeypatch) -> None:
     assert data["http_status"] == 401
 
 
-def test_verify_route_no_verifier_for_unsupported_source(
-    client, monkeypatch
-) -> None:
+def test_verify_route_no_verifier_for_unsupported_source(client, monkeypatch) -> None:
     monkeypatch.setenv("REUTERS_API_KEY", "x")
     r = client.post(
         "/api/credentials/verify",
@@ -135,9 +133,7 @@ def test_verify_route_rejects_non_auth_required_row(client) -> None:
 def test_verify_route_validates_body(client) -> None:
     r = client.post("/api/credentials/verify", json={})
     assert r.status_code == 422
-    r = client.post(
-        "/api/credentials/verify", json={"source_id": ""}
-    )
+    r = client.post("/api/credentials/verify", json={"source_id": ""})
     assert r.status_code == 422
 
 

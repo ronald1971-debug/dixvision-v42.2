@@ -186,9 +186,7 @@ class DriftCompositeOracle:
             )
 
         composite = max(r.deviation for r in readings)
-        breached = tuple(
-            r.component_id for r in readings if r.deviation > r.threshold
-        )
+        breached = tuple(r.component_id for r in readings if r.deviation > r.threshold)
         is_breaching = bool(breached) or composite >= self._downgrade_threshold
         return DriftCompositeReading(
             ts_ns=ts_ns,
@@ -227,10 +225,7 @@ class DriftCompositeOracle:
             return reading, None
 
         if reading.breached_components:
-            reason = (
-                "drift_composite_breach: "
-                + ",".join(reading.breached_components)
-            )
+            reason = "drift_composite_breach: " + ",".join(reading.breached_components)
         else:
             reason = (
                 f"drift_composite_breach: composite={reading.composite:.4f}"

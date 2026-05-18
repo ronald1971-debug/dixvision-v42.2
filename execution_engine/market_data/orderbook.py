@@ -106,8 +106,7 @@ class GapDetection:
             raise ValueError("GapDetection.symbol must be non-empty")
         if self.last_known_update_id < 0:
             raise ValueError(
-                "GapDetection.last_known_update_id must be >= 0, "
-                f"got {self.last_known_update_id!r}"
+                f"GapDetection.last_known_update_id must be >= 0, got {self.last_known_update_id!r}"
             )
         if self.delta_first_update_id < 0:
             raise ValueError(
@@ -115,10 +114,7 @@ class GapDetection:
                 f"got {self.delta_first_update_id!r}"
             )
         if self.delta_final_update_id < self.delta_first_update_id:
-            raise ValueError(
-                "GapDetection.delta_final_update_id must be "
-                ">= delta_first_update_id"
-            )
+            raise ValueError("GapDetection.delta_final_update_id must be >= delta_first_update_id")
 
 
 # ---------------------------------------------------------------------------
@@ -217,24 +213,16 @@ class PurePyPriceLevelMap:
     @staticmethod
     def _validate_price(price: float) -> None:
         if isinstance(price, bool) or not isinstance(price, (int, float)):
-            raise TypeError(
-                f"PriceLevelMap price must be int|float, got {type(price)!r}"
-            )
+            raise TypeError(f"PriceLevelMap price must be int|float, got {type(price)!r}")
         if float(price) <= 0.0:
-            raise ValueError(
-                f"PriceLevelMap.price must be > 0, got {price!r}"
-            )
+            raise ValueError(f"PriceLevelMap.price must be > 0, got {price!r}")
 
     @staticmethod
     def _validate_qty(qty: float) -> None:
         if isinstance(qty, bool) or not isinstance(qty, (int, float)):
-            raise TypeError(
-                f"PriceLevelMap qty must be int|float, got {type(qty)!r}"
-            )
+            raise TypeError(f"PriceLevelMap qty must be int|float, got {type(qty)!r}")
         if float(qty) < 0.0:
-            raise ValueError(
-                f"PriceLevelMap.qty must be >= 0, got {qty!r}"
-            )
+            raise ValueError(f"PriceLevelMap.qty must be >= 0, got {qty!r}")
 
 
 # ---------------------------------------------------------------------------
@@ -286,9 +274,7 @@ class _SortedContainersPriceLevelMap:
 
     def items_sorted(self) -> tuple[tuple[float, float], ...]:
         if self._descending:
-            return tuple(
-                (float(-k), float(v)) for k, v in self._sd.items()
-            )
+            return tuple((float(-k), float(v)) for k, v in self._sd.items())
         return tuple((float(k), float(v)) for k, v in self._sd.items())
 
     def clear(self) -> None:
@@ -328,8 +314,7 @@ class OrderBookApplyResult:
     def __post_init__(self) -> None:
         if (self.snapshot is None) == (self.gap is None):
             raise ValueError(
-                "OrderBookApplyResult must have exactly one of "
-                "snapshot / gap populated"
+                "OrderBookApplyResult must have exactly one of snapshot / gap populated"
             )
 
 
@@ -374,9 +359,7 @@ class L2OrderBook:
         if not isinstance(max_depth, int) or isinstance(max_depth, bool):
             raise TypeError("L2OrderBook.max_depth must be int")
         if max_depth <= 0:
-            raise ValueError(
-                f"L2OrderBook.max_depth must be > 0, got {max_depth!r}"
-            )
+            raise ValueError(f"L2OrderBook.max_depth must be > 0, got {max_depth!r}")
         self._bids: PriceLevelMap = bids
         self._asks: PriceLevelMap = asks
         self._symbol: str = symbol
@@ -451,8 +434,7 @@ class L2OrderBook:
             )
         if snapshot.venue != self._venue:
             raise ValueError(
-                "apply_snapshot.venue mismatch: book="
-                f"{self._venue!r} snapshot={snapshot.venue!r}"
+                f"apply_snapshot.venue mismatch: book={self._venue!r} snapshot={snapshot.venue!r}"
             )
         self._bids.clear()
         self._asks.clear()
@@ -478,13 +460,11 @@ class L2OrderBook:
         """
         if delta.symbol != self._symbol:
             raise ValueError(
-                "apply_delta.symbol mismatch: book="
-                f"{self._symbol!r} delta={delta.symbol!r}"
+                f"apply_delta.symbol mismatch: book={self._symbol!r} delta={delta.symbol!r}"
             )
         if delta.venue != self._venue:
             raise ValueError(
-                "apply_delta.venue mismatch: book="
-                f"{self._venue!r} delta={delta.venue!r}"
+                f"apply_delta.venue mismatch: book={self._venue!r} delta={delta.venue!r}"
             )
         if self._last_update_id < 0:
             raise RuntimeError(
@@ -492,9 +472,7 @@ class L2OrderBook:
                 "(no seed snapshot has been applied)"
             )
         expected = self._last_update_id + 1
-        if not (
-            delta.first_update_id <= expected <= delta.final_update_id
-        ):
+        if not (delta.first_update_id <= expected <= delta.final_update_id):
             return OrderBookApplyResult(
                 snapshot=None,
                 gap=GapDetection(
@@ -523,9 +501,7 @@ class L2OrderBook:
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
             raise TypeError("project_snapshot.ts_ns must be int")
         if ts_ns < 0:
-            raise ValueError(
-                f"project_snapshot.ts_ns must be >= 0, got {ts_ns!r}"
-            )
+            raise ValueError(f"project_snapshot.ts_ns must be >= 0, got {ts_ns!r}")
         return self._project(ts_ns)
 
     def top_n_bids(self, n: int) -> tuple[OrderBookLevel, ...]:
@@ -695,7 +671,5 @@ def _consume(deltas: Iterable[BookDelta]) -> Iterator[BookDelta]:
     """
     for delta in deltas:
         if not isinstance(delta, BookDelta):
-            raise TypeError(
-                f"replay_l2.deltas must yield BookDelta, got {type(delta)!r}"
-            )
+            raise TypeError(f"replay_l2.deltas must yield BookDelta, got {type(delta)!r}")
         yield delta

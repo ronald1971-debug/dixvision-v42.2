@@ -107,7 +107,7 @@ class ChatTurnResponse(BaseModel):
         description=(
             "Registry source id that served this turn. Surfaced "
             "so the operator can audit which provider was reached "
-            "without grep'ing the audit ledger. ``\"\"`` if the "
+            'without grep\'ing the audit ledger. ``""`` if the '
             "transport returned a reply without resolving a "
             "registry row (test stubs)."
         ),

@@ -97,8 +97,7 @@ class CrowdDensityConfig:
             )
         if not 0.0 <= self.unwind_jitter <= 1.0:
             raise ValueError(
-                "CrowdDensityConfig.unwind_jitter must be in [0, 1], "
-                f"got {self.unwind_jitter!r}"
+                f"CrowdDensityConfig.unwind_jitter must be in [0, 1], got {self.unwind_jitter!r}"
             )
 
 
@@ -137,9 +136,7 @@ def _require_side(meta: dict[str, Any]) -> str:
         raise ValueError("RealityScenario.meta missing required key 'side'")
     side = meta["side"]
     if side not in (_LONG, _SHORT):
-        raise ValueError(
-            f"meta['side'] must be 'long' or 'short', got {side!r}"
-        )
+        raise ValueError(f"meta['side'] must be 'long' or 'short', got {side!r}")
     return side
 
 

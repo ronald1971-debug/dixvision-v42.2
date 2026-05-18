@@ -150,21 +150,17 @@ def test_authority_no_typed_event_construction() -> None:
         if isinstance(node, ast.Call):
             fn = node.func
             if isinstance(fn, ast.Name):
-                assert fn.id not in forbidden_types, (
-                    f"sensor must not construct {fn.id}"
-                )
+                assert fn.id not in forbidden_types, f"sensor must not construct {fn.id}"
             elif isinstance(fn, ast.Attribute):
-                assert fn.attr not in forbidden_types, (
-                    f"sensor must not construct {fn.attr}"
-                )
+                assert fn.attr not in forbidden_types, f"sensor must not construct {fn.attr}"
 
 
 def test_authority_no_core_events_import() -> None:
     for node in _iter_top_level_imports(MODULE_AST):
         if isinstance(node, ast.ImportFrom):
-            assert (
-                node.module != "core.contracts.events"
-            ), "sensor must not import core.contracts.events"
+            assert node.module != "core.contracts.events", (
+                "sensor must not import core.contracts.events"
+            )
 
 
 def test_authority_emits_only_risk_pulse() -> None:
@@ -183,9 +179,9 @@ def test_authority_module_has_no_mutable_globals() -> None:
         if name.startswith("_"):
             continue
         attr = getattr(governance_risk_snn, name)
-        assert not isinstance(
-            attr, (list, dict, set)
-        ), f"governance_risk_snn.{name} is mutable container"
+        assert not isinstance(attr, (list, dict, set)), (
+            f"governance_risk_snn.{name} is mutable container"
+        )
 
 
 # =================================================================== freezing
@@ -411,9 +407,7 @@ def test_stdp_ltp_strengthens_correlated_connection() -> None:
     # Step 0: pre[0] fires. Step 1: post[0] fires.
     pre = ((True, False), (False, False))
     post = ((False, False), (True, False))
-    w1 = stdp_train_offline(
-        initial_weights=w0, pre_spikes=pre, post_spikes=post, stdp=cfg
-    )
+    w1 = stdp_train_offline(initial_weights=w0, pre_spikes=pre, post_spikes=post, stdp=cfg)
     assert w1.weight[0][0] > w0.weight[0][0]
 
 
@@ -429,9 +423,7 @@ def test_stdp_ltd_weakens_anticorrelated_connection() -> None:
     # Step 0: post[0] fires. Step 1: pre[0] fires.
     pre = ((False, False), (True, False))
     post = ((True, False), (False, False))
-    w1 = stdp_train_offline(
-        initial_weights=w0, pre_spikes=pre, post_spikes=post, stdp=cfg
-    )
+    w1 = stdp_train_offline(initial_weights=w0, pre_spikes=pre, post_spikes=post, stdp=cfg)
     assert w1.weight[0][0] < w0.weight[0][0]
 
 
@@ -445,9 +437,7 @@ def test_stdp_clips_to_w_max() -> None:
     # Many pre spikes followed by post spikes — would push weight >> 1.
     pre = tuple(tuple([True, False]) for _ in range(50))
     post = tuple(tuple([True, False]) for _ in range(50))
-    w1 = stdp_train_offline(
-        initial_weights=w0, pre_spikes=pre, post_spikes=post, stdp=cfg
-    )
+    w1 = stdp_train_offline(initial_weights=w0, pre_spikes=pre, post_spikes=post, stdp=cfg)
     assert w1.weight[0][0] <= 1.0 + 1e-12
 
 
@@ -460,9 +450,7 @@ def test_stdp_clips_to_w_min() -> None:
     cfg = STDPConfig(eta_post=0.0, eta_pre=10.0, w_min=0.0)
     pre = tuple(tuple([True, False]) for _ in range(50))
     post = tuple(tuple([True, False]) for _ in range(50))
-    w1 = stdp_train_offline(
-        initial_weights=w0, pre_spikes=pre, post_spikes=post, stdp=cfg
-    )
+    w1 = stdp_train_offline(initial_weights=w0, pre_spikes=pre, post_spikes=post, stdp=cfg)
     assert w1.weight[0][0] >= -1e-12
 
 
@@ -483,19 +471,11 @@ def test_stdp_returns_new_instance_not_mutation() -> None:
 def test_stdp_deterministic_three_runs() -> None:
     w0 = identity_governance_weights(3, 2)
     cfg = STDPConfig(eta_post=0.05, eta_pre=0.03)
-    pre = tuple(
-        tuple([(t + i) % 2 == 0 for i in range(3)]) for t in range(20)
-    )
+    pre = tuple(tuple([(t + i) % 2 == 0 for i in range(3)]) for t in range(20))
     post = tuple(tuple([t % 3 == 0, t % 5 == 0]) for t in range(20))
-    a = stdp_train_offline(
-        initial_weights=w0, pre_spikes=pre, post_spikes=post, stdp=cfg
-    )
-    b = stdp_train_offline(
-        initial_weights=w0, pre_spikes=pre, post_spikes=post, stdp=cfg
-    )
-    c = stdp_train_offline(
-        initial_weights=w0, pre_spikes=pre, post_spikes=post, stdp=cfg
-    )
+    a = stdp_train_offline(initial_weights=w0, pre_spikes=pre, post_spikes=post, stdp=cfg)
+    b = stdp_train_offline(initial_weights=w0, pre_spikes=pre, post_spikes=post, stdp=cfg)
+    c = stdp_train_offline(initial_weights=w0, pre_spikes=pre, post_spikes=post, stdp=cfg)
     assert a.weight == b.weight == c.weight
     assert a.digest() == b.digest() == c.digest()
 

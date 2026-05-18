@@ -41,10 +41,7 @@ from learning_engine.loops.closed_loop import (
 from learning_engine.update_emitter import UpdateEmitter
 
 _MODULE_PATH = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / "learning_engine"
-    / "loops"
-    / "closed_loop.py"
+    pathlib.Path(__file__).resolve().parent.parent / "learning_engine" / "loops" / "closed_loop.py"
 )
 
 
@@ -54,21 +51,15 @@ _MODULE_PATH = (
 
 
 def _frozen_policy() -> LearningEvolutionFreezePolicy:
-    return LearningEvolutionFreezePolicy(
-        mode=SystemMode.PAPER, operator_override=False
-    )
+    return LearningEvolutionFreezePolicy(mode=SystemMode.PAPER, operator_override=False)
 
 
 def _unfrozen_policy() -> LearningEvolutionFreezePolicy:
-    return LearningEvolutionFreezePolicy(
-        mode=SystemMode.LIVE, operator_override=True
-    )
+    return LearningEvolutionFreezePolicy(mode=SystemMode.LIVE, operator_override=True)
 
 
 def _live_no_override() -> LearningEvolutionFreezePolicy:
-    return LearningEvolutionFreezePolicy(
-        mode=SystemMode.LIVE, operator_override=False
-    )
+    return LearningEvolutionFreezePolicy(mode=SystemMode.LIVE, operator_override=False)
 
 
 def _make_collector_with(
@@ -79,9 +70,7 @@ def _make_collector_with(
     return fc
 
 
-def _outcome(
-    *, ts_ns: int, pnl: float, strategy_id: str = "alpha"
-) -> TradeOutcome:
+def _outcome(*, ts_ns: int, pnl: float, strategy_id: str = "alpha") -> TradeOutcome:
     return TradeOutcome(
         ts_ns=ts_ns,
         strategy_id=strategy_id,
@@ -97,11 +86,7 @@ def _outcome(
 
 def _learner() -> SlowLoopLearner:
     return SlowLoopLearner(
-        bounds={
-            "alpha_threshold": ParameterBounds(
-                lo=0.0, hi=1.0, step=0.1, initial=0.5
-            )
-        },
+        bounds={"alpha_threshold": ParameterBounds(lo=0.0, hi=1.0, step=0.1, initial=0.5)},
         freeze_policy=None,
     )
 
@@ -124,11 +109,7 @@ def _update_builder(
     current: ParameterSnapshot,
     ts_ns: int,
 ) -> tuple[LearningUpdate, ...]:
-    prev_value = (
-        previous.values.get("alpha_threshold", 0.5)
-        if previous is not None
-        else 0.5
-    )
+    prev_value = previous.values.get("alpha_threshold", 0.5) if previous is not None else 0.5
     cur_value = current.values["alpha_threshold"]
     if prev_value == cur_value:
         return ()
@@ -169,11 +150,7 @@ def _make_loop(
 
 def test_loop_refuses_learner_with_inner_freeze_policy() -> None:
     bad_learner = SlowLoopLearner(
-        bounds={
-            "alpha_threshold": ParameterBounds(
-                lo=0.0, hi=1.0, step=0.1, initial=0.5
-            )
-        },
+        bounds={"alpha_threshold": ParameterBounds(lo=0.0, hi=1.0, step=0.1, initial=0.5)},
         freeze_policy=_unfrozen_policy(),
     )
     with pytest.raises(ValueError, match="learner.freeze_policy=None"):
@@ -186,9 +163,7 @@ def test_loop_refuses_learner_with_inner_freeze_policy() -> None:
 
 
 def test_loop_refuses_emitter_with_inner_freeze_policy() -> None:
-    bad_emitter = UpdateEmitter(
-        source="learning_test", freeze=_unfrozen_policy()
-    )
+    bad_emitter = UpdateEmitter(source="learning_test", freeze=_unfrozen_policy())
     with pytest.raises(ValueError, match="emitter.freeze=None"):
         ClosedLearningLoop(
             feedback_collector=FeedbackCollector(),
@@ -220,9 +195,7 @@ def test_frozen_default_paper_mode_is_noop() -> None:
 
 
 def test_frozen_live_without_override_is_noop() -> None:
-    collector = _make_collector_with(
-        (_outcome(ts_ns=1, pnl=1.0), _outcome(ts_ns=2, pnl=-0.5))
-    )
+    collector = _make_collector_with((_outcome(ts_ns=1, pnl=1.0), _outcome(ts_ns=2, pnl=-0.5)))
     loop = _make_loop(feedback=collector, policy=_live_no_override())
     result = loop.tick(ts_ns=10_000)
     assert result.frozen is True
@@ -260,9 +233,7 @@ def test_live_plus_override_drains_and_emits() -> None:
 
 
 def test_empty_drain_unfrozen_still_ticks_learner() -> None:
-    loop = _make_loop(
-        feedback=FeedbackCollector(), policy=_unfrozen_policy()
-    )
+    loop = _make_loop(feedback=FeedbackCollector(), policy=_unfrozen_policy())
     result = loop.tick(ts_ns=42)
     assert result.frozen is False
     assert result.drained_outcomes == ()
@@ -278,9 +249,7 @@ def test_empty_drain_unfrozen_still_ticks_learner() -> None:
 
 
 def test_mode_flip_mid_loop() -> None:
-    collector = _make_collector_with(
-        (_outcome(ts_ns=1_000_000_000, pnl=2.0),)
-    )
+    collector = _make_collector_with((_outcome(ts_ns=1_000_000_000, pnl=2.0),))
     policies: list[LearningEvolutionFreezePolicy] = [
         _frozen_policy(),
         _unfrozen_policy(),
@@ -351,12 +320,12 @@ def test_loop_module_constructs_no_typed_events() -> None:
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
             fn = node.func
-            name = fn.id if isinstance(fn, ast.Name) else (
-                fn.attr if isinstance(fn, ast.Attribute) else None
+            name = (
+                fn.id
+                if isinstance(fn, ast.Name)
+                else (fn.attr if isinstance(fn, ast.Attribute) else None)
             )
-            assert (
-                name not in bad_constructors
-            ), f"closed_loop must not construct {name}"
+            assert name not in bad_constructors, f"closed_loop must not construct {name}"
 
 
 def test_loop_module_does_not_import_engines() -> None:

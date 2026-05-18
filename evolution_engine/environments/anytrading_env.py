@@ -178,19 +178,12 @@ class AnytradingConfig:
         for idx, price in enumerate(self.prices):
             if not isinstance(price, (int, float)):
                 raise TypeError(
-                    f"AnytradingConfig.prices[{idx}] must be float, got "
-                    f"{type(price).__name__}"
+                    f"AnytradingConfig.prices[{idx}] must be float, got {type(price).__name__}"
                 )
             if not math.isfinite(float(price)):
-                raise ValueError(
-                    f"AnytradingConfig.prices[{idx}] must be finite, got "
-                    f"{price!r}"
-                )
+                raise ValueError(f"AnytradingConfig.prices[{idx}] must be finite, got {price!r}")
             if float(price) <= 0.0:
-                raise ValueError(
-                    f"AnytradingConfig.prices[{idx}] must be positive, got "
-                    f"{price!r}"
-                )
+                raise ValueError(f"AnytradingConfig.prices[{idx}] must be positive, got {price!r}")
         if self.window_size < MIN_WINDOW_SIZE:
             raise ValueError(
                 "AnytradingConfig.window_size must be >= "
@@ -206,13 +199,9 @@ class AnytradingConfig:
             ("trade_fee_ask_percent", self.trade_fee_ask_percent),
         ):
             if not math.isfinite(fee):
-                raise ValueError(
-                    f"AnytradingConfig.{label} must be finite, got {fee!r}"
-                )
+                raise ValueError(f"AnytradingConfig.{label} must be finite, got {fee!r}")
             if fee < 0.0:
-                raise ValueError(
-                    f"AnytradingConfig.{label} must be non-negative, got {fee!r}"
-                )
+                raise ValueError(f"AnytradingConfig.{label} must be non-negative, got {fee!r}")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -244,10 +233,7 @@ class AnytradingObservation:
 
     def __post_init__(self) -> None:
         if self.step_idx < 0:
-            raise ValueError(
-                "AnytradingObservation.step_idx must be >= 0, got "
-                f"{self.step_idx!r}"
-            )
+            raise ValueError(f"AnytradingObservation.step_idx must be >= 0, got {self.step_idx!r}")
         if len(self.window) < MIN_WINDOW_SIZE:
             raise ValueError(
                 "AnytradingObservation.window must have >= "
@@ -260,8 +246,7 @@ class AnytradingObservation:
             )
         if len(self.state_hash) != 16:
             raise ValueError(
-                "AnytradingObservation.state_hash must be 16 hex chars, got "
-                f"{self.state_hash!r}"
+                f"AnytradingObservation.state_hash must be 16 hex chars, got {self.state_hash!r}"
             )
 
 
@@ -284,19 +269,14 @@ class AnytradingStepResult:
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.reward):
-            raise ValueError(
-                "AnytradingStepResult.reward must be finite, got "
-                f"{self.reward!r}"
-            )
+            raise ValueError(f"AnytradingStepResult.reward must be finite, got {self.reward!r}")
         if not math.isfinite(self.total_reward):
             raise ValueError(
-                "AnytradingStepResult.total_reward must be finite, got "
-                f"{self.total_reward!r}"
+                f"AnytradingStepResult.total_reward must be finite, got {self.total_reward!r}"
             )
         if not math.isfinite(self.total_profit):
             raise ValueError(
-                "AnytradingStepResult.total_profit must be finite, got "
-                f"{self.total_profit!r}"
+                f"AnytradingStepResult.total_profit must be finite, got {self.total_profit!r}"
             )
 
 
@@ -397,8 +377,7 @@ class DIXAnytradingEnv:
     def reset(self, *, seed: int = 0) -> tuple[AnytradingObservation, dict[str, Any]]:
         if not isinstance(seed, int):
             raise TypeError(
-                f"DIXAnytradingEnv.reset(seed=...) must be int, got "
-                f"{type(seed).__name__}"
+                f"DIXAnytradingEnv.reset(seed=...) must be int, got {type(seed).__name__}"
             )
         self._seed = seed
         self._current_tick = self._config.window_size - 1
@@ -423,20 +402,15 @@ class DIXAnytradingEnv:
             )
         if not isinstance(action, int):
             raise TypeError(
-                f"DIXAnytradingEnv.step(action) must be int, got "
-                f"{type(action).__name__}"
+                f"DIXAnytradingEnv.step(action) must be int, got {type(action).__name__}"
             )
         if action not in (AnytradingAction.SELL.value, AnytradingAction.BUY.value):
-            raise ValueError(
-                f"DIXAnytradingEnv.step(action) must be in {{0, 1}}, got "
-                f"{action!r}"
-            )
+            raise ValueError(f"DIXAnytradingEnv.step(action) must be in {{0, 1}}, got {action!r}")
 
         self._step_call_count += 1
         if self._step_call_count > MAX_EPISODE_STEPS:
             raise AnytradingEpisodeBudgetExceededError(
-                f"DIXAnytradingEnv exceeded MAX_EPISODE_STEPS="
-                f"{MAX_EPISODE_STEPS!r} without reset"
+                f"DIXAnytradingEnv exceeded MAX_EPISODE_STEPS={MAX_EPISODE_STEPS!r} without reset"
             )
 
         prev_position = self._position
@@ -527,9 +501,7 @@ def gymnasium_anytrading_env_factory(*, config: AnytradingConfig) -> Any:
             )
             return flat, info
 
-        def step(
-            self, action: int
-        ) -> tuple[tuple[float, ...], float, bool, bool, dict[str, Any]]:
+        def step(self, action: int) -> tuple[tuple[float, ...], float, bool, bool, dict[str, Any]]:
             result = base_env.step(action)
             obs = result.observation
             flat: tuple[float, ...] = (

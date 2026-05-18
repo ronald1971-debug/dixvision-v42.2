@@ -47,9 +47,7 @@ from evolution_engine.patch_pipeline.sandbox_openhands import (
     enable_openhands_factory,
 )
 
-MODULE_PATH = Path(
-    "evolution_engine/patch_pipeline/sandbox_openhands.py"
-)
+MODULE_PATH = Path("evolution_engine/patch_pipeline/sandbox_openhands.py")
 
 
 # ---------------------------------------------------------------------------
@@ -141,10 +139,7 @@ def test_no_b1_cross_engine_imports() -> None:
         "state",
     }
     leak = forbidden_engines & top
-    assert leak == set(), (
-        "B1 violation: sandbox_openhands.py must not cross-import "
-        f"{leak}"
-    )
+    assert leak == set(), f"B1 violation: sandbox_openhands.py must not cross-import {leak}"
 
 
 def test_no_wall_clock_calls_anywhere() -> None:
@@ -163,9 +158,7 @@ def test_no_wall_clock_calls_anywhere() -> None:
                 "secrets.token",
                 "os.urandom",
             ):
-                assert bad not in func_str, (
-                    f"forbidden runtime call: {func_str}"
-                )
+                assert bad not in func_str, f"forbidden runtime call: {func_str}"
 
 
 def test_no_typed_bus_event_constructors() -> None:
@@ -183,8 +176,7 @@ def test_no_typed_bus_event_constructors() -> None:
                 "GovernanceDecision",
             ):
                 assert bad not in func_str, (
-                    "C-17 must not construct typed runtime events: "
-                    f"{func_str}"
+                    f"C-17 must not construct typed runtime events: {func_str}"
                 )
 
 
@@ -237,9 +229,7 @@ def test_default_forbidden_lists_cover_directive_clauses() -> None:
         "kill",
         "reboot",
     }
-    assert must_have_commands.issubset(
-        set(DEFAULT_FORBIDDEN_COMMANDS)
-    )
+    assert must_have_commands.issubset(set(DEFAULT_FORBIDDEN_COMMANDS))
 
 
 # ---------------------------------------------------------------------------
@@ -267,9 +257,7 @@ def test_bash_action_kind_locked() -> None:
 
 
 def test_file_write_action_kind_locked() -> None:
-    a = FileWriteAction(
-        id="x", ts_ns=0, path="/tmp/dix_sandbox/f", content=""
-    )
+    a = FileWriteAction(id="x", ts_ns=0, path="/tmp/dix_sandbox/f", content="")
     assert a.kind is ActionKind.FILE_WRITE
     assert a.KIND is ActionKind.FILE_WRITE
 
@@ -335,9 +323,7 @@ def test_file_write_action_path_required() -> None:
 def test_file_write_action_content_max_len() -> None:
     huge = "a" * (MAX_FILE_CONTENT_LEN + 1)
     with pytest.raises(ActionError):
-        FileWriteAction(
-            id="x", ts_ns=0, path="/tmp/dix_sandbox/f", content=huge
-        )
+        FileWriteAction(id="x", ts_ns=0, path="/tmp/dix_sandbox/f", content=huge)
 
 
 # ---------------------------------------------------------------------------
@@ -365,7 +351,9 @@ def test_command_observation_validates_fields() -> None:
         CommandObservation(action_id="", ts_ns=0)
     with pytest.raises(ActionError):
         CommandObservation(
-            action_id="a", ts_ns=0, exit_code=True  # type: ignore[arg-type]
+            action_id="a",
+            ts_ns=0,
+            exit_code=True,  # type: ignore[arg-type]
         )
 
 
@@ -442,31 +430,11 @@ def test_boundary_forbidden_command_head() -> None:
 
 def test_boundary_detects_forbidden_imports() -> None:
     b = SandboxBoundary()
-    assert (
-        b.code_imports_forbidden_module("import subprocess\nprint(1)")
-        is True
-    )
-    assert (
-        b.code_imports_forbidden_module(
-            "from urllib.request import urlopen\n"
-        )
-        is True
-    )
-    assert (
-        b.code_imports_forbidden_module(
-            "  import os.path\nprint(1)\n"
-        )
-        is True
-    )
-    assert (
-        b.code_imports_forbidden_module(
-            "# import subprocess\nprint(1)\n"
-        )
-        is False
-    )
-    assert (
-        b.code_imports_forbidden_module("print(1)") is False
-    )
+    assert b.code_imports_forbidden_module("import subprocess\nprint(1)") is True
+    assert b.code_imports_forbidden_module("from urllib.request import urlopen\n") is True
+    assert b.code_imports_forbidden_module("  import os.path\nprint(1)\n") is True
+    assert b.code_imports_forbidden_module("# import subprocess\nprint(1)\n") is False
+    assert b.code_imports_forbidden_module("print(1)") is False
 
 
 def test_boundary_invalid_max_actions() -> None:
@@ -489,9 +457,7 @@ def _default_validator() -> SandboxPlanValidator:
 
 def test_validator_accepts_clean_code_action() -> None:
     v = _default_validator()
-    plan = v.validate(
-        [CodeAction(id="a1", ts_ns=0, source="print(1)")]
-    )
+    plan = v.validate([CodeAction(id="a1", ts_ns=0, source="print(1)")])
     assert plan.passed is True
     assert plan.accepted_count == 1
     assert plan.results[0].verdict is ActionVerdict.ACCEPTED
@@ -499,9 +465,7 @@ def test_validator_accepts_clean_code_action() -> None:
 
 def test_validator_rejects_code_with_forbidden_import() -> None:
     v = _default_validator()
-    plan = v.validate(
-        [CodeAction(id="a1", ts_ns=0, source="import subprocess")]
-    )
+    plan = v.validate([CodeAction(id="a1", ts_ns=0, source="import subprocess")])
     assert plan.results[0].verdict is ActionVerdict.REJECTED
     assert "forbidden module" in plan.results[0].reason
 
@@ -523,26 +487,20 @@ def test_validator_accepts_bash_inside_sandbox_path() -> None:
 
 def test_validator_reviews_bash_path_outside_sandbox() -> None:
     v = _default_validator()
-    plan = v.validate(
-        [BashAction(id="a1", ts_ns=0, command="ls", args=("/etc/passwd",))]
-    )
+    plan = v.validate([BashAction(id="a1", ts_ns=0, command="ls", args=("/etc/passwd",))])
     assert plan.results[0].verdict is ActionVerdict.REVIEW_REQUIRED
     assert plan.requires_governance_review is True
 
 
 def test_validator_rejects_forbidden_bash_head() -> None:
     v = _default_validator()
-    plan = v.validate(
-        [BashAction(id="a1", ts_ns=0, command="rm", args=())]
-    )
+    plan = v.validate([BashAction(id="a1", ts_ns=0, command="rm", args=())])
     assert plan.results[0].verdict is ActionVerdict.REJECTED
 
 
 def test_validator_rejects_disallowed_bash_head() -> None:
     v = _default_validator()
-    plan = v.validate(
-        [BashAction(id="a1", ts_ns=0, command="strangecmd", args=())]
-    )
+    plan = v.validate([BashAction(id="a1", ts_ns=0, command="strangecmd", args=())])
     assert plan.results[0].verdict is ActionVerdict.REJECTED
 
 
@@ -606,12 +564,7 @@ def test_validator_rejects_overlong_action_list() -> None:
     boundary = SandboxBoundary(max_actions=2)
     v = SandboxPlanValidator(boundary=boundary)
     with pytest.raises(PlanError):
-        v.validate(
-            [
-                CodeAction(id=f"a{i}", ts_ns=i, source="pass")
-                for i in range(3)
-            ]
-        )
+        v.validate([CodeAction(id=f"a{i}", ts_ns=i, source="pass") for i in range(3)])
 
 
 def test_validator_rejects_non_action_entries() -> None:
@@ -634,9 +587,7 @@ def test_validator_counter_invariants() -> None:
             ),
         ]
     )
-    assert (
-        plan.accepted_count + plan.review_count + plan.rejected_count
-    ) == 3
+    assert (plan.accepted_count + plan.review_count + plan.rejected_count) == 3
     assert plan.accepted_count == 1
     assert plan.review_count == 1
     assert plan.rejected_count == 1
@@ -661,19 +612,11 @@ def _build_mixed_actions() -> tuple[BaseAction, ...]:
     return (
         CodeAction(id="a1", ts_ns=0, source="print(1)"),
         CodeAction(id="a2", ts_ns=1, source="import subprocess"),
-        BashAction(
-            id="a3", ts_ns=2, command="ls", args=("/tmp/dix_sandbox/x",)
-        ),
-        BashAction(
-            id="a4", ts_ns=3, command="ls", args=("/etc/passwd",)
-        ),
+        BashAction(id="a3", ts_ns=2, command="ls", args=("/tmp/dix_sandbox/x",)),
+        BashAction(id="a4", ts_ns=3, command="ls", args=("/etc/passwd",)),
         BashAction(id="a5", ts_ns=4, command="rm", args=()),
-        FileWriteAction(
-            id="a6", ts_ns=5, path="/tmp/dix_sandbox/out.txt", content="hi"
-        ),
-        FileWriteAction(
-            id="a7", ts_ns=6, path="/etc/passwd", content="boom"
-        ),
+        FileWriteAction(id="a6", ts_ns=5, path="/tmp/dix_sandbox/out.txt", content="hi"),
+        FileWriteAction(id="a7", ts_ns=6, path="/etc/passwd", content="boom"),
     )
 
 
@@ -688,9 +631,7 @@ def test_inv15_action_id_change_changes_digest() -> None:
     v = _default_validator()
     actions = _build_mixed_actions()
     d1 = v.validate(actions).digest
-    altered = (
-        CodeAction(id="a1_renamed", ts_ns=0, source="print(1)"),
-    ) + actions[1:]
+    altered = (CodeAction(id="a1_renamed", ts_ns=0, source="print(1)"),) + actions[1:]
     d2 = v.validate(altered).digest
     assert d1 != d2
 
@@ -699,21 +640,15 @@ def test_inv15_kind_change_changes_digest() -> None:
     v = _default_validator()
     actions = _build_mixed_actions()
     d1 = v.validate(actions).digest
-    altered = (
-        BashAction(id="a1", ts_ns=0, command="echo", args=("hello",)),
-    ) + actions[1:]
+    altered = (BashAction(id="a1", ts_ns=0, command="echo", args=("hello",)),) + actions[1:]
     d2 = v.validate(altered).digest
     assert d1 != d2
 
 
 def test_inv15_reasons_included_in_digest() -> None:
     v = _default_validator()
-    a = (
-        CodeAction(id="a1", ts_ns=0, source="import subprocess"),
-    )
-    b = (
-        CodeAction(id="a1", ts_ns=0, source="import socket"),
-    )
+    a = (CodeAction(id="a1", ts_ns=0, source="import subprocess"),)
+    b = (CodeAction(id="a1", ts_ns=0, source="import socket"),)
     d1 = v.validate(a).digest
     d2 = v.validate(b).digest
     # both rejected, but for different forbidden imports... actually
@@ -730,9 +665,7 @@ def test_inv15_reasons_included_in_digest() -> None:
 def test_stage_emits_canonical_stage_verdict_clean() -> None:
     v = _default_validator()
     stage = OpenHandsSandboxStage(validator=v)
-    plan, sv = stage.evaluate(
-        ts_ns=42, actions=[CodeAction(id="a1", ts_ns=0, source="pass")]
-    )
+    plan, sv = stage.evaluate(ts_ns=42, actions=[CodeAction(id="a1", ts_ns=0, source="pass")])
     assert isinstance(sv, StageVerdict)
     assert sv.passed is True
     assert sv.stage is PatchStage.SANDBOX

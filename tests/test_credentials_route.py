@@ -69,24 +69,18 @@ def test_credentials_status_envelope(client, monkeypatch) -> None:
     assert summary["partial"] == 0
 
 
-def test_credentials_status_reflects_present_var(
-    client, monkeypatch
-) -> None:
+def test_credentials_status_reflects_present_var(client, monkeypatch) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "sk-fake-test")
     r = client.get("/api/credentials/status")
     assert r.status_code == 200
     data = r.json()
-    openai = next(
-        i for i in data["items"] if i["provider"] == "openai"
-    )
+    openai = next(i for i in data["items"] if i["provider"] == "openai")
     assert openai["state"] == "present"
     assert openai["missing_env_vars"] == []
     assert "OPENAI_API_KEY" in openai["env_vars"]
 
 
-def test_credentials_status_does_not_leak_values(
-    client, monkeypatch
-) -> None:
+def test_credentials_status_does_not_leak_values(client, monkeypatch) -> None:
     """The JSON response must never contain the secret value itself."""
 
     monkeypatch.setenv("OPENAI_API_KEY", "sk-this-must-not-leak")

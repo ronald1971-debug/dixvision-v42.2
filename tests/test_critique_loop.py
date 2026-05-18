@@ -152,9 +152,7 @@ def test_no_wall_clock_or_prng_calls_in_modules() -> None:
     }
     for tree in (_SC_TREE, _CL_TREE):
         for node in ast.walk(tree):
-            if isinstance(node, ast.Attribute) and isinstance(
-                node.value, ast.Name
-            ):
+            if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
                 pair = (node.value.id, node.attr)
                 assert pair not in forbidden_attrs, pair
 
@@ -174,12 +172,8 @@ def test_strategy_council_no_typed_event_constructors() -> None:
     )
     for tree in (_SC_TREE, _CL_TREE):
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call) and isinstance(
-                node.func, ast.Name
-            ):
-                assert node.func.id not in forbidden_calls, (
-                    node.func.id
-                )
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                assert node.func.id not in forbidden_calls, node.func.id
 
 
 # ---------------------------------------------------------------------------
@@ -571,9 +565,7 @@ def _digest_log(log: CritiqueLog) -> bytes:
         body_parts.append(m.sender_role.value)
         for k in sorted(m.payload.keys()):
             body_parts.append(f"{k}={m.payload[k]}")
-    return hashlib.blake2b(
-        "|".join(body_parts).encode(), digest_size=16
-    ).digest()
+    return hashlib.blake2b("|".join(body_parts).encode(), digest_size=16).digest()
 
 
 def test_run_critique_round_inv15_three_run_byte_identical() -> None:
@@ -633,9 +625,7 @@ def test_critique_consensus_rejects_too_many_refinements() -> None:
             proposal_id="p",
             recommendation=CritiqueRecommendation.REFINE,
             rationale="",
-            refinements=tuple(
-                "r" for _ in range(sc.MAX_REFINEMENTS + 1)
-            ),
+            refinements=tuple("r" for _ in range(sc.MAX_REFINEMENTS + 1)),
         )
 
 
@@ -695,10 +685,7 @@ def test_run_critique_loop_terminates_on_approve() -> None:
         max_rounds=4,
     )
     assert isinstance(result, CritiqueLoopResult)
-    assert (
-        result.terminal_recommendation
-        is CritiqueRecommendation.APPROVE
-    )
+    assert result.terminal_recommendation is CritiqueRecommendation.APPROVE
     assert result.converged is True
     assert len(result.rounds) == 1
 
@@ -713,9 +700,7 @@ def test_run_critique_loop_iterates_until_approve() -> None:
             proposal: Mapping[str, str],
             consensus: CritiqueConsensus,
         ) -> Mapping[str, str]:
-            mutator_calls.append(
-                (consensus.recommendation,)
-            )
+            mutator_calls.append((consensus.recommendation,))
             return dict(proposal)
 
     result = run_critique_loop(
@@ -727,10 +712,7 @@ def test_run_critique_loop_iterates_until_approve() -> None:
         max_rounds=4,
     )
     assert result.converged is True
-    assert (
-        result.terminal_recommendation
-        is CritiqueRecommendation.APPROVE
-    )
+    assert result.terminal_recommendation is CritiqueRecommendation.APPROVE
     assert len(result.rounds) == 3
     # Mutator runs between rounds — once after each REFINE, never
     # after the terminal APPROVE.
@@ -751,10 +733,7 @@ def test_run_critique_loop_max_rounds_exhausted_returns_refine() -> None:
         max_rounds=3,
     )
     assert result.converged is False
-    assert (
-        result.terminal_recommendation
-        is CritiqueRecommendation.REFINE
-    )
+    assert result.terminal_recommendation is CritiqueRecommendation.REFINE
     assert len(result.rounds) == 3
 
 
@@ -835,11 +814,7 @@ def test_run_critique_loop_inv15_three_run_byte_identical() -> None:
             for k in sorted(record.proposal.keys()):
                 body_parts.append(f"{k}={record.proposal[k]}")
             body_parts.append(_digest_log(record.log).hex())
-        digests.append(
-            hashlib.blake2b(
-                "|".join(body_parts).encode(), digest_size=16
-            ).digest()
-        )
+        digests.append(hashlib.blake2b("|".join(body_parts).encode(), digest_size=16).digest())
     assert digests[0] == digests[1] == digests[2]
 
 
@@ -970,7 +945,5 @@ def test_critique_round_record_validates_index() -> None:
 
 
 def test_protocols_are_runtime_checkable() -> None:
-    assert isinstance(
-        _DeterministicSpeaker(_approving_script()), StructuredSpeaker
-    )
+    assert isinstance(_DeterministicSpeaker(_approving_script()), StructuredSpeaker)
     assert isinstance(_IdentityMutator(), ProposalMutator)

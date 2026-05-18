@@ -68,9 +68,7 @@ def state() -> ui_server._State:
         ui_server.STATE.development_mode_policy = DevelopmentModePolicy(
             development_enabled=True,
             trading_allowed=False,
-            mode=(
-                ui_server.STATE.governance.state_transitions.current_mode()
-            ),
+            mode=(ui_server.STATE.governance.state_transitions.current_mode()),
         )
         ui_server.STATE.execution.set_development_mode_policy(
             ui_server.STATE.development_mode_policy

@@ -357,9 +357,7 @@ def test_result_rejects_non_hex_digest() -> None:
 class _FakeDynamics:
     """Deterministic :class:`MarketDynamics` fake — drift-up by 1.0/step."""
 
-    def initial_mid_price(
-        self, *, seed: int, config: EpisodeConfig
-    ) -> float:
+    def initial_mid_price(self, *, seed: int, config: EpisodeConfig) -> float:
         return 100.0
 
     def step(
@@ -404,9 +402,7 @@ class _FakeElegantTrainer:
         ts_ns: int,
         callback: ElegantSandboxCallback,
     ) -> ElegantSandboxMetrics:
-        callback.on_training_start(
-            ts_ns=ts_ns, target_step=arguments.target_step
-        )
+        callback.on_training_start(ts_ns=ts_ns, target_step=arguments.target_step)
         # Walk one tiny episode through the env so the callback hooks
         # fire and tests can assert the env was actually exercised.
         env.reset(
@@ -439,14 +435,10 @@ class _FakeElegantTrainer:
 # ---------------------------------------------------------------------------
 
 
-def _sandbox_inputs() -> tuple[
-    _FakeDynamics, ElegantArguments, EpisodeConfig, _FakeElegantTrainer
-]:
+def _sandbox_inputs() -> tuple[_FakeDynamics, ElegantArguments, EpisodeConfig, _FakeElegantTrainer]:
     dynamics = _FakeDynamics()
     arguments = _valid_args()
-    episode_config = EpisodeConfig(
-        initial_notional_usd=1000.0, max_steps=8
-    )
+    episode_config = EpisodeConfig(initial_notional_usd=1000.0, max_steps=8)
     trainer = _FakeElegantTrainer(metrics=_valid_metrics())
     return dynamics, arguments, episode_config, trainer
 
@@ -532,9 +524,7 @@ def test_train_proposal_meta_includes_digest_and_agent_kind() -> None:
 
 def test_train_proposal_meta_overlays_do_not_override_provenance() -> None:
     dynamics, _, episode_config, trainer = _sandbox_inputs()
-    arguments = _valid_args(
-        meta={"policy_digest": "ZZZZ", "extra": "ok"}
-    )
+    arguments = _valid_args(meta={"policy_digest": "ZZZZ", "extra": "ok"})
     sandbox = ElegantSandbox(trainer=trainer)
     result = sandbox.train(
         dynamics=dynamics,
@@ -857,11 +847,7 @@ def test_artifact_aliases_are_callable_typed() -> None:
 # ---------------------------------------------------------------------------
 
 
-_MODULE_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "evolution_engine"
-    / "sandbox_elegant.py"
-)
+_MODULE_PATH = Path(__file__).resolve().parents[1] / "evolution_engine" / "sandbox_elegant.py"
 
 
 def _module_ast() -> ast.Module:
@@ -881,24 +867,15 @@ def _top_level_imports(tree: ast.Module) -> list[str]:
 
 
 def test_no_top_level_elegantrl_import() -> None:
-    assert all(
-        not name.startswith("elegantrl")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("elegantrl") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_torch_import() -> None:
-    assert all(
-        not name.startswith("torch")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("torch") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_numpy_import() -> None:
-    assert all(
-        not name.startswith("numpy")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("numpy") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_gymnasium_import() -> None:
@@ -952,18 +929,13 @@ def test_elegantrl_import_only_inside_factory() -> None:
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             mod = node.module if isinstance(node, ast.ImportFrom) else None
-            names = (
-                [a.name for a in node.names]
-                if isinstance(node, ast.Import)
-                else [mod or ""]
-            )
+            names = [a.name for a in node.names] if isinstance(node, ast.Import) else [mod or ""]
             for name in names:
                 if name.startswith(("elegantrl", "torch", "gymnasium")):
                     # Walk parents to verify enclosed in the factory.
                     parent = _find_enclosing_function(tree, node)
                     assert parent is not None, (
-                        f"top-level {name} import — must be inside "
-                        "elegantrl_agent_trainer factory"
+                        f"top-level {name} import — must be inside elegantrl_agent_trainer factory"
                     )
                     assert parent.name == "elegantrl_agent_trainer", (
                         f"{name} imported in {parent.name!r} — must be "
@@ -971,9 +943,7 @@ def test_elegantrl_import_only_inside_factory() -> None:
                     )
 
 
-def _find_enclosing_function(
-    tree: ast.Module, target: ast.AST
-) -> ast.FunctionDef | None:
+def _find_enclosing_function(tree: ast.Module, target: ast.AST) -> ast.FunctionDef | None:
     for func in ast.walk(tree):
         if isinstance(func, ast.FunctionDef):
             for descendant in ast.walk(func):

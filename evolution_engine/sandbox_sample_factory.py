@@ -243,17 +243,14 @@ class SampleFactoryArguments:
                 "SampleFactoryAlgoKind, got "
                 f"{type(self.algo_kind).__name__}"
             )
-        if not isinstance(self.random_seed, int) or isinstance(
-            self.random_seed, bool
-        ):
+        if not isinstance(self.random_seed, int) or isinstance(self.random_seed, bool):
             raise TypeError(
                 "SampleFactoryArguments.random_seed must be int, got "
                 f"{type(self.random_seed).__name__}"
             )
         if self.random_seed < 0:
             raise ValueError(
-                "SampleFactoryArguments.random_seed must be "
-                f"non-negative, got {self.random_seed!r}"
+                f"SampleFactoryArguments.random_seed must be non-negative, got {self.random_seed!r}"
             )
         if self.train_for_env_steps < MIN_TRAIN_FOR_ENV_STEPS:
             raise ValueError(
@@ -269,13 +266,11 @@ class SampleFactoryArguments:
             )
         if self.batch_size <= 0:
             raise ValueError(
-                "SampleFactoryArguments.batch_size must be positive, "
-                f"got {self.batch_size!r}"
+                f"SampleFactoryArguments.batch_size must be positive, got {self.batch_size!r}"
             )
         if self.rollout <= 0:
             raise ValueError(
-                "SampleFactoryArguments.rollout must be positive, got "
-                f"{self.rollout!r}"
+                f"SampleFactoryArguments.rollout must be positive, got {self.rollout!r}"
             )
         if self.num_workers < MIN_NUM_WORKERS:
             raise ValueError(
@@ -299,27 +294,18 @@ class SampleFactoryArguments:
                 f"<= {MAX_NUM_ENVS_PER_WORKER!r}, got "
                 f"{self.num_envs_per_worker!r}"
             )
-        if (
-            not math.isfinite(self.gamma)
-            or not (0.0 < self.gamma <= 1.0)
-        ):
+        if not math.isfinite(self.gamma) or not (0.0 < self.gamma <= 1.0):
             raise ValueError(
                 "SampleFactoryArguments.gamma must be a finite number "
                 f"in (0.0, 1.0], got {self.gamma!r}"
             )
-        if (
-            not math.isfinite(self.learning_rate)
-            or self.learning_rate <= 0.0
-        ):
+        if not math.isfinite(self.learning_rate) or self.learning_rate <= 0.0:
             raise ValueError(
                 "SampleFactoryArguments.learning_rate must be a "
                 f"positive finite number, got {self.learning_rate!r}"
             )
         if not self.target_strategy_id:
-            raise ValueError(
-                "SampleFactoryArguments.target_strategy_id must be "
-                "non-empty"
-            )
+            raise ValueError("SampleFactoryArguments.target_strategy_id must be non-empty")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -362,8 +348,7 @@ class SampleFactorySandboxMetrics:
             value = getattr(self, name)
             if not math.isfinite(value):
                 raise ValueError(
-                    f"SampleFactorySandboxMetrics.{name} must be "
-                    f"finite, got {value!r}"
+                    f"SampleFactorySandboxMetrics.{name} must be finite, got {value!r}"
                 )
         if self.mean_episode_length < 0.0:
             raise ValueError(
@@ -423,9 +408,7 @@ class SampleFactorySandboxCallback(Protocol):
     Protocol so the AST tests can pin "no top-level sample_factory
     import")."""
 
-    def on_training_start(
-        self, *, ts_ns: int, train_for_env_steps: int
-    ) -> None: ...
+    def on_training_start(self, *, ts_ns: int, train_for_env_steps: int) -> None: ...
 
     def on_step(
         self,
@@ -488,9 +471,7 @@ class _NullSampleFactoryCallback:
 
     __slots__ = ()
 
-    def on_training_start(
-        self, *, ts_ns: int, train_for_env_steps: int
-    ) -> None:
+    def on_training_start(self, *, ts_ns: int, train_for_env_steps: int) -> None:
         return None
 
     def on_step(
@@ -557,9 +538,7 @@ def _compute_policy_digest(
     those inputs reproduces it byte-for-byte under the same trainer.
     """
 
-    meta_pairs = "|".join(
-        f"{k}={v}" for k, v in sorted(arguments.meta.items())
-    )
+    meta_pairs = "|".join(f"{k}={v}" for k, v in sorted(arguments.meta.items()))
     payload = "|".join(
         (
             f"proposal_id={proposal_id}",
@@ -647,18 +626,15 @@ class SampleFactorySandbox:
             )
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
             raise TypeError(
-                "SampleFactorySandbox.train.ts_ns must be int, got "
-                f"{type(ts_ns).__name__}"
+                f"SampleFactorySandbox.train.ts_ns must be int, got {type(ts_ns).__name__}"
             )
         if ts_ns < 0:
             raise SampleFactorySandboxConfigError(
-                "SampleFactorySandbox.train.ts_ns must be "
-                f"non-negative, got {ts_ns!r}"
+                f"SampleFactorySandbox.train.ts_ns must be non-negative, got {ts_ns!r}"
             )
         if not proposal_id:
             raise SampleFactorySandboxConfigError(
-                "SampleFactorySandbox.train.proposal_id must be "
-                "non-empty"
+                "SampleFactorySandbox.train.proposal_id must be non-empty"
             )
         if len(proposal_id) > MAX_PROPOSAL_ID_LEN:
             raise SampleFactorySandboxConfigError(
@@ -667,10 +643,7 @@ class SampleFactorySandbox:
                 f"{len(proposal_id)!r}"
             )
 
-        cb = (
-            callback if callback is not None
-            else null_sample_factory_callback()
-        )
+        cb = callback if callback is not None else null_sample_factory_callback()
         if not isinstance(cb, SampleFactorySandboxCallback):
             raise TypeError(
                 "SampleFactorySandbox.train.callback must implement "

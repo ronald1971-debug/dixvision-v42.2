@@ -299,9 +299,7 @@ def enable_cachetools_factory(
         def set(self, key: Any, value: Any, *, ts_ns: int) -> None:
             self._inner.set(key, value, ts_ns=ts_ns)
 
-        def get(
-            self, key: Any, *, ts_ns: int, default: Any | None = None
-        ) -> Any:
+        def get(self, key: Any, *, ts_ns: int, default: Any | None = None) -> Any:
             return self._inner.get(key, ts_ns=ts_ns, default=default)
 
         def delete(self, key: Any) -> None:

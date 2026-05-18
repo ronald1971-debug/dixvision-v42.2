@@ -126,10 +126,7 @@ def test_negative_volume_drops() -> None:
 
 
 def test_replay_determinism() -> None:
-    seq = [
-        _tick(i, bid=99.0 + 0.3 * i, ask=101.0 + 0.3 * i, volume=2.0)
-        for i in range(8)
-    ]
+    seq = [_tick(i, bid=99.0 + 0.3 * i, ask=101.0 + 0.3 * i, volume=2.0) for i in range(8)]
     p1 = LiquidityPhysicsV1(
         window_size=4,
         impulse_threshold=0.1,

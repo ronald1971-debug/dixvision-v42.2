@@ -172,9 +172,7 @@ class LearningEvolutionFreezePolicy:
                 "policy": "LearningEvolutionFreezePolicy",
                 "frozen": "true" if self.is_frozen() else "false",
                 "mode": self.mode.name,
-                "operator_override": (
-                    "true" if self.operator_override else "false"
-                ),
+                "operator_override": ("true" if self.operator_override else "false"),
                 "version": POLICY_VERSION,
             },
             produced_by_engine="governance",

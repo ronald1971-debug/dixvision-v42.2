@@ -108,9 +108,7 @@ def test_scenario_rejects_too_many_agents() -> None:
 
 def test_scenario_rejects_duplicate_agents() -> None:
     with pytest.raises(ValueError, match="unique"):
-        MultiAgentScenario(
-            agent_ids=("a", "a"), prices=(1.0, 2.0), max_steps=10
-        )
+        MultiAgentScenario(agent_ids=("a", "a"), prices=(1.0, 2.0), max_steps=10)
 
 
 def test_scenario_rejects_non_string_agent() -> None:
@@ -124,9 +122,7 @@ def test_scenario_rejects_non_string_agent() -> None:
 
 def test_scenario_rejects_empty_agent_id() -> None:
     with pytest.raises(ValueError, match="non-empty"):
-        MultiAgentScenario(
-            agent_ids=("a", ""), prices=(1.0, 2.0), max_steps=10
-        )
+        MultiAgentScenario(agent_ids=("a", ""), prices=(1.0, 2.0), max_steps=10)
 
 
 def test_scenario_rejects_empty_prices() -> None:
@@ -136,23 +132,17 @@ def test_scenario_rejects_empty_prices() -> None:
 
 def test_scenario_rejects_non_finite_price() -> None:
     with pytest.raises(ValueError, match="finite"):
-        MultiAgentScenario(
-            agent_ids=("a", "b"), prices=(1.0, float("nan")), max_steps=10
-        )
+        MultiAgentScenario(agent_ids=("a", "b"), prices=(1.0, float("nan")), max_steps=10)
 
 
 def test_scenario_rejects_non_positive_price() -> None:
     with pytest.raises(ValueError, match="positive"):
-        MultiAgentScenario(
-            agent_ids=("a", "b"), prices=(1.0, 0.0), max_steps=10
-        )
+        MultiAgentScenario(agent_ids=("a", "b"), prices=(1.0, 0.0), max_steps=10)
 
 
 def test_scenario_rejects_zero_max_steps() -> None:
     with pytest.raises(ValueError, match="positive"):
-        MultiAgentScenario(
-            agent_ids=("a", "b"), prices=(1.0, 2.0), max_steps=0
-        )
+        MultiAgentScenario(agent_ids=("a", "b"), prices=(1.0, 2.0), max_steps=0)
 
 
 def test_scenario_rejects_max_steps_above_cap() -> None:
@@ -383,15 +373,11 @@ def test_step_rejects_out_of_range_action() -> None:
 def test_step_long_agent_earns_on_upward_price() -> None:
     env = _parallel_env(prices=(1.0, 2.0, 3.0))
     env.reset()
-    result = env.step(
-        {"a": MultiAgentAction.BUY.value, "b": MultiAgentAction.HOLD.value}
-    )
+    result = env.step({"a": MultiAgentAction.BUY.value, "b": MultiAgentAction.HOLD.value})
     assert result.rewards_dict()["a"] == 0.0
     assert result.rewards_dict()["b"] == 0.0
     assert env.inventory("a") == 1
-    result2 = env.step(
-        {"a": MultiAgentAction.HOLD.value, "b": MultiAgentAction.HOLD.value}
-    )
+    result2 = env.step({"a": MultiAgentAction.HOLD.value, "b": MultiAgentAction.HOLD.value})
     assert result2.rewards_dict()["a"] == pytest.approx(1.0)
 
 
@@ -399,9 +385,7 @@ def test_step_holding_position_earns_on_price_move() -> None:
     env = _parallel_env(prices=(1.0, 2.0, 3.0, 4.0))
     env.reset()
     env.step({"a": MultiAgentAction.BUY.value, "b": MultiAgentAction.HOLD.value})
-    result = env.step(
-        {"a": MultiAgentAction.HOLD.value, "b": MultiAgentAction.HOLD.value}
-    )
+    result = env.step({"a": MultiAgentAction.HOLD.value, "b": MultiAgentAction.HOLD.value})
     assert result.rewards_dict()["a"] == pytest.approx(1.0)
 
 
@@ -592,9 +576,7 @@ def test_episode_budget_cap_raises() -> None:
 @pytest.mark.parametrize(
     "obj",
     [
-        MultiAgentScenario(
-            agent_ids=("a", "b"), prices=(1.0, 2.0), max_steps=10
-        ),
+        MultiAgentScenario(agent_ids=("a", "b"), prices=(1.0, 2.0), max_steps=10),
         _obs(),
         MultiAgentStepResult(
             observations=(_obs(),),
@@ -631,9 +613,7 @@ def test_render_is_noop() -> None:
 def test_pettingzoo_factory_requires_gymnasium(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    scenario = MultiAgentScenario(
-        agent_ids=("a", "b"), prices=(1.0, 2.0), max_steps=10
-    )
+    scenario = MultiAgentScenario(agent_ids=("a", "b"), prices=(1.0, 2.0), max_steps=10)
     monkeypatch.setitem(sys.modules, "gymnasium", None)
     with pytest.raises(RuntimeError, match="pettingzoo"):
         pettingzoo_multiagent_env_factory(scenario=scenario)

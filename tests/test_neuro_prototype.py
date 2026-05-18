@@ -188,10 +188,7 @@ def test_authority_research_only_no_production_importers() -> None:
             continue
         if target in text or f"from sensory.neuromorphic import {suffix_target}" in text:
             bad.append(rel)
-    assert not bad, (
-        "RESEARCH_SOURCE module imported from production tier: "
-        f"{[str(p) for p in bad]}"
-    )
+    assert not bad, f"RESEARCH_SOURCE module imported from production tier: {[str(p) for p in bad]}"
 
 
 # ----------------------------------------------------------------- freezing
@@ -213,9 +210,7 @@ def test_freezing_lif_trace() -> None:
 
 
 def test_freezing_comparison_report() -> None:
-    r = prototype_lif_market_signal(
-        current=[0.0, 0.0, 0.0], params=LIFParams()
-    )
+    r = prototype_lif_market_signal(current=[0.0, 0.0, 0.0], params=LIFParams())
     with pytest.raises(dataclasses.FrozenInstanceError):
         r.count_tolerance = 9  # type: ignore[misc]
 
@@ -273,9 +268,7 @@ def test_current_empty_raises() -> None:
 
 def test_current_too_long_raises() -> None:
     with pytest.raises(NeuroPrototypeError):
-        continuous_time_lif_reference(
-            current=[0.0] * (MAX_TRACE_LEN + 1), params=LIFParams()
-        )
+        continuous_time_lif_reference(current=[0.0] * (MAX_TRACE_LEN + 1), params=LIFParams())
 
 
 def test_current_must_be_sequence() -> None:
@@ -300,16 +293,12 @@ def test_current_bool_value_raises() -> None:
 
 def test_sub_steps_must_be_at_least_one() -> None:
     with pytest.raises(NeuroPrototypeError):
-        continuous_time_lif_reference(
-            current=[0.0], params=LIFParams(), sub_steps=0
-        )
+        continuous_time_lif_reference(current=[0.0], params=LIFParams(), sub_steps=0)
 
 
 def test_sub_steps_sanity_cap() -> None:
     with pytest.raises(NeuroPrototypeError):
-        continuous_time_lif_reference(
-            current=[0.0], params=LIFParams(), sub_steps=1_001
-        )
+        continuous_time_lif_reference(current=[0.0], params=LIFParams(), sub_steps=1_001)
 
 
 # ----------------------------------------------------------------- LIF math
@@ -426,9 +415,7 @@ def test_report_first_spike_tolerance_must_be_non_negative() -> None:
     cont = continuous_time_lif_reference(current=[0.0], params=p)
     disc = norse_style_discrete_lif(current=[0.0], params=p)
     with pytest.raises(NeuroPrototypeError):
-        LIFComparisonReport(
-            continuous=cont, discrete=disc, first_spike_step_tolerance=-1
-        )
+        LIFComparisonReport(continuous=cont, discrete=disc, first_spike_step_tolerance=-1)
 
 
 def test_report_length_mismatch_raises() -> None:

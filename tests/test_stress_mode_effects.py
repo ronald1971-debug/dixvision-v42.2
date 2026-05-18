@@ -68,17 +68,13 @@ def test_every_row_field_has_expected_type() -> None:
     for mode, eff in MODE_EFFECTS.items():
         assert isinstance(eff, ModeEffect), f"{mode}: not a ModeEffect"
         assert isinstance(eff.signals_emit, bool), f"{mode}: signals_emit"
-        assert isinstance(eff.executions_dispatch, bool), (
-            f"{mode}: executions_dispatch"
+        assert isinstance(eff.executions_dispatch, bool), f"{mode}: executions_dispatch"
+        assert eff.size_cap_pct is None or isinstance(eff.size_cap_pct, float), (
+            f"{mode}: size_cap_pct"
         )
-        assert eff.size_cap_pct is None or isinstance(
-            eff.size_cap_pct, float
-        ), f"{mode}: size_cap_pct"
         assert isinstance(eff.learning_emit, bool), f"{mode}: learning_emit"
         assert isinstance(eff.learning_apply, bool), f"{mode}: learning_apply"
-        assert isinstance(eff.operator_auth_required, bool), (
-            f"{mode}: operator_auth_required"
-        )
+        assert isinstance(eff.operator_auth_required, bool), f"{mode}: operator_auth_required"
         assert eff.oversight_kind in {
             "per_trade",
             "exception_only",
@@ -172,9 +168,7 @@ def test_learning_emit_only_when_signals_emit() -> None:
     """
     for mode, eff in MODE_EFFECTS.items():
         if eff.learning_emit:
-            assert eff.signals_emit, (
-                f"{mode}: learning_emit=True but signals_emit=False"
-            )
+            assert eff.signals_emit, f"{mode}: learning_emit=True but signals_emit=False"
 
 
 def test_size_cap_zero_means_dispatch_suppressed_or_paper() -> None:
@@ -186,10 +180,7 @@ def test_size_cap_zero_means_dispatch_suppressed_or_paper() -> None:
     """
     for mode, eff in MODE_EFFECTS.items():
         if eff.size_cap_pct == 0.0:
-            assert (
-                not eff.executions_dispatch
-                or mode is SystemMode.PAPER
-            ), (
+            assert not eff.executions_dispatch or mode is SystemMode.PAPER, (
                 f"{mode}: size_cap_pct=0.0 but is dispatching to a "
                 "non-paper venue — would block every order"
             )
@@ -221,9 +212,7 @@ def test_table_hash_is_insensitive_to_dict_order() -> None:
         rng.shuffle(items)
         shuffled = dict(items)
         h = mode_effect_table_hash(shuffled)
-        assert h == canon_hash, (
-            f"trial {trial}: hash diverged after shuffle"
-        )
+        assert h == canon_hash, f"trial {trial}: hash diverged after shuffle"
 
 
 def test_table_hash_changes_when_any_field_flips() -> None:
@@ -276,34 +265,23 @@ def test_effect_for_round_trips_for_every_mode() -> None:
 
 def test_equity_notional_cap_rejects_negative_equity() -> None:
     with pytest.raises(ValueError, match="equity must be >= 0"):
-        equity_notional_cap_qty(
-            mode=SystemMode.CANARY, equity=-0.01, price=1.0
-        )
+        equity_notional_cap_qty(mode=SystemMode.CANARY, equity=-0.01, price=1.0)
 
 
 def test_equity_notional_cap_rejects_zero_price() -> None:
     with pytest.raises(ValueError, match="price must be > 0"):
-        equity_notional_cap_qty(
-            mode=SystemMode.CANARY, equity=10_000.0, price=0.0
-        )
+        equity_notional_cap_qty(mode=SystemMode.CANARY, equity=10_000.0, price=0.0)
 
 
 def test_equity_notional_cap_rejects_negative_price() -> None:
     with pytest.raises(ValueError, match="price must be > 0"):
-        equity_notional_cap_qty(
-            mode=SystemMode.CANARY, equity=10_000.0, price=-1.5
-        )
+        equity_notional_cap_qty(mode=SystemMode.CANARY, equity=10_000.0, price=-1.5)
 
 
 def test_equity_notional_cap_uncapped_modes_return_none() -> None:
     """LIVE and AUTO are size_cap_pct=None — must surface as None."""
     for mode in (SystemMode.LIVE, SystemMode.AUTO):
-        assert (
-            equity_notional_cap_qty(
-                mode=mode, equity=10_000.0, price=10.0
-            )
-            is None
-        )
+        assert equity_notional_cap_qty(mode=mode, equity=10_000.0, price=10.0) is None
 
 
 def test_equity_notional_cap_zero_pct_modes_return_none() -> None:
@@ -317,19 +295,12 @@ def test_equity_notional_cap_zero_pct_modes_return_none() -> None:
         SystemMode.SAFE,
         SystemMode.PAPER,
     ):
-        assert (
-            equity_notional_cap_qty(
-                mode=mode, equity=10_000.0, price=10.0
-            )
-            is None
-        )
+        assert equity_notional_cap_qty(mode=mode, equity=10_000.0, price=10.0) is None
 
 
 def test_equity_notional_cap_canary_at_one_percent() -> None:
     """CANARY's 1% must reflect in qty: equity * 0.01 / price."""
-    qty = equity_notional_cap_qty(
-        mode=SystemMode.CANARY, equity=10_000.0, price=100.0
-    )
+    qty = equity_notional_cap_qty(mode=SystemMode.CANARY, equity=10_000.0, price=100.0)
     assert qty is not None
     # 10_000 * 0.01 / 100 = 1.0
     assert math.isclose(qty, 1.0, rel_tol=1e-9, abs_tol=1e-9)
@@ -337,32 +308,22 @@ def test_equity_notional_cap_canary_at_one_percent() -> None:
 
 def test_equity_notional_cap_zero_equity_returns_zero_qty() -> None:
     """Zero equity = zero qty — boundary, not error."""
-    qty = equity_notional_cap_qty(
-        mode=SystemMode.CANARY, equity=0.0, price=100.0
-    )
+    qty = equity_notional_cap_qty(mode=SystemMode.CANARY, equity=0.0, price=100.0)
     assert qty == 0.0
 
 
 def test_equity_notional_cap_scales_linearly_with_equity() -> None:
     """qty must scale linearly in equity for a fixed mode + price."""
-    qty_low = equity_notional_cap_qty(
-        mode=SystemMode.CANARY, equity=1_000.0, price=10.0
-    )
-    qty_hi = equity_notional_cap_qty(
-        mode=SystemMode.CANARY, equity=10_000.0, price=10.0
-    )
+    qty_low = equity_notional_cap_qty(mode=SystemMode.CANARY, equity=1_000.0, price=10.0)
+    qty_hi = equity_notional_cap_qty(mode=SystemMode.CANARY, equity=10_000.0, price=10.0)
     assert qty_low is not None and qty_hi is not None
     assert math.isclose(qty_hi / qty_low, 10.0, rel_tol=1e-9)
 
 
 def test_equity_notional_cap_inversely_scales_with_price() -> None:
     """qty must scale inversely with price for a fixed mode + equity."""
-    qty_cheap = equity_notional_cap_qty(
-        mode=SystemMode.CANARY, equity=10_000.0, price=10.0
-    )
-    qty_dear = equity_notional_cap_qty(
-        mode=SystemMode.CANARY, equity=10_000.0, price=100.0
-    )
+    qty_cheap = equity_notional_cap_qty(mode=SystemMode.CANARY, equity=10_000.0, price=10.0)
+    qty_dear = equity_notional_cap_qty(mode=SystemMode.CANARY, equity=10_000.0, price=100.0)
     assert qty_cheap is not None and qty_dear is not None
     assert math.isclose(qty_cheap / qty_dear, 10.0, rel_tol=1e-9)
 
@@ -399,9 +360,7 @@ def test_equity_notional_cap_fuzz_does_not_raise_for_valid_inputs() -> None:
 
 def test_equity_notional_cap_extreme_equity_does_not_overflow() -> None:
     """Float overflow on very large equity must not silently produce inf."""
-    qty = equity_notional_cap_qty(
-        mode=SystemMode.CANARY, equity=1e308, price=1.0
-    )
+    qty = equity_notional_cap_qty(mode=SystemMode.CANARY, equity=1e308, price=1.0)
     assert qty is not None
     # Result is 1e308 * 0.01 / 1.0 = 1e306; still finite.
     assert math.isfinite(qty)
@@ -409,9 +368,7 @@ def test_equity_notional_cap_extreme_equity_does_not_overflow() -> None:
 
 def test_equity_notional_cap_extreme_small_price_does_not_overflow() -> None:
     """Tiny price + 1% cap: result is large but must remain finite."""
-    qty = equity_notional_cap_qty(
-        mode=SystemMode.CANARY, equity=1e6, price=1e-9
-    )
+    qty = equity_notional_cap_qty(mode=SystemMode.CANARY, equity=1e6, price=1e-9)
     assert qty is not None
     # 1e6 * 0.01 / 1e-9 = 1e13 — large but finite.
     assert math.isfinite(qty)

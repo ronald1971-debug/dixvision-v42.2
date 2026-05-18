@@ -210,9 +210,7 @@ def build_dashboard_router(provider: _WidgetsProvider) -> APIRouter:
         payload = {
             "target_mode": body.target_mode,
             "reason": body.reason,
-            "operator_authorized": "true"
-            if body.operator_authorized
-            else "false",
+            "operator_authorized": "true" if body.operator_authorized else "false",
         }
         # Hardening-S1 item 8 — forward consent envelope fields when
         # the dashboard supplies them. Empty strings are treated as

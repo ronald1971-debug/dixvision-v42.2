@@ -78,12 +78,8 @@ def test_intent_id_and_hash_are_deterministic():
 
 
 def test_intent_hash_differs_when_any_canonical_field_changes():
-    base = create_execution_intent(
-        ts_ns=10, origin="tests.fixtures", signal=_signal()
-    )
-    different_ts = create_execution_intent(
-        ts_ns=11, origin="tests.fixtures", signal=_signal()
-    )
+    base = create_execution_intent(ts_ns=10, origin="tests.fixtures", signal=_signal())
+    different_ts = create_execution_intent(ts_ns=11, origin="tests.fixtures", signal=_signal())
     different_signal = create_execution_intent(
         ts_ns=10,
         origin="tests.fixtures",
@@ -152,18 +148,14 @@ def test_intent_hash_no_plugin_chain_delimiter_collision():
 
 
 def test_intent_verify_content_hash_round_trip():
-    intent = create_execution_intent(
-        ts_ns=10, origin="tests.fixtures", signal=_signal()
-    )
+    intent = create_execution_intent(ts_ns=10, origin="tests.fixtures", signal=_signal())
     assert intent.verify_content_hash() is True
 
 
 def test_intent_verify_content_hash_detects_tampered_field():
     """A hand-edited frozen replacement breaks the hash check."""
 
-    intent = create_execution_intent(
-        ts_ns=10, origin="tests.fixtures", signal=_signal()
-    )
+    intent = create_execution_intent(ts_ns=10, origin="tests.fixtures", signal=_signal())
     tampered = dataclasses.replace(intent, ts_ns=999)
     assert tampered.verify_content_hash() is False
 
@@ -192,9 +184,9 @@ def test_authorised_origins_are_intelligence_subsystems():
     """
 
     for origin in AUTHORISED_INTENT_ORIGINS:
-        assert origin.startswith(
-            "intelligence_engine."
-        ), f"unexpected origin in production allowlist: {origin}"
+        assert origin.startswith("intelligence_engine."), (
+            f"unexpected origin in production allowlist: {origin}"
+        )
 
 
 def test_test_origins_disjoint_from_production():
@@ -251,9 +243,7 @@ def test_constructor_rejects_unknown_origin():
 
 
 def test_mark_approved_returns_new_instance_with_decision_id():
-    proposed = create_execution_intent(
-        ts_ns=10, origin="tests.fixtures", signal=_signal()
-    )
+    proposed = create_execution_intent(ts_ns=10, origin="tests.fixtures", signal=_signal())
     approved = mark_approved(proposed, governance_decision_id="LEDGER-42")
     assert proposed.approved_by_governance is False
     assert approved.approved_by_governance is True
@@ -265,27 +255,21 @@ def test_mark_approved_returns_new_instance_with_decision_id():
 
 
 def test_mark_approved_is_idempotent_for_same_decision_id():
-    proposed = create_execution_intent(
-        ts_ns=10, origin="tests.fixtures", signal=_signal()
-    )
+    proposed = create_execution_intent(ts_ns=10, origin="tests.fixtures", signal=_signal())
     a1 = mark_approved(proposed, governance_decision_id="LEDGER-42")
     a2 = mark_approved(a1, governance_decision_id="LEDGER-42")
     assert a1 == a2
 
 
 def test_mark_approved_rejects_swap_to_different_decision_id():
-    proposed = create_execution_intent(
-        ts_ns=10, origin="tests.fixtures", signal=_signal()
-    )
+    proposed = create_execution_intent(ts_ns=10, origin="tests.fixtures", signal=_signal())
     a1 = mark_approved(proposed, governance_decision_id="LEDGER-42")
     with pytest.raises(ValueError):
         mark_approved(a1, governance_decision_id="LEDGER-99")
 
 
 def test_mark_approved_requires_decision_id():
-    proposed = create_execution_intent(
-        ts_ns=10, origin="tests.fixtures", signal=_signal()
-    )
+    proposed = create_execution_intent(ts_ns=10, origin="tests.fixtures", signal=_signal())
     with pytest.raises(ValueError):
         mark_approved(proposed, governance_decision_id="")
 
@@ -302,9 +286,7 @@ def test_create_with_approved_flag_requires_decision_id():
 
 
 def test_mark_rejected_records_decision_id_without_approval():
-    proposed = create_execution_intent(
-        ts_ns=10, origin="tests.fixtures", signal=_signal()
-    )
+    proposed = create_execution_intent(ts_ns=10, origin="tests.fixtures", signal=_signal())
     rejected = mark_rejected(proposed, governance_decision_id="LEDGER-7")
     assert rejected.approved_by_governance is False
     assert rejected.governance_decision_id == "LEDGER-7"
@@ -349,9 +331,7 @@ def test_b25_allows_intelligence_engine_calling_factory():
 
 def test_b25_allows_governance_engine_calling_mark_approved():
     src = "mark_approved(intent, governance_decision_id='X')\n"
-    violations = _run_b25(
-        src, "governance_engine.control_plane.bridge"
-    )
+    violations = _run_b25(src, "governance_engine.control_plane.bridge")
     assert violations == []
 
 

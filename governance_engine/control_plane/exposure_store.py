@@ -93,9 +93,7 @@ def day_iso_from_ns(ts_ns: int) -> str:
     """
 
     if ts_ns < 0:
-        raise ValueError(
-            f"ts_ns must be non-negative, got {ts_ns!r}"
-        )
+        raise ValueError(f"ts_ns must be non-negative, got {ts_ns!r}")
     days = ts_ns // _NS_PER_DAY
     # 1970-01-01 was day 0; arithmetic over Julian day numbers
     # avoids any timezone library at all.
@@ -159,14 +157,10 @@ class ExposureStore:
         if self._conn is None:
             return {}
         with self._lock:
-            cur = self._conn.execute(
-                "SELECT symbol, qty FROM exposure_book"
-            )
+            cur = self._conn.execute("SELECT symbol, qty FROM exposure_book")
             return {symbol: float(qty) for symbol, qty in cur.fetchall()}
 
-    def write_exposure(
-        self, *, symbol: str, qty: float, ts_ns: int
-    ) -> None:
+    def write_exposure(self, *, symbol: str, qty: float, ts_ns: int) -> None:
         """Upsert the current exposure for ``symbol``."""
 
         if self._conn is None:
@@ -198,13 +192,10 @@ class ExposureStore:
             return {}
         with self._lock:
             cur = self._conn.execute(
-                "SELECT domain, spent_usd FROM compliance_daily "
-                "WHERE day_iso = ?",
+                "SELECT domain, spent_usd FROM compliance_daily WHERE day_iso = ?",
                 (day_iso,),
             )
-            return {
-                domain: float(spent) for domain, spent in cur.fetchall()
-            }
+            return {domain: float(spent) for domain, spent in cur.fetchall()}
 
     def write_daily(
         self,
@@ -248,13 +239,8 @@ class ExposureStore:
         if self._conn is None:
             return {}
         with self._lock:
-            cur = self._conn.execute(
-                "SELECT domain, day_iso, spent_usd FROM compliance_daily"
-            )
-            return {
-                (domain, day): float(spent)
-                for domain, day, spent in cur.fetchall()
-            }
+            cur = self._conn.execute("SELECT domain, day_iso, spent_usd FROM compliance_daily")
+            return {(domain, day): float(spent) for domain, day, spent in cur.fetchall()}
 
     def close(self) -> None:
         if self._conn is not None:

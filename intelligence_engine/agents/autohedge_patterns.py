@@ -126,33 +126,19 @@ class AutoHedgePatternRole:
 
     def __post_init__(self) -> None:
         if not isinstance(self.role, AutoHedgeRole):
-            raise AutoHedgePatternError(
-                "AutoHedgePatternRole.role must be an AutoHedgeRole member"
-            )
+            raise AutoHedgePatternError("AutoHedgePatternRole.role must be an AutoHedgeRole member")
         if not isinstance(self.responsibility, str):
-            raise AutoHedgePatternError(
-                "AutoHedgePatternRole.responsibility must be str"
-            )
+            raise AutoHedgePatternError("AutoHedgePatternRole.responsibility must be str")
         if not self.responsibility.strip():
-            raise AutoHedgePatternError(
-                "AutoHedgePatternRole.responsibility must be non-empty"
-            )
+            raise AutoHedgePatternError("AutoHedgePatternRole.responsibility must be non-empty")
         if not isinstance(self.dix_module, str):
-            raise AutoHedgePatternError(
-                "AutoHedgePatternRole.dix_module must be str"
-            )
+            raise AutoHedgePatternError("AutoHedgePatternRole.dix_module must be str")
         if not self.dix_module.strip():
-            raise AutoHedgePatternError(
-                "AutoHedgePatternRole.dix_module must be non-empty"
-            )
+            raise AutoHedgePatternError("AutoHedgePatternRole.dix_module must be non-empty")
         if not isinstance(self.dix_summary, str):
-            raise AutoHedgePatternError(
-                "AutoHedgePatternRole.dix_summary must be str"
-            )
+            raise AutoHedgePatternError("AutoHedgePatternRole.dix_summary must be str")
         if not self.dix_summary.strip():
-            raise AutoHedgePatternError(
-                "AutoHedgePatternRole.dix_summary must be non-empty"
-            )
+            raise AutoHedgePatternError("AutoHedgePatternRole.dix_summary must be non-empty")
 
 
 # ---------------------------------------------------------------------------
@@ -164,8 +150,7 @@ AUTOHEDGE_PATTERN_CATALOG: tuple[AutoHedgePatternRole, ...] = (
     AutoHedgePatternRole(
         role=AutoHedgeRole.MARKET_ANALYST,
         responsibility=(
-            "Read market regime and macro context; produce a regime label "
-            "and confidence."
+            "Read market regime and macro context; produce a regime label and confidence."
         ),
         dix_module="intelligence_engine/macro/regime_engine.py",
         dix_summary=(
@@ -176,9 +161,7 @@ AUTOHEDGE_PATTERN_CATALOG: tuple[AutoHedgePatternRole, ...] = (
     ),
     AutoHedgePatternRole(
         role=AutoHedgeRole.TECHNICAL_ANALYST,
-        responsibility=(
-            "Score price action / indicators / order-flow into a signal."
-        ),
+        responsibility=("Score price action / indicators / order-flow into a signal."),
         dix_module="intelligence_engine/plugins/",
         dix_summary=(
             "IND-L01..L12 plugin family (momentum / order-book-pressure / "
@@ -203,9 +186,7 @@ AUTOHEDGE_PATTERN_CATALOG: tuple[AutoHedgePatternRole, ...] = (
     ),
     AutoHedgePatternRole(
         role=AutoHedgeRole.PORTFOLIO_OPTIMIZER,
-        responsibility=(
-            "Decide allocation / position sizing across the candidate set."
-        ),
+        responsibility=("Decide allocation / position sizing across the candidate set."),
         dix_module="intelligence_engine/portfolio/",
         dix_summary=(
             "PortfolioAllocator + ExposureManager (E-track) compute "
@@ -215,9 +196,7 @@ AUTOHEDGE_PATTERN_CATALOG: tuple[AutoHedgePatternRole, ...] = (
     ),
     AutoHedgePatternRole(
         role=AutoHedgeRole.EXECUTION_MANAGER,
-        responsibility=(
-            "Dispatch the chosen orders to the broker / venue."
-        ),
+        responsibility=("Dispatch the chosen orders to the broker / venue."),
         dix_module="execution_engine/engine.py",
         dix_summary=(
             "ExecutionEngine.execute(intent) is the single chokepoint for "
@@ -253,9 +232,7 @@ def autohedge_role_for_dix_module(path: str) -> AutoHedgeRole | None:
     ``None`` when the path is not a registered role anchor."""
 
     if not isinstance(path, str):
-        raise AutoHedgePatternError(
-            "autohedge_role_for_dix_module: path must be str"
-        )
+        raise AutoHedgePatternError("autohedge_role_for_dix_module: path must be str")
     return _DIX_MODULE_TO_ROLE.get(path)
 
 
@@ -296,19 +273,15 @@ def _verify_catalog_invariants() -> None:
     catalog_roles = {entry.role for entry in AUTOHEDGE_PATTERN_CATALOG}
     if members != catalog_roles:
         raise AutoHedgePatternError(
-            "AUTOHEDGE_PATTERN_CATALOG must cover every AutoHedgeRole "
-            "member exactly once"
+            "AUTOHEDGE_PATTERN_CATALOG must cover every AutoHedgeRole member exactly once"
         )
     catalog_paths = [entry.dix_module for entry in AUTOHEDGE_PATTERN_CATALOG]
     if len(set(catalog_paths)) != len(catalog_paths):
-        raise AutoHedgePatternError(
-            "AUTOHEDGE_PATTERN_CATALOG dix_module anchors must be unique"
-        )
+        raise AutoHedgePatternError("AUTOHEDGE_PATTERN_CATALOG dix_module anchors must be unique")
     flow_set = set(_CONSENSUS_FLOW)
     if flow_set != members:
         raise AutoHedgePatternError(
-            "canonical_consensus_flow() must visit every AutoHedgeRole "
-            "exactly once"
+            "canonical_consensus_flow() must visit every AutoHedgeRole exactly once"
         )
 
 

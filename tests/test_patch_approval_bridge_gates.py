@@ -35,9 +35,7 @@ RULES_PATH = REPO_ROOT / "registry" / "constraint_rules.yaml"
 # ---------------------------------------------------------------------------
 
 
-def _advance_to_canary(
-    bridge: PatchApprovalBridge, *, patch_id: str, t0: int
-) -> None:
+def _advance_to_canary(bridge: PatchApprovalBridge, *, patch_id: str, t0: int) -> None:
     """Drive a fresh patch through PROPOSED → … → CANARY."""
 
     bridge.receive_proposal(

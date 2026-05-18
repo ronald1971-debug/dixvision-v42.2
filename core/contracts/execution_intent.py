@@ -111,9 +111,9 @@ TEST_INTENT_ORIGINS: Final[frozenset[str]] = frozenset(
 
 # Disjointness invariant pinned by
 # :func:`tests.test_execution_intent.test_test_origins_disjoint_from_production`.
-assert AUTHORISED_INTENT_ORIGINS.isdisjoint(
-    TEST_INTENT_ORIGINS
-), "production origins must not overlap with test-only origins"
+assert AUTHORISED_INTENT_ORIGINS.isdisjoint(TEST_INTENT_ORIGINS), (
+    "production origins must not overlap with test-only origins"
+)
 
 
 def _canonical_fields(
@@ -279,13 +279,10 @@ def create_execution_intent(
     _allowed = AUTHORISED_INTENT_ORIGINS | TEST_INTENT_ORIGINS
     if origin not in _allowed:
         raise UnauthorizedOriginError(
-            f"unauthorised intent origin: {origin!r} — must be one of "
-            f"{sorted(_allowed)}"
+            f"unauthorised intent origin: {origin!r} — must be one of {sorted(_allowed)}"
         )
     if approved_by_governance and not governance_decision_id:
-        raise ValueError(
-            "approved_by_governance=True requires governance_decision_id"
-        )
+        raise ValueError("approved_by_governance=True requires governance_decision_id")
     if not approved_by_governance and governance_decision_id:
         # Allow rejection records: an explicit decision id with
         # approved=False corresponds to a governance rejection. We
@@ -345,16 +342,12 @@ def mark_approved(
         ):
             return intent
         if intent.governance_decision_id != governance_decision_id:
-            raise ValueError(
-                "intent already approved with a different governance_decision_id"
-            )
+            raise ValueError("intent already approved with a different governance_decision_id")
         # Same decision id, different signature -- this would let a
         # second caller overwrite the original Governance signature
         # with a forged one, which is exactly what Hardening-S1 item 2
         # is meant to prevent.
-        raise ValueError(
-            "intent already approved with a different decision_signature"
-        )
+        raise ValueError("intent already approved with a different decision_signature")
     return create_execution_intent(
         ts_ns=intent.ts_ns,
         origin=intent.origin,
@@ -366,9 +359,7 @@ def mark_approved(
     )
 
 
-def mark_rejected(
-    intent: ExecutionIntent, *, governance_decision_id: str
-) -> ExecutionIntent:
+def mark_rejected(intent: ExecutionIntent, *, governance_decision_id: str) -> ExecutionIntent:
     """Return a new intent that records governance rejection.
 
     ``approved_by_governance`` stays False; the decision id is

@@ -42,9 +42,7 @@ def _tick(
 def _hot_path() -> MetaControllerHotPath:
     return MetaControllerHotPath(
         meta_config=load_meta_controller_config(),
-        pressure_config=load_pressure_config(
-            REPO_ROOT / "registry" / "pressure.yaml"
-        ),
+        pressure_config=load_pressure_config(REPO_ROOT / "registry" / "pressure.yaml"),
     )
 
 
@@ -190,9 +188,7 @@ def test_run_meta_tick_is_replay_deterministic() -> None:
     same (signals, decision, ledger) streams."""
     runs = []
     for _ in range(2):
-        plugin = MicrostructureV1(
-            tolerance_bps=2.0, confidence_scale_bps=50.0
-        )
+        plugin = MicrostructureV1(tolerance_bps=2.0, confidence_scale_bps=50.0)
         plugin.lifecycle = PluginLifecycle.ACTIVE
         engine = IntelligenceEngine(
             microstructure_plugins=[plugin],

@@ -41,9 +41,7 @@ def test_request_enable_in_safe_is_rejected_by_policy(governance_stack, router):
     # Build Compiler Spec §7 PolicyEngine forbids ACTIVE plugin
     # lifecycle in SAFE mode (POLICY_LIFECYCLE_REQUIRES_NON_SAFE).
     panel = MemecoinControlPanel(router=router)
-    outcome = panel.request_enable(
-        ts_ns=1, requestor="op", reason="bring up memecoin"
-    )
+    outcome = panel.request_enable(ts_ns=1, requestor="op", reason="bring up memecoin")
     assert outcome.approved is False
     assert panel.status().enabled is False
 
@@ -51,9 +49,7 @@ def test_request_enable_in_safe_is_rejected_by_policy(governance_stack, router):
 def test_request_enable_in_paper_is_approved(governance_stack, router, consent_payload):
     _move_to_paper(router, consent_payload)
     panel = MemecoinControlPanel(router=router)
-    outcome = panel.request_enable(
-        ts_ns=2, requestor="op", reason="bring up memecoin"
-    )
+    outcome = panel.request_enable(ts_ns=2, requestor="op", reason="bring up memecoin")
     assert outcome.approved is True
     assert panel.status().enabled is True
 
@@ -62,9 +58,7 @@ def test_request_disable_after_enable(governance_stack, router, consent_payload)
     _move_to_paper(router, consent_payload)
     panel = MemecoinControlPanel(router=router)
     panel.request_enable(ts_ns=2, requestor="op", reason="up")
-    outcome = panel.request_disable(
-        ts_ns=3, requestor="op", reason="winding down"
-    )
+    outcome = panel.request_disable(ts_ns=3, requestor="op", reason="winding down")
     assert outcome.approved is True
     status = panel.status()
     assert status.enabled is False
@@ -76,9 +70,7 @@ def test_request_kill_marks_status_killed(governance_stack, router, consent_payl
     _move_to_paper(router, consent_payload)
     panel = MemecoinControlPanel(router=router)
     panel.request_enable(ts_ns=2, requestor="op", reason="up")
-    outcome = panel.request_kill(
-        ts_ns=3, requestor="op", reason="emergency"
-    )
+    outcome = panel.request_kill(ts_ns=3, requestor="op", reason="emergency")
     assert outcome.approved is True
     status = panel.status()
     assert status.killed is True

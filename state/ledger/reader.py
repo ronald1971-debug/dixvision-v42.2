@@ -70,9 +70,7 @@ class LedgerReader:
 
     def __init__(self, *, db_path: str | Path | None = None) -> None:
         self._events: list[Event] = []
-        self._db_path: Path | None = (
-            Path(db_path) if db_path is not None else None
-        )
+        self._db_path: Path | None = Path(db_path) if db_path is not None else None
         self._conn: sqlite3.Connection | None = None
         if self._db_path is not None:
             self._conn = _open_readonly(self._db_path)
@@ -100,11 +98,7 @@ class LedgerReader:
         Returns at most ``limit`` events; ``None`` returns all.
         """
         start = 0 if cursor is None else cursor.seq
-        end = (
-            len(self._events)
-            if limit is None
-            else min(len(self._events), start + limit)
-        )
+        end = len(self._events) if limit is None else min(len(self._events), start + limit)
         return tuple(self._events[start:end])
 
     def tail(self, cursor: LedgerCursor | None = None) -> Iterator[Event]:
@@ -177,9 +171,7 @@ class LedgerReader:
         """
         if self._conn is None:
             return 0
-        cur = self._conn.execute(
-            "SELECT COUNT(*) FROM authority_ledger"
-        )
+        cur = self._conn.execute("SELECT COUNT(*) FROM authority_ledger")
         row = cur.fetchone()
         return int(row[0]) if row else 0
 

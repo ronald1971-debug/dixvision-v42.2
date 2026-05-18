@@ -201,9 +201,7 @@ def verify_entries(entries: Iterable[LedgerEntry]) -> IntegrityResult:
                 ChainBreak(
                     seq=seq,
                     reason=BreakReason.BAD_ROW_SHAPE,
-                    detail=(
-                        f"ts_ns={entry.ts_ns!r} kind={entry.kind!r}"
-                    ),
+                    detail=(f"ts_ns={entry.ts_ns!r} kind={entry.kind!r}"),
                 )
             )
             prev_hash = entry.hash_chain
@@ -213,9 +211,7 @@ def verify_entries(entries: Iterable[LedgerEntry]) -> IntegrityResult:
             payload_check: dict[str, str] = {}
             for k, v in entry.payload.items():
                 if not isinstance(k, str) or not isinstance(v, str):
-                    raise TypeError(
-                        f"non-string payload k={k!r} v={v!r}"
-                    )
+                    raise TypeError(f"non-string payload k={k!r} v={v!r}")
                 payload_check[k] = v
         except TypeError as exc:
             breaks.append(

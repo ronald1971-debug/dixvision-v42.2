@@ -193,30 +193,20 @@ class CalibrationReport:
             "window_end_ns": str(self.window_end_ns),
             # Belief
             "belief_count": str(self.belief_count),
-            "belief_avg_regime_confidence": (
-                f"{self.belief_avg_regime_confidence:.6f}"
-            ),
+            "belief_avg_regime_confidence": (f"{self.belief_avg_regime_confidence:.6f}"),
             # Pressure
             "pressure_count": str(self.pressure_count),
             "pressure_avg_perf": f"{self.pressure_avg_perf:.6f}",
             "pressure_avg_risk": f"{self.pressure_avg_risk:.6f}",
             "pressure_avg_drift": f"{self.pressure_avg_drift:.6f}",
             "pressure_avg_latency": f"{self.pressure_avg_latency:.6f}",
-            "pressure_avg_uncertainty": (
-                f"{self.pressure_avg_uncertainty:.6f}"
-            ),
-            "pressure_avg_safety_modifier": (
-                f"{self.pressure_avg_safety_modifier:.6f}"
-            ),
+            "pressure_avg_uncertainty": (f"{self.pressure_avg_uncertainty:.6f}"),
+            "pressure_avg_safety_modifier": (f"{self.pressure_avg_safety_modifier:.6f}"),
             # Audit
             "audit_count": str(self.audit_count),
             "audit_match_known": "true" if self.audit_match_known else "false",
-            "audit_directional_match_rate": (
-                f"{self.audit_directional_match_rate:.6f}"
-            ),
-            "audit_avg_decision_confidence": (
-                f"{self.audit_avg_decision_confidence:.6f}"
-            ),
+            "audit_directional_match_rate": (f"{self.audit_directional_match_rate:.6f}"),
+            "audit_avg_decision_confidence": (f"{self.audit_avg_decision_confidence:.6f}"),
             "audit_fallback_rate": f"{self.audit_fallback_rate:.6f}",
             # Belief calibration
             "belief_calibration_gap": f"{self.belief_calibration_gap:.6f}",
@@ -298,9 +288,7 @@ def _accumulate_pressure(acc: _Accumulator, ev: SystemEvent) -> None:
     acc.pressure_sum_drift += _f(p, "drift")
     acc.pressure_sum_latency += _f(p, "latency")
     acc.pressure_sum_uncertainty += _f(p, "uncertainty")
-    acc.pressure_sum_safety_modifier += _f(
-        p, "safety_modifier", default=1.0
-    )
+    acc.pressure_sum_safety_modifier += _f(p, "safety_modifier", default=1.0)
 
 
 def _audit_side(payload: Mapping[str, str]) -> Side:
@@ -313,9 +301,7 @@ def _audit_side(payload: Mapping[str, str]) -> Side:
 
 def _accumulate_audit(acc: _Accumulator, ev: SystemEvent) -> None:
     acc.audit_count += 1
-    acc.audit_sum_decision_confidence += _f(
-        ev.payload, "decision_confidence"
-    )
+    acc.audit_sum_decision_confidence += _f(ev.payload, "decision_confidence")
     if ev.payload.get("decision_fallback") == "true":
         acc.audit_fallback_count += 1
     acc.audits.append((ev.ts_ns, _audit_side(ev.payload)))
@@ -337,9 +323,7 @@ def _accumulate_reward(acc: _Accumulator, ev: SystemEvent) -> None:
             v = float(raw)
         except ValueError:
             continue
-        acc.reward_components[name] = (
-            acc.reward_components.get(name, 0.0) + v
-        )
+        acc.reward_components[name] = acc.reward_components.get(name, 0.0) + v
 
 
 # ---------------------------------------------------------------------------
@@ -521,11 +505,7 @@ def calibrate_coherence_window(
         else (acc.max_ts_ns if acc.max_ts_ns is not None else ts_ns)
     )
 
-    belief_avg = (
-        acc.belief_sum_confidence / acc.belief_count
-        if acc.belief_count
-        else 0.0
-    )
+    belief_avg = acc.belief_sum_confidence / acc.belief_count if acc.belief_count else 0.0
     pcount = max(acc.pressure_count, 1)
     if acc.pressure_count:
         pressure_perf = acc.pressure_sum_perf / pcount
@@ -543,9 +523,7 @@ def calibrate_coherence_window(
         pressure_safety = 0.0
 
     if acc.audit_count:
-        audit_avg_conf = (
-            acc.audit_sum_decision_confidence / acc.audit_count
-        )
+        audit_avg_conf = acc.audit_sum_decision_confidence / acc.audit_count
         audit_fallback = acc.audit_fallback_count / acc.audit_count
     else:
         audit_avg_conf = 0.0
@@ -558,9 +536,7 @@ def calibrate_coherence_window(
     else:
         calibration_gap = 0.0
 
-    reward_components = tuple(
-        sorted(acc.reward_components.items(), key=lambda pair: pair[0])
-    )
+    reward_components = tuple(sorted(acc.reward_components.items(), key=lambda pair: pair[0]))
 
     return CalibrationReport(
         ts_ns=ts_ns,

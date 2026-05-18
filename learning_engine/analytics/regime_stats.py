@@ -113,17 +113,13 @@ class RegimeTradeRow:
 
     def __post_init__(self) -> None:
         if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
-            raise TypeError(
-                f"ts_ns must be int; got {type(self.ts_ns).__name__}"
-            )
+            raise TypeError(f"ts_ns must be int; got {type(self.ts_ns).__name__}")
         if self.ts_ns < 0:
             raise ValueError(f"ts_ns must be >= 0; got {self.ts_ns}")
         if not isinstance(self.symbol, str) or not self.symbol:
             raise ValueError("symbol must be a non-empty str")
         if not isinstance(self.regime, MacroRegime):
-            raise TypeError(
-                f"regime must be MacroRegime; got {type(self.regime).__name__}"
-            )
+            raise TypeError(f"regime must be MacroRegime; got {type(self.regime).__name__}")
         for name in ("pnl_usd", "fee_usd", "qty", "fill_price"):
             v = getattr(self, name)
             if isinstance(v, bool) or not isinstance(v, (int, float)):
@@ -154,9 +150,7 @@ class RegimeStats:
 
     def __post_init__(self) -> None:
         if not isinstance(self.regime, MacroRegime):
-            raise TypeError(
-                f"regime must be MacroRegime; got {type(self.regime).__name__}"
-            )
+            raise TypeError(f"regime must be MacroRegime; got {type(self.regime).__name__}")
         for name in ("n_trades", "n_winners"):
             v = getattr(self, name)
             if not isinstance(v, int) or isinstance(v, bool):
@@ -164,22 +158,15 @@ class RegimeStats:
             if v < 0:
                 raise ValueError(f"{name} must be >= 0; got {v}")
         if self.n_winners > self.n_trades:
-            raise ValueError(
-                f"n_winners ({self.n_winners}) must be <= n_trades "
-                f"({self.n_trades})"
-            )
+            raise ValueError(f"n_winners ({self.n_winners}) must be <= n_trades ({self.n_trades})")
         if not (0.0 <= self.win_rate <= 1.0):
             raise ValueError(f"win_rate must be in [0, 1]; got {self.win_rate}")
         if self.pnl_std < 0.0:
             raise ValueError(f"pnl_std must be >= 0; got {self.pnl_std}")
         if self.total_fee_usd < 0.0:
-            raise ValueError(
-                f"total_fee_usd must be >= 0; got {self.total_fee_usd}"
-            )
+            raise ValueError(f"total_fee_usd must be >= 0; got {self.total_fee_usd}")
         if self.total_notional_usd < 0.0:
-            raise ValueError(
-                f"total_notional_usd must be >= 0; got {self.total_notional_usd}"
-            )
+            raise ValueError(f"total_notional_usd must be >= 0; got {self.total_notional_usd}")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -205,48 +192,30 @@ class RegimeStatsReport:
 
     def __post_init__(self) -> None:
         if not isinstance(self.by_regime, tuple):
-            raise TypeError(
-                f"by_regime must be tuple; got {type(self.by_regime).__name__}"
-            )
+            raise TypeError(f"by_regime must be tuple; got {type(self.by_regime).__name__}")
         for r in self.by_regime:
             if not isinstance(r, RegimeStats):
-                raise TypeError(
-                    "by_regime entries must be RegimeStats; got "
-                    f"{type(r).__name__}"
-                )
+                raise TypeError(f"by_regime entries must be RegimeStats; got {type(r).__name__}")
         keys = [r.regime.value for r in self.by_regime]
         if keys != sorted(keys):
             raise ValueError(
-                "by_regime must be sorted ascending by regime.value for "
-                "INV-15 replay determinism"
+                "by_regime must be sorted ascending by regime.value for INV-15 replay determinism"
             )
         if len(set(keys)) != len(keys):
             raise ValueError("by_regime must contain unique regimes")
-        if not isinstance(self.total_n_trades, int) or isinstance(
-            self.total_n_trades, bool
-        ):
-            raise TypeError(
-                "total_n_trades must be int; got "
-                f"{type(self.total_n_trades).__name__}"
-            )
+        if not isinstance(self.total_n_trades, int) or isinstance(self.total_n_trades, bool):
+            raise TypeError(f"total_n_trades must be int; got {type(self.total_n_trades).__name__}")
         if self.total_n_trades < 0:
-            raise ValueError(
-                f"total_n_trades must be >= 0; got {self.total_n_trades}"
-            )
+            raise ValueError(f"total_n_trades must be >= 0; got {self.total_n_trades}")
         if not (0.0 <= self.overall_win_rate <= 1.0):
-            raise ValueError(
-                "overall_win_rate must be in [0, 1]; got "
-                f"{self.overall_win_rate}"
-            )
+            raise ValueError(f"overall_win_rate must be in [0, 1]; got {self.overall_win_rate}")
         if self.overall_total_fee_usd < 0.0:
             raise ValueError(
-                "overall_total_fee_usd must be >= 0; got "
-                f"{self.overall_total_fee_usd}"
+                f"overall_total_fee_usd must be >= 0; got {self.overall_total_fee_usd}"
             )
         if self.overall_total_notional_usd < 0.0:
             raise ValueError(
-                "overall_total_notional_usd must be >= 0; got "
-                f"{self.overall_total_notional_usd}"
+                f"overall_total_notional_usd must be >= 0; got {self.overall_total_notional_usd}"
             )
 
 
@@ -281,9 +250,7 @@ def compute_regime_stats(
     rows = tuple(trades)
     for r in rows:
         if not isinstance(r, RegimeTradeRow):
-            raise TypeError(
-                f"trades entries must be RegimeTradeRow; got {type(r).__name__}"
-            )
+            raise TypeError(f"trades entries must be RegimeTradeRow; got {type(r).__name__}")
 
     if not rows:
         return RegimeStatsReport(
@@ -369,9 +336,7 @@ def compute_regime_stats(
 
     total_n_trades = sum(r.n_trades for r in by_regime_rows)
     total_winners = sum(r.n_winners for r in by_regime_rows)
-    overall_win_rate = (
-        (total_winners / total_n_trades) if total_n_trades > 0 else 0.0
-    )
+    overall_win_rate = (total_winners / total_n_trades) if total_n_trades > 0 else 0.0
 
     return RegimeStatsReport(
         by_regime=tuple(by_regime_rows),
@@ -379,9 +344,7 @@ def compute_regime_stats(
         overall_win_rate=overall_win_rate,
         overall_total_pnl_usd=math.fsum(r.total_pnl_usd for r in by_regime_rows),
         overall_total_fee_usd=math.fsum(r.total_fee_usd for r in by_regime_rows),
-        overall_total_notional_usd=math.fsum(
-            r.total_notional_usd for r in by_regime_rows
-        ),
+        overall_total_notional_usd=math.fsum(r.total_notional_usd for r in by_regime_rows),
     )
 
 

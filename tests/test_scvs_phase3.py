@@ -266,9 +266,7 @@ def test_ai_validator_rejects_high_latency():
 def test_ai_validator_rejects_empty_response():
     reg = _registry(_ai("SRC-AI-A"))
     v = AIValidator(registry=reg, max_latency_ns=10**9)
-    res, _ = v.validate(
-        source_id="SRC-AI-A", response=None, latency_ns=10**8, now_ns=10**9
-    )
+    res, _ = v.validate(source_id="SRC-AI-A", response=None, latency_ns=10**8, now_ns=10**9)
     assert res.outcome is AIOutcome.REJECTED_EMPTY
 
 
@@ -308,9 +306,7 @@ def test_ai_validator_rejects_missing_required_keys():
 def test_ai_validator_rejects_non_ai_category():
     reg = _registry(_decl("SRC-A"))  # market, not ai
     v = AIValidator(registry=reg, max_latency_ns=10**9)
-    res, _ = v.validate(
-        source_id="SRC-A", response={"text": "hi"}, latency_ns=1, now_ns=10**9
-    )
+    res, _ = v.validate(source_id="SRC-A", response={"text": "hi"}, latency_ns=1, now_ns=10**9)
     assert res.outcome is AIOutcome.REJECTED_NOT_AI
 
 
@@ -456,15 +452,11 @@ def test_schema_guard_replay_determinism():
         ("SRC-A", {}, 10**9 + 300, 10**9 + 350),  # empty
     ]
     a = [
-        guard.validate(
-            source_id=sid, packet=p, packet_ts_ns=ts, now_ns=now
-        ).outcome
+        guard.validate(source_id=sid, packet=p, packet_ts_ns=ts, now_ns=now).outcome
         for sid, p, ts, now in inputs
     ]
     b = [
-        guard.validate(
-            source_id=sid, packet=p, packet_ts_ns=ts, now_ns=now
-        ).outcome
+        guard.validate(source_id=sid, packet=p, packet_ts_ns=ts, now_ns=now).outcome
         for sid, p, ts, now in inputs
     ]
     assert a == b

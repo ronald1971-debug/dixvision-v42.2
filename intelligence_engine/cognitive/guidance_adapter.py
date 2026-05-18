@@ -92,20 +92,13 @@ class RegexSlot:
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, str) or not self.name:
-            raise GuidanceError(
-                f"RegexSlot.name must be a non-empty str, got {self.name!r}"
-            )
+            raise GuidanceError(f"RegexSlot.name must be a non-empty str, got {self.name!r}")
         if not isinstance(self.pattern, str) or not self.pattern:
-            raise GuidanceError(
-                f"RegexSlot.pattern must be a non-empty str, got "
-                f"{self.pattern!r}"
-            )
+            raise GuidanceError(f"RegexSlot.pattern must be a non-empty str, got {self.pattern!r}")
         try:
             re.compile(self.pattern)
         except re.error as exc:
-            raise GuidanceError(
-                f"RegexSlot.pattern is not a valid regex: {exc}"
-            ) from exc
+            raise GuidanceError(f"RegexSlot.pattern is not a valid regex: {exc}") from exc
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -122,25 +115,17 @@ class SelectSlot:
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, str) or not self.name:
-            raise GuidanceError(
-                f"SelectSlot.name must be a non-empty str, got {self.name!r}"
-            )
+            raise GuidanceError(f"SelectSlot.name must be a non-empty str, got {self.name!r}")
         if not isinstance(self.choices, tuple) or len(self.choices) == 0:
             raise GuidanceError(
-                f"SelectSlot.choices must be a non-empty tuple, got "
-                f"{self.choices!r}"
+                f"SelectSlot.choices must be a non-empty tuple, got {self.choices!r}"
             )
         seen: set[str] = set()
         for c in self.choices:
             if not isinstance(c, str) or not c:
-                raise GuidanceError(
-                    f"SelectSlot.choices entries must be non-empty str, "
-                    f"got {c!r}"
-                )
+                raise GuidanceError(f"SelectSlot.choices entries must be non-empty str, got {c!r}")
             if c in seen:
-                raise GuidanceError(
-                    f"SelectSlot.choices contains duplicate {c!r}"
-                )
+                raise GuidanceError(f"SelectSlot.choices contains duplicate {c!r}")
             seen.add(c)
 
 
@@ -185,18 +170,14 @@ class GuidanceTemplate:
 def _parse_regex_args(args: str) -> str:
     m = re.fullmatch(r"\s*pattern='(?P<p>[^']*)'\s*", args)
     if m is None:
-        raise GuidanceParseError(
-            f"regex slot expects pattern='...' args, got {args!r}"
-        )
+        raise GuidanceParseError(f"regex slot expects pattern='...' args, got {args!r}")
     return m.group("p")
 
 
 def _parse_select_args(args: str) -> tuple[str, ...]:
     m = re.fullmatch(r"\s*options=\((?P<list>[^)]*)\)\s*", args)
     if m is None:
-        raise GuidanceParseError(
-            f"select slot expects options=('A','B',...) args, got {args!r}"
-        )
+        raise GuidanceParseError(f"select slot expects options=('A','B',...) args, got {args!r}")
     raw = m.group("list").strip()
     if not raw:
         raise GuidanceParseError("select slot has empty options tuple")
@@ -207,9 +188,7 @@ def _parse_select_args(args: str) -> tuple[str, ...]:
             continue
         m2 = re.fullmatch(r"'([^']*)'", piece)
         if m2 is None:
-            raise GuidanceParseError(
-                f"select slot option {piece!r} must be 'quoted'"
-            )
+            raise GuidanceParseError(f"select slot option {piece!r} must be 'quoted'")
         items.append(m2.group(1))
     return tuple(items)
 
@@ -233,13 +212,11 @@ def compile_template(template: str) -> GuidanceTemplate:
     cursor = 0
     for m in _PLACEHOLDER_PATTERN.finditer(template):
         if m.start() > cursor:
-            out_pattern_parts.append(re.escape(template[cursor:m.start()]))
+            out_pattern_parts.append(re.escape(template[cursor : m.start()]))
         kind = m.group("kind")
         name = m.group("name")
         if name in seen_names:
-            raise GuidanceParseError(
-                f"duplicate slot name in template: {name!r}"
-            )
+            raise GuidanceParseError(f"duplicate slot name in template: {name!r}")
         seen_names.add(name)
         if kind == "regex":
             pat = _parse_regex_args(m.group("args"))
@@ -254,9 +231,7 @@ def compile_template(template: str) -> GuidanceTemplate:
     if cursor < len(template):
         out_pattern_parts.append(re.escape(template[cursor:]))
     if not slots:
-        raise GuidanceParseError(
-            "compile_template requires at least one {{regex|select ...}} slot"
-        )
+        raise GuidanceParseError("compile_template requires at least one {{regex|select ...}} slot")
     final_pattern = "".join(out_pattern_parts)
     try:
         compiled = re.compile(final_pattern, re.DOTALL)
@@ -286,25 +261,19 @@ def match_completion(
 
     if not isinstance(template, GuidanceTemplate):
         raise GuidanceError(
-            f"match_completion template must be a GuidanceTemplate, got "
-            f"{type(template).__name__}"
+            f"match_completion template must be a GuidanceTemplate, got {type(template).__name__}"
         )
     if not isinstance(text, str):
-        raise GuidanceMatchError(
-            f"match_completion text must be str, got {type(text).__name__}"
-        )
+        raise GuidanceMatchError(f"match_completion text must be str, got {type(text).__name__}")
     m = template.compiled.match(text)
     if m is None:
-        raise GuidanceMatchError(
-            "match_completion: completion did not match compiled template"
-        )
+        raise GuidanceMatchError("match_completion: completion did not match compiled template")
     out: dict[str, str] = {}
     for slot in template.slots:
         value = m.group(slot.name)
         if isinstance(slot, SelectSlot) and value not in slot.choices:
             raise GuidanceMatchError(
-                f"slot {slot.name!r}: value {value!r} not in choices "
-                f"{slot.choices!r}"
+                f"slot {slot.name!r}: value {value!r} not in choices {slot.choices!r}"
             )
         out[slot.name] = value
     return out
@@ -337,9 +306,7 @@ def enable_guidance_factory(
 
     def _call(template: GuidanceTemplate, prompt: str) -> dict[str, str]:
         if not isinstance(prompt, str):
-            raise GuidanceError(
-                f"guidance prompt must be str, got {type(prompt).__name__}"
-            )
+            raise GuidanceError(f"guidance prompt must be str, got {type(prompt).__name__}")
         # The backend renders the template under decode constraints.
         # We re-validate via match_completion to enforce the canonical
         # output shape regardless of which backend is installed.

@@ -12,9 +12,7 @@ from intelligence_engine.agents._base import AgentBase
 
 
 def _tick(ts: int, bid: float, ask: float) -> MarketTick:
-    return MarketTick(
-        ts_ns=ts, symbol="BTC-USD", bid=bid, ask=ask, last=0.5 * (bid + ask)
-    )
+    return MarketTick(ts_ns=ts, symbol="BTC-USD", bid=bid, ask=ask, last=0.5 * (bid + ask))
 
 
 def _signal(ts: int, side: Side, conf: float = 0.8) -> SignalEvent:
@@ -207,9 +205,7 @@ def test_rationale_tags_in_registry_allowlist() -> None:
 
     repo = Path(__file__).resolve().parents[1]
     doc = yaml.safe_load(
-        (repo / "registry" / "agent_rationale_tags.yaml").read_text(
-            encoding="utf-8"
-        )
+        (repo / "registry" / "agent_rationale_tags.yaml").read_text(encoding="utf-8")
     )
     allowed = set(doc.get("tags", []))
     used = {

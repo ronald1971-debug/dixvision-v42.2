@@ -222,14 +222,10 @@ class PaperBroker:
         # Mutate ledger.
         if signal.side is Side.BUY:
             self._cash -= notional + fee
-            self._positions[signal.symbol] = (
-                self._positions.get(signal.symbol, 0.0) + fill_qty
-            )
+            self._positions[signal.symbol] = self._positions.get(signal.symbol, 0.0) + fill_qty
         else:  # SELL
             self._cash += notional - fee
-            self._positions[signal.symbol] = (
-                self._positions.get(signal.symbol, 0.0) - fill_qty
-            )
+            self._positions[signal.symbol] = self._positions.get(signal.symbol, 0.0) - fill_qty
 
         # Deterministic latency stamp.
         latency_ns = self._latency_for(signal.ts_ns)
@@ -241,9 +237,7 @@ class PaperBroker:
             "fee_usd": f"{fee:.10g}",
             "notional_usd": f"{notional:.10g}",
             "cash_after": f"{self._cash:.10g}",
-            "position_after": (
-                f"{self._positions.get(signal.symbol, 0.0):.10g}"
-            ),
+            "position_after": (f"{self._positions.get(signal.symbol, 0.0):.10g}"),
             "latency_ns": str(latency_ns),
         }
         if partial:
@@ -251,11 +245,7 @@ class PaperBroker:
             meta["filled_qty"] = f"{fill_qty:.10g}"
             meta["remaining_qty"] = f"{requested_qty - fill_qty:.10g}"
 
-        status = (
-            ExecutionStatus.PARTIALLY_FILLED
-            if partial
-            else ExecutionStatus.FILLED
-        )
+        status = ExecutionStatus.PARTIALLY_FILLED if partial else ExecutionStatus.FILLED
 
         evt = ExecutionEvent(
             ts_ns=ts_ns_filled,

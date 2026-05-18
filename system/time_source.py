@@ -34,6 +34,7 @@ TOTP code, and a small documented allowlist may still read the
 system clock directly; everything else routes through the functions
 below.
 """
+
 from __future__ import annotations
 
 import time

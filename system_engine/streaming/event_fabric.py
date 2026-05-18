@@ -373,9 +373,7 @@ def _apply_reduce(
     state: dict[str, Any] = {}
     for entry in stream:
         if not (isinstance(entry, tuple) and len(entry) == 2):
-            raise TypeError(
-                f"ReduceOp expects (key, item) tuples; got {type(entry).__name__}"
-            )
+            raise TypeError(f"ReduceOp expects (key, item) tuples; got {type(entry).__name__}")
         key, item = entry
         if not isinstance(key, str):
             raise TypeError(f"ReduceOp keys must be str; got {type(key).__name__}")
@@ -402,19 +400,14 @@ def _apply_tumbling_window(
     for entry in stream:
         if not (isinstance(entry, tuple) and len(entry) == 2):
             raise TypeError(
-                "TumblingWindowOp expects (key, item) tuples; "
-                f"got {type(entry).__name__}"
+                f"TumblingWindowOp expects (key, item) tuples; got {type(entry).__name__}"
             )
         key, item = entry
         if not isinstance(key, str):
-            raise TypeError(
-                f"TumblingWindowOp keys must be str; got {type(key).__name__}"
-            )
+            raise TypeError(f"TumblingWindowOp keys must be str; got {type(key).__name__}")
         ts_ns = op.ts_fn(item)
         if not isinstance(ts_ns, int):
-            raise TypeError(
-                f"ts_fn must return int; got {type(ts_ns).__name__}"
-            )
+            raise TypeError(f"ts_fn must return int; got {type(ts_ns).__name__}")
         bucket = ts_ns // op.window_ns
         cell = (bucket, key)
         if cell not in cells:

@@ -80,9 +80,7 @@ class SensorArray:
     # invoke individual sensors and feed the resulting events here:
     # ------------------------------------------------------------------
 
-    def collect(
-        self, events: Sequence[Sequence[HazardEvent]]
-    ) -> tuple[HazardEvent, ...]:
+    def collect(self, events: Sequence[Sequence[HazardEvent]]) -> tuple[HazardEvent, ...]:
         """Flatten a sequence of per-sensor outputs into one ordered tuple.
 
         Used to keep ordering deterministic when multiple sensors fire on

@@ -48,9 +48,7 @@ def test_social_post_minimal_valid() -> None:
         ("body", {"body": ""}),
     ],
 )
-def test_social_post_required_fields(
-    field: str, kwargs: dict[str, str]
-) -> None:
+def test_social_post_required_fields(field: str, kwargs: dict[str, str]) -> None:
     base = dict(
         ts_ns=10,
         source="X",

@@ -66,9 +66,7 @@ MAX_RULE_ID_LEN: Final[int] = 128
 MAX_MESSAGE_LEN: Final[int] = 1024
 MAX_PATTERN_LEN: Final[int] = 256
 MAX_CODE_LEN: Final[int] = 10_000_000
-RULE_ID_PATTERN: Final[re.Pattern[str]] = re.compile(
-    r"^[A-Za-z0-9][A-Za-z0-9._-]*$"
-)
+RULE_ID_PATTERN: Final[re.Pattern[str]] = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
 # ---------------------------------------------------------------------------
@@ -143,13 +141,10 @@ class ScanRule:
             )
         if not RULE_ID_PATTERN.match(self.rule_id):
             raise ScannerError(
-                f"ScanRule.rule_id {self.rule_id!r} must match "
-                f"{RULE_ID_PATTERN.pattern}"
+                f"ScanRule.rule_id {self.rule_id!r} must match {RULE_ID_PATTERN.pattern}"
             )
         if not isinstance(self.kind, NodeKind):
-            raise ScannerError(
-                "ScanRule.kind must be a NodeKind member"
-            )
+            raise ScannerError("ScanRule.kind must be a NodeKind member")
         if not isinstance(self.pattern, str) or not self.pattern:
             raise ScannerError("ScanRule.pattern must be a non-empty string")
         if len(self.pattern) > MAX_PATTERN_LEN:
@@ -158,9 +153,7 @@ class ScanRule:
                 f"MAX_PATTERN_LEN={MAX_PATTERN_LEN}"
             )
         if not isinstance(self.severity, Severity):
-            raise ScannerError(
-                "ScanRule.severity must be a Severity member"
-            )
+            raise ScannerError("ScanRule.severity must be a Severity member")
         if not isinstance(self.message, str) or not self.message:
             raise ScannerError("ScanRule.message must be a non-empty string")
         if len(self.message) > MAX_MESSAGE_LEN:
@@ -227,26 +220,16 @@ class ScanResult:
             raise ScannerError("ScanResult.findings must be a tuple")
         for finding in self.findings:
             if not isinstance(finding, Finding):
-                raise ScannerError(
-                    "ScanResult.findings must contain Finding instances"
-                )
+                raise ScannerError("ScanResult.findings must contain Finding instances")
         if not isinstance(self.file_path, str):
             raise ScannerError("ScanResult.file_path must be a string")
         if not isinstance(self.rule_count, int) or self.rule_count < 0:
-            raise ScannerError(
-                "ScanResult.rule_count must be a non-negative int"
-            )
-        if (
-            not isinstance(self.scanned_lines, int)
-            or self.scanned_lines < 0
-        ):
-            raise ScannerError(
-                "ScanResult.scanned_lines must be a non-negative int"
-            )
+            raise ScannerError("ScanResult.rule_count must be a non-negative int")
+        if not isinstance(self.scanned_lines, int) or self.scanned_lines < 0:
+            raise ScannerError("ScanResult.scanned_lines must be a non-negative int")
         if self.backend not in {"stdlib", "semgrep"}:
             raise ScannerError(
-                f"ScanResult.backend must be 'stdlib' or 'semgrep', "
-                f"got {self.backend!r}"
+                f"ScanResult.backend must be 'stdlib' or 'semgrep', got {self.backend!r}"
             )
 
     def has_errors(self) -> bool:
@@ -279,16 +262,11 @@ class RuleSet:
             raise ScannerError("RuleSet.rules must be a tuple")
         for rule in self.rules:
             if not isinstance(rule, ScanRule):
-                raise ScannerError(
-                    "RuleSet.rules must contain ScanRule instances"
-                )
+                raise ScannerError("RuleSet.rules must contain ScanRule instances")
         seen: set[str] = set()
         for rule in self.rules:
             if rule.rule_id in seen:
-                raise ScannerError(
-                    f"RuleSet {self.name!r} has duplicate rule_id "
-                    f"{rule.rule_id!r}"
-                )
+                raise ScannerError(f"RuleSet {self.name!r} has duplicate rule_id {rule.rule_id!r}")
             seen.add(rule.rule_id)
 
 
@@ -302,15 +280,11 @@ class SuiteReport:
 
     def __post_init__(self) -> None:
         if not isinstance(self.suite_name, str) or not self.suite_name:
-            raise ScannerError(
-                "SuiteReport.suite_name must be a non-empty string"
-            )
+            raise ScannerError("SuiteReport.suite_name must be a non-empty string")
         if not isinstance(self.result, ScanResult):
             raise ScannerError("SuiteReport.result must be a ScanResult")
         if not isinstance(self.per_rule_counts, Mapping):
-            raise ScannerError(
-                "SuiteReport.per_rule_counts must be a mapping"
-            )
+            raise ScannerError("SuiteReport.per_rule_counts must be a mapping")
 
     def total_findings(self) -> int:
         return len(self.result.findings)
@@ -434,25 +408,18 @@ def scan(
     rules_tuple = tuple(rules)
     for rule in rules_tuple:
         if not isinstance(rule, ScanRule):
-            raise ScannerError(
-                "scan() rules must contain ScanRule instances"
-            )
+            raise ScannerError("scan() rules must contain ScanRule instances")
     if not isinstance(code, str):
         raise ScannerError("scan() code must be a string")
     if len(code) > MAX_CODE_LEN:
-        raise ScannerError(
-            f"scan() code length {len(code)} exceeds "
-            f"MAX_CODE_LEN={MAX_CODE_LEN}"
-        )
+        raise ScannerError(f"scan() code length {len(code)} exceeds MAX_CODE_LEN={MAX_CODE_LEN}")
     if not isinstance(file_path, str) or not file_path:
         raise ScannerError("scan() file_path must be a non-empty string")
 
     try:
         tree = ast.parse(code, filename=file_path, mode="exec")
     except SyntaxError as exc:
-        raise ScannerError(
-            f"scan() failed to parse {file_path!r}: {exc.msg}"
-        ) from exc
+        raise ScannerError(f"scan() failed to parse {file_path!r}: {exc.msg}") from exc
 
     findings: list[Finding] = []
     seen_keys: set[tuple[str, int, int, str]] = set()
@@ -471,9 +438,7 @@ def scan(
             if key in seen_keys:
                 continue
             seen_keys.add(key)
-            digest = _finding_digest(
-                rule.rule_id, file_path, line, col, identifier
-            )
+            digest = _finding_digest(rule.rule_id, file_path, line, col, identifier)
             findings.append(
                 Finding(
                     rule_id=rule.rule_id,
@@ -534,9 +499,7 @@ def scan_suite(
     """
 
     if not isinstance(rule_set, RuleSet):
-        raise TypeError(
-            f"scan_suite() requires RuleSet, got {type(rule_set).__name__}"
-        )
+        raise TypeError(f"scan_suite() requires RuleSet, got {type(rule_set).__name__}")
     result = scan(rule_set.rules, code, file_path=file_path)
     counts: dict[str, int] = {rule.rule_id: 0 for rule in rule_set.rules}
     for finding in result.findings:
@@ -594,10 +557,7 @@ def enable_semgrep_factory(
     if overrides is not None:
         unknown = set(overrides) - allowed_keys
         if unknown:
-            raise ScannerError(
-                f"enable_semgrep_factory: unknown override keys "
-                f"{sorted(unknown)}"
-            )
+            raise ScannerError(f"enable_semgrep_factory: unknown override keys {sorted(unknown)}")
 
     def _scanner(
         rules: Sequence[ScanRule],

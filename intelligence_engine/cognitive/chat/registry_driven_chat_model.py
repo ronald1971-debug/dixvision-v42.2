@@ -201,9 +201,7 @@ class RegistryDrivenChatModel(BaseChatModel):
         last_error: TransientProviderError | None = None
         for provider in eligible:
             try:
-                text = self.transport.invoke(
-                    provider, tuple(messages), stop=stop, **kwargs
-                )
+                text = self.transport.invoke(provider, tuple(messages), stop=stop, **kwargs)
             except TransientProviderError as exc:
                 last_error = exc
                 self.fallback_audit(provider, str(exc))

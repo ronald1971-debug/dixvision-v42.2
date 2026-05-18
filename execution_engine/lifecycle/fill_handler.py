@@ -126,9 +126,7 @@ class FillHandler:
         # Volume-weighted average price — pure arithmetic, no IO.
         new_filled = state.filled_qty + fill.qty
         if new_filled > state.target_qty + 1e-9:
-            raise ValueError(
-                f"overfill: {new_filled} > target {state.target_qty}"
-            )
+            raise ValueError(f"overfill: {new_filled} > target {state.target_qty}")
         notional = state.avg_price * state.filled_qty + fill.price * fill.qty
         state.filled_qty = new_filled
         state.avg_price = notional / new_filled if new_filled > 0.0 else 0.0

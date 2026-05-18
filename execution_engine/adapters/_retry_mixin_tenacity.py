@@ -119,9 +119,7 @@ class TenacityRetryPolicy:
     jitter_factor: float = DEFAULT_JITTER_FACTOR
 
     def __post_init__(self) -> None:
-        if not isinstance(self.max_attempts, int) or isinstance(
-            self.max_attempts, bool
-        ):
+        if not isinstance(self.max_attempts, int) or isinstance(self.max_attempts, bool):
             raise TypeError("max_attempts must be int")
         if self.max_attempts < 0:
             raise ValueError("max_attempts must be >= 0")
@@ -273,9 +271,7 @@ class TenacityRetryExecutor:
             delay = (
                 0.0
                 if attempt_index == 0
-                else compute_tenacity_wait_sec(
-                    attempt_index, self._policy, seed=self._prng_seed
-                )
+                else compute_tenacity_wait_sec(attempt_index, self._policy, seed=self._prng_seed)
             )
             if delay > 0.0:
                 self._sleep_fn(delay)

@@ -117,10 +117,7 @@ def _classify(top: str) -> str:
 # This table is hand-curated against the manifest delta chain and is the
 # reconciliation evidence the previous build_status.md lacked.
 # ---------------------------------------------------------------------------
-_V31_SUMMARY = (
-    "System Intent + Opponent + Reflexive Sim + Genetics + Regret"
-    " + Debate Round"
-)
+_V31_SUMMARY = "System Intent + Opponent + Reflexive Sim + Genetics + Regret + Debate Round"
 _V31_PATHS = (
     "core/coherence/system_intent.py",
     "opponent_model/behavior_predictor.py",
@@ -158,9 +155,7 @@ _V33_PATHS = (
     "core/contracts/agent.py",
     "intelligence_engine/agents/_base.py",
 )
-_V33_NOTES = (
-    "PR #39 + Phase 6.T1c (PR #47) + wave-2 calibrator (PR #51)."
-)
+_V33_NOTES = "PR #39 + Phase 6.T1c (PR #47) + wave-2 calibrator (PR #51)."
 
 _V361_PATHS = (
     "system_engine/coupling/hazard_throttle.py",
@@ -197,8 +192,7 @@ DELTA_ROWS: tuple[tuple[str, str, tuple[str, ...], str, str], ...] = (
     ),
     (
         "v3.5.2",
-        "SCVS Phase 3 — per-packet schema/staleness guard + AI validator"
-        " + silent-fallback audit",
+        "SCVS Phase 3 — per-packet schema/staleness guard + AI validator + silent-fallback audit",
         ("system_engine/scvs",),
         "landed",
         "PR #58 closes all 10 SCVS rules from the v1.0 spec.",
@@ -226,12 +220,10 @@ DELTA_ROWS: tuple[tuple[str, str, tuple[str, ...], str, str], ...] = (
     ),
     (
         "v3.6.0",
-        "BEHAVIOR-P2 — closed learning loop"
-        " (Trade Result -> Score -> Adjust Weights)",
+        "BEHAVIOR-P2 — closed learning loop (Trade Result -> Score -> Adjust Weights)",
         ("learning_engine/loops/closed_loop.py",),
         "landed",
-        "PR #62; loop folder is `learning_engine/loops/`, not"
-        " `learning_engine/closed_loop/`.",
+        "PR #62; loop folder is `learning_engine/loops/`, not `learning_engine/closed_loop/`.",
     ),
     (
         "v3.6.1",
@@ -256,8 +248,7 @@ DELTA_ROWS: tuple[tuple[str, str, tuple[str, ...], str, str], ...] = (
     ),
     (
         "v3.6.4",
-        "Dashboard-2026 wave-01 — registry-driven AI providers"
-        " + cognitive prep",
+        "Dashboard-2026 wave-01 — registry-driven AI providers + cognitive prep",
         ("dashboard2026", "intelligence_engine/cognitive"),
         "landed",
         "PR #69 + Wave-3 (PRs #82-#85).",
@@ -274,10 +265,7 @@ def _render_per_package(counts: dict[str, dict[str, int]]) -> str:
     """Render the per-package count table."""
 
     lines: list[str] = []
-    lines.append(
-        "| Package | Role | .py | .ts/.tsx | .md | .yaml | .json"
-        " | other | total |"
-    )
+    lines.append("| Package | Role | .py | .ts/.tsx | .md | .yaml | .json | other | total |")
     lines.append("|---|---|---:|---:|---:|---:|---:|---:|---:|")
     for pkg in sorted(counts, key=lambda p: (-sum(counts[p].values()), p)):
         c = counts[pkg]
@@ -307,10 +295,7 @@ def _render_manifest_delta_table() -> str:
         verified = _exists_any(paths)
         marker = status if verified else "pending"
         path_hint = "`" + paths[0] + "`" if paths else ""
-        lines.append(
-            f"| `{version}` | {summary} ({path_hint})"
-            f" | **{marker}** | {notes} |"
-        )
+        lines.append(f"| `{version}` | {summary} ({path_hint}) | **{marker}** | {notes} |")
     return "\n".join(lines)
 
 

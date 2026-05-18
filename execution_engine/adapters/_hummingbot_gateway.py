@@ -164,18 +164,14 @@ class HummingbotGatewayClient:
         }
         r = self._client.post("/amm/price", json=body)
         if r.status_code != 200:
-            raise GatewayError(
-                f"/amm/price -> {r.status_code}: {r.text[:200]}"
-            )
+            raise GatewayError(f"/amm/price -> {r.status_code}: {r.text[:200]}")
         data = r.json()
         try:
             return float(data["price"])
         except (KeyError, TypeError, ValueError) as exc:
             raise GatewayError(f"malformed price: {data!r}") from exc
 
-    def amm_trade(
-        self, req: GatewayTradeRequest, *, address: str
-    ) -> GatewayTradeResponse:
+    def amm_trade(self, req: GatewayTradeRequest, *, address: str) -> GatewayTradeResponse:
         """Execute an AMM swap. ``address`` is the operator wallet."""
         self._counter += 1
         body = {
@@ -187,9 +183,7 @@ class HummingbotGatewayClient:
             "amount": str(req.amount),
             "side": req.side,
             "address": address,
-            "limitPrice": (
-                None if req.limit_price is None else str(req.limit_price)
-            ),
+            "limitPrice": (None if req.limit_price is None else str(req.limit_price)),
             "clientOrderId": req.client_order_id,
             "nonce": self._counter,
         }
@@ -198,9 +192,7 @@ class HummingbotGatewayClient:
 
     # -- CLOB trade --------------------------------------------------------
 
-    def clob_order(
-        self, req: GatewayTradeRequest, *, address: str
-    ) -> GatewayTradeResponse:
+    def clob_order(self, req: GatewayTradeRequest, *, address: str) -> GatewayTradeResponse:
         """Submit a CLOB order (CEX or perps)."""
         self._counter += 1
         body = {
@@ -211,9 +203,7 @@ class HummingbotGatewayClient:
             "market": f"{req.base}-{req.quote}",
             "side": req.side,
             "orderType": "LIMIT" if req.limit_price is not None else "MARKET",
-            "price": (
-                None if req.limit_price is None else str(req.limit_price)
-            ),
+            "price": (None if req.limit_price is None else str(req.limit_price)),
             "amount": str(req.amount),
             "clientOrderId": req.client_order_id,
             "nonce": self._counter,
@@ -225,9 +215,7 @@ class HummingbotGatewayClient:
 
     def _parse_trade(self, r: httpx.Response) -> GatewayTradeResponse:
         if r.status_code not in (200, 201, 202):
-            raise GatewayError(
-                f"trade -> {r.status_code}: {r.text[:200]}"
-            )
+            raise GatewayError(f"trade -> {r.status_code}: {r.text[:200]}")
         try:
             data = r.json()
         except json.JSONDecodeError as exc:
@@ -245,9 +233,7 @@ class HummingbotGatewayClient:
                 "ok",
                 "OK",
             )
-        venue_order_id = str(
-            data.get("orderId") or data.get("txHash") or ""
-        )
+        venue_order_id = str(data.get("orderId") or data.get("txHash") or "")
         try:
             fill_price = float(data.get("price") or 0.0)
         except (TypeError, ValueError):

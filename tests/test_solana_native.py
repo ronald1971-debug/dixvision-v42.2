@@ -682,8 +682,7 @@ def test_no_vendor_sdks_imported_at_module_top() -> None:
     for name in _top_level_imports(_MODULE_TREE):
         root = name.split(".")[0]
         assert root not in forbidden_roots, (
-            f"vendor SDK {name!r} must not be imported at module top "
-            f"(lazy seam pattern)"
+            f"vendor SDK {name!r} must not be imported at module top (lazy seam pattern)"
         )
 
 
@@ -701,8 +700,7 @@ def test_no_forbidden_runtime_imports_at_module_top() -> None:
     for name in _top_level_imports(_MODULE_TREE):
         root = name.split(".")[0]
         assert root not in forbidden_roots, (
-            f"forbidden runtime import {name!r} at module top "
-            f"(RUNTIME_SAFE / INV-15)"
+            f"forbidden runtime import {name!r} at module top (RUNTIME_SAFE / INV-15)"
         )
 
 
@@ -744,10 +742,7 @@ def test_lazy_seam_imports_inside_factory_body() -> None:
     # Find the function definition
     fn: ast.FunctionDef | None = None
     for node in ast.walk(_MODULE_TREE):
-        if (
-            isinstance(node, ast.FunctionDef)
-            and node.name == "enable_solana_native_factory"
-        ):
+        if isinstance(node, ast.FunctionDef) and node.name == "enable_solana_native_factory":
             fn = node
             break
     assert fn is not None

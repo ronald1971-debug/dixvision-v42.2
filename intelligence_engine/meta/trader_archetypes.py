@@ -94,8 +94,7 @@ class TraderArchetype:
     def __post_init__(self) -> None:
         if not 0.0 <= self.decay_rate <= 1.0:
             raise ValueError(
-                f"{self.archetype_id}: decay_rate must be in [0, 1], "
-                f"got {self.decay_rate!r}"
+                f"{self.archetype_id}: decay_rate must be in [0, 1], got {self.decay_rate!r}"
             )
         if not -1.0 <= self.performance_score <= 1.0:
             raise ValueError(
@@ -105,14 +104,12 @@ class TraderArchetype:
         for tag, strength in self.belief_system.items():
             if not 0.0 <= float(strength) <= 1.0:
                 raise ValueError(
-                    f"{self.archetype_id}: belief_system[{tag!r}]={strength!r} "
-                    "out of [0, 1]"
+                    f"{self.archetype_id}: belief_system[{tag!r}]={strength!r} out of [0, 1]"
                 )
         for regime, score in self.regime_performance.items():
             if not -1.0 <= float(score) <= 1.0:
                 raise ValueError(
-                    f"{self.archetype_id}: regime_performance[{regime!r}]"
-                    f"={score!r} out of [-1, 1]"
+                    f"{self.archetype_id}: regime_performance[{regime!r}]={score!r} out of [-1, 1]"
                 )
 
 
@@ -162,9 +159,7 @@ class TraderArchetypeRegistry:
         return tuple(self.by_id.keys())
 
     def active(self) -> tuple[TraderArchetype, ...]:
-        return tuple(
-            a for a in self.by_id.values() if a.state is ArchetypeState.ACTIVE
-        )
+        return tuple(a for a in self.by_id.values() if a.state is ArchetypeState.ACTIVE)
 
 
 def _default_registry_path() -> Path:
@@ -175,16 +170,11 @@ def _coerce_archetype(archetype_id: str, body: Mapping[str, Any]) -> TraderArche
     try:
         dims = body["dimensions"]
     except KeyError as exc:
-        raise ValueError(
-            f"{archetype_id}: missing required 'dimensions' block"
-        ) from exc
+        raise ValueError(f"{archetype_id}: missing required 'dimensions' block") from exc
 
-    belief_system = {
-        str(k): float(v) for k, v in dict(dims.get("belief_system", {})).items()
-    }
+    belief_system = {str(k): float(v) for k, v in dict(dims.get("belief_system", {})).items()}
     regime_performance = {
-        str(k): float(v)
-        for k, v in dict(dims.get("regime_performance", {})).items()
+        str(k): float(v) for k, v in dict(dims.get("regime_performance", {})).items()
     }
     return TraderArchetype(
         archetype_id=archetype_id,
@@ -196,9 +186,7 @@ def _coerce_archetype(archetype_id: str, body: Mapping[str, Any]) -> TraderArche
         belief_system=belief_system,
         risk_attitude=RiskAttitude(str(dims.get("risk_attitude", "UNKNOWN"))),
         time_horizon=TimeHorizon(str(dims.get("time_horizon", "UNKNOWN"))),
-        conviction_style=ConvictionStyle(
-            str(dims.get("conviction_style", "UNKNOWN"))
-        ),
+        conviction_style=ConvictionStyle(str(dims.get("conviction_style", "UNKNOWN"))),
         regime_performance=regime_performance,
     )
 
@@ -219,17 +207,14 @@ def load_trader_archetypes(
     raw = document.get("archetypes", {})
     if not isinstance(raw, Mapping):
         raise ValueError(
-            f"{resolved}: expected mapping under 'archetypes:', "
-            f"got {type(raw).__name__}"
+            f"{resolved}: expected mapping under 'archetypes:', got {type(raw).__name__}"
         )
 
     by_id: dict[str, TraderArchetype] = {}
     for archetype_id in sorted(raw):
         body = raw[archetype_id]
         if not isinstance(body, Mapping):
-            raise ValueError(
-                f"{archetype_id}: expected mapping body, got {type(body).__name__}"
-            )
+            raise ValueError(f"{archetype_id}: expected mapping body, got {type(body).__name__}")
         if archetype_id in by_id:
             raise ValueError(f"duplicate archetype_id {archetype_id!r}")
         by_id[archetype_id] = _coerce_archetype(archetype_id, body)

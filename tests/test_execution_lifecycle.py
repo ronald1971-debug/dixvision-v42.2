@@ -226,10 +226,7 @@ def test_fsm_replay_determinism_same_inputs_same_history():
             ts_ns=50,
             reason="c",
         )
-        return tuple(
-            (h.ts_ns, h.prev, h.new, h.reason)
-            for h in fsm.get("o1").history
-        )
+        return tuple((h.ts_ns, h.prev, h.new, h.reason) for h in fsm.get("o1").history)
 
     assert run() == run()
 
@@ -252,9 +249,7 @@ def test_fill_handler_full_fill_drives_to_filled_with_avg_price():
     fsm.open(order_id="o1", ts_ns=1)
     handler = FillHandler(fsm)
     handler.register(order_id="o1", target_qty=10.0, ts_ns=2)
-    state = handler.apply(
-        FillEvent(ts_ns=10, order_id="o1", qty=10.0, price=100.0)
-    )
+    state = handler.apply(FillEvent(ts_ns=10, order_id="o1", qty=10.0, price=100.0))
     assert fsm.get("o1").state is OrderState.FILLED
     assert state.filled_qty == 10.0
     assert state.avg_price == 100.0
@@ -363,10 +358,7 @@ def test_resolver_fully_filled_returns_mark_filled():
 
 def test_resolver_above_threshold_returns_mark_filled():
     resolver = PartialFillResolver(ResolutionContext(min_fill_ratio=0.95))
-    assert (
-        resolver.resolve(_state(9.7, 10.0))
-        is PartialFillResolution.MARK_FILLED
-    )
+    assert resolver.resolve(_state(9.7, 10.0)) is PartialFillResolution.MARK_FILLED
 
 
 def test_resolver_venue_done_cancels_remainder():
@@ -379,20 +371,12 @@ def test_resolver_venue_done_cancels_remainder():
 
 def test_resolver_below_threshold_leaves_open():
     resolver = PartialFillResolver()
-    assert (
-        resolver.resolve(_state(4.0, 10.0))
-        is PartialFillResolution.LEAVE_OPEN
-    )
+    assert resolver.resolve(_state(4.0, 10.0)) is PartialFillResolution.LEAVE_OPEN
 
 
 def test_resolver_cancel_after_ratio_triggers_cancel():
-    resolver = PartialFillResolver(
-        ResolutionContext(min_fill_ratio=0.99, cancel_after_ratio=0.5)
-    )
-    assert (
-        resolver.resolve(_state(6.0, 10.0))
-        is PartialFillResolution.CANCEL_REMAINDER
-    )
+    resolver = PartialFillResolver(ResolutionContext(min_fill_ratio=0.99, cancel_after_ratio=0.5))
+    assert resolver.resolve(_state(6.0, 10.0)) is PartialFillResolution.CANCEL_REMAINDER
 
 
 # ---------------------------------------------------------------------------
@@ -477,10 +461,7 @@ def test_bracket_buy_take_profit_triggers_above():
             take_profit=110.0,
         )
     )
-    assert (
-        mgr.evaluate(order_id="o1", mark=111.0).trigger
-        is BracketTrigger.TAKE_PROFIT
-    )
+    assert mgr.evaluate(order_id="o1", mark=111.0).trigger is BracketTrigger.TAKE_PROFIT
 
 
 def test_bracket_buy_stop_loss_triggers_below():
@@ -494,10 +475,7 @@ def test_bracket_buy_stop_loss_triggers_below():
             take_profit=110.0,
         )
     )
-    assert (
-        mgr.evaluate(order_id="o1", mark=94.0).trigger
-        is BracketTrigger.STOP_LOSS
-    )
+    assert mgr.evaluate(order_id="o1", mark=94.0).trigger is BracketTrigger.STOP_LOSS
 
 
 def test_bracket_sell_take_profit_triggers_below():
@@ -511,10 +489,7 @@ def test_bracket_sell_take_profit_triggers_below():
             take_profit=90.0,
         )
     )
-    assert (
-        mgr.evaluate(order_id="o1", mark=89.0).trigger
-        is BracketTrigger.TAKE_PROFIT
-    )
+    assert mgr.evaluate(order_id="o1", mark=89.0).trigger is BracketTrigger.TAKE_PROFIT
 
 
 def test_bracket_sell_stop_loss_triggers_above():
@@ -528,10 +503,7 @@ def test_bracket_sell_stop_loss_triggers_above():
             take_profit=90.0,
         )
     )
-    assert (
-        mgr.evaluate(order_id="o1", mark=111.0).trigger
-        is BracketTrigger.STOP_LOSS
-    )
+    assert mgr.evaluate(order_id="o1", mark=111.0).trigger is BracketTrigger.STOP_LOSS
 
 
 def test_bracket_no_trigger_inside_range():
@@ -545,18 +517,12 @@ def test_bracket_no_trigger_inside_range():
             take_profit=110.0,
         )
     )
-    assert (
-        mgr.evaluate(order_id="o1", mark=100.5).trigger
-        is BracketTrigger.NONE
-    )
+    assert mgr.evaluate(order_id="o1", mark=100.5).trigger is BracketTrigger.NONE
 
 
 def test_bracket_unknown_order_returns_none_trigger():
     mgr = SLTPManager()
-    assert (
-        mgr.evaluate(order_id="ghost", mark=100.0).trigger
-        is BracketTrigger.NONE
-    )
+    assert mgr.evaluate(order_id="ghost", mark=100.0).trigger is BracketTrigger.NONE
 
 
 def test_bracket_invalid_buy_levels_rejected():
@@ -606,8 +572,6 @@ def test_bracket_detach_then_reattach():
 
 def test_bracket_evaluate_invalid_mark_raises():
     mgr = SLTPManager()
-    mgr.attach(
-        Bracket(order_id="o1", side=Side.BUY, entry_price=100.0, stop_loss=95.0)
-    )
+    mgr.attach(Bracket(order_id="o1", side=Side.BUY, entry_price=100.0, stop_loss=95.0))
     with pytest.raises(ValueError):
         mgr.evaluate(order_id="o1", mark=0.0)

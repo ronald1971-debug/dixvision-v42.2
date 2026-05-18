@@ -77,9 +77,7 @@ def presence_status(
     return tuple(
         CredentialStatus(
             requirement=req,
-            env_vars_present=tuple(
-                _is_set(env.get(name)) for name in req.env_vars
-            ),
+            env_vars_present=tuple(_is_set(env.get(name)) for name in req.env_vars),
         )
         for req in requirements
     )

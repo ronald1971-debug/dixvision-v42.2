@@ -85,9 +85,7 @@ class PatchApprovalBridge:
         """Register an Evolution proposal as a new ``PatchRecord``."""
         if not proposal.patch_id:
             raise ValueError("proposal.patch_id must be non-empty")
-        return self._pipeline.propose(
-            patch_id=proposal.patch_id, ts_ns=proposal.ts_ns
-        )
+        return self._pipeline.propose(patch_id=proposal.patch_id, ts_ns=proposal.ts_ns)
 
     def advance(
         self,
@@ -131,8 +129,7 @@ class PatchApprovalBridge:
         rec = self._pipeline.get(patch_id)
         if rec.stage is not PatchStage.CANARY:
             raise PatchPipelineError(
-                f"approve requires CANARY stage; "
-                f"patch {patch_id!r} is in {rec.stage.value}"
+                f"approve requires CANARY stage; patch {patch_id!r} is in {rec.stage.value}"
             )
 
         gate_meta = self._run_promotion_gates(
@@ -143,9 +140,7 @@ class PatchApprovalBridge:
         if gate_meta is not None:
             # Gate failure — reject the patch and surface the codes
             # on the decision's ``meta`` mapping.
-            gate_reason = gate_meta.get(
-                "gate_detail", "promotion gate rejected"
-            )
+            gate_reason = gate_meta.get("gate_detail", "promotion gate rejected")
             rec = self._pipeline.transition(
                 patch_id=patch_id,
                 new_stage=PatchStage.REJECTED,
@@ -203,8 +198,7 @@ class PatchApprovalBridge:
 
         if metrics is None:
             raise ValueError(
-                f"approve requires metrics when promotion gates are "
-                f"configured; patch {patch_id!r}"
+                f"approve requires metrics when promotion gates are configured; patch {patch_id!r}"
             )
 
         rejection_codes: list[str] = []
@@ -214,9 +208,7 @@ class PatchApprovalBridge:
             qv = quant.evaluate(metrics)
             if not qv.passed:
                 rejection_codes.extend(qv.rejection_codes)
-                details.append(
-                    f"quantitative={qv.kind.value} ({qv.detail})"
-                )
+                details.append(f"quantitative={qv.kind.value} ({qv.detail})")
 
         if rulegraph is not None:
             if proposal is None:
@@ -224,27 +216,19 @@ class PatchApprovalBridge:
                     f"approve requires proposal when rulegraph_evaluator "
                     f"is configured; patch {patch_id!r}"
                 )
-            thresholds = (
-                quant.thresholds
-                if quant is not None
-                else DEFAULT_QUANTITATIVE_THRESHOLDS
-            )
+            thresholds = quant.thresholds if quant is not None else DEFAULT_QUANTITATIVE_THRESHOLDS
             facts = build_patch_facts(
                 proposal=proposal,
                 metrics=metrics,
                 sharpe_ratio_min=thresholds.sharpe_ratio_min,
                 max_drawdown_max=thresholds.max_drawdown_max,
                 samples_min=thresholds.samples_min,
-                is_oos_divergence_max_sigma=(
-                    thresholds.is_oos_divergence_max_sigma
-                ),
+                is_oos_divergence_max_sigma=(thresholds.is_oos_divergence_max_sigma),
             )
             rgv = rulegraph.evaluate(facts)
             if not rgv.passed:
                 rejection_codes.extend(rgv.blocking_rule_ids)
-                details.append(
-                    f"rulegraph={rgv.kind.value} ({rgv.detail})"
-                )
+                details.append(f"rulegraph={rgv.kind.value} ({rgv.detail})")
 
         if not rejection_codes:
             return None

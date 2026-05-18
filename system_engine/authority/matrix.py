@@ -181,9 +181,7 @@ def _parse_actor(raw: Any, idx: int) -> AuthorityActor:
     )
 
 
-def _validate_precedence(
-    precedence: tuple[str, ...], actor_ids: set[str], *, ctx: str
-) -> None:
+def _validate_precedence(precedence: tuple[str, ...], actor_ids: set[str], *, ctx: str) -> None:
     if not precedence:
         raise ValueError(f"{ctx}: precedence[] must be non-empty")
     if len(set(precedence)) != len(precedence):
@@ -196,9 +194,7 @@ def _validate_precedence(
         raise ValueError(f"{ctx}: actors not covered by precedence: {missing}")
 
 
-def _parse_conflict(
-    raw: Any, idx: int, actor_ids: set[str], *, ctx: str
-) -> ConflictRow:
+def _parse_conflict(raw: Any, idx: int, actor_ids: set[str], *, ctx: str) -> ConflictRow:
     where = f"{ctx}: conflicts[{idx}]"
     if not isinstance(raw, Mapping):
         raise ValueError(f"{where}: must be a mapping, got {type(raw).__name__}")
@@ -220,9 +216,7 @@ def _parse_conflict(
     )
 
 
-def _parse_override(
-    raw: Any, idx: int, actor_ids: set[str], *, ctx: str
-) -> AuthorityOverride:
+def _parse_override(raw: Any, idx: int, actor_ids: set[str], *, ctx: str) -> AuthorityOverride:
     where = f"{ctx}: overrides[{idx}]"
     if not isinstance(raw, Mapping):
         raise ValueError(f"{where}: must be a mapping, got {type(raw).__name__}")

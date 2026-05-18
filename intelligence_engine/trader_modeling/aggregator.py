@@ -73,13 +73,9 @@ def make_trader_observation(
     """
 
     if ts_ns < 0:
-        raise ValueError(
-            "make_trader_observation: ts_ns must be non-negative"
-        )
+        raise ValueError("make_trader_observation: ts_ns must be non-negative")
     if not model.trader_id:
-        raise ValueError(
-            "make_trader_observation: model.trader_id must be non-empty"
-        )
+        raise ValueError("make_trader_observation: model.trader_id must be non-empty")
     if not model.source_feed:
         raise ValueError(
             "make_trader_observation: model.source_feed must be non-empty "

@@ -190,10 +190,7 @@ def _enable_flag(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _participants(n: int = 2) -> tuple[DebateParticipant, ...]:
-    return tuple(
-        DebateParticipant(name=f"p{i}", persona=f"persona-{i}")
-        for i in range(n)
-    )
+    return tuple(DebateParticipant(name=f"p{i}", persona=f"persona-{i}") for i in range(n))
 
 
 def _config(
@@ -248,9 +245,7 @@ def test_feature_flag_default_on(monkeypatch: pytest.MonkeyPatch) -> None:
     assert DebateFeatureFlag().enabled is True
 
 
-@pytest.mark.parametrize(
-    "value", ["1", "true", "TRUE", "yes", "on", "", "maybe"]
-)
+@pytest.mark.parametrize("value", ["1", "true", "TRUE", "yes", "on", "", "maybe"])
 def test_feature_flag_truthy_or_unknown_values_enable(
     monkeypatch: pytest.MonkeyPatch, value: str
 ) -> None:
@@ -258,12 +253,8 @@ def test_feature_flag_truthy_or_unknown_values_enable(
     assert DebateFeatureFlag().enabled is True
 
 
-@pytest.mark.parametrize(
-    "value", ["0", "false", "no", "off", "FALSE", "Off"]
-)
-def test_feature_flag_falsy_values_disable(
-    monkeypatch: pytest.MonkeyPatch, value: str
-) -> None:
+@pytest.mark.parametrize("value", ["0", "false", "no", "off", "FALSE", "Off"])
+def test_feature_flag_falsy_values_disable(monkeypatch: pytest.MonkeyPatch, value: str) -> None:
     monkeypatch.setenv(FEATURE_FLAG_ENV_VAR, value)
     assert DebateFeatureFlag().enabled is False
 
@@ -300,9 +291,7 @@ def test_participant_rejects_blank_name(name: str) -> None:
 
 def test_participant_rejects_oversized_name() -> None:
     with pytest.raises(DebateError):
-        DebateParticipant(
-            name="a" * (MAX_PARTICIPANT_NAME_LEN + 1), persona="x"
-        )
+        DebateParticipant(name="a" * (MAX_PARTICIPANT_NAME_LEN + 1), persona="x")
 
 
 @pytest.mark.parametrize("persona", ["", " ", "\t"])
@@ -321,7 +310,8 @@ def test_participant_rejects_non_string_fields() -> None:
         DebateParticipant(name=123, persona="x")  # type: ignore[arg-type]
     with pytest.raises(DebateError):
         DebateParticipant(
-            name="alice", persona=42  # type: ignore[arg-type]
+            name="alice",
+            persona=42,  # type: ignore[arg-type]
         )
 
 
@@ -484,9 +474,7 @@ def test_build_debate_graph_returns_compiled_graph() -> None:
     saver.get_tuple = MagicMock(return_value=None)
     saver.list = MagicMock(return_value=iter([]))
     cfg = _config()
-    graph = build_debate_graph(
-        model=_ScriptedModel("ok"), saver=saver, config=cfg
-    )
+    graph = build_debate_graph(model=_ScriptedModel("ok"), saver=saver, config=cfg)
     assert graph is not None
     assert hasattr(graph, "invoke")
 
@@ -598,9 +586,7 @@ def _build_bundle(
     used_cfg = cfg or _config()
     used_model = model or _ScriptedModel("ok")
     graph = build_debate_graph(model=used_model, saver=saver, config=used_cfg)
-    bundle = DebateGraphBundle(
-        graph=graph, model=used_model, saver=saver, config=used_cfg
-    )
+    bundle = DebateGraphBundle(graph=graph, model=used_model, saver=saver, config=used_cfg)
     return bundle, ledger, used_model  # type: ignore[return-value]
 
 
@@ -643,9 +629,12 @@ def test_graph_assigns_round_and_speaker_indices(
     )
     outcome = run_debate(bundle, thread_id="t1")
     expected = [
-        (0, 0), (0, 1),
-        (1, 0), (1, 1),
-        (2, 0), (2, 1),
+        (0, 0),
+        (0, 1),
+        (1, 0),
+        (1, 1),
+        (2, 0),
+        (2, 1),
     ]
     actual = [(t.round_idx, t.speaker_idx) for t in outcome.turns]
     assert actual == expected
@@ -668,10 +657,7 @@ def test_graph_tags_each_turn_with_participant_kwarg(
         "synthesis": "",
     }
     final = bundle.graph.invoke(initial, config=config)
-    tags = [
-        msg.additional_kwargs.get(PARTICIPANT_KWARG)
-        for msg in final["transcript"]
-    ]
+    tags = [msg.additional_kwargs.get(PARTICIPANT_KWARG) for msg in final["transcript"]]
     assert tags == ["p0", "p1", MODERATOR_NODE_ID]
 
 
@@ -817,10 +803,8 @@ def test_saver_isolation_per_thread_id(
     )
     run_debate(bundle, thread_id="t-A")
     run_debate(bundle, thread_id="t-B")
-    rows_a = [p for k, p in ledger.rows if k == CHECKPOINT_KIND
-              and p["thread_id"] == "t-A"]
-    rows_b = [p for k, p in ledger.rows if k == CHECKPOINT_KIND
-              and p["thread_id"] == "t-B"]
+    rows_a = [p for k, p in ledger.rows if k == CHECKPOINT_KIND and p["thread_id"] == "t-A"]
+    rows_b = [p for k, p in ledger.rows if k == CHECKPOINT_KIND and p["thread_id"] == "t-B"]
     assert rows_a and rows_b
 
 
@@ -852,9 +836,7 @@ def test_extract_outcome_with_explicit_synthesis_field() -> None:
     assert outcome.turns[1].participant_name == "p1"
 
 
-def test_extract_outcome_prefers_moderator_message_over_synthesis_field() -> (
-    None
-):
+def test_extract_outcome_prefers_moderator_message_over_synthesis_field() -> None:
     cfg = _config(n=2, rounds=1, marker="")
     state = {
         "topic": "topic",
@@ -920,9 +902,7 @@ def test_extract_outcome_falls_back_to_speaker_idx_when_tag_missing() -> None:
 
 
 def test_debate_turn_is_frozen() -> None:
-    t = DebateTurn(
-        round_idx=0, speaker_idx=0, participant_name="p0", text="x"
-    )
+    t = DebateTurn(round_idx=0, speaker_idx=0, participant_name="p0", text="x")
     with pytest.raises((AttributeError, DebateError)):
         t.text = "y"  # type: ignore[misc]
 
@@ -979,9 +959,7 @@ def test_run_debate_synthesis_is_truncated_to_max(
     bundle, _ledger, _model = _build_bundle(
         monkeypatch,
         cfg=_config(n=2, rounds=1, marker=""),
-        model=_ScriptedModel(
-            per_caller={MODERATOR_NODE_ID: huge, "p0": "x", "p1": "x"}
-        ),
+        model=_ScriptedModel(per_caller={MODERATOR_NODE_ID: huge, "p0": "x", "p1": "x"}),
     )
     outcome = run_debate(bundle, thread_id="t1")
     assert len(outcome.synthesis) == MAX_SYNTHESIS_LEN

@@ -21,12 +21,8 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture()
 def client(tmp_path, monkeypatch) -> TestClient:
-    monkeypatch.setenv(
-        "DIXVISION_LEDGER_PATH", str(tmp_path / "governance.db")
-    )
-    monkeypatch.setenv(
-        "DIXVISION_INTENT_HMAC_KEY", "test-hmac-key-audit-p2-1"
-    )
+    monkeypatch.setenv("DIXVISION_LEDGER_PATH", str(tmp_path / "governance.db"))
+    monkeypatch.setenv("DIXVISION_INTENT_HMAC_KEY", "test-hmac-key-audit-p2-1")
     if "ui.server" in list(os.sys.modules):
         del os.sys.modules["ui.server"]
     from ui.server import app

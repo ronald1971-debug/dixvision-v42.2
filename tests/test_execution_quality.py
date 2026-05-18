@@ -267,9 +267,7 @@ def test_decomposition_identity_holds_per_fill() -> None:
         interval_vwap=98.0,
     )
     r = score_execution([f])
-    assert r.is_cost_usd == pytest.approx(
-        r.vwap_deviation_usd + r.timing_cost_usd
-    )
+    assert r.is_cost_usd == pytest.approx(r.vwap_deviation_usd + r.timing_cost_usd)
 
 
 # ---------------------------------------------------------------------------
@@ -300,9 +298,7 @@ def test_aggregation_sums_notional_and_costs() -> None:
     # VWAP-dev SELL: -(102-101.5)*2*-1 = +1
     assert r.vwap_deviation_usd == pytest.approx(-0.5 + 1.0)
     # Timing = IS - VWAP-dev
-    assert r.timing_cost_usd == pytest.approx(
-        r.is_cost_usd - r.vwap_deviation_usd
-    )
+    assert r.timing_cost_usd == pytest.approx(r.is_cost_usd - r.vwap_deviation_usd)
 
 
 def test_decomposition_identity_holds_across_aggregate() -> None:
@@ -324,9 +320,7 @@ def test_decomposition_identity_holds_across_aggregate() -> None:
         ),
     ]
     r = score_execution(fills)
-    assert r.is_cost_usd == pytest.approx(
-        r.vwap_deviation_usd + r.timing_cost_usd
-    )
+    assert r.is_cost_usd == pytest.approx(r.vwap_deviation_usd + r.timing_cost_usd)
 
 
 def test_participation_rate_weighted_by_notional() -> None:

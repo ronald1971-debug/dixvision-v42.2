@@ -81,8 +81,8 @@ class ProposedSignalApi(BaseModel):
         min_length=1,
         max_length=32,
         description=(
-            "Instrument identifier — e.g. ``\"EURUSD\"`` or "
-            "``\"BTCUSDT\"``. Validated against the registry on "
+            'Instrument identifier — e.g. ``"EURUSD"`` or '
+            '``"BTCUSDT"``. Validated against the registry on '
             "approval; an unknown symbol turns the approval into a "
             "400."
         ),
@@ -170,7 +170,7 @@ class ApprovalRequestApi(BaseModel):
         description=(
             "Operator id from the bridge / cockpit auth context. "
             "Empty string while pending. Today the harness uses "
-            "``\"operator\"`` as a placeholder; PR-N will plumb the "
+            '``"operator"`` as a placeholder; PR-N will plumb the '
             "authenticated identity through."
         ),
     )
@@ -206,7 +206,7 @@ class ApprovalDecisionRequest(BaseModel):
         max_length=64,
         description=(
             "Operator identity recorded on the ledger row. "
-            "Defaults to ``\"operator\"`` so the harness works "
+            'Defaults to ``"operator"`` so the harness works '
             "without an authenticated session."
         ),
     )

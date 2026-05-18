@@ -50,5 +50,4 @@ class IntelligenceFeedbackSink(Protocol):
         signal: SignalEvent,
         execution: ExecutionEvent,
         mark_price: float | None = None,
-    ) -> object:
-        ...
+    ) -> object: ...

@@ -69,9 +69,7 @@ def test_proof_verdict_values() -> None:
     assert ProofVerdict.PROVED.value == "PROVED"
     assert ProofVerdict.PROVED_SOFT.value == "PROVED_SOFT"
     assert ProofVerdict.COUNTEREXAMPLE.value == "COUNTEREXAMPLE"
-    assert ProofVerdict.PRECONDITION_UNSATISFIABLE.value == (
-        "PRECONDITION_UNSATISFIABLE"
-    )
+    assert ProofVerdict.PRECONDITION_UNSATISFIABLE.value == ("PRECONDITION_UNSATISFIABLE")
 
 
 def test_proof_verdict_count() -> None:
@@ -478,9 +476,7 @@ def test_prove_abs_is_always_nonneg() -> None:
         target=abs,
         arity=1,
         preconditions=(),
-        postconditions=(
-            PostCondition(name="out_ge_zero", predicate=lambda x, out: out >= 0),
-        ),
+        postconditions=(PostCondition(name="out_ge_zero", predicate=lambda x, out: out >= 0),),
         max_samples=256,
     )
     r = prove(task, seed=42)
@@ -518,9 +514,7 @@ def test_prove_respects_preconditions() -> None:
         target=lambda x: x + x,
         arity=1,
         preconditions=(positive_int(),),
-        postconditions=(
-            PostCondition(name="positive_out", predicate=lambda x, out: out > 0),
-        ),
+        postconditions=(PostCondition(name="positive_out", predicate=lambda x, out: out > 0),),
         max_samples=512,
     )
     r = prove(task, seed=99)
@@ -559,9 +553,7 @@ def test_prove_catches_target_raises_as_counterexample() -> None:
         target=raising_target,
         arity=1,
         preconditions=(),
-        postconditions=(
-            PostCondition(name="anything", predicate=lambda x, out: True),
-        ),
+        postconditions=(PostCondition(name="anything", predicate=lambda x, out: True),),
         max_samples=1024,
     )
     r = prove(task, seed=0)
@@ -662,8 +654,7 @@ def test_inv15_different_seeds_can_diverge() -> None:
     # both produce one.
     if r0.counterexample and r1.counterexample:
         assert r0.counterexample.inputs != r1.counterexample.inputs or (
-            r0.counterexample.violated_postcondition
-            != r1.counterexample.violated_postcondition
+            r0.counterexample.violated_postcondition != r1.counterexample.violated_postcondition
         )
 
 
@@ -678,9 +669,7 @@ def test_suite_constructs_valid() -> None:
         target=abs,
         arity=1,
         preconditions=(),
-        postconditions=(
-            PostCondition(name="nonneg", predicate=lambda x, out: out >= 0),
-        ),
+        postconditions=(PostCondition(name="nonneg", predicate=lambda x, out: out >= 0),),
         max_samples=16,
     )
     suite = ProofSuite(name="dix_invariants", tasks=(task,))
@@ -728,9 +717,7 @@ def test_prove_suite_runs_every_task() -> None:
         target=abs,
         arity=1,
         preconditions=(),
-        postconditions=(
-            PostCondition(name="nonneg", predicate=lambda x, out: out >= 0),
-        ),
+        postconditions=(PostCondition(name="nonneg", predicate=lambda x, out: out >= 0),),
         max_samples=16,
     )
     task_b = ProofTask(
@@ -738,9 +725,7 @@ def test_prove_suite_runs_every_task() -> None:
         target=lambda x: x,
         arity=1,
         preconditions=(),
-        postconditions=(
-            PostCondition(name="equal", predicate=lambda x, out: out == x),
-        ),
+        postconditions=(PostCondition(name="equal", predicate=lambda x, out: out == x),),
         max_samples=16,
     )
     suite = ProofSuite(name="batch", tasks=(task_a, task_b))
@@ -757,9 +742,7 @@ def test_prove_suite_reports_counterexamples() -> None:
         target=abs,
         arity=1,
         preconditions=(),
-        postconditions=(
-            PostCondition(name="nonneg", predicate=lambda x, out: out >= 0),
-        ),
+        postconditions=(PostCondition(name="nonneg", predicate=lambda x, out: out >= 0),),
         max_samples=64,
     )
     task_bad = ProofTask(
@@ -767,11 +750,7 @@ def test_prove_suite_reports_counterexamples() -> None:
         target=lambda x: x + x,
         arity=1,
         preconditions=(),
-        postconditions=(
-            PostCondition(
-                name="strictly_positive", predicate=lambda x, out: out > 0
-            ),
-        ),
+        postconditions=(PostCondition(name="strictly_positive", predicate=lambda x, out: out > 0),),
         max_samples=256,
     )
     suite = ProofSuite(name="mixed", tasks=(task_good, task_bad))
@@ -805,9 +784,7 @@ def test_prove_suite_byte_identical_replay() -> None:
         target=lambda x: x * 2,
         arity=1,
         preconditions=(),
-        postconditions=(
-            PostCondition(name="double", predicate=lambda x, out: out == 2 * x),
-        ),
+        postconditions=(PostCondition(name="double", predicate=lambda x, out: out == 2 * x),),
         max_samples=32,
     )
     task_b = ProofTask(
@@ -815,9 +792,7 @@ def test_prove_suite_byte_identical_replay() -> None:
         target=lambda x, y: x + y,
         arity=2,
         preconditions=(),
-        postconditions=(
-            PostCondition(name="sum", predicate=lambda x, y, out: out == x + y),
-        ),
+        postconditions=(PostCondition(name="sum", predicate=lambda x, y, out: out == x + y),),
         max_samples=32,
     )
     suite = ProofSuite(name="repro", tasks=(task_a, task_b))
@@ -907,9 +882,7 @@ def test_enable_crosshair_factory_rejects_unknown_overrides() -> None:
 # ---------------------------------------------------------------------------
 
 
-_MODULE_PATH = (
-    Path(__file__).resolve().parents[1] / "tools" / "invariant_prover.py"
-)
+_MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "invariant_prover.py"
 
 
 def _module_ast() -> ast.Module:
@@ -929,24 +902,15 @@ def _top_level_imports(tree: ast.Module) -> list[str]:
 
 
 def test_no_top_level_crosshair_import() -> None:
-    assert all(
-        not name.startswith("crosshair")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("crosshair") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_hypothesis_import() -> None:
-    assert all(
-        not name.startswith("hypothesis")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("hypothesis") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_z3_import() -> None:
-    assert all(
-        not name.startswith("z3")
-        for name in _top_level_imports(_module_ast())
-    )
+    assert all(not name.startswith("z3") for name in _top_level_imports(_module_ast()))
 
 
 def test_no_top_level_time_or_random_import() -> None:
@@ -979,17 +943,12 @@ def test_crosshair_import_only_inside_factory() -> None:
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             mod = node.module if isinstance(node, ast.ImportFrom) else None
-            names = (
-                [a.name for a in node.names]
-                if isinstance(node, ast.Import)
-                else [mod or ""]
-            )
+            names = [a.name for a in node.names] if isinstance(node, ast.Import) else [mod or ""]
             for name in names:
                 if name.startswith("crosshair"):
                     parent = _find_enclosing_function(tree, node)
                     assert parent is not None, (
-                        f"top-level {name} import — must be inside "
-                        "enable_crosshair_factory"
+                        f"top-level {name} import — must be inside enable_crosshair_factory"
                     )
                     assert parent.name == "enable_crosshair_factory", (
                         f"{name} imported in {parent.name!r} — must be "
@@ -997,9 +956,7 @@ def test_crosshair_import_only_inside_factory() -> None:
                     )
 
 
-def _find_enclosing_function(
-    tree: ast.Module, target: ast.AST
-) -> ast.FunctionDef | None:
+def _find_enclosing_function(tree: ast.Module, target: ast.AST) -> ast.FunctionDef | None:
     for func in ast.walk(tree):
         if isinstance(func, ast.FunctionDef):
             for descendant in ast.walk(func):

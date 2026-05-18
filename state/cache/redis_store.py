@@ -94,18 +94,12 @@ class RedisConfig:
         if not self.host:
             raise ValueError("RedisConfig.host must be non-empty")
         if self.port <= 0 or self.port > 65535:
-            raise ValueError(
-                "RedisConfig.port must be in (0, 65535]; "
-                f"got {self.port}"
-            )
+            raise ValueError(f"RedisConfig.port must be in (0, 65535]; got {self.port}")
         if self.db < 0:
-            raise ValueError(
-                f"RedisConfig.db must be >= 0; got {self.db}"
-            )
+            raise ValueError(f"RedisConfig.db must be >= 0; got {self.db}")
         if self.socket_timeout_ns <= 0:
             raise ValueError(
-                "RedisConfig.socket_timeout_ns must be positive; "
-                f"got {self.socket_timeout_ns}"
+                f"RedisConfig.socket_timeout_ns must be positive; got {self.socket_timeout_ns}"
             )
 
 
@@ -141,19 +135,11 @@ class CacheEntry:
         if not self.key:
             raise ValueError("CacheEntry.key must be non-empty")
         if not isinstance(self.value, bytes):
-            raise TypeError(
-                "CacheEntry.value must be bytes; "
-                f"got {type(self.value).__name__}"
-            )
+            raise TypeError(f"CacheEntry.value must be bytes; got {type(self.value).__name__}")
         if self.ts_ns < 0:
-            raise ValueError(
-                f"CacheEntry.ts_ns must be >= 0; got {self.ts_ns}"
-            )
+            raise ValueError(f"CacheEntry.ts_ns must be >= 0; got {self.ts_ns}")
         if self.ttl_ns <= 0:
-            raise ValueError(
-                "CacheEntry.ttl_ns must be positive; "
-                f"got {self.ttl_ns}"
-            )
+            raise ValueError(f"CacheEntry.ttl_ns must be positive; got {self.ttl_ns}")
 
     def expires_at_ns(self) -> int:
         """Absolute event-time at which this entry expires."""
@@ -183,19 +169,11 @@ class CommandRecord:
     def __post_init__(self) -> None:
         canonical = ("SET", "DEL", "EXPIRE")
         if self.op not in canonical:
-            raise ValueError(
-                "CommandRecord.op must be one of "
-                f"{canonical}; got {self.op!r}"
-            )
+            raise ValueError(f"CommandRecord.op must be one of {canonical}; got {self.op!r}")
         if not self.key:
-            raise ValueError(
-                "CommandRecord.key must be non-empty"
-            )
+            raise ValueError("CommandRecord.key must be non-empty")
         if self.arg < 0:
-            raise ValueError(
-                "CommandRecord.arg must be >= 0; "
-                f"got {self.arg}"
-            )
+            raise ValueError(f"CommandRecord.arg must be >= 0; got {self.arg}")
 
 
 @dataclasses.dataclass(frozen=True, slots=True, order=True)
@@ -235,10 +213,7 @@ def serialize_payload(payload: Mapping[str, object]) -> bytes:
     consumed by another.
     """
     if not isinstance(payload, Mapping):
-        raise TypeError(
-            "serialize_payload requires a Mapping; "
-            f"got {type(payload).__name__}"
-        )
+        raise TypeError(f"serialize_payload requires a Mapping; got {type(payload).__name__}")
     return json.dumps(
         dict(payload),
         sort_keys=True,
@@ -250,15 +225,10 @@ def serialize_payload(payload: Mapping[str, object]) -> bytes:
 def deserialize_payload(blob: bytes) -> dict[str, object]:
     """Inverse of :func:`serialize_payload`. Returns a fresh dict."""
     if not isinstance(blob, bytes):
-        raise TypeError(
-            "deserialize_payload requires bytes; "
-            f"got {type(blob).__name__}"
-        )
+        raise TypeError(f"deserialize_payload requires bytes; got {type(blob).__name__}")
     out = json.loads(blob.decode("utf-8"))
     if not isinstance(out, dict):
-        raise TypeError(
-            "deserialize_payload only round-trips dict payloads"
-        )
+        raise TypeError("deserialize_payload only round-trips dict payloads")
     return out
 
 
@@ -270,9 +240,7 @@ def store_digest(entries: Iterable[CacheEntry]) -> str:
     | b"\\x1e"`` to the hash. Stable across run / process / platform.
     """
     h = hashlib.blake2b(digest_size=16)
-    ordered = sorted(
-        list(entries), key=lambda e: (e.key, e.ts_ns)
-    )
+    ordered = sorted(list(entries), key=lambda e: (e.key, e.ts_ns))
     for entry in ordered:
         h.update(entry.key.encode("utf-8"))
         h.update(b"\x1f")
@@ -346,14 +314,11 @@ class RedisStore:
             return None
         return entry.value
 
-    def mget(
-        self, keys: Sequence[str], *, now_ns: int
-    ) -> tuple[bytes | None, ...]:
+    def mget(self, keys: Sequence[str], *, now_ns: int) -> tuple[bytes | None, ...]:
         """Batch ``get`` matching redis-py ``MGET`` order."""
         if not isinstance(keys, (list, tuple)):
             raise TypeError(
-                "RedisStore.mget requires a list or tuple of keys; "
-                f"got {type(keys).__name__}"
+                f"RedisStore.mget requires a list or tuple of keys; got {type(keys).__name__}"
             )
         return tuple(self.get(k, now_ns=now_ns) for k in keys)
 
@@ -392,9 +357,7 @@ class RedisStore:
     def live_entries(self, *, now_ns: int) -> tuple[CacheEntry, ...]:
         """Return all entries that are live at ``now_ns``, sorted by key."""
         _validate_ts(now_ns)
-        live = [
-            e for e in self._entries.values() if e.is_live_at(now_ns)
-        ]
+        live = [e for e in self._entries.values() if e.is_live_at(now_ns)]
         return tuple(sorted(live, key=lambda e: (e.key, e.ts_ns)))
 
     # ------------------------------------------------------------------
@@ -415,9 +378,7 @@ class RedisStore:
         previously-seen ``ts_ns`` on this store — monotonicity is
         required for INV-15 deterministic replay.
         """
-        entry = CacheEntry(
-            key=key, value=value, ts_ns=ts_ns, ttl_ns=ttl_ns
-        )
+        entry = CacheEntry(key=key, value=value, ts_ns=ts_ns, ttl_ns=ttl_ns)
         self._apply_set(entry)
         return entry
 
@@ -435,17 +396,10 @@ class RedisStore:
         iteration.
         """
         if not isinstance(items, Mapping):
-            raise TypeError(
-                "RedisStore.mset requires a Mapping; "
-                f"got {type(items).__name__}"
-            )
+            raise TypeError(f"RedisStore.mset requires a Mapping; got {type(items).__name__}")
         out: list[CacheEntry] = []
         for key in sorted(items):
-            out.append(
-                self.set(
-                    key, items[key], ts_ns=ts_ns, ttl_ns=ttl_ns
-                )
-            )
+            out.append(self.set(key, items[key], ts_ns=ts_ns, ttl_ns=ttl_ns))
         return tuple(out)
 
     def delete(self, key: str) -> bool:
@@ -463,10 +417,7 @@ class RedisStore:
         _validate_key(key)
         _validate_ts(ts_ns)
         if ttl_ns <= 0:
-            raise ValueError(
-                "RedisStore.expire ttl_ns must be positive; "
-                f"got {ttl_ns}"
-            )
+            raise ValueError(f"RedisStore.expire ttl_ns must be positive; got {ttl_ns}")
         existing = self._entries.get(key)
         if existing is None:
             return False
@@ -491,11 +442,7 @@ class RedisStore:
         Returns the canonical-sorted tuple of evicted keys.
         """
         _validate_ts(now_ns)
-        evicted = [
-            k
-            for k, e in self._entries.items()
-            if not e.is_live_at(now_ns)
-        ]
+        evicted = [k for k, e in self._entries.items() if not e.is_live_at(now_ns)]
         for k in evicted:
             del self._entries[k]
         return tuple(sorted(evicted))
@@ -564,10 +511,7 @@ class RedisPipeline:
 
     def __init__(self, store: RedisStore) -> None:
         if not isinstance(store, RedisStore):
-            raise TypeError(
-                "RedisPipeline requires a RedisStore; "
-                f"got {type(store).__name__}"
-            )
+            raise TypeError(f"RedisPipeline requires a RedisStore; got {type(store).__name__}")
         self._store = store
         self._pending: list[tuple[str, object, ...]] = []
 
@@ -583,15 +527,10 @@ class RedisPipeline:
         # Eagerly validate args so callers fail fast on type errors.
         _validate_key(key)
         if not isinstance(value, bytes):
-            raise TypeError(
-                "RedisPipeline.set value must be bytes; "
-                f"got {type(value).__name__}"
-            )
+            raise TypeError(f"RedisPipeline.set value must be bytes; got {type(value).__name__}")
         _validate_ts(ts_ns)
         if ttl_ns <= 0:
-            raise ValueError(
-                "RedisPipeline.set ttl_ns must be positive"
-            )
+            raise ValueError("RedisPipeline.set ttl_ns must be positive")
         self._pending.append(("SET", key, value, ts_ns, ttl_ns))
         return self
 
@@ -601,16 +540,12 @@ class RedisPipeline:
         self._pending.append(("DEL", key))
         return self
 
-    def expire(
-        self, key: str, ttl_ns: int, *, ts_ns: int
-    ) -> RedisPipeline:
+    def expire(self, key: str, ttl_ns: int, *, ts_ns: int) -> RedisPipeline:
         """Queue an EXPIRE command. Returns self for chaining."""
         _validate_key(key)
         _validate_ts(ts_ns)
         if ttl_ns <= 0:
-            raise ValueError(
-                "RedisPipeline.expire ttl_ns must be positive"
-            )
+            raise ValueError("RedisPipeline.expire ttl_ns must be positive")
         self._pending.append(("EXPIRE", key, ts_ns, ttl_ns))
         return self
 
@@ -633,30 +568,18 @@ class RedisPipeline:
                 op = cmd[0]
                 if op == "SET":
                     _, key, value, ts_ns, ttl_ns = cmd
-                    self._store.set(
-                        key, value, ts_ns=ts_ns, ttl_ns=ttl_ns
-                    )
-                    applied.append(
-                        CommandRecord(op="SET", key=key, arg=ts_ns)
-                    )
+                    self._store.set(key, value, ts_ns=ts_ns, ttl_ns=ttl_ns)
+                    applied.append(CommandRecord(op="SET", key=key, arg=ts_ns))
                 elif op == "DEL":
                     _, key = cmd
                     self._store.delete(key)
-                    applied.append(
-                        CommandRecord(op="DEL", key=key, arg=0)
-                    )
+                    applied.append(CommandRecord(op="DEL", key=key, arg=0))
                 elif op == "EXPIRE":
                     _, key, ts_ns, ttl_ns = cmd
-                    self._store.expire(
-                        key, ttl_ns, ts_ns=ts_ns
-                    )
-                    applied.append(
-                        CommandRecord(op="EXPIRE", key=key, arg=ts_ns)
-                    )
+                    self._store.expire(key, ttl_ns, ts_ns=ts_ns)
+                    applied.append(CommandRecord(op="EXPIRE", key=key, arg=ts_ns))
                 else:  # pragma: no cover - validated at queue time
-                    raise ValueError(
-                        f"RedisPipeline.execute: unknown op {op!r}"
-                    )
+                    raise ValueError(f"RedisPipeline.execute: unknown op {op!r}")
         except Exception:
             self._store._entries = snapshot_entries
             self._store._last_ts_ns = snapshot_last
@@ -690,8 +613,7 @@ def redis_client_factory(config: RedisConfig) -> object:
     """
     if not isinstance(config, RedisConfig):
         raise TypeError(
-            "redis_client_factory config must be RedisConfig; "
-            f"got {type(config).__name__}"
+            f"redis_client_factory config must be RedisConfig; got {type(config).__name__}"
         )
     raise NotImplementedError(
         "Real redis.Redis activation is gated on a "
@@ -707,8 +629,7 @@ def async_redis_client_factory(config: RedisConfig) -> object:
     """
     if not isinstance(config, RedisConfig):
         raise TypeError(
-            "async_redis_client_factory config must be "
-            f"RedisConfig; got {type(config).__name__}"
+            f"async_redis_client_factory config must be RedisConfig; got {type(config).__name__}"
         )
     raise NotImplementedError(
         "Real redis.asyncio.Redis activation is gated on a "
@@ -724,24 +645,16 @@ def async_redis_client_factory(config: RedisConfig) -> object:
 
 def _validate_key(key: str) -> None:
     if not isinstance(key, str):
-        raise TypeError(
-            "RedisStore key must be str; "
-            f"got {type(key).__name__}"
-        )
+        raise TypeError(f"RedisStore key must be str; got {type(key).__name__}")
     if not key:
         raise ValueError("RedisStore key must be non-empty")
 
 
 def _validate_ts(ts_ns: int) -> None:
     if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
-        raise TypeError(
-            "RedisStore ts_ns must be int; "
-            f"got {type(ts_ns).__name__}"
-        )
+        raise TypeError(f"RedisStore ts_ns must be int; got {type(ts_ns).__name__}")
     if ts_ns < 0:
-        raise ValueError(
-            f"RedisStore ts_ns must be >= 0; got {ts_ns}"
-        )
+        raise ValueError(f"RedisStore ts_ns must be >= 0; got {ts_ns}")
 
 
 def _digest_commands(commands: Sequence[CommandRecord]) -> str:

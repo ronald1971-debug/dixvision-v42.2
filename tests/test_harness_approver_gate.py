@@ -62,9 +62,7 @@ def test_gate_open_via_env(monkeypatch: pytest.MonkeyPatch, truthy: str) -> None
 
 
 @pytest.mark.parametrize("falsy", ["", "0", "false", "no", "off", "garbage"])
-def test_gate_closed_for_falsy_env(
-    monkeypatch: pytest.MonkeyPatch, falsy: str
-) -> None:
+def test_gate_closed_for_falsy_env(monkeypatch: pytest.MonkeyPatch, falsy: str) -> None:
     """Non-truthy values keep the gate closed and trigger the loud failure."""
 
     monkeypatch.setenv(HARNESS_APPROVER_ENV_VAR, falsy)

@@ -41,9 +41,7 @@ class AdapterRegistry:
     def add(self, adapter: LiveAdapterBase) -> None:
         for existing in self._adapters:
             if existing.name == adapter.name:
-                raise ValueError(
-                    f"adapter already registered: {adapter.name}"
-                )
+                raise ValueError(f"adapter already registered: {adapter.name}")
         self._adapters.append(adapter)
 
     def get(self, name: str) -> LiveAdapterBase | None:

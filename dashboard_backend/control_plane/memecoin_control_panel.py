@@ -73,9 +73,7 @@ class MemecoinControlPanel:
     def status(self) -> MemecoinSubsystemStatus:
         return self._status
 
-    def request_enable(
-        self, *, ts_ns: int, requestor: str, reason: str
-    ) -> RouteOutcome:
+    def request_enable(self, *, ts_ns: int, requestor: str, reason: str) -> RouteOutcome:
         return self._submit(
             ts_ns=ts_ns,
             requestor=requestor,
@@ -91,9 +89,7 @@ class MemecoinControlPanel:
             ),
         )
 
-    def request_disable(
-        self, *, ts_ns: int, requestor: str, reason: str
-    ) -> RouteOutcome:
+    def request_disable(self, *, ts_ns: int, requestor: str, reason: str) -> RouteOutcome:
         return self._submit(
             ts_ns=ts_ns,
             requestor=requestor,
@@ -109,9 +105,7 @@ class MemecoinControlPanel:
             ),
         )
 
-    def request_kill(
-        self, *, ts_ns: int, requestor: str, reason: str
-    ) -> RouteOutcome:
+    def request_kill(self, *, ts_ns: int, requestor: str, reason: str) -> RouteOutcome:
         return self._submit(
             ts_ns=ts_ns,
             requestor=requestor,
@@ -150,6 +144,4 @@ class MemecoinControlPanel:
         return outcome
 
     def _note(self, *, enabled: bool, killed: bool, summary: str) -> None:
-        self._status = MemecoinSubsystemStatus(
-            enabled=enabled, killed=killed, summary=summary
-        )
+        self._status = MemecoinSubsystemStatus(enabled=enabled, killed=killed, summary=summary)

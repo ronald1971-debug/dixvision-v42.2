@@ -127,8 +127,7 @@ class DistributedRunnerConfig:
     def __post_init__(self) -> None:
         if self.min_realities < 1:
             raise ValueError(
-                "DistributedRunnerConfig.min_realities must be >= 1, "
-                f"got {self.min_realities!r}"
+                f"DistributedRunnerConfig.min_realities must be >= 1, got {self.min_realities!r}"
             )
         if self.max_realities < self.min_realities:
             raise ValueError(
@@ -137,8 +136,7 @@ class DistributedRunnerConfig:
             )
         if self.num_workers < 1:
             raise ValueError(
-                "DistributedRunnerConfig.num_workers must be >= 1, "
-                f"got {self.num_workers!r}"
+                f"DistributedRunnerConfig.num_workers must be >= 1, got {self.num_workers!r}"
             )
 
     def as_parallel(self) -> ParallelRunnerConfig:
@@ -204,13 +202,10 @@ class DistributedRunner:
         seen: set[int] = set()
         for s in seeds:
             if s < 0:
-                raise ValueError(
-                    f"DistributedRunner.run: seeds must be non-negative, got {s!r}"
-                )
+                raise ValueError(f"DistributedRunner.run: seeds must be non-negative, got {s!r}")
             if s in seen:
                 raise ValueError(
-                    f"DistributedRunner.run: duplicate seed {s!r} would "
-                    "produce duplicate realities"
+                    f"DistributedRunner.run: duplicate seed {s!r} would produce duplicate realities"
                 )
             seen.add(s)
 
@@ -235,8 +230,7 @@ class DistributedRunner:
         for outcome in gathered:
             if outcome.seed in seed_to_outcome:
                 raise ValueError(
-                    "DistributedRunner.run: duplicate outcome for seed "
-                    f"{outcome.seed!r}"
+                    f"DistributedRunner.run: duplicate outcome for seed {outcome.seed!r}"
                 )
             seed_to_outcome[outcome.seed] = outcome
         if set(seed_to_outcome) != set(ordered_seeds):

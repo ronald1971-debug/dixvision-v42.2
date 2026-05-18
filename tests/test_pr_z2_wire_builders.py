@@ -57,12 +57,7 @@ from learning_engine.loops.builders import (
 from learning_engine.loops.closed_loop import ClosedLearningLoop
 from learning_engine.update_emitter import UpdateEmitter
 
-BUILDERS_PATH = (
-    Path(__file__).resolve().parent.parent
-    / "learning_engine"
-    / "loops"
-    / "builders.py"
-)
+BUILDERS_PATH = Path(__file__).resolve().parent.parent / "learning_engine" / "loops" / "builders.py"
 
 
 # ---------------------------------------------------------------------------
@@ -81,9 +76,7 @@ def test_sample_builder_rejects_duplicate_parameters() -> None:
     import pytest
 
     with pytest.raises(ValueError, match="unique parameter names"):
-        make_pnl_sample_builder(
-            ("learning_rate", "learning_rate"), FeedbackSample
-        )
+        make_pnl_sample_builder(("learning_rate", "learning_rate"), FeedbackSample)
 
 
 def test_sample_builder_rejects_non_callable_factory() -> None:
@@ -97,13 +90,9 @@ def test_sample_builder_rejects_non_positive_weight() -> None:
     import pytest
 
     with pytest.raises(ValueError, match="weight must be > 0"):
-        make_pnl_sample_builder(
-            ("learning_rate",), FeedbackSample, weight=0.0
-        )
+        make_pnl_sample_builder(("learning_rate",), FeedbackSample, weight=0.0)
     with pytest.raises(ValueError, match="weight must be > 0"):
-        make_pnl_sample_builder(
-            ("learning_rate",), FeedbackSample, weight=-1.0
-        )
+        make_pnl_sample_builder(("learning_rate",), FeedbackSample, weight=-1.0)
 
 
 def test_sample_builder_empty_outcomes_yields_empty_tuple() -> None:
@@ -112,9 +101,7 @@ def test_sample_builder_empty_outcomes_yields_empty_tuple() -> None:
     assert build(()) == ()
 
 
-def _outcome(
-    *, ts_ns: int, strategy_id: str = "alpha", pnl: float
-) -> TradeOutcome:
+def _outcome(*, ts_ns: int, strategy_id: str = "alpha", pnl: float) -> TradeOutcome:
     return TradeOutcome(
         ts_ns=ts_ns,
         strategy_id=strategy_id,
@@ -154,9 +141,7 @@ def test_sample_builder_one_sample_per_parameter_per_outcome() -> None:
 
 
 def test_sample_builder_weight_propagates_to_samples() -> None:
-    build = make_pnl_sample_builder(
-        ("learning_rate",), FeedbackSample, weight=2.5
-    )
+    build = make_pnl_sample_builder(("learning_rate",), FeedbackSample, weight=2.5)
     outcomes = (_outcome(ts_ns=1_000_000_000, pnl=1.0),)
 
     (sample,) = build(outcomes)
@@ -169,14 +154,9 @@ def test_sample_builder_replay_byte_identical() -> None:
     parameters = ("learning_rate",)
     outcomes = tuple(
         _outcome(ts_ns=ts, pnl=float(i))
-        for i, ts in enumerate(
-            (1_000_000_000, 2_000_000_000, 3_000_000_000), start=1
-        )
+        for i, ts in enumerate((1_000_000_000, 2_000_000_000, 3_000_000_000), start=1)
     )
-    runs = [
-        make_pnl_sample_builder(parameters, FeedbackSample)(outcomes)
-        for _ in range(3)
-    ]
+    runs = [make_pnl_sample_builder(parameters, FeedbackSample)(outcomes) for _ in range(3)]
 
     assert runs[0] == runs[1] == runs[2]
 
@@ -260,9 +240,7 @@ def test_diff_builder_emits_one_update_per_changed_parameter() -> None:
 
 
 def test_diff_builder_overrides_strategy_id_and_reason() -> None:
-    build = make_diff_update_builder(
-        strategy_id="custom_lane", reason="custom_reason"
-    )
+    build = make_diff_update_builder(strategy_id="custom_lane", reason="custom_reason")
     previous = _snapshot(ts_unix_s=10, values={"learning_rate": 0.05})
     current = _snapshot(ts_unix_s=11, values={"learning_rate": 0.07})
 
@@ -298,27 +276,21 @@ def _build_unfrozen_loop() -> ClosedLearningLoop:
     collector = FeedbackCollector()
     learner = SlowLoopLearner(
         bounds={
-            "learning_rate": ParameterBounds(
-                lo=0.0001, hi=1.0, step=0.5, initial=0.05
-            ),
+            "learning_rate": ParameterBounds(lo=0.0001, hi=1.0, step=0.5, initial=0.05),
         },
         freeze_policy=None,
     )
     emitter = UpdateEmitter(freeze=None)
 
     def _live_unfrozen() -> LearningEvolutionFreezePolicy:
-        return LearningEvolutionFreezePolicy(
-            mode=SystemMode.LIVE, operator_override=True
-        )
+        return LearningEvolutionFreezePolicy(mode=SystemMode.LIVE, operator_override=True)
 
     return ClosedLearningLoop(
         feedback_collector=collector,
         learner=learner,
         emitter=emitter,
         policy_supplier=_live_unfrozen,
-        sample_builder=make_pnl_sample_builder(
-            tuple(learner.parameters), FeedbackSample
-        ),
+        sample_builder=make_pnl_sample_builder(tuple(learner.parameters), FeedbackSample),
         update_builder=make_diff_update_builder(),
     )
 
@@ -349,9 +321,7 @@ def test_unfrozen_loop_emits_non_empty_submitted_samples() -> None:
     assert len(result.drained_outcomes) == 2
     # One sample per outcome per parameter (currently one parameter).
     assert len(result.submitted_samples) == 2
-    assert all(
-        s.parameter == "learning_rate" for s in result.submitted_samples
-    )
+    assert all(s.parameter == "learning_rate" for s in result.submitted_samples)
 
 
 def test_unfrozen_loop_emits_non_empty_events_when_value_drifts() -> None:
@@ -392,9 +362,7 @@ def test_frozen_loop_still_returns_empty_samples_and_events() -> None:
     collector = FeedbackCollector()
     learner = SlowLoopLearner(
         bounds={
-            "learning_rate": ParameterBounds(
-                lo=0.0001, hi=1.0, step=0.01, initial=0.05
-            ),
+            "learning_rate": ParameterBounds(lo=0.0001, hi=1.0, step=0.01, initial=0.05),
         },
         freeze_policy=None,
     )
@@ -404,18 +372,14 @@ def test_frozen_loop_still_returns_empty_samples_and_events() -> None:
         # Under v42.2-P0-RELAX the freeze gate is operator_override
         # alone; mode is no longer consulted. Pass override=False so
         # the policy is frozen and exercises the loop short-circuit.
-        return LearningEvolutionFreezePolicy(
-            mode=SystemMode.PAPER, operator_override=False
-        )
+        return LearningEvolutionFreezePolicy(mode=SystemMode.PAPER, operator_override=False)
 
     loop = ClosedLearningLoop(
         feedback_collector=collector,
         learner=learner,
         emitter=emitter,
         policy_supplier=_frozen,
-        sample_builder=make_pnl_sample_builder(
-            tuple(learner.parameters), FeedbackSample
-        ),
+        sample_builder=make_pnl_sample_builder(tuple(learner.parameters), FeedbackSample),
         update_builder=make_diff_update_builder(),
     )
     collector.record(
@@ -443,15 +407,9 @@ def test_frozen_loop_still_returns_empty_samples_and_events() -> None:
 
 def test_patch_outcome_feedback_emits_per_strategy_snapshots() -> None:
     feedback = PatchOutcomeFeedback()
-    feedback.observe(
-        _outcome(ts_ns=1_000_000_000, strategy_id="alpha", pnl=1.0)
-    )
-    feedback.observe(
-        _outcome(ts_ns=2_000_000_000, strategy_id="alpha", pnl=-0.5)
-    )
-    feedback.observe(
-        _outcome(ts_ns=3_000_000_000, strategy_id="beta", pnl=0.25)
-    )
+    feedback.observe(_outcome(ts_ns=1_000_000_000, strategy_id="alpha", pnl=1.0))
+    feedback.observe(_outcome(ts_ns=2_000_000_000, strategy_id="alpha", pnl=-0.5))
+    feedback.observe(_outcome(ts_ns=3_000_000_000, strategy_id="beta", pnl=0.25))
 
     snapshots = feedback.all_snapshots(ts_ns=4_000_000_000)
 
@@ -471,12 +429,8 @@ def test_structural_stats_supplier_yields_observed_rows() -> None:
     drain → tuple — should surface every observed strategy."""
 
     feedback = PatchOutcomeFeedback()
-    feedback.observe(
-        _outcome(ts_ns=1_000_000_000, strategy_id="alpha", pnl=1.0)
-    )
-    feedback.observe(
-        _outcome(ts_ns=2_000_000_000, strategy_id="beta", pnl=-0.5)
-    )
+    feedback.observe(_outcome(ts_ns=1_000_000_000, strategy_id="alpha", pnl=1.0))
+    feedback.observe(_outcome(ts_ns=2_000_000_000, strategy_id="beta", pnl=-0.5))
 
     rows = tuple(feedback.all_snapshots(ts_ns=3_000_000_000).values())
 
@@ -520,8 +474,7 @@ def test_ast_no_forbidden_top_level_imports() -> None:
         elif isinstance(node, ast.ImportFrom):
             root = (node.module or "").split(".", 1)[0]
             assert root not in _FORBIDDEN_TOP_LEVEL_IMPORTS, (
-                f"forbidden top-level import {node.module!r} in "
-                f"learning_engine/loops/builders.py"
+                f"forbidden top-level import {node.module!r} in learning_engine/loops/builders.py"
             )
 
 
@@ -569,8 +522,7 @@ def test_ast_no_top_level_typed_event_constructors() -> None:
     visitor = _CtorVisitor()
     visitor.visit(tree)
     assert visitor.calls == [], (
-        "forbidden typed-event constructors at module level: "
-        f"{visitor.calls!r}"
+        f"forbidden typed-event constructors at module level: {visitor.calls!r}"
     )
 
 

@@ -180,8 +180,7 @@ def test_learning_interface_replay_determinism():
                 mark_price=11.0,
             )
         return tuple(
-            (r.ts_ns, r.symbol, r.executed_price, round(r.realised_pnl, 9))
-            for r in li.drain()
+            (r.ts_ns, r.symbol, r.executed_price, round(r.realised_pnl, 9)) for r in li.drain()
         )
 
     assert run() == run()

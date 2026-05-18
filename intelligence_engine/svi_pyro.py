@@ -202,34 +202,26 @@ class SVIModelSpec:
     model_digest: str
 
     def __post_init__(self) -> None:
-        if not isinstance(self.num_sites, int) or isinstance(
-            self.num_sites, bool
-        ):
+        if not isinstance(self.num_sites, int) or isinstance(self.num_sites, bool):
             raise TypeError(
-                "SVIModelSpec.num_sites must be int, got "
-                f"{type(self.num_sites).__name__}"
+                f"SVIModelSpec.num_sites must be int, got {type(self.num_sites).__name__}"
             )
         if self.num_sites < MIN_NUM_SITES:
             raise ValueError(
-                "SVIModelSpec.num_sites must be >= "
-                f"{MIN_NUM_SITES!r}, got {self.num_sites!r}"
+                f"SVIModelSpec.num_sites must be >= {MIN_NUM_SITES!r}, got {self.num_sites!r}"
             )
         if self.num_sites > MAX_NUM_SITES:
             raise ValueError(
-                "SVIModelSpec.num_sites must be <= "
-                f"{MAX_NUM_SITES!r}, got {self.num_sites!r}"
+                f"SVIModelSpec.num_sites must be <= {MAX_NUM_SITES!r}, got {self.num_sites!r}"
             )
-        if not isinstance(self.num_observations, int) or isinstance(
-            self.num_observations, bool
-        ):
+        if not isinstance(self.num_observations, int) or isinstance(self.num_observations, bool):
             raise TypeError(
                 "SVIModelSpec.num_observations must be int, got "
                 f"{type(self.num_observations).__name__}"
             )
         if self.num_observations < 0:
             raise ValueError(
-                "SVIModelSpec.num_observations must be "
-                f"non-negative, got {self.num_observations!r}"
+                f"SVIModelSpec.num_observations must be non-negative, got {self.num_observations!r}"
             )
         if self.num_observations > MAX_OBSERVATION_LEN:
             raise ValueError(
@@ -238,9 +230,7 @@ class SVIModelSpec:
                 f"{self.num_observations!r}"
             )
         if not self.model_digest:
-            raise ValueError(
-                "SVIModelSpec.model_digest must be non-empty"
-            )
+            raise ValueError("SVIModelSpec.model_digest must be non-empty")
         if len(self.model_digest) > MAX_MODEL_DIGEST_LEN:
             raise ValueError(
                 "SVIModelSpec.model_digest must be <= "
@@ -266,21 +256,16 @@ class SVIInferenceArguments:
                 "SVIInferenceKind, got "
                 f"{type(self.inference_kind).__name__}"
             )
-        if not isinstance(self.random_seed, int) or isinstance(
-            self.random_seed, bool
-        ):
+        if not isinstance(self.random_seed, int) or isinstance(self.random_seed, bool):
             raise TypeError(
                 "SVIInferenceArguments.random_seed must be int, "
                 f"got {type(self.random_seed).__name__}"
             )
         if self.random_seed < 0:
             raise ValueError(
-                "SVIInferenceArguments.random_seed must be "
-                f"non-negative, got {self.random_seed!r}"
+                f"SVIInferenceArguments.random_seed must be non-negative, got {self.random_seed!r}"
             )
-        if not isinstance(self.num_samples, int) or isinstance(
-            self.num_samples, bool
-        ):
+        if not isinstance(self.num_samples, int) or isinstance(self.num_samples, bool):
             raise TypeError(
                 "SVIInferenceArguments.num_samples must be int, "
                 f"got {type(self.num_samples).__name__}"
@@ -321,13 +306,11 @@ class SVIInferenceArguments:
         for k, v in self.meta.items():
             if not isinstance(k, str) or not k:
                 raise ValueError(
-                    "SVIInferenceArguments.meta keys must be "
-                    f"non-empty strings, got {k!r}"
+                    f"SVIInferenceArguments.meta keys must be non-empty strings, got {k!r}"
                 )
             if not isinstance(v, str) or not v:
                 raise ValueError(
-                    "SVIInferenceArguments.meta values must be "
-                    f"non-empty strings, got {v!r}"
+                    f"SVIInferenceArguments.meta values must be non-empty strings, got {v!r}"
                 )
 
 
@@ -343,19 +326,12 @@ class SVISiteSummary:
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, str):
-            raise TypeError(
-                "SVISiteSummary.name must be str, got "
-                f"{type(self.name).__name__}"
-            )
+            raise TypeError(f"SVISiteSummary.name must be str, got {type(self.name).__name__}")
         if not self.name:
-            raise ValueError(
-                "SVISiteSummary.name must be non-empty"
-            )
+            raise ValueError("SVISiteSummary.name must be non-empty")
         if len(self.name) > MAX_SITE_NAME_LEN:
             raise ValueError(
-                "SVISiteSummary.name must be <= "
-                f"{MAX_SITE_NAME_LEN} chars, got "
-                f"{len(self.name)!r}"
+                f"SVISiteSummary.name must be <= {MAX_SITE_NAME_LEN} chars, got {len(self.name)!r}"
             )
         for label, value in (
             ("mean", self.mean),
@@ -363,33 +339,19 @@ class SVISiteSummary:
             ("effective_sample_size", self.effective_sample_size),
             ("r_hat", self.r_hat),
         ):
-            if not isinstance(value, (int, float)) or isinstance(
-                value, bool
-            ):
-                raise TypeError(
-                    f"SVISiteSummary.{label} must be float, got "
-                    f"{type(value).__name__}"
-                )
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                raise TypeError(f"SVISiteSummary.{label} must be float, got {type(value).__name__}")
             if not math.isfinite(value):
-                raise ValueError(
-                    f"SVISiteSummary.{label} must be finite, got "
-                    f"{value!r}"
-                )
+                raise ValueError(f"SVISiteSummary.{label} must be finite, got {value!r}")
         if self.std < 0.0:
-            raise ValueError(
-                "SVISiteSummary.std must be non-negative, got "
-                f"{self.std!r}"
-            )
+            raise ValueError(f"SVISiteSummary.std must be non-negative, got {self.std!r}")
         if self.effective_sample_size < 0.0:
             raise ValueError(
                 "SVISiteSummary.effective_sample_size must be "
                 f"non-negative, got {self.effective_sample_size!r}"
             )
         if self.r_hat < 0.0:
-            raise ValueError(
-                "SVISiteSummary.r_hat must be non-negative, got "
-                f"{self.r_hat!r}"
-            )
+            raise ValueError(f"SVISiteSummary.r_hat must be non-negative, got {self.r_hat!r}")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -406,9 +368,7 @@ class SVIInferenceResult:
                 f"tuple, got {type(self.site_summaries).__name__}"
             )
         if not self.site_summaries:
-            raise ValueError(
-                "SVIInferenceResult.site_summaries must be non-empty"
-            )
+            raise ValueError("SVIInferenceResult.site_summaries must be non-empty")
         if len(self.site_summaries) > MAX_NUM_SITES:
             raise ValueError(
                 "SVIInferenceResult.site_summaries must have <= "
@@ -429,17 +389,14 @@ class SVIInferenceResult:
                     f"must be unique, got duplicate {summary.name!r}"
                 )
             seen_names.add(summary.name)
-        if not isinstance(
-            self.log_evidence, (int, float)
-        ) or isinstance(self.log_evidence, bool):
+        if not isinstance(self.log_evidence, (int, float)) or isinstance(self.log_evidence, bool):
             raise TypeError(
                 "SVIInferenceResult.log_evidence must be float, "
                 f"got {type(self.log_evidence).__name__}"
             )
         if not math.isfinite(self.log_evidence):
             raise ValueError(
-                "SVIInferenceResult.log_evidence must be finite, "
-                f"got {self.log_evidence!r}"
+                f"SVIInferenceResult.log_evidence must be finite, got {self.log_evidence!r}"
             )
 
 
@@ -456,22 +413,14 @@ class SVIInferenceRecord:
     meta: Mapping[str, str]
 
     def __post_init__(self) -> None:
-        if not isinstance(self.ts_ns, int) or isinstance(
-            self.ts_ns, bool
-        ):
+        if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
             raise TypeError(
-                "SVIInferenceRecord.ts_ns must be int, got "
-                f"{type(self.ts_ns).__name__}"
+                f"SVIInferenceRecord.ts_ns must be int, got {type(self.ts_ns).__name__}"
             )
         if self.ts_ns < 0:
-            raise ValueError(
-                "SVIInferenceRecord.ts_ns must be non-negative, "
-                f"got {self.ts_ns!r}"
-            )
+            raise ValueError(f"SVIInferenceRecord.ts_ns must be non-negative, got {self.ts_ns!r}")
         if not self.analysis_id:
-            raise ValueError(
-                "SVIInferenceRecord.analysis_id must be non-empty"
-            )
+            raise ValueError("SVIInferenceRecord.analysis_id must be non-empty")
         if len(self.analysis_id) > MAX_ANALYSIS_ID_LEN:
             raise ValueError(
                 "SVIInferenceRecord.analysis_id must be <= "
@@ -479,13 +428,10 @@ class SVIInferenceRecord:
                 f"{len(self.analysis_id)!r}"
             )
         if not self.source:
-            raise ValueError(
-                "SVIInferenceRecord.source must be non-empty"
-            )
+            raise ValueError("SVIInferenceRecord.source must be non-empty")
         if not isinstance(self.spec, SVIModelSpec):
             raise TypeError(
-                "SVIInferenceRecord.spec must be SVIModelSpec, "
-                f"got {type(self.spec).__name__}"
+                f"SVIInferenceRecord.spec must be SVIModelSpec, got {type(self.spec).__name__}"
             )
         if not isinstance(self.result, SVIInferenceResult):
             raise TypeError(
@@ -498,9 +444,7 @@ class SVIInferenceRecord:
                 "SVIInferenceRecord.analysis_digest must be a "
                 f"16-hex-char digest, got {self.analysis_digest!r}"
             )
-        if not all(
-            c in "0123456789abcdef" for c in self.analysis_digest
-        ):
+        if not all(c in "0123456789abcdef" for c in self.analysis_digest):
             raise ValueError(
                 "SVIInferenceRecord.analysis_digest must be "
                 f"lowercase hex, got {self.analysis_digest!r}"
@@ -625,9 +569,7 @@ def _compute_analysis_digest(
     """16-hex-char content hash of the canonical inference summary."""
 
     observations_str = ",".join(f"{x!r}" for x in arguments.observations)
-    meta_pairs = "|".join(
-        f"{k}={v}" for k, v in sorted(arguments.meta.items())
-    )
+    meta_pairs = "|".join(f"{k}={v}" for k, v in sorted(arguments.meta.items()))
     summaries_str = ";".join(
         (
             f"{s.name}:mean={s.mean!r}"
@@ -690,8 +632,7 @@ class PyroSVIAnalyser:
 
         if not isinstance(spec, SVIModelSpec):
             raise TypeError(
-                "PyroSVIAnalyser.analyse.spec must be "
-                f"SVIModelSpec, got {type(spec).__name__}"
+                f"PyroSVIAnalyser.analyse.spec must be SVIModelSpec, got {type(spec).__name__}"
             )
         if not isinstance(arguments, SVIInferenceArguments):
             raise TypeError(
@@ -701,19 +642,14 @@ class PyroSVIAnalyser:
             )
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
             raise TypeError(
-                "PyroSVIAnalyser.analyse.ts_ns must be int, got "
-                f"{type(ts_ns).__name__}"
+                f"PyroSVIAnalyser.analyse.ts_ns must be int, got {type(ts_ns).__name__}"
             )
         if ts_ns < 0:
             raise SVIAnalyserConfigError(
-                "PyroSVIAnalyser.analyse.ts_ns must be "
-                f"non-negative, got {ts_ns!r}"
+                f"PyroSVIAnalyser.analyse.ts_ns must be non-negative, got {ts_ns!r}"
             )
         if not analysis_id:
-            raise SVIAnalyserConfigError(
-                "PyroSVIAnalyser.analyse.analysis_id must be "
-                "non-empty"
-            )
+            raise SVIAnalyserConfigError("PyroSVIAnalyser.analyse.analysis_id must be non-empty")
         if len(analysis_id) > MAX_ANALYSIS_ID_LEN:
             raise SVIAnalyserConfigError(
                 "PyroSVIAnalyser.analyse.analysis_id must be "
@@ -721,10 +657,7 @@ class PyroSVIAnalyser:
                 f"{len(analysis_id)!r}"
             )
 
-        cb = (
-            callback if callback is not None
-            else null_svi_inference_callback()
-        )
+        cb = callback if callback is not None else null_svi_inference_callback()
         if not isinstance(cb, SVIInferenceCallback):
             raise TypeError(
                 "PyroSVIAnalyser.analyse.callback must "

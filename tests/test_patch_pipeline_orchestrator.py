@@ -65,9 +65,7 @@ def _clean_evidence() -> StageEvidence:
                 detail="line too long",
             ),
         ),
-        backtest_summary=BacktestSummary(
-            runs=10, pnl=12.5, sharpe=1.5, max_drawdown=0.05
-        ),
+        backtest_summary=BacktestSummary(runs=10, pnl=12.5, sharpe=1.5, max_drawdown=0.05),
         shadow_samples=120,
         shadow_matches=119,
         canary_orders=20,
@@ -76,9 +74,7 @@ def _clean_evidence() -> StageEvidence:
     )
 
 
-def _make_orchestrator() -> tuple[
-    PatchPipelineOrchestrator, PatchApprovalBridge
-]:
+def _make_orchestrator() -> tuple[PatchPipelineOrchestrator, PatchApprovalBridge]:
     pipeline = PatchPipeline()
     bridge = PatchApprovalBridge(pipeline=pipeline)
     return PatchPipelineOrchestrator(bridge=bridge), bridge
@@ -274,9 +270,7 @@ def test_run_event_ts_ns_derives_from_base_not_proposal_ts_ns():
     orch, _ = _make_orchestrator()
     base_ts = 1_000
     proposal = _proposal(ts_ns=9_999)  # deliberately > base_ts
-    run = orch.run(
-        proposal=proposal, evidence=_clean_evidence(), ts_ns=base_ts
-    )
+    run = orch.run(proposal=proposal, evidence=_clean_evidence(), ts_ns=base_ts)
 
     # Outer event timestamps must be base_ts + offset (0..6), not 9_999.
     assert [e.ts_ns for e in run.events] == [
@@ -289,9 +283,7 @@ def test_run_event_ts_ns_derives_from_base_not_proposal_ts_ns():
         base_ts + 6,
     ]
     # Strictly monotonic (the load-bearing INV-66 guarantee).
-    assert [e.ts_ns for e in run.events] == sorted(
-        e.ts_ns for e in run.events
-    )
+    assert [e.ts_ns for e in run.events] == sorted(e.ts_ns for e in run.events)
     # Body still preserves the original proposal.ts_ns for replay parity.
     proposed = run.events[0]
     assert proposed.sub_kind is SystemEventKind.PATCH_PROPOSED
@@ -409,9 +401,7 @@ def test_orchestrator_does_not_bypass_bridge_for_terminal_transitions():
     APPROVED / REJECTED — every terminal transition goes through the
     bridge so Governance retains sole authority (SAFE-69)."""
     orch, bridge = _make_orchestrator()
-    run = orch.run(
-        proposal=_proposal(), evidence=_clean_evidence(), ts_ns=8000
-    )
+    run = orch.run(proposal=_proposal(), evidence=_clean_evidence(), ts_ns=8000)
     # Bridge.decisions captures every terminal transition driven by
     # Governance — exactly one for a happy-path APPROVED.
     assert len(bridge.decisions) == 1
@@ -421,18 +411,14 @@ def test_orchestrator_does_not_bypass_bridge_for_terminal_transitions():
 def test_orchestrator_run_terminal_record_matches_bridge_pipeline_view():
     orch, bridge = _make_orchestrator()
     proposal = _proposal()
-    run = orch.run(
-        proposal=proposal, evidence=_clean_evidence(), ts_ns=9000
-    )
+    run = orch.run(proposal=proposal, evidence=_clean_evidence(), ts_ns=9000)
     assert bridge.pipeline.get(proposal.patch_id) == run.record
 
 
 def test_orchestrator_rejects_duplicate_proposal_ids():
     orch, _ = _make_orchestrator()
     proposal = _proposal()
-    orch.run(
-        proposal=proposal, evidence=_clean_evidence(), ts_ns=10_000
-    )
+    orch.run(proposal=proposal, evidence=_clean_evidence(), ts_ns=10_000)
     # Re-running the same proposal must fail because the bridge's
     # underlying pipeline already owns that patch_id.
     with pytest.raises(PatchPipelineError):

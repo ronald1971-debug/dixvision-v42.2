@@ -59,9 +59,7 @@ def _format_row(status, *, missing_only: bool) -> str | None:
         return None
     req = status.requirement
     env_pairs = []
-    for name, present in zip(
-        req.env_vars, status.env_vars_present, strict=True
-    ):
+    for name, present in zip(req.env_vars, status.env_vars_present, strict=True):
         env_pairs.append(f"{name}={'set' if present else 'unset'}")
     line = (
         f"{_STATE_GLYPH[status.state]}"
@@ -78,10 +76,7 @@ def _format_row(status, *, missing_only: bool) -> str | None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="check_credentials",
-        description=(
-            "Audit the registry's credential requirements against"
-            " the live environment."
-        ),
+        description=("Audit the registry's credential requirements against the live environment."),
     )
     parser.add_argument(
         "--missing-only",
@@ -118,9 +113,7 @@ def main(argv: list[str] | None = None) -> int:
         if line is not None:
             print(line)
 
-    if args.strict and counts[PresenceState.MISSING] + counts[
-        PresenceState.PARTIAL
-    ] > 0:
+    if args.strict and counts[PresenceState.MISSING] + counts[PresenceState.PARTIAL] > 0:
         return 2
     return 0
 

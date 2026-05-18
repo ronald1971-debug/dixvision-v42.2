@@ -70,9 +70,7 @@ class IntelligenceEngine(RuntimeEngine):
     ) -> None:
         if signal_window_size <= 0:
             raise ValueError("signal_window_size must be > 0")
-        self._microstructure: tuple[MicrostructurePlugin, ...] = tuple(
-            microstructure_plugins or ()
-        )
+        self._microstructure: tuple[MicrostructurePlugin, ...] = tuple(microstructure_plugins or ())
         slots: dict[str, Sequence[object]] = dict(plugin_slots or {})
         # Surface the typed microstructure plugins under the same slot
         # exposed in registry/plugins.yaml so check_self() reports them.
@@ -80,9 +78,7 @@ class IntelligenceEngine(RuntimeEngine):
         self.plugin_slots = slots  # type: ignore[assignment]
 
         self._meta_controller_hot_path = meta_controller_hot_path
-        self._signal_window: deque[SignalEvent] = deque(
-            maxlen=signal_window_size
-        )
+        self._signal_window: deque[SignalEvent] = deque(maxlen=signal_window_size)
         # PR-DEV-B — Operator Master Development Mode learning gate.
         # ``None`` is the migration sentinel (fail-open) so pre-PR-DEV-B
         # offline tests that construct an engine without a governance
@@ -145,10 +141,7 @@ class IntelligenceEngine(RuntimeEngine):
         emitted from this method (the audit row is emitted by the
         operator route at flip time, not on every silent tick).
         """
-        if (
-            self._learning_gate is not None
-            and self._learning_gate.is_closed()
-        ):
+        if self._learning_gate is not None and self._learning_gate.is_closed():
             return ()
         out: list[SignalEvent] = []
         for plugin in self._microstructure:
@@ -250,9 +243,7 @@ class IntelligenceEngine(RuntimeEngine):
         if not self._microstructure:
             detail = "Phase E2 — no microstructure plugins loaded"
         else:
-            modes = ",".join(
-                f"{p.name}:{p.lifecycle}" for p in self._microstructure
-            )
+            modes = ",".join(f"{p.name}:{p.lifecycle}" for p in self._microstructure)
             detail = f"Phase E2 — microstructure=[{modes}]"
 
         if self._meta_controller_hot_path is not None:

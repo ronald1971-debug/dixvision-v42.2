@@ -38,10 +38,7 @@ from evolution_engine.genetic.strategy_chromosome import (
 # ---------------------------------------------------------------------------
 
 _MODULE_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "evolution_engine"
-    / "genetic"
-    / "mutation_operators.py"
+    Path(__file__).resolve().parents[1] / "evolution_engine" / "genetic" / "mutation_operators.py"
 )
 
 
@@ -220,9 +217,7 @@ def test_does_not_construct_patch_proposal() -> None:
                 name = func.id
             elif isinstance(func, ast.Attribute):
                 name = func.attr
-            assert name != "PatchProposal", (
-                "mutation_operators must not construct PatchProposal"
-            )
+            assert name != "PatchProposal", "mutation_operators must not construct PatchProposal"
 
 
 def test_no_clock_or_io() -> None:
@@ -242,9 +237,9 @@ def test_no_clock_or_io() -> None:
     }
     for node in ast.walk(tree):
         if isinstance(node, ast.Attribute):
-            assert node.attr not in forbidden_attrs or _attr_chain_starts_with(
-                node, ("math",)
-            ), f"forbidden attribute call: {ast.dump(node)}"
+            assert node.attr not in forbidden_attrs or _attr_chain_starts_with(node, ("math",)), (
+                f"forbidden attribute call: {ast.dump(node)}"
+            )
 
 
 def _attr_chain_starts_with(node: ast.Attribute, allowed_roots: tuple[str, ...]) -> bool:
@@ -332,9 +327,7 @@ def test_encode_decode_roundtrip_log() -> None:
 
 
 def test_gaussian_mutate_returns_chromosome(parent: StrategyChromosome) -> None:
-    out = gaussian_mutate(
-        chromosome=parent, sigma=0.1, seed=1, generation=0, individual=0
-    )
+    out = gaussian_mutate(chromosome=parent, sigma=0.1, seed=1, generation=0, individual=0)
     assert isinstance(out, StrategyChromosome)
     assert out.strategy_id == parent.strategy_id
     assert out.specs == parent.specs
@@ -343,9 +336,7 @@ def test_gaussian_mutate_returns_chromosome(parent: StrategyChromosome) -> None:
 
 def test_gaussian_mutate_in_bounds(parent: StrategyChromosome) -> None:
     for ind in range(20):
-        out = gaussian_mutate(
-            chromosome=parent, sigma=0.5, seed=42, generation=0, individual=ind
-        )
+        out = gaussian_mutate(chromosome=parent, sigma=0.5, seed=42, generation=0, individual=ind)
         assert -1.0 <= out.values[0] <= 1.0
         assert 1e-4 <= out.values[1] <= 1e-1
         assert 2.0 <= out.values[2] <= 64.0
@@ -372,9 +363,7 @@ def test_gaussian_mutate_individual_divergence(parent: StrategyChromosome) -> No
 
 
 def test_gaussian_mutate_meta_carries_operator_tag(parent: StrategyChromosome) -> None:
-    out = gaussian_mutate(
-        chromosome=parent, sigma=0.1, seed=1, generation=0, individual=0
-    )
+    out = gaussian_mutate(chromosome=parent, sigma=0.1, seed=1, generation=0, individual=0)
     assert out.meta["operator"] == OPERATOR_GAUSSIAN
     assert out.meta["seed"] == "1"
     assert out.meta["generation"] == "0"
@@ -384,24 +373,18 @@ def test_gaussian_mutate_meta_carries_operator_tag(parent: StrategyChromosome) -
 
 def test_gaussian_mutate_zero_sigma_rejected(parent: StrategyChromosome) -> None:
     with pytest.raises(MutationOperatorError):
-        gaussian_mutate(
-            chromosome=parent, sigma=0.0, seed=1, generation=0, individual=0
-        )
+        gaussian_mutate(chromosome=parent, sigma=0.0, seed=1, generation=0, individual=0)
 
 
 def test_gaussian_mutate_negative_sigma_rejected(parent: StrategyChromosome) -> None:
     with pytest.raises(MutationOperatorError):
-        gaussian_mutate(
-            chromosome=parent, sigma=-0.1, seed=1, generation=0, individual=0
-        )
+        gaussian_mutate(chromosome=parent, sigma=-0.1, seed=1, generation=0, individual=0)
 
 
 def test_gaussian_mutate_3run_replay_equality(parent: StrategyChromosome) -> None:
     digests = [
         chromosome_digest(
-            gaussian_mutate(
-                chromosome=parent, sigma=0.3, seed=99, generation=4, individual=2
-            )
+            gaussian_mutate(chromosome=parent, sigma=0.3, seed=99, generation=4, individual=2)
         )
         for _ in range(3)
     ]
@@ -415,21 +398,15 @@ def test_gaussian_mutate_3run_replay_equality(parent: StrategyChromosome) -> Non
 
 def test_polynomial_mutate_in_bounds(parent: StrategyChromosome) -> None:
     for ind in range(30):
-        out = polynomial_mutate(
-            chromosome=parent, eta=20.0, seed=11, generation=0, individual=ind
-        )
+        out = polynomial_mutate(chromosome=parent, eta=20.0, seed=11, generation=0, individual=ind)
         assert -1.0 <= out.values[0] <= 1.0
         assert 1e-4 <= out.values[1] <= 1e-1
         assert 2.0 <= out.values[2] <= 64.0
 
 
 def test_polynomial_mutate_deterministic(parent: StrategyChromosome) -> None:
-    a = polynomial_mutate(
-        chromosome=parent, eta=20.0, seed=1, generation=0, individual=0
-    )
-    b = polynomial_mutate(
-        chromosome=parent, eta=20.0, seed=1, generation=0, individual=0
-    )
+    a = polynomial_mutate(chromosome=parent, eta=20.0, seed=1, generation=0, individual=0)
+    b = polynomial_mutate(chromosome=parent, eta=20.0, seed=1, generation=0, individual=0)
     assert a.values == b.values
 
 
@@ -440,38 +417,28 @@ def test_polynomial_mutate_concentrated_at_high_eta(parent: StrategyChromosome) 
     high_eta_dev: list[float] = []
     low_eta_dev: list[float] = []
     for ind in range(50):
-        a = polynomial_mutate(
-            chromosome=parent, eta=200.0, seed=5, generation=0, individual=ind
-        )
-        b = polynomial_mutate(
-            chromosome=parent, eta=2.0, seed=5, generation=0, individual=ind
-        )
+        a = polynomial_mutate(chromosome=parent, eta=200.0, seed=5, generation=0, individual=ind)
+        b = polynomial_mutate(chromosome=parent, eta=2.0, seed=5, generation=0, individual=ind)
         high_eta_dev.append(abs(a.values[0] - parent_alpha))
         low_eta_dev.append(abs(b.values[0] - parent_alpha))
     assert sum(high_eta_dev) / len(high_eta_dev) < sum(low_eta_dev) / len(low_eta_dev)
 
 
 def test_polynomial_mutate_meta_tag(parent: StrategyChromosome) -> None:
-    out = polynomial_mutate(
-        chromosome=parent, eta=20.0, seed=1, generation=0, individual=0
-    )
+    out = polynomial_mutate(chromosome=parent, eta=20.0, seed=1, generation=0, individual=0)
     assert out.meta["operator"] == OPERATOR_POLYNOMIAL
     assert out.meta["parent_digest"] == chromosome_digest(parent)
 
 
 def test_polynomial_mutate_zero_eta_rejected(parent: StrategyChromosome) -> None:
     with pytest.raises(MutationOperatorError):
-        polynomial_mutate(
-            chromosome=parent, eta=0.0, seed=1, generation=0, individual=0
-        )
+        polynomial_mutate(chromosome=parent, eta=0.0, seed=1, generation=0, individual=0)
 
 
 def test_polynomial_mutate_3run_replay_equality(parent: StrategyChromosome) -> None:
     digests = [
         chromosome_digest(
-            polynomial_mutate(
-                chromosome=parent, eta=20.0, seed=33, generation=1, individual=4
-            )
+            polynomial_mutate(chromosome=parent, eta=20.0, seed=33, generation=1, individual=4)
         )
         for _ in range(3)
     ]
@@ -488,9 +455,7 @@ def test_de_rand_1_returns_chromosome(
     parent_b: StrategyChromosome,
     parent_c: StrategyChromosome,
 ) -> None:
-    out = de_rand_1(
-        a=parent_a, b=parent_b, c=parent_c, F=0.5, seed=1, generation=0, individual=0
-    )
+    out = de_rand_1(a=parent_a, b=parent_b, c=parent_c, F=0.5, seed=1, generation=0, individual=0)
     assert isinstance(out, StrategyChromosome)
     assert out.strategy_id == parent_a.strategy_id
     assert out.specs == parent_a.specs
@@ -503,9 +468,7 @@ def test_de_rand_1_in_bounds(
     parent_c: StrategyChromosome,
 ) -> None:
     for f in (0.1, 0.5, 0.9, 1.5):
-        out = de_rand_1(
-            a=parent_a, b=parent_b, c=parent_c, F=f, seed=1, generation=0, individual=0
-        )
+        out = de_rand_1(a=parent_a, b=parent_b, c=parent_c, F=f, seed=1, generation=0, individual=0)
         assert -1.0 <= out.values[0] <= 1.0
         assert 1e-4 <= out.values[1] <= 1e-1
         assert 2.0 <= out.values[2] <= 64.0
@@ -516,12 +479,8 @@ def test_de_rand_1_deterministic(
     parent_b: StrategyChromosome,
     parent_c: StrategyChromosome,
 ) -> None:
-    a = de_rand_1(
-        a=parent_a, b=parent_b, c=parent_c, F=0.5, seed=7, generation=2, individual=3
-    )
-    b = de_rand_1(
-        a=parent_a, b=parent_b, c=parent_c, F=0.5, seed=7, generation=2, individual=3
-    )
+    a = de_rand_1(a=parent_a, b=parent_b, c=parent_c, F=0.5, seed=7, generation=2, individual=3)
+    b = de_rand_1(a=parent_a, b=parent_b, c=parent_c, F=0.5, seed=7, generation=2, individual=3)
     assert a.values == b.values
 
 
@@ -530,9 +489,7 @@ def test_de_rand_1_meta_records_three_parents(
     parent_b: StrategyChromosome,
     parent_c: StrategyChromosome,
 ) -> None:
-    out = de_rand_1(
-        a=parent_a, b=parent_b, c=parent_c, F=0.5, seed=1, generation=0, individual=0
-    )
+    out = de_rand_1(a=parent_a, b=parent_b, c=parent_c, F=0.5, seed=1, generation=0, individual=0)
     assert out.meta["operator"] == OPERATOR_DE_RAND_1
     assert out.meta["parent_a_digest"] == chromosome_digest(parent_a)
     assert out.meta["parent_b_digest"] == chromosome_digest(parent_b)
@@ -550,18 +507,14 @@ def test_de_rand_1_strategy_id_mismatch_rejected(
         version=parent_a.version,
     )
     with pytest.raises(MutationOperatorError):
-        de_rand_1(
-            a=parent_a, b=parent_b, c=other, F=0.5, seed=1, generation=0, individual=0
-        )
+        de_rand_1(a=parent_a, b=parent_b, c=other, F=0.5, seed=1, generation=0, individual=0)
 
 
 def test_de_rand_1_specs_mismatch_rejected(
     parent_a: StrategyChromosome,
     parent_b: StrategyChromosome,
 ) -> None:
-    other_specs = (
-        ParameterSpec(name="alpha", kind=ParameterKind.CONTINUOUS, low=-5.0, high=5.0),
-    )
+    other_specs = (ParameterSpec(name="alpha", kind=ParameterKind.CONTINUOUS, low=-5.0, high=5.0),)
     other = StrategyChromosome(
         strategy_id=parent_a.strategy_id,
         specs=other_specs,
@@ -569,9 +522,7 @@ def test_de_rand_1_specs_mismatch_rejected(
         version=0,
     )
     with pytest.raises(MutationOperatorError):
-        de_rand_1(
-            a=parent_a, b=parent_b, c=other, F=0.5, seed=1, generation=0, individual=0
-        )
+        de_rand_1(a=parent_a, b=parent_b, c=other, F=0.5, seed=1, generation=0, individual=0)
 
 
 def test_de_rand_1_zero_F_rejected(
@@ -580,9 +531,7 @@ def test_de_rand_1_zero_F_rejected(
     parent_c: StrategyChromosome,
 ) -> None:
     with pytest.raises(MutationOperatorError):
-        de_rand_1(
-            a=parent_a, b=parent_b, c=parent_c, F=0.0, seed=1, generation=0, individual=0
-        )
+        de_rand_1(a=parent_a, b=parent_b, c=parent_c, F=0.0, seed=1, generation=0, individual=0)
 
 
 def test_de_rand_1_3run_replay_equality(
@@ -607,9 +556,7 @@ def test_de_rand_1_equal_parents_b_c_yields_a(
 ) -> None:
     """If b == c, then ``F * (b - c) == 0`` so the mutant equals a."""
 
-    out = de_rand_1(
-        a=parent_a, b=parent_b, c=parent_b, F=0.7, seed=1, generation=0, individual=0
-    )
+    out = de_rand_1(a=parent_a, b=parent_b, c=parent_b, F=0.7, seed=1, generation=0, individual=0)
     for spec, va, vo in zip(parent_a.specs, parent_a.values, out.values, strict=True):
         if spec.kind is ParameterKind.INTEGER:
             assert vo == va
@@ -653,12 +600,24 @@ def test_de_current_to_best_1_deterministic(
     parent_c: StrategyChromosome,
 ) -> None:
     a = de_current_to_best_1(
-        target=parent, best=parent_c, a=parent_a, b=parent_b,
-        F=0.5, seed=7, generation=2, individual=3,
+        target=parent,
+        best=parent_c,
+        a=parent_a,
+        b=parent_b,
+        F=0.5,
+        seed=7,
+        generation=2,
+        individual=3,
     )
     b = de_current_to_best_1(
-        target=parent, best=parent_c, a=parent_a, b=parent_b,
-        F=0.5, seed=7, generation=2, individual=3,
+        target=parent,
+        best=parent_c,
+        a=parent_a,
+        b=parent_b,
+        F=0.5,
+        seed=7,
+        generation=2,
+        individual=3,
     )
     assert a.values == b.values
 
@@ -670,8 +629,14 @@ def test_de_current_to_best_1_meta_records_four_parents(
     parent_c: StrategyChromosome,
 ) -> None:
     out = de_current_to_best_1(
-        target=parent, best=parent_c, a=parent_a, b=parent_b,
-        F=0.5, seed=1, generation=0, individual=0,
+        target=parent,
+        best=parent_c,
+        a=parent_a,
+        b=parent_b,
+        F=0.5,
+        seed=1,
+        generation=0,
+        individual=0,
     )
     assert out.meta["operator"] == OPERATOR_DE_CURRENT_TO_BEST_1
     assert out.meta["target_digest"] == chromosome_digest(parent)
@@ -685,8 +650,14 @@ def test_de_current_to_best_1_target_eq_best_a_eq_b_yields_target(
     parent_a: StrategyChromosome,
 ) -> None:
     out = de_current_to_best_1(
-        target=parent, best=parent, a=parent_a, b=parent_a,
-        F=0.7, seed=1, generation=0, individual=0,
+        target=parent,
+        best=parent,
+        a=parent_a,
+        b=parent_a,
+        F=0.7,
+        seed=1,
+        generation=0,
+        individual=0,
     )
     for spec, vt, vo in zip(parent.specs, parent.values, out.values, strict=True):
         if spec.kind is ParameterKind.INTEGER:
@@ -700,9 +671,7 @@ def test_de_current_to_best_1_specs_mismatch_rejected(
     parent_a: StrategyChromosome,
     parent_b: StrategyChromosome,
 ) -> None:
-    other_specs = (
-        ParameterSpec(name="alpha", kind=ParameterKind.CONTINUOUS, low=0.0, high=2.0),
-    )
+    other_specs = (ParameterSpec(name="alpha", kind=ParameterKind.CONTINUOUS, low=0.0, high=2.0),)
     bad = StrategyChromosome(
         strategy_id=parent.strategy_id,
         specs=other_specs,
@@ -711,8 +680,14 @@ def test_de_current_to_best_1_specs_mismatch_rejected(
     )
     with pytest.raises(MutationOperatorError):
         de_current_to_best_1(
-            target=parent, best=bad, a=parent_a, b=parent_b,
-            F=0.5, seed=1, generation=0, individual=0,
+            target=parent,
+            best=bad,
+            a=parent_a,
+            b=parent_b,
+            F=0.5,
+            seed=1,
+            generation=0,
+            individual=0,
         )
 
 
@@ -725,8 +700,14 @@ def test_de_current_to_best_1_3run_replay_equality(
     digests = [
         chromosome_digest(
             de_current_to_best_1(
-                target=parent, best=parent_c, a=parent_a, b=parent_b,
-                F=0.5, seed=99, generation=4, individual=2,
+                target=parent,
+                best=parent_c,
+                a=parent_a,
+                b=parent_b,
+                F=0.5,
+                seed=99,
+                generation=4,
+                individual=2,
             )
         )
         for _ in range(3)
@@ -759,11 +740,7 @@ def test_de_binomial_crossover_at_least_one_donor_dim(
     out = de_binomial_crossover(
         target=parent, donor=parent_c, CR=0.0, seed=1, generation=0, individual=0
     )
-    diffs = sum(
-        1
-        for vt, vo in zip(parent.values, out.values, strict=True)
-        if vt != vo
-    )
+    diffs = sum(1 for vt, vo in zip(parent.values, out.values, strict=True) if vt != vo)
     assert diffs == 1
 
 
@@ -820,8 +797,12 @@ def test_de_binomial_crossover_3run_replay_equality(
     digests = [
         chromosome_digest(
             de_binomial_crossover(
-                target=parent, donor=parent_c, CR=0.5,
-                seed=99, generation=4, individual=2,
+                target=parent,
+                donor=parent_c,
+                CR=0.5,
+                seed=99,
+                generation=4,
+                individual=2,
             )
         )
         for _ in range(3)
@@ -832,16 +813,12 @@ def test_de_binomial_crossover_3run_replay_equality(
 def test_de_binomial_crossover_specs_mismatch_rejected(
     parent: StrategyChromosome,
 ) -> None:
-    other_specs = (
-        ParameterSpec(name="alpha", kind=ParameterKind.CONTINUOUS, low=-1.0, high=1.0),
-    )
+    other_specs = (ParameterSpec(name="alpha", kind=ParameterKind.CONTINUOUS, low=-1.0, high=1.0),)
     bad = StrategyChromosome(
         strategy_id=parent.strategy_id, specs=other_specs, values=(0.0,), version=0
     )
     with pytest.raises(MutationOperatorError):
-        de_binomial_crossover(
-            target=parent, donor=bad, CR=0.5, seed=1, generation=0, individual=0
-        )
+        de_binomial_crossover(target=parent, donor=bad, CR=0.5, seed=1, generation=0, individual=0)
 
 
 # ---------------------------------------------------------------------------
@@ -924,9 +901,7 @@ def test_extra_meta_non_string_value_rejected(parent: StrategyChromosome) -> Non
 
 
 def test_meta_is_immutable(parent: StrategyChromosome) -> None:
-    out = gaussian_mutate(
-        chromosome=parent, sigma=0.1, seed=1, generation=0, individual=0
-    )
+    out = gaussian_mutate(chromosome=parent, sigma=0.1, seed=1, generation=0, individual=0)
     with pytest.raises((TypeError, AttributeError)):
         out.meta["evil"] = "x"  # type: ignore[index]
 
@@ -973,9 +948,7 @@ def test_seed_type_validation(parent: StrategyChromosome) -> None:
 
 def test_negative_generation_rejected(parent: StrategyChromosome) -> None:
     with pytest.raises(MutationOperatorError):
-        gaussian_mutate(
-            chromosome=parent, sigma=0.1, seed=1, generation=-1, individual=0
-        )
+        gaussian_mutate(chromosome=parent, sigma=0.1, seed=1, generation=-1, individual=0)
 
 
 def test_bool_not_accepted_as_int(parent: StrategyChromosome) -> None:
@@ -996,9 +969,7 @@ def test_bool_not_accepted_as_int(parent: StrategyChromosome) -> None:
 
 def test_integer_kind_always_integer_valued(parent: StrategyChromosome) -> None:
     for ind in range(50):
-        out = gaussian_mutate(
-            chromosome=parent, sigma=0.4, seed=2024, generation=0, individual=ind
-        )
+        out = gaussian_mutate(chromosome=parent, sigma=0.4, seed=2024, generation=0, individual=ind)
         assert int(out.values[2]) == out.values[2]
 
 
@@ -1021,18 +992,18 @@ def test_operators_emit_distinct_meta_tags(
     parent_b: StrategyChromosome,
     parent_c: StrategyChromosome,
 ) -> None:
-    g = gaussian_mutate(
-        chromosome=parent, sigma=0.1, seed=1, generation=0, individual=0
-    )
-    p = polynomial_mutate(
-        chromosome=parent, eta=20.0, seed=1, generation=0, individual=0
-    )
-    d1 = de_rand_1(
-        a=parent_a, b=parent_b, c=parent_c, F=0.5, seed=1, generation=0, individual=0
-    )
+    g = gaussian_mutate(chromosome=parent, sigma=0.1, seed=1, generation=0, individual=0)
+    p = polynomial_mutate(chromosome=parent, eta=20.0, seed=1, generation=0, individual=0)
+    d1 = de_rand_1(a=parent_a, b=parent_b, c=parent_c, F=0.5, seed=1, generation=0, individual=0)
     d2 = de_current_to_best_1(
-        target=parent, best=parent_c, a=parent_a, b=parent_b,
-        F=0.5, seed=1, generation=0, individual=0,
+        target=parent,
+        best=parent_c,
+        a=parent_a,
+        b=parent_b,
+        F=0.5,
+        seed=1,
+        generation=0,
+        individual=0,
     )
     bx = de_binomial_crossover(
         target=parent, donor=parent_c, CR=0.5, seed=1, generation=0, individual=0

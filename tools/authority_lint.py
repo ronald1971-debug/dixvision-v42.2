@@ -113,9 +113,7 @@ OFFLINE_ENGINE_PACKAGES: tuple[str, ...] = (
     "evolution_engine",
 )
 
-ALL_ENGINE_PACKAGES: tuple[str, ...] = (
-    RUNTIME_ENGINE_PACKAGES + OFFLINE_ENGINE_PACKAGES
-)
+ALL_ENGINE_PACKAGES: tuple[str, ...] = RUNTIME_ENGINE_PACKAGES + OFFLINE_ENGINE_PACKAGES
 
 # Common allow-list — these may be imported from any engine package.
 ALLOWED_SHARED_PREFIXES: tuple[str, ...] = (
@@ -162,9 +160,7 @@ HOT_PATH_MODULES: tuple[str, ...] = (
 )
 
 # Neuromorphic files subject to C2.
-NEUROMORPHIC_PREFIXES: tuple[str, ...] = (
-    "mind.neuromorphic",
-)
+NEUROMORPHIC_PREFIXES: tuple[str, ...] = ("mind.neuromorphic",)
 
 NEUROMORPHIC_FORBIDDEN_PREFIXES: tuple[str, ...] = (
     "execution_engine",
@@ -177,9 +173,7 @@ NEUROMORPHIC_FORBIDDEN_PREFIXES: tuple[str, ...] = (
 )
 
 # Web-autolearn modules subject to C3.
-WEB_AUTOLEARN_PREFIXES: tuple[str, ...] = (
-    "mind.web_autolearn",
-)
+WEB_AUTOLEARN_PREFIXES: tuple[str, ...] = ("mind.web_autolearn",)
 
 WEB_AUTOLEARN_FORBIDDEN_PREFIXES: tuple[str, ...] = (
     "execution",
@@ -196,9 +190,7 @@ MEMECOIN_ADAPTER_PREFIXES: tuple[str, ...] = (
     "execution.adapters.memecoin",
 )
 
-MAIN_WALLET_FORBIDDEN_PREFIXES: tuple[str, ...] = (
-    "wallet.main_wallet",
-)
+MAIN_WALLET_FORBIDDEN_PREFIXES: tuple[str, ...] = ("wallet.main_wallet",)
 
 # Dashboard isolation (B7). Wave-Live PR-3 (#106) renamed the
 # server-side widget package from ``dashboard`` to ``dashboard_backend``
@@ -316,9 +308,7 @@ def _check_allow_list(target: str) -> bool:
     return _starts_with_any(target, ALLOWED_SHARED_PREFIXES)
 
 
-def _check_t1(
-    importer: str, target: str, file: Path, line: int
-) -> Violation | None:
+def _check_t1(importer: str, target: str, file: Path, line: int) -> Violation | None:
     if not _starts_with_any(importer, HOT_PATH_MODULES):
         return None
     if _starts_with_any(target, ("governance", "governance_engine")):
@@ -333,9 +323,7 @@ def _check_t1(
     return None
 
 
-def _check_c2(
-    importer: str, target: str, file: Path, line: int
-) -> Violation | None:
+def _check_c2(importer: str, target: str, file: Path, line: int) -> Violation | None:
     if not _starts_with_any(importer, NEUROMORPHIC_PREFIXES):
         return None
     if _starts_with_any(target, NEUROMORPHIC_FORBIDDEN_PREFIXES):
@@ -350,9 +338,7 @@ def _check_c2(
     return None
 
 
-def _check_c3(
-    importer: str, target: str, file: Path, line: int
-) -> Violation | None:
+def _check_c3(importer: str, target: str, file: Path, line: int) -> Violation | None:
     if not _starts_with_any(importer, WEB_AUTOLEARN_PREFIXES):
         return None
     if _starts_with_any(target, WEB_AUTOLEARN_FORBIDDEN_PREFIXES):
@@ -367,9 +353,7 @@ def _check_c3(
     return None
 
 
-def _check_w1(
-    importer: str, target: str, file: Path, line: int
-) -> Violation | None:
+def _check_w1(importer: str, target: str, file: Path, line: int) -> Violation | None:
     if not _starts_with_any(importer, MEMECOIN_ADAPTER_PREFIXES):
         return None
     if _starts_with_any(target, MAIN_WALLET_FORBIDDEN_PREFIXES):
@@ -384,9 +368,7 @@ def _check_w1(
     return None
 
 
-def _check_l1(
-    importer: str, target: str, file: Path, line: int
-) -> Violation | None:
+def _check_l1(importer: str, target: str, file: Path, line: int) -> Violation | None:
     if _starts_with_any(importer, ("learning_engine",)) and _starts_with_any(
         target, ("evolution_engine",)
     ):
@@ -396,8 +378,7 @@ def _check_l1(
             line,
             importer,
             target,
-            "Learning ↔ Evolution domain boundary (sharing a process is not "
-            "sharing a domain)",
+            "Learning ↔ Evolution domain boundary (sharing a process is not sharing a domain)",
         )
     if _starts_with_any(importer, ("evolution_engine",)) and _starts_with_any(
         target, ("learning_engine",)
@@ -408,15 +389,12 @@ def _check_l1(
             line,
             importer,
             target,
-            "Learning ↔ Evolution domain boundary (sharing a process is not "
-            "sharing a domain)",
+            "Learning ↔ Evolution domain boundary (sharing a process is not sharing a domain)",
         )
     return None
 
 
-def _check_l2(
-    importer: str, target: str, file: Path, line: int
-) -> Violation | None:
+def _check_l2(importer: str, target: str, file: Path, line: int) -> Violation | None:
     if not _starts_with_any(importer, OFFLINE_ENGINE_PACKAGES):
         return None
     if _starts_with_any(target, RUNTIME_ENGINE_PACKAGES):
@@ -431,9 +409,7 @@ def _check_l2(
     return None
 
 
-def _check_l3(
-    importer: str, target: str, file: Path, line: int
-) -> Violation | None:
+def _check_l3(importer: str, target: str, file: Path, line: int) -> Violation | None:
     if not _starts_with_any(importer, RUNTIME_ENGINE_PACKAGES):
         return None
     if _starts_with_any(target, OFFLINE_ENGINE_PACKAGES):
@@ -448,9 +424,7 @@ def _check_l3(
     return None
 
 
-def _check_b1(
-    importer: str, target: str, file: Path, line: int
-) -> Violation | None:
+def _check_b1(importer: str, target: str, file: Path, line: int) -> Violation | None:
     importer_pkg = next(
         (p for p in RUNTIME_ENGINE_PACKAGES if _starts_with_any(importer, (p,))),
         None,
@@ -478,9 +452,7 @@ def _check_b1(
     )
 
 
-def _check_b7(
-    importer: str, target: str, file: Path, line: int
-) -> Violation | None:
+def _check_b7(importer: str, target: str, file: Path, line: int) -> Violation | None:
     if not _starts_with_any(importer, DASHBOARD_PREFIXES):
         return None
     # Imports inside the dashboard package itself are always fine.
@@ -518,9 +490,7 @@ SYSTEM_INTENT_ALLOWED_PREFIXES: tuple[str, ...] = (
 )
 
 
-def _check_b8(
-    importer: str, target: str, file: Path, line: int
-) -> Violation | None:
+def _check_b8(importer: str, target: str, file: Path, line: int) -> Violation | None:
     """B8 — System Intent projection isolation (INV-38)."""
     if importer != SYSTEM_INTENT_MODULE:
         return None
@@ -547,14 +517,10 @@ SHADOW_POLICY_PREFIXES: tuple[str, ...] = (
     "intelligence_engine.meta_controller.policy.shadow_policy",
 )
 
-SHADOW_POLICY_FORBIDDEN_PREFIXES: tuple[str, ...] = (
-    "governance_engine",
-)
+SHADOW_POLICY_FORBIDDEN_PREFIXES: tuple[str, ...] = ("governance_engine",)
 
 
-def _check_b17(
-    importer: str, target: str, file: Path, line: int
-) -> Violation | None:
+def _check_b17(importer: str, target: str, file: Path, line: int) -> Violation | None:
     if not _starts_with_any(importer, SHADOW_POLICY_PREFIXES):
         return None
     if _starts_with_any(target, SHADOW_POLICY_FORBIDDEN_PREFIXES):
@@ -564,8 +530,7 @@ def _check_b17(
             line,
             importer,
             target,
-            "shadow meta-controller is non-acting; governance_engine "
-            "imports forbidden (INV-52)",
+            "shadow meta-controller is non-acting; governance_engine imports forbidden (INV-52)",
         )
     return None
 
@@ -590,9 +555,7 @@ GOVERNANCE_PREFIXES: tuple[str, ...] = ("governance_engine",)
 GOVERNANCE_FORBIDDEN_TARGET_PREFIXES: tuple[str, ...] = ("execution_engine",)
 
 
-def _check_b20(
-    importer: str, target: str, file: Path, line: int
-) -> Violation | None:
+def _check_b20(importer: str, target: str, file: Path, line: int) -> Violation | None:
     """B20 — Governance is order-blind (INV-56 Triad Lock)."""
     if not _starts_with_any(importer, GOVERNANCE_PREFIXES):
         return None
@@ -611,9 +574,7 @@ def _check_b20(
 
 
 # Modules that may construct ExecutionEvent / SignalEvent directly.
-EXECUTION_EVENT_ALLOWED_PREFIXES: tuple[str, ...] = (
-    "execution_engine",
-)
+EXECUTION_EVENT_ALLOWED_PREFIXES: tuple[str, ...] = ("execution_engine",)
 SIGNAL_EVENT_ALLOWED_PREFIXES: tuple[str, ...] = (
     "intelligence_engine",
     # Dev / operator harness: ui/server.py exposes a synthetic-signal
@@ -629,9 +590,7 @@ TRIAD_CONSTRUCTOR_TEST_EXEMPT_PARTS: tuple[tuple[str, ...], ...] = (
 )
 
 
-def _is_triad_constructor_test_exempt(
-    path: Path, repo_root: Path
-) -> bool:
+def _is_triad_constructor_test_exempt(path: Path, repo_root: Path) -> bool:
     try:
         rel_parts = path.relative_to(repo_root).parts
     except ValueError:
@@ -690,9 +649,7 @@ def _check_triad_event_constructions(
     return out
 
 
-def _check_b24(
-    importer: str, target: str, file: Path, line: int
-) -> Violation | None:
+def _check_b24(importer: str, target: str, file: Path, line: int) -> Violation | None:
     """B24 — LangGraph / LangChain import containment (INV-67).
 
     Only the cognitive subsystems may pull in graph-orchestration or
@@ -702,9 +659,7 @@ def _check_b24(
     typed bus.
     """
 
-    if not _starts_with_any(
-        target, ("langgraph", "langchain", "langsmith")
-    ):
+    if not _starts_with_any(target, ("langgraph", "langchain", "langsmith")):
         return None
     if _starts_with_any(importer, COGNITIVE_ALLOWED_PREFIXES):
         return None
@@ -735,9 +690,7 @@ COGNITIVE_ALLOWED_PREFIXES: tuple[str, ...] = (
 )
 
 
-def _check_b33(
-    importer: str, target: str, file: Path, line: int
-) -> Violation | None:
+def _check_b33(importer: str, target: str, file: Path, line: int) -> Violation | None:
     """B33 — no-implicit-approval (Hardening-S1 item 1).
 
     The harness approval shim
@@ -754,9 +707,7 @@ def _check_b33(
     closed; this rule prevents the import in the first place).
     """
 
-    if not _starts_with_any(
-        target, ("governance_engine.harness_approver",)
-    ):
+    if not _starts_with_any(target, ("governance_engine.harness_approver",)):
         return None
     if _starts_with_any(importer, B33_ALLOWED_PREFIXES):
         return None
@@ -822,9 +773,7 @@ B_POLARS_FORBIDDEN_RUNTIME_PREFIXES: tuple[str, ...] = (
 )
 
 
-def _check_b_polars(
-    importer: str, target: str, file: Path, line: int
-) -> Violation | None:
+def _check_b_polars(importer: str, target: str, file: Path, line: int) -> Violation | None:
     """B-POLARS — polars import containment (S-10.4 / INV-15)."""
 
     if not _starts_with_any(target, ("polars",)):
@@ -887,9 +836,7 @@ B_TORCH_FORBIDDEN_RUNTIME_PREFIXES: tuple[str, ...] = (
 )
 
 
-def _check_b_torch(
-    importer: str, target: str, file: Path, line: int
-) -> Violation | None:
+def _check_b_torch(importer: str, target: str, file: Path, line: int) -> Violation | None:
     """B-TORCH — torch import containment (I-36 / INV-15)."""
 
     if not _starts_with_any(target, ("torch",)):
@@ -968,9 +915,7 @@ def _system_event_proposed_kwarg(node: ast.Call) -> ast.keyword | None:
     return None
 
 
-def _check_b35(
-    importer: str, file: Path, repo_root: Path, tree: ast.AST
-) -> list[Violation]:
+def _check_b35(importer: str, file: Path, repo_root: Path, tree: ast.AST) -> list[Violation]:
     """B35 — AI-domain modules cannot emit ``proposed=False`` directives."""
 
     if _is_triad_constructor_test_exempt(file, repo_root):
@@ -1111,9 +1056,7 @@ def _check_b_dev_indira(
     return out
 
 
-def _check_b36(
-    importer: str, file: Path, repo_root: Path, tree: ast.AST
-) -> list[Violation]:
+def _check_b36(importer: str, file: Path, repo_root: Path, tree: ast.AST) -> list[Violation]:
     """B36 — DecisionSigner construction is governance-only."""
 
     if _is_triad_constructor_test_exempt(file, repo_root):
@@ -1166,9 +1109,7 @@ B25_FORBIDDEN_NAMES: frozenset[str] = frozenset(
 )
 
 
-def _check_b25(
-    importer: str, file: Path, repo_root: Path, tree: ast.AST
-) -> list[Violation]:
+def _check_b25(importer: str, file: Path, repo_root: Path, tree: ast.AST) -> list[Violation]:
     """B25 — ExecutionIntent factory restriction (INV-68 / HARDEN-01)."""
 
     if _is_triad_constructor_test_exempt(file, repo_root):
@@ -1203,9 +1144,7 @@ def _check_b25(
 # cognitive proposal must enqueue it for operator approval; the
 # operator click is what flips it into a real SignalEvent on the bus.
 B26_COGNITIVE_PRODUCER: str = "intelligence_engine.cognitive"
-B26_ALLOWED_MODULES: tuple[str, ...] = (
-    "intelligence_engine.cognitive.approval_edge",
-)
+B26_ALLOWED_MODULES: tuple[str, ...] = ("intelligence_engine.cognitive.approval_edge",)
 
 
 def _signal_event_produced_by_engine(node: ast.Call) -> str | None:
@@ -1220,16 +1159,12 @@ def _signal_event_produced_by_engine(node: ast.Call) -> str | None:
     for kw in node.keywords:
         if kw.arg != "produced_by_engine":
             continue
-        if isinstance(kw.value, ast.Constant) and isinstance(
-            kw.value.value, str
-        ):
+        if isinstance(kw.value, ast.Constant) and isinstance(kw.value.value, str):
             return kw.value.value
     return None
 
 
-def _check_b26(
-    importer: str, file: Path, repo_root: Path, tree: ast.AST
-) -> list[Violation]:
+def _check_b26(importer: str, file: Path, repo_root: Path, tree: ast.AST) -> list[Violation]:
     """B26 — only the approval edge may stamp the cognitive producer."""
 
     if _is_triad_constructor_test_exempt(file, repo_root):
@@ -1285,9 +1220,7 @@ B27_ALLOWED_PREFIXES: tuple[str, ...] = (
 B27_FORBIDDEN_NAMES: frozenset[str] = frozenset({"LearningUpdate"})
 
 
-def _check_b27(
-    importer: str, file: Path, repo_root: Path, tree: ast.AST
-) -> list[Violation]:
+def _check_b27(importer: str, file: Path, repo_root: Path, tree: ast.AST) -> list[Violation]:
     """B27 — LearningUpdate construction restriction (INV-71)."""
 
     if _is_triad_constructor_test_exempt(file, repo_root):
@@ -1329,9 +1262,7 @@ B28_ALLOWED_PREFIXES: tuple[str, ...] = (
 B28_FORBIDDEN_NAMES: frozenset[str] = frozenset({"PatchProposal"})
 
 
-def _check_b28(
-    importer: str, file: Path, repo_root: Path, tree: ast.AST
-) -> list[Violation]:
+def _check_b28(importer: str, file: Path, repo_root: Path, tree: ast.AST) -> list[Violation]:
     """B28 — PatchProposal construction restriction (INV-71)."""
 
     if _is_triad_constructor_test_exempt(file, repo_root):
@@ -1380,9 +1311,7 @@ B29_ALLOWED_PREFIXES: tuple[str, ...] = (
 B29_FORBIDDEN_NAMES: frozenset[str] = frozenset({"TraderObservation"})
 
 
-def _check_b29(
-    importer: str, file: Path, repo_root: Path, tree: ast.AST
-) -> list[Violation]:
+def _check_b29(importer: str, file: Path, repo_root: Path, tree: ast.AST) -> list[Violation]:
     """B29 — TraderObservation construction restriction (INV-71)."""
 
     if _is_triad_constructor_test_exempt(file, repo_root):
@@ -1466,9 +1395,7 @@ B31_ALLOWED_PREFIXES: tuple[str, ...] = (
 )
 
 
-def _check_b31(
-    importer: str, file: Path, repo_root: Path, tree: ast.AST
-) -> list[Violation]:
+def _check_b31(importer: str, file: Path, repo_root: Path, tree: ast.AST) -> list[Violation]:
     """B31 — only governance + UI-surface code may name SystemMode members.
 
     Engines and adapters must consume :func:`effect_for` from
@@ -1569,9 +1496,7 @@ B30_ALLOWED_LEAF_PRODUCERS: frozenset[str] = frozenset(
 )
 
 B30_BELIEF_STATE_MODULE: str = "core.coherence.belief_state"
-B30_BELIEF_STATE_NAMES: frozenset[str] = frozenset(
-    {"BeliefState", "derive_belief_state"}
-)
+B30_BELIEF_STATE_NAMES: frozenset[str] = frozenset({"BeliefState", "derive_belief_state"})
 
 
 def _module_imports_belief_state(tree: ast.AST) -> bool:
@@ -1600,9 +1525,7 @@ def _module_imports_belief_state(tree: ast.AST) -> bool:
     return False
 
 
-def _check_b30(
-    importer: str, file: Path, repo_root: Path, tree: ast.AST
-) -> list[Violation]:
+def _check_b30(importer: str, file: Path, repo_root: Path, tree: ast.AST) -> list[Violation]:
     """B30 — Unify-Intelligence-into-BeliefState (reviewer #3 v3 §2)."""
 
     if _is_triad_constructor_test_exempt(file, repo_root):
@@ -1762,9 +1685,7 @@ def _check_b23_static(repo_root: Path) -> list[Violation]:
     return out
 
 
-def _check_b23_python(
-    importer: str, file: Path, tree: ast.AST
-) -> list[Violation]:
+def _check_b23_python(importer: str, file: Path, tree: ast.AST) -> list[Violation]:
     """B23 — scan chat widget Python modules' string literals."""
 
     if not _starts_with_any(importer, CHAT_WIDGET_PYTHON_PREFIXES):
@@ -1848,9 +1769,7 @@ def _b_clock_path_allowed(path: Path, repo_root: Path) -> bool:
     return False
 
 
-def _check_b_clock(
-    importer: str, file: Path, repo_root: Path, tree: ast.AST
-) -> list[Violation]:
+def _check_b_clock(importer: str, file: Path, repo_root: Path, tree: ast.AST) -> list[Violation]:
     """B-CLOCK — bans raw clock calls outside ``system.time_source``."""
 
     if _b_clock_path_allowed(file, repo_root):
@@ -1895,9 +1814,7 @@ def _check_b_clock(
 # bridges, and tests must propose transitions via
 # ``StateTransitionManager.propose`` and never flip the bit themselves.
 
-B32_FORBIDDEN_TARGET_ATTRS: frozenset[str] = frozenset(
-    {"_mode", "mode", "system_mode"}
-)
+B32_FORBIDDEN_TARGET_ATTRS: frozenset[str] = frozenset({"_mode", "mode", "system_mode"})
 
 B32_ALLOWED_PATH_PARTS: tuple[tuple[str, ...], ...] = (
     (
@@ -1931,9 +1848,7 @@ def _b32_rhs_is_system_mode(value: ast.expr) -> bool:
     return isinstance(base, ast.Name) and base.id == "SystemMode"
 
 
-def _check_b32(
-    importer: str, file: Path, repo_root: Path, tree: ast.AST
-) -> list[Violation]:
+def _check_b32(importer: str, file: Path, repo_root: Path, tree: ast.AST) -> list[Violation]:
     if _b32_path_allowed(file, repo_root):
         return []
     out: list[Violation] = []
@@ -2014,9 +1929,7 @@ def lint_repo(repo_root: Path) -> list[Violation]:
                 if v is not None:
                     violations.append(v)
         # INV-56 Triad Lock — typed-event constructor restrictions.
-        violations.extend(
-            _check_triad_event_constructions(importer, path, repo_root, tree)
-        )
+        violations.extend(_check_triad_event_constructions(importer, path, repo_root, tree))
         # B25 — Execution Gate intent factory restriction (INV-68).
         violations.extend(_check_b25(importer, path, repo_root, tree))
         # B26 — only the approval edge may stamp the cognitive producer.
@@ -2041,18 +1954,14 @@ def lint_repo(repo_root: Path) -> list[Violation]:
         # B36 — DecisionSigner construction restriction (Hardening-S1 item 2).
         violations.extend(_check_b36(importer, path, repo_root, tree))
         # B-DEV-INDIRA — Indira full-potential pin (PR-DEV-B).
-        violations.extend(
-            _check_b_dev_indira(importer, path, repo_root, tree)
-        )
+        violations.extend(_check_b_dev_indira(importer, path, repo_root, tree))
     # B23 — chat widget static files (HTML / JS).
     violations.extend(_check_b23_static(repo_root))
     return violations
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        description="DIX VISION authority lint (Phase E0)."
-    )
+    parser = argparse.ArgumentParser(description="DIX VISION authority lint (Phase E0).")
     parser.add_argument(
         "root",
         nargs="?",

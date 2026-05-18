@@ -292,9 +292,7 @@ def test_fetch_preserves_duplicate_seeds() -> None:
         runtime_factory=lambda cfg: fake,
     )
     crawler.connect()
-    docs = crawler.fetch(
-        ["seed_a", "seed_b", "seed_a"], ts_ns=42
-    )
+    docs = crawler.fetch(["seed_a", "seed_b", "seed_a"], ts_ns=42)
     assert len(docs) == 3
     assert [d.seed_id for d in docs] == ["seed_a", "seed_b", "seed_a"]
 
@@ -394,11 +392,7 @@ def test_three_run_byte_identical_replay() -> None:
             runtime_factory=lambda cfg: fake,
         )
         crawler.connect()
-        return tuple(
-            crawler.fetch(
-                ["seed_a", "seed_b"], ts_ns=1_700_000_000_000_000_000
-            )
-        )
+        return tuple(crawler.fetch(["seed_a", "seed_b"], ts_ns=1_700_000_000_000_000_000))
 
     r1 = _run()
     r2 = _run()
@@ -407,23 +401,15 @@ def test_three_run_byte_identical_replay() -> None:
 
 
 def test_result_to_raw_document_pure() -> None:
-    result = _FetchResult(
-        ok=True, title="t", body="b", status_code=200
-    )
-    a = _result_to_raw_document(
-        result, ts_ns=42, seed_id="seed_a", url="u"
-    )
-    b = _result_to_raw_document(
-        result, ts_ns=42, seed_id="seed_a", url="u"
-    )
+    result = _FetchResult(ok=True, title="t", body="b", status_code=200)
+    a = _result_to_raw_document(result, ts_ns=42, seed_id="seed_a", url="u")
+    b = _result_to_raw_document(result, ts_ns=42, seed_id="seed_a", url="u")
     assert a == b
 
 
 def test_result_to_raw_document_handles_none_status() -> None:
     result = _FetchResult(ok=False, error="timeout")
-    doc = _result_to_raw_document(
-        result, ts_ns=42, seed_id="seed_a", url="u"
-    )
+    doc = _result_to_raw_document(result, ts_ns=42, seed_id="seed_a", url="u")
     assert "status_code" not in doc.meta
     assert doc.meta["error"] == "timeout"
     assert doc.fetched_ok is False
@@ -456,10 +442,9 @@ def _toplevel_imports(tree: ast.Module) -> list[str]:
 def test_no_toplevel_playwright_import() -> None:
     """``playwright`` must be lazy-imported only inside ``connect``."""
     imports = _toplevel_imports(_module_ast())
-    assert not any(
-        n == "playwright" or n.startswith("playwright.")
-        for n in imports
-    ), f"toplevel playwright import found: {imports}"
+    assert not any(n == "playwright" or n.startswith("playwright.") for n in imports), (
+        f"toplevel playwright import found: {imports}"
+    )
 
 
 def test_no_engine_imports() -> None:
@@ -474,9 +459,7 @@ def test_no_engine_imports() -> None:
     )
     for imp in imports:
         for prefix in forbidden_prefixes:
-            assert not imp.startswith(prefix), (
-                f"forbidden engine import: {imp}"
-            )
+            assert not imp.startswith(prefix), f"forbidden engine import: {imp}"
 
 
 def test_no_clock_or_random_imports() -> None:
@@ -491,9 +474,7 @@ def test_no_clock_or_random_imports() -> None:
     }
     for imp in imports:
         root = imp.split(".")[0]
-        assert root not in forbidden, (
-            f"forbidden import: {imp}"
-        )
+        assert root not in forbidden, f"forbidden import: {imp}"
 
 
 def test_no_typed_event_construction() -> None:
@@ -511,6 +492,4 @@ def test_no_typed_event_construction() -> None:
                 name = func.id
             elif isinstance(func, ast.Attribute):
                 name = func.attr
-            assert name not in forbidden, (
-                f"forbidden typed-event construction: {name}"
-            )
+            assert name not in forbidden, f"forbidden typed-event construction: {name}"

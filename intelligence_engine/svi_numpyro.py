@@ -218,26 +218,19 @@ class NumpyroModelSpec:
     model_digest: str
 
     def __post_init__(self) -> None:
-        if not isinstance(self.num_sites, int) or isinstance(
-            self.num_sites, bool
-        ):
+        if not isinstance(self.num_sites, int) or isinstance(self.num_sites, bool):
             raise TypeError(
-                "NumpyroModelSpec.num_sites must be int, got "
-                f"{type(self.num_sites).__name__}"
+                f"NumpyroModelSpec.num_sites must be int, got {type(self.num_sites).__name__}"
             )
         if self.num_sites < MIN_NUM_SITES:
             raise ValueError(
-                "NumpyroModelSpec.num_sites must be >= "
-                f"{MIN_NUM_SITES!r}, got {self.num_sites!r}"
+                f"NumpyroModelSpec.num_sites must be >= {MIN_NUM_SITES!r}, got {self.num_sites!r}"
             )
         if self.num_sites > MAX_NUM_SITES:
             raise ValueError(
-                "NumpyroModelSpec.num_sites must be <= "
-                f"{MAX_NUM_SITES!r}, got {self.num_sites!r}"
+                f"NumpyroModelSpec.num_sites must be <= {MAX_NUM_SITES!r}, got {self.num_sites!r}"
             )
-        if not isinstance(self.num_observations, int) or isinstance(
-            self.num_observations, bool
-        ):
+        if not isinstance(self.num_observations, int) or isinstance(self.num_observations, bool):
             raise TypeError(
                 "NumpyroModelSpec.num_observations must be int, "
                 f"got {type(self.num_observations).__name__}"
@@ -254,9 +247,7 @@ class NumpyroModelSpec:
                 f"{self.num_observations!r}"
             )
         if not self.model_digest:
-            raise ValueError(
-                "NumpyroModelSpec.model_digest must be non-empty"
-            )
+            raise ValueError("NumpyroModelSpec.model_digest must be non-empty")
         if len(self.model_digest) > MAX_MODEL_DIGEST_LEN:
             raise ValueError(
                 "NumpyroModelSpec.model_digest must be <= "
@@ -289,9 +280,7 @@ class NumpyroInferenceArguments:
                 "be NumpyroInferenceKind, got "
                 f"{type(self.inference_kind).__name__}"
             )
-        if not isinstance(self.random_seed, int) or isinstance(
-            self.random_seed, bool
-        ):
+        if not isinstance(self.random_seed, int) or isinstance(self.random_seed, bool):
             raise TypeError(
                 "NumpyroInferenceArguments.random_seed must be "
                 f"int, got {type(self.random_seed).__name__}"
@@ -301,9 +290,7 @@ class NumpyroInferenceArguments:
                 "NumpyroInferenceArguments.random_seed must be "
                 f"non-negative, got {self.random_seed!r}"
             )
-        if not isinstance(self.num_samples, int) or isinstance(
-            self.num_samples, bool
-        ):
+        if not isinstance(self.num_samples, int) or isinstance(self.num_samples, bool):
             raise TypeError(
                 "NumpyroInferenceArguments.num_samples must be "
                 f"int, got {type(self.num_samples).__name__}"
@@ -318,9 +305,7 @@ class NumpyroInferenceArguments:
                 "NumpyroInferenceArguments.num_samples must be "
                 f"<= {MAX_NUM_SAMPLES!r}, got {self.num_samples!r}"
             )
-        if not isinstance(self.num_warmup, int) or isinstance(
-            self.num_warmup, bool
-        ):
+        if not isinstance(self.num_warmup, int) or isinstance(self.num_warmup, bool):
             raise TypeError(
                 "NumpyroInferenceArguments.num_warmup must be "
                 f"int, got {type(self.num_warmup).__name__}"
@@ -362,13 +347,11 @@ class NumpyroInferenceArguments:
         for k, v in self.meta.items():
             if not isinstance(k, str) or not k:
                 raise ValueError(
-                    "NumpyroInferenceArguments.meta keys must be "
-                    f"non-empty strings, got {k!r}"
+                    f"NumpyroInferenceArguments.meta keys must be non-empty strings, got {k!r}"
                 )
             if not isinstance(v, str) or not v:
                 raise ValueError(
-                    "NumpyroInferenceArguments.meta values must "
-                    f"be non-empty strings, got {v!r}"
+                    f"NumpyroInferenceArguments.meta values must be non-empty strings, got {v!r}"
                 )
 
 
@@ -391,14 +374,9 @@ class NumpyroSiteSummary:
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, str):
-            raise TypeError(
-                "NumpyroSiteSummary.name must be str, got "
-                f"{type(self.name).__name__}"
-            )
+            raise TypeError(f"NumpyroSiteSummary.name must be str, got {type(self.name).__name__}")
         if not self.name:
-            raise ValueError(
-                "NumpyroSiteSummary.name must be non-empty"
-            )
+            raise ValueError("NumpyroSiteSummary.name must be non-empty")
         if len(self.name) > MAX_SITE_NAME_LEN:
             raise ValueError(
                 "NumpyroSiteSummary.name must be <= "
@@ -411,44 +389,28 @@ class NumpyroSiteSummary:
             ("effective_sample_size", self.effective_sample_size),
             ("r_hat", self.r_hat),
         ):
-            if not isinstance(value, (int, float)) or isinstance(
-                value, bool
-            ):
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
                 raise TypeError(
-                    f"NumpyroSiteSummary.{label} must be float, "
-                    f"got {type(value).__name__}"
+                    f"NumpyroSiteSummary.{label} must be float, got {type(value).__name__}"
                 )
             if not math.isfinite(value):
-                raise ValueError(
-                    f"NumpyroSiteSummary.{label} must be finite, "
-                    f"got {value!r}"
-                )
+                raise ValueError(f"NumpyroSiteSummary.{label} must be finite, got {value!r}")
         if self.std < 0.0:
-            raise ValueError(
-                "NumpyroSiteSummary.std must be non-negative, got "
-                f"{self.std!r}"
-            )
+            raise ValueError(f"NumpyroSiteSummary.std must be non-negative, got {self.std!r}")
         if self.effective_sample_size < 0.0:
             raise ValueError(
                 "NumpyroSiteSummary.effective_sample_size must "
                 f"be non-negative, got {self.effective_sample_size!r}"
             )
         if self.r_hat < 0.0:
-            raise ValueError(
-                "NumpyroSiteSummary.r_hat must be non-negative, "
-                f"got {self.r_hat!r}"
-            )
-        if not isinstance(self.divergences, int) or isinstance(
-            self.divergences, bool
-        ):
+            raise ValueError(f"NumpyroSiteSummary.r_hat must be non-negative, got {self.r_hat!r}")
+        if not isinstance(self.divergences, int) or isinstance(self.divergences, bool):
             raise TypeError(
-                "NumpyroSiteSummary.divergences must be int, "
-                f"got {type(self.divergences).__name__}"
+                f"NumpyroSiteSummary.divergences must be int, got {type(self.divergences).__name__}"
             )
         if self.divergences < 0:
             raise ValueError(
-                "NumpyroSiteSummary.divergences must be "
-                f"non-negative, got {self.divergences!r}"
+                f"NumpyroSiteSummary.divergences must be non-negative, got {self.divergences!r}"
             )
 
 
@@ -467,10 +429,7 @@ class NumpyroInferenceResult:
                 f"tuple, got {type(self.site_summaries).__name__}"
             )
         if not self.site_summaries:
-            raise ValueError(
-                "NumpyroInferenceResult.site_summaries must be "
-                "non-empty"
-            )
+            raise ValueError("NumpyroInferenceResult.site_summaries must be non-empty")
         if len(self.site_summaries) > MAX_NUM_SITES:
             raise ValueError(
                 "NumpyroInferenceResult.site_summaries must have "
@@ -492,17 +451,14 @@ class NumpyroInferenceResult:
                     f"{summary.name!r}"
                 )
             seen_names.add(summary.name)
-        if not isinstance(
-            self.log_evidence, (int, float)
-        ) or isinstance(self.log_evidence, bool):
+        if not isinstance(self.log_evidence, (int, float)) or isinstance(self.log_evidence, bool):
             raise TypeError(
                 "NumpyroInferenceResult.log_evidence must be "
                 f"float, got {type(self.log_evidence).__name__}"
             )
         if not math.isfinite(self.log_evidence):
             raise ValueError(
-                "NumpyroInferenceResult.log_evidence must be "
-                f"finite, got {self.log_evidence!r}"
+                f"NumpyroInferenceResult.log_evidence must be finite, got {self.log_evidence!r}"
             )
 
 
@@ -519,23 +475,16 @@ class NumpyroInferenceRecord:
     meta: Mapping[str, str]
 
     def __post_init__(self) -> None:
-        if not isinstance(self.ts_ns, int) or isinstance(
-            self.ts_ns, bool
-        ):
+        if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
             raise TypeError(
-                "NumpyroInferenceRecord.ts_ns must be int, got "
-                f"{type(self.ts_ns).__name__}"
+                f"NumpyroInferenceRecord.ts_ns must be int, got {type(self.ts_ns).__name__}"
             )
         if self.ts_ns < 0:
             raise ValueError(
-                "NumpyroInferenceRecord.ts_ns must be "
-                f"non-negative, got {self.ts_ns!r}"
+                f"NumpyroInferenceRecord.ts_ns must be non-negative, got {self.ts_ns!r}"
             )
         if not self.analysis_id:
-            raise ValueError(
-                "NumpyroInferenceRecord.analysis_id must be "
-                "non-empty"
-            )
+            raise ValueError("NumpyroInferenceRecord.analysis_id must be non-empty")
         if len(self.analysis_id) > MAX_ANALYSIS_ID_LEN:
             raise ValueError(
                 "NumpyroInferenceRecord.analysis_id must be <= "
@@ -543,9 +492,7 @@ class NumpyroInferenceRecord:
                 f"{len(self.analysis_id)!r}"
             )
         if not self.source:
-            raise ValueError(
-                "NumpyroInferenceRecord.source must be non-empty"
-            )
+            raise ValueError("NumpyroInferenceRecord.source must be non-empty")
         if not isinstance(self.spec, NumpyroModelSpec):
             raise TypeError(
                 "NumpyroInferenceRecord.spec must be "
@@ -563,9 +510,7 @@ class NumpyroInferenceRecord:
                 f"a 16-hex-char digest, got "
                 f"{self.analysis_digest!r}"
             )
-        if not all(
-            c in "0123456789abcdef" for c in self.analysis_digest
-        ):
+        if not all(c in "0123456789abcdef" for c in self.analysis_digest):
             raise ValueError(
                 "NumpyroInferenceRecord.analysis_digest must be "
                 f"lowercase hex, got {self.analysis_digest!r}"
@@ -692,9 +637,7 @@ def _compute_analysis_digest(
     summary."""
 
     observations_str = ",".join(f"{x!r}" for x in arguments.observations)
-    meta_pairs = "|".join(
-        f"{k}={v}" for k, v in sorted(arguments.meta.items())
-    )
+    meta_pairs = "|".join(f"{k}={v}" for k, v in sorted(arguments.meta.items()))
     summaries_str = ";".join(
         (
             f"{s.name}:mean={s.mean!r}"
@@ -770,18 +713,15 @@ class NumpyroSVIAnalyser:
             )
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
             raise TypeError(
-                "NumpyroSVIAnalyser.analyse.ts_ns must be int, "
-                f"got {type(ts_ns).__name__}"
+                f"NumpyroSVIAnalyser.analyse.ts_ns must be int, got {type(ts_ns).__name__}"
             )
         if ts_ns < 0:
             raise NumpyroAnalyserConfigError(
-                "NumpyroSVIAnalyser.analyse.ts_ns must be "
-                f"non-negative, got {ts_ns!r}"
+                f"NumpyroSVIAnalyser.analyse.ts_ns must be non-negative, got {ts_ns!r}"
             )
         if not analysis_id:
             raise NumpyroAnalyserConfigError(
-                "NumpyroSVIAnalyser.analyse.analysis_id must be "
-                "non-empty"
+                "NumpyroSVIAnalyser.analyse.analysis_id must be non-empty"
             )
         if len(analysis_id) > MAX_ANALYSIS_ID_LEN:
             raise NumpyroAnalyserConfigError(
@@ -790,10 +730,7 @@ class NumpyroSVIAnalyser:
                 f"{len(analysis_id)!r}"
             )
 
-        cb = (
-            callback if callback is not None
-            else null_numpyro_inference_callback()
-        )
+        cb = callback if callback is not None else null_numpyro_inference_callback()
         if not isinstance(cb, NumpyroInferenceCallback):
             raise TypeError(
                 "NumpyroSVIAnalyser.analyse.callback must "

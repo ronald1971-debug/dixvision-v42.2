@@ -306,7 +306,9 @@ def test_extra_meta_must_be_mapping_or_none():
     result = _make_result()
     with pytest.raises(KillUnderperformersInputError):
         build_demotion_recommendations(
-            result=result, ts_ns=1, extra_meta=[("k", "v")]  # type: ignore[arg-type]
+            result=result,
+            ts_ns=1,
+            extra_meta=[("k", "v")],  # type: ignore[arg-type]
         )
 
 
@@ -314,7 +316,9 @@ def test_extra_meta_keys_must_be_str():
     result = _make_result()
     with pytest.raises(KillUnderperformersInputError):
         build_demotion_recommendations(
-            result=result, ts_ns=1, extra_meta={1: "v"}  # type: ignore[dict-item]
+            result=result,
+            ts_ns=1,
+            extra_meta={1: "v"},  # type: ignore[dict-item]
         )
 
 
@@ -322,26 +326,23 @@ def test_extra_meta_values_must_be_str():
     result = _make_result()
     with pytest.raises(KillUnderperformersInputError):
         build_demotion_recommendations(
-            result=result, ts_ns=1, extra_meta={"k": 1}  # type: ignore[dict-item]
+            result=result,
+            ts_ns=1,
+            extra_meta={"k": 1},  # type: ignore[dict-item]
         )
 
 
 def test_extra_meta_keys_cannot_be_empty():
     result = _make_result()
     with pytest.raises(KillUnderperformersInputError):
-        build_demotion_recommendations(
-            result=result, ts_ns=1, extra_meta={"": "v"}
-        )
+        build_demotion_recommendations(result=result, ts_ns=1, extra_meta={"": "v"})
 
 
 def test_extra_meta_cannot_collide_with_reserved():
     result = _make_result()
-    for key in ("kind", "arena_id", "arena_digest", "pnl_mean_usd",
-                "max_drawdown_usd"):
+    for key in ("kind", "arena_id", "arena_digest", "pnl_mean_usd", "max_drawdown_usd"):
         with pytest.raises(KillUnderperformersInputError):
-            build_demotion_recommendations(
-                result=result, ts_ns=1, extra_meta={key: "x"}
-            )
+            build_demotion_recommendations(result=result, ts_ns=1, extra_meta={key: "x"})
 
 
 def test_extra_meta_none_is_allowed():
@@ -396,11 +397,7 @@ def test_recommendation_order_matches_contestant_order():
     result = _make_result(n=6, survivor_count=3)
     recs = build_demotion_recommendations(result=result, ts_ns=1)
     survivors = set(result.survivors)
-    expected = [
-        c.strategy_id
-        for c in result.contestants
-        if c.strategy_id not in survivors
-    ]
+    expected = [c.strategy_id for c in result.contestants if c.strategy_id not in survivors]
     actual = [r.strategy_id for r in recs]
     assert actual == expected
 
@@ -479,7 +476,7 @@ def test_recommendation_id_format():
     for r in recs:
         assert r.recommendation_id.startswith("demote-")
         # 16 hex chars after the prefix (BLAKE2b-8)
-        suffix = r.recommendation_id[len("demote-"):]
+        suffix = r.recommendation_id[len("demote-") :]
         assert len(suffix) == 16
         int(suffix, 16)  # hex check
 
@@ -514,9 +511,7 @@ def test_rationale_non_empty():
 
 def test_meta_is_tuple():
     result = _make_result()
-    recs = build_demotion_recommendations(
-        result=result, ts_ns=1, extra_meta={"a": "1"}
-    )
+    recs = build_demotion_recommendations(result=result, ts_ns=1, extra_meta={"a": "1"})
     for r in recs:
         assert isinstance(r.meta, tuple)
 
@@ -649,12 +644,8 @@ def test_same_arena_different_ts_ns_same_target():
 def test_extra_meta_key_order_does_not_matter():
     """Reorder extra_meta keys → identical recommendation tuple."""
     result = _make_result()
-    a = build_demotion_recommendations(
-        result=result, ts_ns=1, extra_meta={"a": "1", "b": "2"}
-    )
-    b = build_demotion_recommendations(
-        result=result, ts_ns=1, extra_meta={"b": "2", "a": "1"}
-    )
+    a = build_demotion_recommendations(result=result, ts_ns=1, extra_meta={"a": "1", "b": "2"})
+    b = build_demotion_recommendations(result=result, ts_ns=1, extra_meta={"b": "2", "a": "1"})
     assert a == b
 
 
@@ -733,10 +724,7 @@ def test_no_eliminations_returns_empty():
 
 def test_eliminated_strict_partition():
     """Eliminated set = contestants \\ survivors, exactly."""
-    contestants = [
-        _make_contestant(f"strat-{i:03d}", pnl_mean=float(i))
-        for i in range(5)
-    ]
+    contestants = [_make_contestant(f"strat-{i:03d}", pnl_mean=float(i)) for i in range(5)]
     config = ArenaConfig(
         arena_id="arena-strict-part",
         tournament_size=2,

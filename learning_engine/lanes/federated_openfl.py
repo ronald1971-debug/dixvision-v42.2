@@ -395,9 +395,7 @@ def _contributions_per_round(
                 f"round {i} has {len(by_round[i])} contributors, "
                 f"plan.min_collaborators_per_round={plan.min_collaborators_per_round}",
             )
-    return tuple(
-        tuple(canonical_sort_updates(by_round[i])) for i in range(plan.n_rounds)
-    )
+    return tuple(tuple(canonical_sort_updates(by_round[i])) for i in range(plan.n_rounds))
 
 
 def execute_plan(

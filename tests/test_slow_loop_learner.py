@@ -50,9 +50,7 @@ def test_positive_reward_pushes_value_upward_within_step() -> None:
         {"alpha": _bounds(step=0.1, init=0.0)},
         ema_alpha=1.0,  # collapse EMA → straight reward
     )
-    learner.submit(
-        FeedbackSample(ts_unix_s=1, parameter="alpha", reward=5.0)
-    )
+    learner.submit(FeedbackSample(ts_unix_s=1, parameter="alpha", reward=5.0))
     snap = learner.tick()
     # ema = 5.0, magnitude clamped to step=0.1, sign positive ⇒ 0.0+0.1=0.1
     assert snap.values["alpha"] == pytest.approx(0.1)
@@ -65,9 +63,7 @@ def test_negative_reward_pushes_value_downward() -> None:
         {"alpha": _bounds(step=0.1, init=0.0)},
         ema_alpha=1.0,
     )
-    learner.submit(
-        FeedbackSample(ts_unix_s=1, parameter="alpha", reward=-2.0)
-    )
+    learner.submit(FeedbackSample(ts_unix_s=1, parameter="alpha", reward=-2.0))
     snap = learner.tick()
     assert snap.values["alpha"] == pytest.approx(-0.1)
 
@@ -77,9 +73,7 @@ def test_value_clamps_at_high_bound() -> None:
         {"alpha": _bounds(lo=0.0, hi=0.5, step=1.0, init=0.4)},
         ema_alpha=1.0,
     )
-    learner.submit(
-        FeedbackSample(ts_unix_s=1, parameter="alpha", reward=10.0)
-    )
+    learner.submit(FeedbackSample(ts_unix_s=1, parameter="alpha", reward=10.0))
     snap = learner.tick()
     assert snap.values["alpha"] == 0.5
 
@@ -89,25 +83,19 @@ def test_value_clamps_at_low_bound() -> None:
         {"alpha": _bounds(lo=-0.5, hi=0.5, step=1.0, init=-0.4)},
         ema_alpha=1.0,
     )
-    learner.submit(
-        FeedbackSample(ts_unix_s=1, parameter="alpha", reward=-10.0)
-    )
+    learner.submit(FeedbackSample(ts_unix_s=1, parameter="alpha", reward=-10.0))
     snap = learner.tick()
     assert snap.values["alpha"] == -0.5
 
 
 def test_freeze_policy_blocks_updates_but_drains_buffer() -> None:
-    policy = LearningEvolutionFreezePolicy(
-        mode=SystemMode.PAPER, operator_override=False
-    )
+    policy = LearningEvolutionFreezePolicy(mode=SystemMode.PAPER, operator_override=False)
     learner = SlowLoopLearner(
         {"alpha": _bounds(step=0.1, init=0.0)},
         freeze_policy=policy,
         ema_alpha=1.0,
     )
-    learner.submit(
-        FeedbackSample(ts_unix_s=1, parameter="alpha", reward=5.0)
-    )
+    learner.submit(FeedbackSample(ts_unix_s=1, parameter="alpha", reward=5.0))
     snap = learner.tick()
     assert snap.frozen is True
     assert snap.values["alpha"] == 0.0  # unchanged
@@ -118,17 +106,13 @@ def test_freeze_policy_blocks_updates_but_drains_buffer() -> None:
 
 
 def test_live_mode_with_override_unfreezes() -> None:
-    policy = LearningEvolutionFreezePolicy(
-        mode=SystemMode.LIVE, operator_override=True
-    )
+    policy = LearningEvolutionFreezePolicy(mode=SystemMode.LIVE, operator_override=True)
     learner = SlowLoopLearner(
         {"alpha": _bounds(step=0.1, init=0.0)},
         freeze_policy=policy,
         ema_alpha=1.0,
     )
-    learner.submit(
-        FeedbackSample(ts_unix_s=1, parameter="alpha", reward=5.0)
-    )
+    learner.submit(FeedbackSample(ts_unix_s=1, parameter="alpha", reward=5.0))
     snap = learner.tick()
     assert snap.frozen is False
     assert snap.values["alpha"] == pytest.approx(0.1)
@@ -136,9 +120,7 @@ def test_live_mode_with_override_unfreezes() -> None:
 
 def test_unknown_parameter_is_rejected() -> None:
     learner = SlowLoopLearner({"alpha": _bounds()})
-    accepted = learner.submit(
-        FeedbackSample(ts_unix_s=1, parameter="bogus", reward=1.0)
-    )
+    accepted = learner.submit(FeedbackSample(ts_unix_s=1, parameter="bogus", reward=1.0))
     assert accepted is False
 
 
@@ -174,11 +156,7 @@ def test_max_samples_cap_truncates_buffer_fifo() -> None:
         max_samples_per_param=2,
     )
     for i in range(5):
-        learner.submit(
-            FeedbackSample(
-                ts_unix_s=i, parameter="alpha", reward=float(i)
-            )
-        )
+        learner.submit(FeedbackSample(ts_unix_s=i, parameter="alpha", reward=float(i)))
     snap = learner.tick()
     # Only the last 2 retained samples were folded into EMA; the
     # buffer must have been bounded.
@@ -199,16 +177,12 @@ def test_invalid_exploration_eps_rejected() -> None:
 
 def test_feedback_sample_rejects_bad_reward() -> None:
     with pytest.raises(ValueError):
-        FeedbackSample(
-            ts_unix_s=1, parameter="alpha", reward=float("inf")
-        )
+        FeedbackSample(ts_unix_s=1, parameter="alpha", reward=float("inf"))
 
 
 def test_feedback_sample_rejects_non_positive_weight() -> None:
     with pytest.raises(ValueError):
-        FeedbackSample(
-            ts_unix_s=1, parameter="alpha", reward=0.0, weight=0.0
-        )
+        FeedbackSample(ts_unix_s=1, parameter="alpha", reward=0.0, weight=0.0)
 
 
 def test_parameter_bounds_validation() -> None:
@@ -225,9 +199,7 @@ def test_reset_restores_initial_state() -> None:
         {"alpha": _bounds(init=0.2, step=0.1)},
         ema_alpha=1.0,
     )
-    learner.submit(
-        FeedbackSample(ts_unix_s=1, parameter="alpha", reward=5.0)
-    )
+    learner.submit(FeedbackSample(ts_unix_s=1, parameter="alpha", reward=5.0))
     learner.tick()
     learner.reset()
     snap = learner.tick()

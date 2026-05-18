@@ -64,11 +64,7 @@ class PumpFunAdapter(LiveAdapterBase):
                 missing.append("DIX_SOLANA_RPC_URL")
             if self._keypair_path is None:
                 missing.append("DIX_PUMPFUN_KEYPAIR_PATH")
-            self._detail = (
-                "missing credentials: "
-                + ", ".join(missing)
-                + " — scaffold mode active"
-            )
+            self._detail = "missing credentials: " + ", ".join(missing) + " — scaffold mode active"
             return
         self._state = AdapterState.CONNECTING
         self._detail = "awaiting Solana RPC handshake"

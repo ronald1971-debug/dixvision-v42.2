@@ -65,9 +65,7 @@ def fresh_queue() -> Iterator[None]:
 
 
 def test_list_returns_pending_only_by_default(client: TestClient) -> None:
-    submitted = STATE.chat_runtime.approval_queue.submit(
-        thread_id="t1", proposal=_proposal()
-    )
+    submitted = STATE.chat_runtime.approval_queue.submit(thread_id="t1", proposal=_proposal())
     res = client.get("/api/cognitive/chat/approvals")
     assert res.status_code == 200
     data = res.json()
@@ -80,9 +78,7 @@ def test_list_excludes_decided_when_default(client: TestClient) -> None:
     queue = STATE.chat_runtime.approval_queue
     queue.submit(thread_id="t1", proposal=_proposal("AAA"))
     decided = queue.submit(thread_id="t1", proposal=_proposal("BBB"))
-    queue.decide(
-        request_id=decided.request_id, approved=False, decided_by="op1"
-    )
+    queue.decide(request_id=decided.request_id, approved=False, decided_by="op1")
     res = client.get("/api/cognitive/chat/approvals")
     assert res.status_code == 200
     data = res.json()
@@ -95,12 +91,8 @@ def test_list_include_decided_returns_full_history(
     queue = STATE.chat_runtime.approval_queue
     pending = queue.submit(thread_id="t1", proposal=_proposal("AAA"))
     decided = queue.submit(thread_id="t1", proposal=_proposal("BBB"))
-    queue.decide(
-        request_id=decided.request_id, approved=False, decided_by="op1"
-    )
-    res = client.get(
-        "/api/cognitive/chat/approvals", params={"include_decided": "true"}
-    )
+    queue.decide(request_id=decided.request_id, approved=False, decided_by="op1")
+    res = client.get("/api/cognitive/chat/approvals", params={"include_decided": "true"})
     assert res.status_code == 200
     data = res.json()
     ids = [r["request_id"] for r in data["requests"]]
@@ -109,9 +101,7 @@ def test_list_include_decided_returns_full_history(
 
 
 def test_approve_flips_row_and_writes_ledger(client: TestClient) -> None:
-    submitted = STATE.chat_runtime.approval_queue.submit(
-        thread_id="t1", proposal=_proposal()
-    )
+    submitted = STATE.chat_runtime.approval_queue.submit(thread_id="t1", proposal=_proposal())
     ledger_before = len(STATE.governance.ledger)
     res = client.post(
         f"/api/cognitive/chat/approvals/{submitted.request_id}/approve",
@@ -133,9 +123,7 @@ def test_approve_flips_row_and_writes_ledger(client: TestClient) -> None:
 
 
 def test_approve_with_empty_body_uses_defaults(client: TestClient) -> None:
-    submitted = STATE.chat_runtime.approval_queue.submit(
-        thread_id="t1", proposal=_proposal()
-    )
+    submitted = STATE.chat_runtime.approval_queue.submit(thread_id="t1", proposal=_proposal())
     res = client.post(
         f"/api/cognitive/chat/approvals/{submitted.request_id}/approve",
     )
@@ -154,9 +142,7 @@ def test_approve_unknown_id_returns_404(client: TestClient) -> None:
 
 
 def test_approve_already_decided_returns_409(client: TestClient) -> None:
-    submitted = STATE.chat_runtime.approval_queue.submit(
-        thread_id="t1", proposal=_proposal()
-    )
+    submitted = STATE.chat_runtime.approval_queue.submit(thread_id="t1", proposal=_proposal())
     STATE.chat_runtime.approval_queue.decide(
         request_id=submitted.request_id, approved=False, decided_by="other"
     )
@@ -168,9 +154,7 @@ def test_approve_already_decided_returns_409(client: TestClient) -> None:
 
 
 def test_reject_flips_row_and_writes_ledger(client: TestClient) -> None:
-    submitted = STATE.chat_runtime.approval_queue.submit(
-        thread_id="t1", proposal=_proposal()
-    )
+    submitted = STATE.chat_runtime.approval_queue.submit(thread_id="t1", proposal=_proposal())
     ledger_before = len(STATE.governance.ledger)
     res = client.post(
         f"/api/cognitive/chat/approvals/{submitted.request_id}/reject",
@@ -194,9 +178,7 @@ def test_reject_unknown_id_returns_404(client: TestClient) -> None:
 
 
 def test_reject_already_decided_returns_409(client: TestClient) -> None:
-    submitted = STATE.chat_runtime.approval_queue.submit(
-        thread_id="t1", proposal=_proposal()
-    )
+    submitted = STATE.chat_runtime.approval_queue.submit(thread_id="t1", proposal=_proposal())
     STATE.chat_runtime.approval_queue.decide(
         request_id=submitted.request_id, approved=True, decided_by="other"
     )

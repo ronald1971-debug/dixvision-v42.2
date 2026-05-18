@@ -193,9 +193,7 @@ class IndicatorSpec:
                 raise IndicatorError("IndicatorSpec.params values must be int/float")
         if len(self.params) > MAX_META_KEYS:
             raise IndicatorError("IndicatorSpec.params has too many keys")
-        sorted_params = MappingProxyType(
-            {k: float(self.params[k]) for k in sorted(self.params)}
-        )
+        sorted_params = MappingProxyType({k: float(self.params[k]) for k in sorted(self.params)})
         object.__setattr__(self, "params", sorted_params)
 
 
@@ -640,9 +638,7 @@ def compute_adx(bars: Sequence[OHLCVBar], *, period: int = DEFAULT_ADX_PERIOD) -
             prev = (prev * (period - 1) + value) / period
             adx[i] = prev
     meta = {"period": str(period)}
-    adx_series = IndicatorSeries(
-        name=IndicatorName.ADX, column="adx", values=tuple(adx), meta=meta
-    )
+    adx_series = IndicatorSeries(name=IndicatorName.ADX, column="adx", values=tuple(adx), meta=meta)
     plus_di_series = IndicatorSeries(
         name=IndicatorName.ADX, column="plus_di", values=tuple(plus_di), meta=meta
     )
@@ -689,7 +685,7 @@ def compute_bbands(
         window = closes[i - period + 1 : i + 1]
         mean = middle[i]
         variance = sum((x - mean) ** 2 for x in window) / period
-        sd = variance ** 0.5
+        sd = variance**0.5
         lower[i] = mean - stdev * sd
         upper[i] = mean + stdev * sd
     meta = {"period": str(period), "stdev": _format_float(stdev)}
@@ -901,12 +897,8 @@ def compute_indicator(
     if spec.name is IndicatorName.MACD:
         return compute_macd(
             bars,
-            fast=_coerce_period(
-                params.get("fast"), default=DEFAULT_MACD_FAST, name="macd.fast"
-            ),
-            slow=_coerce_period(
-                params.get("slow"), default=DEFAULT_MACD_SLOW, name="macd.slow"
-            ),
+            fast=_coerce_period(params.get("fast"), default=DEFAULT_MACD_FAST, name="macd.fast"),
+            slow=_coerce_period(params.get("slow"), default=DEFAULT_MACD_SLOW, name="macd.slow"),
             signal=_coerce_period(
                 params.get("signal"), default=DEFAULT_MACD_SIGNAL, name="macd.signal"
             ),

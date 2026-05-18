@@ -40,12 +40,8 @@ class PatchStage(StrEnum):
 
 _LEGAL: dict[PatchStage, frozenset[PatchStage]] = {
     PatchStage.PROPOSED: frozenset({PatchStage.SANDBOX, PatchStage.REJECTED}),
-    PatchStage.SANDBOX: frozenset(
-        {PatchStage.STATIC_ANALYSIS, PatchStage.REJECTED}
-    ),
-    PatchStage.STATIC_ANALYSIS: frozenset(
-        {PatchStage.BACKTEST, PatchStage.REJECTED}
-    ),
+    PatchStage.SANDBOX: frozenset({PatchStage.STATIC_ANALYSIS, PatchStage.REJECTED}),
+    PatchStage.STATIC_ANALYSIS: frozenset({PatchStage.BACKTEST, PatchStage.REJECTED}),
     PatchStage.BACKTEST: frozenset({PatchStage.SHADOW, PatchStage.REJECTED}),
     PatchStage.SHADOW: frozenset({PatchStage.CANARY, PatchStage.REJECTED}),
     PatchStage.CANARY: frozenset(
@@ -56,9 +52,7 @@ _LEGAL: dict[PatchStage, frozenset[PatchStage]] = {
     PatchStage.ROLLED_BACK: frozenset(),
 }
 
-LEGAL_PATCH_TRANSITIONS: Mapping[PatchStage, frozenset[PatchStage]] = (
-    MappingProxyType(_LEGAL)
-)
+LEGAL_PATCH_TRANSITIONS: Mapping[PatchStage, frozenset[PatchStage]] = MappingProxyType(_LEGAL)
 
 
 class PatchPipelineError(RuntimeError):
@@ -137,9 +131,7 @@ class PatchPipelineProtocol(Protocol):
         reason: str,
     ) -> PatchRecord: ...
 
-    def record_verdict(
-        self, *, patch_id: str, verdict: StageVerdict
-    ) -> None: ...
+    def record_verdict(self, *, patch_id: str, verdict: StageVerdict) -> None: ...
 
     def all_in(self, stage: PatchStage) -> tuple[PatchRecord, ...]: ...
 

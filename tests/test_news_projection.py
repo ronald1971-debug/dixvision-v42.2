@@ -260,12 +260,7 @@ def test_module_imports_belief_state_contract() -> None:
     invariant testable independently of the lint module."""
     import ast
 
-    src_path = (
-        REPO_ROOT
-        / "intelligence_engine"
-        / "news"
-        / "news_projection.py"
-    )
+    src_path = REPO_ROOT / "intelligence_engine" / "news" / "news_projection.py"
     tree = ast.parse(src_path.read_text())
     imports_belief_state = False
     for node in ast.walk(tree):

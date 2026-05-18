@@ -172,22 +172,16 @@ class ExtractorResult:
                 f"got {self.source!r}"
             )
         if self.succeeded and not self.body:
-            raise ValueError(
-                "ExtractorResult.succeeded=True requires non-empty body"
-            )
+            raise ValueError("ExtractorResult.succeeded=True requires non-empty body")
         if not self.succeeded and self.body:
-            raise ValueError(
-                "ExtractorResult.succeeded=False requires empty body"
-            )
+            raise ValueError("ExtractorResult.succeeded=False requires empty body")
         if len(self.title) > MAX_TITLE_LEN:
             raise ValueError(
-                "ExtractorResult.title exceeds "
-                f"{MAX_TITLE_LEN} chars; truncate before construction"
+                f"ExtractorResult.title exceeds {MAX_TITLE_LEN} chars; truncate before construction"
             )
         if len(self.body) > MAX_BODY_LEN:
             raise ValueError(
-                "ExtractorResult.body exceeds "
-                f"{MAX_BODY_LEN} chars; truncate before construction"
+                f"ExtractorResult.body exceeds {MAX_BODY_LEN} chars; truncate before construction"
             )
         # Force a frozen MappingProxyType view with sorted keys so two
         # results that differ only in dict insertion order compare equal
@@ -382,11 +376,7 @@ class _Newspaper3kExtractor:
             title_raw: str = str(getattr(article, "title", "") or "")
             body_raw: str = str(getattr(article, "text", "") or "")
             meta_lang_raw = getattr(article, "meta_lang", "") or ""
-            language = (
-                str(meta_lang_raw).strip().lower()
-                if isinstance(meta_lang_raw, str)
-                else ""
-            )
+            language = str(meta_lang_raw).strip().lower() if isinstance(meta_lang_raw, str) else ""
         except Exception as exc:  # noqa: BLE001
             return _empty_result(
                 "newspaper3k",
@@ -599,9 +589,7 @@ class ExtractorPipeline:
 
     def __post_init__(self) -> None:
         if not self.extractors:
-            raise ValueError(
-                "ExtractorPipeline requires at least one extractor"
-            )
+            raise ValueError("ExtractorPipeline requires at least one extractor")
 
     def extract(
         self,
@@ -651,15 +639,9 @@ def build_default_pipeline(
 
     return ExtractorPipeline(
         extractors=(
-            trafilatura
-            if trafilatura is not None
-            else trafilatura_extractor_factory(),
-            newspaper3k
-            if newspaper3k is not None
-            else newspaper3k_extractor_factory(),
-            readability
-            if readability is not None
-            else readability_extractor_factory(),
+            trafilatura if trafilatura is not None else trafilatura_extractor_factory(),
+            newspaper3k if newspaper3k is not None else newspaper3k_extractor_factory(),
+            readability if readability is not None else readability_extractor_factory(),
         ),
     )
 

@@ -84,14 +84,9 @@ class MacroSnapshot:
         if self.ts_ns <= 0:
             raise ValueError("MacroSnapshot.ts_ns must be positive")
         if not (0.0 <= self.vol_index <= 100.0):
-            raise ValueError(
-                f"MacroSnapshot.vol_index must be in [0, 100], "
-                f"got {self.vol_index!r}"
-            )
+            raise ValueError(f"MacroSnapshot.vol_index must be in [0, 100], got {self.vol_index!r}")
         if not (-1.0 <= self.breadth <= 1.0):
-            raise ValueError(
-                f"MacroSnapshot.breadth must be in [-1, 1], got {self.breadth!r}"
-            )
+            raise ValueError(f"MacroSnapshot.breadth must be in [-1, 1], got {self.breadth!r}")
         if self.credit_spread_bps < 0:
             raise ValueError(
                 "MacroSnapshot.credit_spread_bps must be non-negative, "
@@ -99,8 +94,7 @@ class MacroSnapshot:
             )
         if not (-3.0 <= self.dollar_strength <= 3.0):
             raise ValueError(
-                "MacroSnapshot.dollar_strength must be in [-3, 3], "
-                f"got {self.dollar_strength!r}"
+                f"MacroSnapshot.dollar_strength must be in [-3, 3], got {self.dollar_strength!r}"
             )
         if not (0.0 <= self.return_correlation <= 1.0):
             raise ValueError(
@@ -131,15 +125,12 @@ class MacroRegimeReading:
     def __post_init__(self) -> None:
         if not (0.0 <= self.confidence <= 1.0):
             raise ValueError(
-                f"MacroRegimeReading.confidence must be in [0, 1], "
-                f"got {self.confidence!r}"
+                f"MacroRegimeReading.confidence must be in [0, 1], got {self.confidence!r}"
             )
         if not self.rule_fired:
             raise ValueError("MacroRegimeReading.rule_fired must be non-empty")
         if self.snapshot_ts_ns <= 0:
-            raise ValueError(
-                "MacroRegimeReading.snapshot_ts_ns must be positive"
-            )
+            raise ValueError("MacroRegimeReading.snapshot_ts_ns must be positive")
 
 
 __all__ = [

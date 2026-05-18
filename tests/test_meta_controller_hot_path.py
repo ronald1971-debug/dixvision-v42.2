@@ -220,9 +220,7 @@ def test_latency_fallback_propagates_through_harness() -> None:
 
 def test_two_harnesses_produce_identical_streams() -> None:
     """Same config + same input sequence ⇒ same state + same ledger."""
-    inputs = [
-        _step_kwargs(ts_ns=100 + i, elapsed_ns=1_000) for i in range(5)
-    ]
+    inputs = [_step_kwargs(ts_ns=100 + i, elapsed_ns=1_000) for i in range(5)]
 
     runs = []
     for _ in range(2):

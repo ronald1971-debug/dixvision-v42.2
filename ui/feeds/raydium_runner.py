@@ -140,9 +140,7 @@ class RaydiumPoolFeedRunner:
         if thread is not None:
             thread.join(timeout=5.0)
         with self._lock:
-            if self._thread is thread and (
-                thread is None or not thread.is_alive()
-            ):
+            if self._thread is thread and (thread is None or not thread.is_alive()):
                 self._thread = None
         return self.status()
 

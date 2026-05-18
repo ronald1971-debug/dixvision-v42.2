@@ -185,9 +185,7 @@ def test_ast_no_engine_cross_imports():
     )
     for name in _iter_imports(_module_ast()):
         for prefix in forbidden_prefixes:
-            assert not name.startswith(prefix), (
-                f"forbidden engine import: {name}"
-            )
+            assert not name.startswith(prefix), f"forbidden engine import: {name}"
 
 
 def test_ast_no_clock_text():
@@ -276,14 +274,18 @@ def test_config_rejects_oversized_arena_id():
 def test_config_rejects_tournament_size_below_min():
     with pytest.raises(ArenaConfigError):
         ArenaConfig(
-            arena_id="a", tournament_size=MIN_TOURNAMENT_SIZE - 1, n_winners=1,
+            arena_id="a",
+            tournament_size=MIN_TOURNAMENT_SIZE - 1,
+            n_winners=1,
         )
 
 
 def test_config_rejects_tournament_size_above_max():
     with pytest.raises(ArenaConfigError):
         ArenaConfig(
-            arena_id="a", tournament_size=MAX_TOURNAMENT_SIZE + 1, n_winners=1,
+            arena_id="a",
+            tournament_size=MAX_TOURNAMENT_SIZE + 1,
+            n_winners=1,
         )
 
 
@@ -305,7 +307,9 @@ def test_config_rejects_negative_elitism():
 def test_config_rejects_elitism_above_max():
     with pytest.raises(ArenaConfigError):
         ArenaConfig(
-            arena_id="a", tournament_size=2, n_winners=1,
+            arena_id="a",
+            tournament_size=2,
+            n_winners=1,
             elitism_count=MAX_ELITISM_COUNT + 1,
         )
 
@@ -313,14 +317,19 @@ def test_config_rejects_elitism_above_max():
 def test_config_rejects_negative_drawdown_weight():
     with pytest.raises(ArenaConfigError):
         ArenaConfig(
-            arena_id="a", tournament_size=2, n_winners=1, drawdown_weight=-1.0,
+            arena_id="a",
+            tournament_size=2,
+            n_winners=1,
+            drawdown_weight=-1.0,
         )
 
 
 def test_config_rejects_non_finite_drawdown_weight():
     with pytest.raises(ArenaConfigError):
         ArenaConfig(
-            arena_id="a", tournament_size=2, n_winners=1,
+            arena_id="a",
+            tournament_size=2,
+            n_winners=1,
             drawdown_weight=float("inf"),
         )
 
@@ -328,7 +337,9 @@ def test_config_rejects_non_finite_drawdown_weight():
 def test_config_rejects_bool_tournament_size():
     with pytest.raises(ArenaConfigError):
         ArenaConfig(
-            arena_id="a", tournament_size=True, n_winners=1,  # type: ignore[arg-type]
+            arena_id="a",
+            tournament_size=True,
+            n_winners=1,  # type: ignore[arg-type]
         )
 
 
@@ -390,7 +401,9 @@ def test_bracket_rejects_winner_outside_candidates():
 def test_bracket_rejects_negative_id():
     with pytest.raises(ArenaInputError):
         TournamentBracket(
-            bracket_id=-1, candidate_ids=("a",), winner_id="a",
+            bracket_id=-1,
+            candidate_ids=("a",),
+            winner_id="a",
             winner_fitness=0.0,
         )
 
@@ -398,14 +411,19 @@ def test_bracket_rejects_negative_id():
 def test_bracket_rejects_empty_candidates():
     with pytest.raises(ArenaInputError):
         TournamentBracket(
-            bracket_id=0, candidate_ids=(), winner_id="a", winner_fitness=0.0,
+            bracket_id=0,
+            candidate_ids=(),
+            winner_id="a",
+            winner_fitness=0.0,
         )
 
 
 def test_bracket_rejects_non_finite_fitness():
     with pytest.raises(ArenaInputError):
         TournamentBracket(
-            bracket_id=0, candidate_ids=("a",), winner_id="a",
+            bracket_id=0,
+            candidate_ids=("a",),
+            winner_id="a",
             winner_fitness=float("nan"),
         )
 
@@ -419,10 +437,15 @@ def test_result_rejects_bad_digest_length():
     contestants = tuple(_make_contestants(2))
     with pytest.raises(ArenaInputError):
         TournamentResult(
-            arena_id="a", ts_ns=1, seed=1,
+            arena_id="a",
+            ts_ns=1,
+            seed=1,
             contestants=contestants,
-            elites=(), tournament_winners=(), survivors=(),
-            brackets=(), arena_digest="abc",
+            elites=(),
+            tournament_winners=(),
+            survivors=(),
+            brackets=(),
+            arena_digest="abc",
         )
 
 
@@ -430,10 +453,15 @@ def test_result_rejects_non_hex_digest():
     contestants = tuple(_make_contestants(2))
     with pytest.raises(ArenaInputError):
         TournamentResult(
-            arena_id="a", ts_ns=1, seed=1,
+            arena_id="a",
+            ts_ns=1,
+            seed=1,
             contestants=contestants,
-            elites=(), tournament_winners=(), survivors=(),
-            brackets=(), arena_digest="zzzzzzzzzzzzzzzz",
+            elites=(),
+            tournament_winners=(),
+            survivors=(),
+            brackets=(),
+            arena_digest="zzzzzzzzzzzzzzzz",
         )
 
 
@@ -441,10 +469,15 @@ def test_result_rejects_unknown_survivor():
     contestants = tuple(_make_contestants(2))
     with pytest.raises(ArenaInputError):
         TournamentResult(
-            arena_id="a", ts_ns=1, seed=1,
+            arena_id="a",
+            ts_ns=1,
+            seed=1,
             contestants=contestants,
-            elites=(), tournament_winners=(), survivors=("ghost",),
-            brackets=(), arena_digest="0" * 16,
+            elites=(),
+            tournament_winners=(),
+            survivors=("ghost",),
+            brackets=(),
+            arena_digest="0" * 16,
         )
 
 
@@ -467,16 +500,17 @@ def test_arena_run_rejects_too_few_contestants():
     cfg = ArenaConfig(arena_id="a", tournament_size=2, n_winners=1)
     with pytest.raises(ArenaInputError):
         Arena().run(
-            contestants=_make_contestants(1), config=cfg, seed=1, ts_ns=1,
+            contestants=_make_contestants(1),
+            config=cfg,
+            seed=1,
+            ts_ns=1,
         )
 
 
 def test_arena_run_rejects_duplicate_strategy_ids():
     cfg = ArenaConfig(arena_id="a", tournament_size=2, n_winners=1)
     contestants = _make_contestants(2)
-    contestants.append(
-        Contestant(strategy_id=contestants[0].strategy_id, summary=_make_summary())
-    )
+    contestants.append(Contestant(strategy_id=contestants[0].strategy_id, summary=_make_summary()))
     with pytest.raises(ArenaInputError):
         Arena().run(contestants=contestants, config=cfg, seed=1, ts_ns=1)
 
@@ -496,7 +530,8 @@ def test_arena_run_rejects_non_int_seed():
     cfg = ArenaConfig(arena_id="a", tournament_size=2, n_winners=1)
     with pytest.raises(ArenaInputError):
         Arena().run(
-            contestants=_make_contestants(2), config=cfg,
+            contestants=_make_contestants(2),
+            config=cfg,
             seed="bad",  # type: ignore[arg-type]
             ts_ns=1,
         )
@@ -506,7 +541,10 @@ def test_arena_run_rejects_negative_seed():
     cfg = ArenaConfig(arena_id="a", tournament_size=2, n_winners=1)
     with pytest.raises(ArenaInputError):
         Arena().run(
-            contestants=_make_contestants(2), config=cfg, seed=-1, ts_ns=1,
+            contestants=_make_contestants(2),
+            config=cfg,
+            seed=-1,
+            ts_ns=1,
         )
 
 
@@ -514,7 +552,8 @@ def test_arena_run_rejects_bool_seed():
     cfg = ArenaConfig(arena_id="a", tournament_size=2, n_winners=1)
     with pytest.raises(ArenaInputError):
         Arena().run(
-            contestants=_make_contestants(2), config=cfg,
+            contestants=_make_contestants(2),
+            config=cfg,
             seed=True,  # type: ignore[arg-type]
             ts_ns=1,
         )
@@ -524,7 +563,10 @@ def test_arena_run_rejects_negative_ts_ns():
     cfg = ArenaConfig(arena_id="a", tournament_size=2, n_winners=1)
     with pytest.raises(ArenaInputError):
         Arena().run(
-            contestants=_make_contestants(2), config=cfg, seed=1, ts_ns=-1,
+            contestants=_make_contestants(2),
+            config=cfg,
+            seed=1,
+            ts_ns=-1,
         )
 
 
@@ -532,7 +574,10 @@ def test_arena_run_rejects_elitism_above_count():
     cfg = ArenaConfig(arena_id="a", tournament_size=2, n_winners=1, elitism_count=99)
     with pytest.raises(ArenaInputError):
         Arena().run(
-            contestants=_make_contestants(3), config=cfg, seed=1, ts_ns=1,
+            contestants=_make_contestants(3),
+            config=cfg,
+            seed=1,
+            ts_ns=1,
         )
 
 
@@ -541,7 +586,9 @@ def test_arena_run_rejects_non_sequence_contestants():
     with pytest.raises(ArenaInputError):
         Arena().run(
             contestants={c.strategy_id: c for c in _make_contestants(2)},  # type: ignore[arg-type]
-            config=cfg, seed=1, ts_ns=1,
+            config=cfg,
+            seed=1,
+            ts_ns=1,
         )
 
 
@@ -553,7 +600,10 @@ def test_arena_run_rejects_non_sequence_contestants():
 def test_arena_returns_tournament_result_shape():
     cfg = ArenaConfig(arena_id="a", tournament_size=3, n_winners=4, elitism_count=2)
     res = Arena().run(
-        contestants=_make_contestants(8), config=cfg, seed=42, ts_ns=1,
+        contestants=_make_contestants(8),
+        config=cfg,
+        seed=42,
+        ts_ns=1,
     )
     assert isinstance(res, TournamentResult)
     assert res.arena_id == "a"
@@ -574,7 +624,10 @@ def test_arena_elites_are_top_n_by_pnl_mean():
 def test_arena_elite_zero_yields_no_elites():
     cfg = ArenaConfig(arena_id="a", tournament_size=2, n_winners=2, elitism_count=0)
     res = Arena().run(
-        contestants=_make_contestants(4), config=cfg, seed=1, ts_ns=1,
+        contestants=_make_contestants(4),
+        config=cfg,
+        seed=1,
+        ts_ns=1,
     )
     assert res.elites == ()
 
@@ -582,7 +635,10 @@ def test_arena_elite_zero_yields_no_elites():
 def test_arena_brackets_have_tournament_size_candidates():
     cfg = ArenaConfig(arena_id="a", tournament_size=4, n_winners=3)
     res = Arena().run(
-        contestants=_make_contestants(8), config=cfg, seed=99, ts_ns=1,
+        contestants=_make_contestants(8),
+        config=cfg,
+        seed=99,
+        ts_ns=1,
     )
     for b in res.brackets:
         assert len(b.candidate_ids) == 4
@@ -601,7 +657,10 @@ def test_arena_winner_is_best_in_each_bracket():
 def test_arena_survivors_dedup_preserves_first_occurrence():
     cfg = ArenaConfig(arena_id="a", tournament_size=8, n_winners=3, elitism_count=2)
     res = Arena().run(
-        contestants=_make_contestants(8), config=cfg, seed=1, ts_ns=1,
+        contestants=_make_contestants(8),
+        config=cfg,
+        seed=1,
+        ts_ns=1,
     )
     seen: set[str] = set()
     for s in res.survivors:
@@ -613,7 +672,10 @@ def test_arena_survivors_dedup_preserves_first_occurrence():
 def test_arena_elite_always_in_survivors():
     cfg = ArenaConfig(arena_id="a", tournament_size=2, n_winners=2, elitism_count=2)
     res = Arena().run(
-        contestants=_make_contestants(8), config=cfg, seed=1, ts_ns=1,
+        contestants=_make_contestants(8),
+        config=cfg,
+        seed=1,
+        ts_ns=1,
     )
     for elite in res.elites:
         assert elite in res.survivors
@@ -639,10 +701,16 @@ def test_arena_drawdown_weight_can_change_ordering():
     contestants = [high_pnl_high_dd, low_pnl_low_dd]
 
     cfg_no_pen = ArenaConfig(
-        arena_id="a", tournament_size=2, n_winners=1, elitism_count=1,
+        arena_id="a",
+        tournament_size=2,
+        n_winners=1,
+        elitism_count=1,
     )
     cfg_with_pen = ArenaConfig(
-        arena_id="a", tournament_size=2, n_winners=1, elitism_count=1,
+        arena_id="a",
+        tournament_size=2,
+        n_winners=1,
+        elitism_count=1,
         drawdown_weight=1.0,
     )
     r1 = Arena().run(contestants=contestants, config=cfg_no_pen, seed=1, ts_ns=1)
@@ -654,8 +722,10 @@ def test_arena_drawdown_weight_can_change_ordering():
 def test_arena_handles_min_size_input():
     cfg = ArenaConfig(arena_id="a", tournament_size=2, n_winners=1)
     res = Arena().run(
-        contestants=_make_contestants(MIN_CONTESTANTS), config=cfg,
-        seed=1, ts_ns=1,
+        contestants=_make_contestants(MIN_CONTESTANTS),
+        config=cfg,
+        seed=1,
+        ts_ns=1,
     )
     assert len(res.contestants) == MIN_CONTESTANTS
 
@@ -663,7 +733,10 @@ def test_arena_handles_min_size_input():
 def test_arena_tournament_winners_have_finite_fitness():
     cfg = ArenaConfig(arena_id="a", tournament_size=3, n_winners=4)
     res = Arena().run(
-        contestants=_make_contestants(8), config=cfg, seed=1, ts_ns=1,
+        contestants=_make_contestants(8),
+        config=cfg,
+        seed=1,
+        ts_ns=1,
     )
     for b in res.brackets:
         assert b.winner_fitness == b.winner_fitness  # not NaN
@@ -673,7 +746,10 @@ def test_arena_tournament_winners_have_finite_fitness():
 def test_arena_winners_match_brackets_order():
     cfg = ArenaConfig(arena_id="a", tournament_size=3, n_winners=5)
     res = Arena().run(
-        contestants=_make_contestants(8), config=cfg, seed=11, ts_ns=1,
+        contestants=_make_contestants(8),
+        config=cfg,
+        seed=11,
+        ts_ns=1,
     )
     bracket_winners = tuple(b.winner_id for b in res.brackets)
     assert bracket_winners == res.tournament_winners
@@ -711,8 +787,7 @@ def test_tie_break_stable_across_input_shuffles():
 
 def test_constant_evaluator_yields_alphabetic_winner():
     contestants = [
-        Contestant(strategy_id=f"strat-{c}", summary=_make_summary(mean=1.0))
-        for c in "edcba"
+        Contestant(strategy_id=f"strat-{c}", summary=_make_summary(mean=1.0)) for c in "edcba"
     ]
     cfg = ArenaConfig(arena_id="a", tournament_size=5, n_winners=3)
     res = Arena().run(contestants=contestants, config=cfg, seed=1, ts_ns=1)
@@ -738,10 +813,7 @@ def test_inv15_three_run_identical_digest():
 def test_inv15_three_run_identical_brackets():
     cfg = ArenaConfig(arena_id="alpha", tournament_size=3, n_winners=4, elitism_count=2)
     contestants = _make_contestants(8)
-    runs = [
-        Arena().run(contestants=contestants, config=cfg, seed=99, ts_ns=42)
-        for _ in range(3)
-    ]
+    runs = [Arena().run(contestants=contestants, config=cfg, seed=99, ts_ns=42) for _ in range(3)]
     for r in runs[1:]:
         assert r.brackets == runs[0].brackets
 
@@ -749,10 +821,7 @@ def test_inv15_three_run_identical_brackets():
 def test_inv15_three_run_identical_survivors():
     cfg = ArenaConfig(arena_id="alpha", tournament_size=3, n_winners=4, elitism_count=2)
     contestants = _make_contestants(8)
-    runs = [
-        Arena().run(contestants=contestants, config=cfg, seed=99, ts_ns=42)
-        for _ in range(3)
-    ]
+    runs = [Arena().run(contestants=contestants, config=cfg, seed=99, ts_ns=42) for _ in range(3)]
     for r in runs[1:]:
         assert r.survivors == runs[0].survivors
 
@@ -781,7 +850,10 @@ def test_inv15_different_ts_ns_yields_different_digest():
 def test_result_digest_is_16_hex_chars():
     cfg = ArenaConfig(arena_id="a", tournament_size=2, n_winners=2)
     res = Arena().run(
-        contestants=_make_contestants(4), config=cfg, seed=1, ts_ns=1,
+        contestants=_make_contestants(4),
+        config=cfg,
+        seed=1,
+        ts_ns=1,
     )
     assert len(res.arena_digest) == 16
     int(res.arena_digest, 16)  # must parse
@@ -797,7 +869,10 @@ def test_result_contestants_match_input_count():
 def test_result_arena_id_propagates_from_config():
     cfg = ArenaConfig(arena_id="bravo", tournament_size=2, n_winners=1)
     res = Arena().run(
-        contestants=_make_contestants(2), config=cfg, seed=1, ts_ns=1,
+        contestants=_make_contestants(2),
+        config=cfg,
+        seed=1,
+        ts_ns=1,
     )
     assert res.arena_id == "bravo"
 
@@ -805,7 +880,10 @@ def test_result_arena_id_propagates_from_config():
 def test_result_seed_and_ts_ns_propagate():
     cfg = ArenaConfig(arena_id="a", tournament_size=2, n_winners=1)
     res = Arena().run(
-        contestants=_make_contestants(2), config=cfg, seed=12345, ts_ns=999,
+        contestants=_make_contestants(2),
+        config=cfg,
+        seed=12345,
+        ts_ns=999,
     )
     assert res.seed == 12345
     assert res.ts_ns == 999
@@ -832,7 +910,10 @@ def test_module_imports_clean_without_deap():
 def test_arena_handles_single_winner_no_elite():
     cfg = ArenaConfig(arena_id="a", tournament_size=2, n_winners=1, elitism_count=0)
     res = Arena().run(
-        contestants=_make_contestants(2), config=cfg, seed=1, ts_ns=1,
+        contestants=_make_contestants(2),
+        config=cfg,
+        seed=1,
+        ts_ns=1,
     )
     assert res.elites == ()
     assert len(res.tournament_winners) == 1
@@ -842,7 +923,10 @@ def test_arena_handles_single_winner_no_elite():
 def test_arena_handles_full_elitism():
     cfg = ArenaConfig(arena_id="a", tournament_size=2, n_winners=1, elitism_count=4)
     res = Arena().run(
-        contestants=_make_contestants(4), config=cfg, seed=1, ts_ns=1,
+        contestants=_make_contestants(4),
+        config=cfg,
+        seed=1,
+        ts_ns=1,
     )
     assert len(res.elites) == 4
     assert set(res.elites) == {f"strat-{i:03d}" for i in range(4)}
@@ -852,7 +936,10 @@ def test_arena_high_dimensional_input():
     n = 64
     cfg = ArenaConfig(arena_id="a", tournament_size=8, n_winners=20, elitism_count=4)
     res = Arena().run(
-        contestants=_make_contestants(n), config=cfg, seed=7, ts_ns=1,
+        contestants=_make_contestants(n),
+        config=cfg,
+        seed=7,
+        ts_ns=1,
     )
     assert len(res.contestants) == n
     assert len(res.tournament_winners) == 20

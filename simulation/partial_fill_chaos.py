@@ -93,8 +93,7 @@ class PartialFillChaosConfig:
             )
         if not 0.0 < self.residual_epsilon_usd <= 1.0:
             raise ValueError(
-                "residual_epsilon_usd must be in (0, 1] USD, "
-                f"got {self.residual_epsilon_usd!r}"
+                f"residual_epsilon_usd must be in (0, 1] USD, got {self.residual_epsilon_usd!r}"
             )
 
 
@@ -139,9 +138,7 @@ def _require_unit_interval(meta: dict[str, Any], key: str) -> float:
     return v
 
 
-def _require_bounded_float(
-    meta: dict[str, Any], key: str, low: float, high: float
-) -> float:
+def _require_bounded_float(meta: dict[str, Any], key: str, low: float, high: float) -> float:
     if key not in meta:
         raise ValueError(f"RealityScenario.meta missing required key {key!r}")
     raw = meta[key]
@@ -150,9 +147,7 @@ def _require_bounded_float(
     except (TypeError, ValueError) as exc:
         raise ValueError(f"meta[{key!r}] must be numeric, got {raw!r}") from exc
     if not low <= v <= high:
-        raise ValueError(
-            f"meta[{key!r}] must be in [{low}, {high}], got {v!r}"
-        )
+        raise ValueError(f"meta[{key!r}] must be in [{low}, {high}], got {v!r}")
     return v
 
 
@@ -161,9 +156,7 @@ def _require_side(meta: dict[str, Any]) -> str:
         raise ValueError("RealityScenario.meta missing required key 'side'")
     side = meta["side"]
     if side not in (_BUY, _SELL):
-        raise ValueError(
-            f"meta['side'] must be 'buy' or 'sell', got {side!r}"
-        )
+        raise ValueError(f"meta['side'] must be 'buy' or 'sell', got {side!r}")
     return side
 
 
@@ -189,8 +182,7 @@ class PartialFillChaos:
         num_attempts = _require_positive_int(meta, "num_attempts")
         if num_attempts > cfg.max_attempts:
             raise ValueError(
-                f"meta['num_attempts'] {num_attempts} exceeds "
-                f"max_attempts {cfg.max_attempts}"
+                f"meta['num_attempts'] {num_attempts} exceeds max_attempts {cfg.max_attempts}"
             )
         fill_mean = _require_unit_interval(meta, "fill_ratio_mean")
         fill_std = _require_bounded_float(meta, "fill_ratio_std", 0.0, 0.5)

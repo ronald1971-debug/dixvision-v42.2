@@ -36,9 +36,7 @@ class StrategyScheduler:
 
     # -- registration ------------------------------------------------------
 
-    def register(
-        self, *, strategy_id: str, cadence: int = 1
-    ) -> StrategyTick:
+    def register(self, *, strategy_id: str, cadence: int = 1) -> StrategyTick:
         if not strategy_id:
             raise ValueError("strategy_id required")
         if cadence <= 0:

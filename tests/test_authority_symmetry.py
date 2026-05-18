@@ -250,11 +250,7 @@ def test_b27_b28_b29_clean_on_repo():
     from tools.authority_lint import lint_repo
 
     repo_root = Path(__file__).resolve().parent.parent
-    violations = [
-        v
-        for v in lint_repo(repo_root)
-        if v.rule in {"B27", "B28", "B29"}
-    ]
+    violations = [v for v in lint_repo(repo_root) if v.rule in {"B27", "B28", "B29"}]
     assert violations == [], f"unexpected B27/B28/B29 violations: {violations}"
 
 
@@ -382,15 +378,11 @@ def test_event_producers_registry_is_frozen_view_of_authority():
         {"intelligence_engine", "intelligence_engine.cognitive"}
     )
     assert EVENT_PRODUCERS[ExecutionEvent] == frozenset({"execution_engine"})
-    assert EVENT_PRODUCERS[HazardEvent] == frozenset(
-        {"system_engine", "execution_engine"}
-    )
+    assert EVENT_PRODUCERS[HazardEvent] == frozenset({"system_engine", "execution_engine"})
 
 
 def test_mark_approved_cannot_synthesise_approval_without_decision_id():
-    proposed = create_execution_intent(
-        ts_ns=5, origin="tests.fixtures", signal=_signal()
-    )
+    proposed = create_execution_intent(ts_ns=5, origin="tests.fixtures", signal=_signal())
     with pytest.raises(ValueError):
         mark_approved(proposed, governance_decision_id="")
 

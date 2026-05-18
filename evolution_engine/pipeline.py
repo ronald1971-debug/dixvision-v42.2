@@ -272,36 +272,21 @@ class EvolutionPipelineConfig:
 
     def __post_init__(self) -> None:
         if not isinstance(self.target_strategy_id, str):
-            raise EvolutionPipelineError(
-                "EvolutionPipelineConfig.target_strategy_id must be str"
-            )
+            raise EvolutionPipelineError("EvolutionPipelineConfig.target_strategy_id must be str")
         if not self.target_strategy_id:
             raise EvolutionPipelineError(
                 "EvolutionPipelineConfig.target_strategy_id must be non-empty"
             )
-        if (
-            not isinstance(self.population_size, int)
-            or isinstance(self.population_size, bool)
-        ):
-            raise EvolutionPipelineError(
-                "EvolutionPipelineConfig.population_size must be int"
-            )
-        if (
-            self.population_size < MIN_POPULATION_SIZE
-            or self.population_size > MAX_POPULATION_SIZE
-        ):
+        if not isinstance(self.population_size, int) or isinstance(self.population_size, bool):
+            raise EvolutionPipelineError("EvolutionPipelineConfig.population_size must be int")
+        if self.population_size < MIN_POPULATION_SIZE or self.population_size > MAX_POPULATION_SIZE:
             raise EvolutionPipelineError(
                 f"EvolutionPipelineConfig.population_size must be in "
                 f"[{MIN_POPULATION_SIZE}, {MAX_POPULATION_SIZE}], got "
                 f"{self.population_size!r}"
             )
-        if (
-            not isinstance(self.max_generations, int)
-            or isinstance(self.max_generations, bool)
-        ):
-            raise EvolutionPipelineError(
-                "EvolutionPipelineConfig.max_generations must be int"
-            )
+        if not isinstance(self.max_generations, int) or isinstance(self.max_generations, bool):
+            raise EvolutionPipelineError("EvolutionPipelineConfig.max_generations must be int")
         if self.max_generations < 1 or self.max_generations > MAX_GENERATIONS:
             raise EvolutionPipelineError(
                 f"EvolutionPipelineConfig.max_generations must be in "
@@ -316,33 +301,25 @@ class EvolutionPipelineConfig:
             )
         if not isinstance(self.mutation_strategy, MutationStrategy):
             raise EvolutionPipelineError(
-                "EvolutionPipelineConfig.mutation_strategy must be "
-                "MutationStrategy"
+                "EvolutionPipelineConfig.mutation_strategy must be MutationStrategy"
             )
         for fname in ("F", "CR", "init_sigma", "fitness_drawdown_weight"):
             v = getattr(self, fname)
             if not isinstance(v, (int, float)) or isinstance(v, bool):
-                raise EvolutionPipelineError(
-                    f"EvolutionPipelineConfig.{fname} must be int|float"
-                )
+                raise EvolutionPipelineError(f"EvolutionPipelineConfig.{fname} must be int|float")
             if not math.isfinite(v):
                 raise EvolutionPipelineError(
-                    f"EvolutionPipelineConfig.{fname} must be finite, got "
-                    f"{v!r}"
+                    f"EvolutionPipelineConfig.{fname} must be finite, got {v!r}"
                 )
         if self.F <= 0.0:
-            raise EvolutionPipelineError(
-                f"EvolutionPipelineConfig.F must be > 0, got {self.F!r}"
-            )
+            raise EvolutionPipelineError(f"EvolutionPipelineConfig.F must be > 0, got {self.F!r}")
         if self.CR < 0.0 or self.CR > 1.0:
             raise EvolutionPipelineError(
-                f"EvolutionPipelineConfig.CR must be in [0, 1], got "
-                f"{self.CR!r}"
+                f"EvolutionPipelineConfig.CR must be in [0, 1], got {self.CR!r}"
             )
         if self.init_sigma <= 0.0:
             raise EvolutionPipelineError(
-                f"EvolutionPipelineConfig.init_sigma must be > 0, got "
-                f"{self.init_sigma!r}"
+                f"EvolutionPipelineConfig.init_sigma must be > 0, got {self.init_sigma!r}"
             )
         if self.fitness_drawdown_weight < 0.0:
             raise EvolutionPipelineError(
@@ -367,48 +344,30 @@ class FitnessReport:
     meta: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if not isinstance(self.pnl_mean, (int, float)) or isinstance(
-            self.pnl_mean, bool
-        ):
-            raise EvolutionPipelineEvaluationError(
-                "FitnessReport.pnl_mean must be int|float"
-            )
+        if not isinstance(self.pnl_mean, (int, float)) or isinstance(self.pnl_mean, bool):
+            raise EvolutionPipelineEvaluationError("FitnessReport.pnl_mean must be int|float")
         if not math.isfinite(self.pnl_mean):
             raise EvolutionPipelineEvaluationError(
-                f"FitnessReport.pnl_mean must be finite, got "
-                f"{self.pnl_mean!r}"
+                f"FitnessReport.pnl_mean must be finite, got {self.pnl_mean!r}"
             )
-        if not isinstance(self.max_drawdown, (int, float)) or isinstance(
-            self.max_drawdown, bool
-        ):
-            raise EvolutionPipelineEvaluationError(
-                "FitnessReport.max_drawdown must be int|float"
-            )
+        if not isinstance(self.max_drawdown, (int, float)) or isinstance(self.max_drawdown, bool):
+            raise EvolutionPipelineEvaluationError("FitnessReport.max_drawdown must be int|float")
         if not math.isfinite(self.max_drawdown) or self.max_drawdown < 0.0:
             raise EvolutionPipelineEvaluationError(
                 f"FitnessReport.max_drawdown must be a non-negative "
                 f"finite float, got {self.max_drawdown!r}"
             )
-        if not isinstance(self.n_samples, int) or isinstance(
-            self.n_samples, bool
-        ):
-            raise EvolutionPipelineEvaluationError(
-                "FitnessReport.n_samples must be int"
-            )
+        if not isinstance(self.n_samples, int) or isinstance(self.n_samples, bool):
+            raise EvolutionPipelineEvaluationError("FitnessReport.n_samples must be int")
         if self.n_samples < 1:
             raise EvolutionPipelineEvaluationError(
-                f"FitnessReport.n_samples must be >= 1, got "
-                f"{self.n_samples!r}"
+                f"FitnessReport.n_samples must be >= 1, got {self.n_samples!r}"
             )
         if not isinstance(self.meta, Mapping):
-            raise EvolutionPipelineEvaluationError(
-                "FitnessReport.meta must be Mapping"
-            )
+            raise EvolutionPipelineEvaluationError("FitnessReport.meta must be Mapping")
         for mk, mv in self.meta.items():
             if not isinstance(mk, str) or not isinstance(mv, str):
-                raise EvolutionPipelineEvaluationError(
-                    "FitnessReport.meta must map str -> str"
-                )
+                raise EvolutionPipelineEvaluationError("FitnessReport.meta must map str -> str")
 
     def fitness(self, drawdown_weight: float) -> float:
         """Collapse to a scalar: ``pnl_mean - w * max_drawdown``."""
@@ -449,20 +408,16 @@ class IndividualResult:
             )
         if not math.isfinite(self.fitness_scalar):
             raise ValueError(
-                f"IndividualResult.fitness_scalar must be finite, got "
-                f"{self.fitness_scalar!r}"
+                f"IndividualResult.fitness_scalar must be finite, got {self.fitness_scalar!r}"
             )
-        if not isinstance(self.generation_idx, int) or isinstance(
-            self.generation_idx, bool
-        ):
+        if not isinstance(self.generation_idx, int) or isinstance(self.generation_idx, bool):
             raise TypeError(
                 "IndividualResult.generation_idx must be int, got "
                 f"{type(self.generation_idx).__name__}"
             )
         if self.generation_idx < 0:
             raise ValueError(
-                f"IndividualResult.generation_idx must be >= 0, got "
-                f"{self.generation_idx!r}"
+                f"IndividualResult.generation_idx must be >= 0, got {self.generation_idx!r}"
             )
 
 
@@ -480,69 +435,43 @@ class GenerationReport:
     n_replacements: int
 
     def __post_init__(self) -> None:
-        if not isinstance(self.generation_idx, int) or isinstance(
-            self.generation_idx, bool
-        ):
+        if not isinstance(self.generation_idx, int) or isinstance(self.generation_idx, bool):
             raise TypeError(
                 "GenerationReport.generation_idx must be int, got "
                 f"{type(self.generation_idx).__name__}"
             )
         if self.generation_idx < 0:
             raise ValueError(
-                f"GenerationReport.generation_idx must be >= 0, got "
-                f"{self.generation_idx!r}"
+                f"GenerationReport.generation_idx must be >= 0, got {self.generation_idx!r}"
             )
         if not isinstance(self.individuals, tuple):
             raise TypeError(
-                "GenerationReport.individuals must be tuple, got "
-                f"{type(self.individuals).__name__}"
+                f"GenerationReport.individuals must be tuple, got {type(self.individuals).__name__}"
             )
         if not self.individuals:
-            raise ValueError(
-                "GenerationReport.individuals must be non-empty"
-            )
+            raise ValueError("GenerationReport.individuals must be non-empty")
         for idx, ind in enumerate(self.individuals):
             if not isinstance(ind, IndividualResult):
-                raise TypeError(
-                    f"GenerationReport.individuals[{idx}] must be "
-                    "IndividualResult"
-                )
-        if not isinstance(self.best_fitness, (int, float)) or isinstance(
-            self.best_fitness, bool
-        ):
-            raise TypeError(
-                "GenerationReport.best_fitness must be int|float"
-            )
+                raise TypeError(f"GenerationReport.individuals[{idx}] must be IndividualResult")
+        if not isinstance(self.best_fitness, (int, float)) or isinstance(self.best_fitness, bool):
+            raise TypeError("GenerationReport.best_fitness must be int|float")
         if not math.isfinite(self.best_fitness):
             raise ValueError(
-                f"GenerationReport.best_fitness must be finite, got "
-                f"{self.best_fitness!r}"
+                f"GenerationReport.best_fitness must be finite, got {self.best_fitness!r}"
             )
-        if not isinstance(self.mean_fitness, (int, float)) or isinstance(
-            self.mean_fitness, bool
-        ):
-            raise TypeError(
-                "GenerationReport.mean_fitness must be int|float"
-            )
+        if not isinstance(self.mean_fitness, (int, float)) or isinstance(self.mean_fitness, bool):
+            raise TypeError("GenerationReport.mean_fitness must be int|float")
         if not math.isfinite(self.mean_fitness):
             raise ValueError(
-                f"GenerationReport.mean_fitness must be finite, got "
-                f"{self.mean_fitness!r}"
+                f"GenerationReport.mean_fitness must be finite, got {self.mean_fitness!r}"
             )
         if not isinstance(self.best_individual, IndividualResult):
-            raise TypeError(
-                "GenerationReport.best_individual must be IndividualResult"
-            )
-        if not isinstance(self.n_replacements, int) or isinstance(
-            self.n_replacements, bool
-        ):
-            raise TypeError(
-                "GenerationReport.n_replacements must be int"
-            )
+            raise TypeError("GenerationReport.best_individual must be IndividualResult")
+        if not isinstance(self.n_replacements, int) or isinstance(self.n_replacements, bool):
+            raise TypeError("GenerationReport.n_replacements must be int")
         if self.n_replacements < 0:
             raise ValueError(
-                f"GenerationReport.n_replacements must be >= 0, got "
-                f"{self.n_replacements!r}"
+                f"GenerationReport.n_replacements must be >= 0, got {self.n_replacements!r}"
             )
 
 
@@ -569,42 +498,27 @@ class EvolutionPipelineResult:
                 f"got {type(self.proposal).__name__}"
             )
         if not isinstance(self.generations, tuple):
-            raise TypeError(
-                "EvolutionPipelineResult.generations must be tuple"
-            )
+            raise TypeError("EvolutionPipelineResult.generations must be tuple")
         if not self.generations:
-            raise ValueError(
-                "EvolutionPipelineResult.generations must be non-empty"
-            )
+            raise ValueError("EvolutionPipelineResult.generations must be non-empty")
         for idx, gen in enumerate(self.generations):
             if not isinstance(gen, GenerationReport):
                 raise TypeError(
-                    f"EvolutionPipelineResult.generations[{idx}] must be "
-                    "GenerationReport"
+                    f"EvolutionPipelineResult.generations[{idx}] must be GenerationReport"
                 )
         if not isinstance(self.initial_population, tuple):
-            raise TypeError(
-                "EvolutionPipelineResult.initial_population must be tuple"
-            )
+            raise TypeError("EvolutionPipelineResult.initial_population must be tuple")
         if not self.initial_population:
-            raise ValueError(
-                "EvolutionPipelineResult.initial_population must be non-empty"
-            )
+            raise ValueError("EvolutionPipelineResult.initial_population must be non-empty")
         for idx, ind in enumerate(self.initial_population):
             if not isinstance(ind, IndividualResult):
                 raise TypeError(
-                    f"EvolutionPipelineResult.initial_population[{idx}] "
-                    "must be IndividualResult"
+                    f"EvolutionPipelineResult.initial_population[{idx}] must be IndividualResult"
                 )
         if not isinstance(self.best_individual, IndividualResult):
-            raise TypeError(
-                "EvolutionPipelineResult.best_individual must be "
-                "IndividualResult"
-            )
+            raise TypeError("EvolutionPipelineResult.best_individual must be IndividualResult")
         if not isinstance(self.policy_digest, str):
-            raise TypeError(
-                "EvolutionPipelineResult.policy_digest must be str"
-            )
+            raise TypeError("EvolutionPipelineResult.policy_digest must be str")
         if len(self.policy_digest) != 16:
             raise ValueError(
                 f"EvolutionPipelineResult.policy_digest must be 16 hex "
@@ -615,16 +529,11 @@ class EvolutionPipelineResult:
                 f"EvolutionPipelineResult.policy_digest must be lowercase "
                 f"hex, got {self.policy_digest!r}"
             )
-        if not isinstance(self.n_evaluations, int) or isinstance(
-            self.n_evaluations, bool
-        ):
-            raise TypeError(
-                "EvolutionPipelineResult.n_evaluations must be int"
-            )
+        if not isinstance(self.n_evaluations, int) or isinstance(self.n_evaluations, bool):
+            raise TypeError("EvolutionPipelineResult.n_evaluations must be int")
         if self.n_evaluations < 1:
             raise ValueError(
-                f"EvolutionPipelineResult.n_evaluations must be >= 1, got "
-                f"{self.n_evaluations!r}"
+                f"EvolutionPipelineResult.n_evaluations must be >= 1, got {self.n_evaluations!r}"
             )
 
 
@@ -774,13 +683,9 @@ def _sample_distinct(*, n: int, exclude: int, count: int, key: int) -> tuple[int
     """
 
     if count >= n:
-        raise EvolutionPipelineError(
-            f"_sample_distinct: count {count} must be < n {n}"
-        )
+        raise EvolutionPipelineError(f"_sample_distinct: count {count} must be < n {n}")
     if count > n - 1:
-        raise EvolutionPipelineError(
-            f"_sample_distinct: count {count} must be <= n - 1 = {n - 1}"
-        )
+        raise EvolutionPipelineError(f"_sample_distinct: count {count} must be <= n - 1 = {n - 1}")
     pool = [i for i in range(n) if i != exclude]
     h = _splitmix64(key & 0xFFFFFFFFFFFFFFFF)
     last = len(pool) - 1
@@ -829,9 +734,7 @@ def _midpoint_chromosome(
             meta={},
         )
     except ChromosomeError as exc:  # pragma: no cover - safety net
-        raise EvolutionPipelineError(
-            f"_midpoint_chromosome: {exc}"
-        ) from exc
+        raise EvolutionPipelineError(f"_midpoint_chromosome: {exc}") from exc
 
 
 # ---------------------------------------------------------------------------
@@ -849,9 +752,7 @@ def _is_better(*, candidate: IndividualResult, incumbent: IndividualResult) -> b
         return True
     if candidate.fitness_scalar < incumbent.fitness_scalar:
         return False
-    return chromosome_digest(candidate.chromosome) < chromosome_digest(
-        incumbent.chromosome
-    )
+    return chromosome_digest(candidate.chromosome) < chromosome_digest(incumbent.chromosome)
 
 
 def _is_at_least_as_good(
@@ -871,8 +772,7 @@ def _is_at_least_as_good(
 
     return _is_better(candidate=candidate, incumbent=incumbent) or (
         candidate.fitness_scalar == incumbent.fitness_scalar
-        and chromosome_digest(candidate.chromosome)
-        == chromosome_digest(incumbent.chromosome)
+        and chromosome_digest(candidate.chromosome) == chromosome_digest(incumbent.chromosome)
     )
 
 
@@ -1095,18 +995,13 @@ class EvolutionPipeline:
                     fitness_scalar=scalar,
                     generation_idx=g,
                 )
-                if _is_at_least_as_good(
-                    candidate=trial_ind, incumbent=population[i]
-                ):
-                    if (
-                        chromosome_digest(trial_ind.chromosome)
-                        != chromosome_digest(population[i].chromosome)
+                if _is_at_least_as_good(candidate=trial_ind, incumbent=population[i]):
+                    if chromosome_digest(trial_ind.chromosome) != chromosome_digest(
+                        population[i].chromosome
                     ):
                         n_replacements += 1
                     population[i] = trial_ind
-                    if _is_better(
-                        candidate=trial_ind, incumbent=running_best
-                    ):
+                    if _is_better(candidate=trial_ind, incumbent=running_best):
                         running_best = trial_ind
 
             sorted_pop = self._sort_fittest_first(population)
@@ -1143,13 +1038,9 @@ class EvolutionPipeline:
         # Canonical proposal_meta (sorted-key construction). User
         # cannot overlay these — they are provenance, not config.
         proposal_meta: dict[str, str] = {
-            "best_chromosome_digest": chromosome_digest(
-                running_best.chromosome
-            ),
+            "best_chromosome_digest": chromosome_digest(running_best.chromosome),
             "best_fitness": repr(running_best.fitness_scalar),
-            "best_max_drawdown": repr(
-                running_best.fitness_report.max_drawdown
-            ),
+            "best_max_drawdown": repr(running_best.fitness_report.max_drawdown),
             "best_pnl_mean": repr(running_best.fitness_report.pnl_mean),
             "generation_count": str(generation_count),
             "mutation_strategy": config.mutation_strategy.value,
@@ -1195,49 +1086,34 @@ class EvolutionPipeline:
         callback: EvolutionPipelineCallback | None,
     ) -> None:
         if not isinstance(specs, tuple):
-            raise EvolutionPipelineError(
-                "EvolutionPipeline.evolve.specs must be tuple"
-            )
+            raise EvolutionPipelineError("EvolutionPipeline.evolve.specs must be tuple")
         if not specs:
-            raise EvolutionPipelineError(
-                "EvolutionPipeline.evolve.specs must be non-empty"
-            )
+            raise EvolutionPipelineError("EvolutionPipeline.evolve.specs must be non-empty")
         for idx, spec in enumerate(specs):
             if not isinstance(spec, ParameterSpec):
                 raise EvolutionPipelineError(
-                    f"EvolutionPipeline.evolve.specs[{idx}] must be "
-                    "ParameterSpec"
+                    f"EvolutionPipeline.evolve.specs[{idx}] must be ParameterSpec"
                 )
         if not isinstance(config, EvolutionPipelineConfig):
             raise EvolutionPipelineError(
-                "EvolutionPipeline.evolve.config must be "
-                "EvolutionPipelineConfig"
+                "EvolutionPipeline.evolve.config must be EvolutionPipelineConfig"
             )
         if not isinstance(seed, int) or isinstance(seed, bool):
-            raise EvolutionPipelineError(
-                "EvolutionPipeline.evolve.seed must be int"
-            )
+            raise EvolutionPipelineError("EvolutionPipeline.evolve.seed must be int")
         if seed < 0:
             raise EvolutionPipelineError(
                 f"EvolutionPipeline.evolve.seed must be >= 0, got {seed!r}"
             )
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
-            raise EvolutionPipelineError(
-                "EvolutionPipeline.evolve.ts_ns must be int"
-            )
+            raise EvolutionPipelineError("EvolutionPipeline.evolve.ts_ns must be int")
         if ts_ns < 0:
             raise EvolutionPipelineError(
-                f"EvolutionPipeline.evolve.ts_ns must be >= 0, got "
-                f"{ts_ns!r}"
+                f"EvolutionPipeline.evolve.ts_ns must be >= 0, got {ts_ns!r}"
             )
         if not isinstance(proposal_id, str):
-            raise EvolutionPipelineError(
-                "EvolutionPipeline.evolve.proposal_id must be str"
-            )
+            raise EvolutionPipelineError("EvolutionPipeline.evolve.proposal_id must be str")
         if not proposal_id:
-            raise EvolutionPipelineError(
-                "EvolutionPipeline.evolve.proposal_id must be non-empty"
-            )
+            raise EvolutionPipelineError("EvolutionPipeline.evolve.proposal_id must be non-empty")
         if len(proposal_id) > MAX_PROPOSAL_ID_LEN:
             raise EvolutionPipelineError(
                 f"EvolutionPipeline.evolve.proposal_id length "
@@ -1246,22 +1122,18 @@ class EvolutionPipeline:
         if initial_chromosome is not None:
             if not isinstance(initial_chromosome, StrategyChromosome):
                 raise EvolutionPipelineError(
-                    "EvolutionPipeline.evolve.initial_chromosome must be "
-                    "StrategyChromosome | None"
+                    "EvolutionPipeline.evolve.initial_chromosome must be StrategyChromosome | None"
                 )
             if initial_chromosome.specs != specs:
                 raise EvolutionPipelineError(
-                    "EvolutionPipeline.evolve.initial_chromosome.specs "
-                    "must equal specs"
+                    "EvolutionPipeline.evolve.initial_chromosome.specs must equal specs"
                 )
             if initial_chromosome.strategy_id != config.target_strategy_id:
                 raise EvolutionPipelineError(
                     "EvolutionPipeline.evolve.initial_chromosome.strategy_id "
                     "must equal config.target_strategy_id"
                 )
-        if callback is not None and not isinstance(
-            callback, EvolutionPipelineCallback
-        ):
+        if callback is not None and not isinstance(callback, EvolutionPipelineCallback):
             raise EvolutionPipelineError(
                 "EvolutionPipeline.evolve.callback must implement "
                 "EvolutionPipelineCallback Protocol"
@@ -1280,9 +1152,7 @@ class EvolutionPipeline:
         """Evaluate one chromosome through the injected
         :class:`FitnessEvaluator`. Fail-fast on bad return type."""
 
-        eval_seed = _seed_int(
-            seed, generation_idx, individual_idx, _EVAL_SALT
-        )
+        eval_seed = _seed_int(seed, generation_idx, individual_idx, _EVAL_SALT)
         report = self.evaluator.evaluate(
             chromosome=chromosome,
             seed=eval_seed,
@@ -1290,8 +1160,7 @@ class EvolutionPipeline:
         )
         if not isinstance(report, FitnessReport):
             raise EvolutionPipelineEvaluationError(
-                "FitnessEvaluator.evaluate must return FitnessReport, "
-                f"got {type(report).__name__}"
+                f"FitnessEvaluator.evaluate must return FitnessReport, got {type(report).__name__}"
             )
         cb.on_individual_evaluated(
             ts_ns=ts_ns,
@@ -1356,9 +1225,7 @@ class EvolutionPipeline:
                 individual=target_idx,
             )
         else:  # pragma: no cover - enum exhaustiveness
-            raise EvolutionPipelineError(
-                f"Unknown mutation strategy: {config.mutation_strategy!r}"
-            )
+            raise EvolutionPipelineError(f"Unknown mutation strategy: {config.mutation_strategy!r}")
 
         # Binomial crossover always wraps the donor.
         return de_binomial_crossover(

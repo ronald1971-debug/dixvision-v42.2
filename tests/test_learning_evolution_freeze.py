@@ -37,9 +37,7 @@ from learning_engine.update_emitter import UpdateEmitter
 
 
 def _live_unfrozen() -> LearningEvolutionFreezePolicy:
-    return LearningEvolutionFreezePolicy(
-        mode=SystemMode.LIVE, operator_override=True
-    )
+    return LearningEvolutionFreezePolicy(mode=SystemMode.LIVE, operator_override=True)
 
 
 def _learning_update(*, parameter: str = "consensus_weight") -> LearningUpdate:
@@ -121,9 +119,7 @@ def test_policy_is_unfrozen_in_live_with_explicit_override() -> None:
     revoke unfreezing in LIVE.
     """
 
-    policy = LearningEvolutionFreezePolicy(
-        mode=SystemMode.LIVE, operator_override=True
-    )
+    policy = LearningEvolutionFreezePolicy(mode=SystemMode.LIVE, operator_override=True)
     assert policy.is_frozen() is False
     assert policy.is_unfrozen() is True
 
@@ -180,9 +176,7 @@ def test_assert_unfrozen_raises_for_frozen_policy(mode: SystemMode) -> None:
 
 
 def test_assert_unfrozen_raises_for_live_without_override() -> None:
-    policy = LearningEvolutionFreezePolicy(
-        mode=SystemMode.LIVE, operator_override=False
-    )
+    policy = LearningEvolutionFreezePolicy(mode=SystemMode.LIVE, operator_override=False)
     with pytest.raises(LearningEvolutionFrozenError):
         assert_unfrozen(policy, action="propose_patch")
 
@@ -196,9 +190,7 @@ def test_is_unfrozen_returns_true_for_none_policy() -> None:
 
 
 def test_is_unfrozen_returns_false_for_frozen_policy() -> None:
-    assert is_unfrozen(
-        LearningEvolutionFreezePolicy(mode=SystemMode.PAPER)
-    ) is False
+    assert is_unfrozen(LearningEvolutionFreezePolicy(mode=SystemMode.PAPER)) is False
 
 
 # ---------------------------------------------------------------------------
@@ -233,9 +225,7 @@ def test_update_emitter_with_frozen_policy_raises(mode: SystemMode) -> None:
     """Frozen ⇔ ``operator_override is False`` — every mode raises."""
 
     emitter = UpdateEmitter(
-        freeze=LearningEvolutionFreezePolicy(
-            mode=mode, operator_override=False
-        )
+        freeze=LearningEvolutionFreezePolicy(mode=mode, operator_override=False)
     )
     with pytest.raises(LearningEvolutionFrozenError) as excinfo:
         emitter.emit(_learning_update())
@@ -243,9 +233,7 @@ def test_update_emitter_with_frozen_policy_raises(mode: SystemMode) -> None:
 
 
 def test_update_emitter_emit_many_short_circuits_on_freeze() -> None:
-    emitter = UpdateEmitter(
-        freeze=LearningEvolutionFreezePolicy(mode=SystemMode.PAPER)
-    )
+    emitter = UpdateEmitter(freeze=LearningEvolutionFreezePolicy(mode=SystemMode.PAPER))
     with pytest.raises(LearningEvolutionFrozenError):
         emitter.emit_many((_learning_update(), _learning_update(parameter="b")))
 
@@ -256,9 +244,7 @@ def test_update_emitter_emit_many_short_circuits_on_freeze() -> None:
 
 
 def test_mutation_proposer_without_freeze_policy_preserves_backwards_compat() -> None:
-    proposer = MutationProposer(
-        thresholds=MutationThresholds(min_trades=1, min_win_rate=0.5)
-    )
+    proposer = MutationProposer(thresholds=MutationThresholds(min_trades=1, min_win_rate=0.5))
     out = proposer.evaluate(_stats_breaching())
     assert len(out) >= 1
 
@@ -288,9 +274,7 @@ def test_mutation_proposer_with_frozen_policy_raises(mode: SystemMode) -> None:
 
     proposer = MutationProposer(
         thresholds=MutationThresholds(min_trades=1, min_win_rate=0.5),
-        freeze=LearningEvolutionFreezePolicy(
-            mode=mode, operator_override=False
-        ),
+        freeze=LearningEvolutionFreezePolicy(mode=mode, operator_override=False),
     )
     with pytest.raises(LearningEvolutionFrozenError) as excinfo:
         proposer.evaluate(_stats_breaching())
@@ -300,9 +284,7 @@ def test_mutation_proposer_with_frozen_policy_raises(mode: SystemMode) -> None:
 def test_mutation_proposer_with_live_no_override_raises() -> None:
     proposer = MutationProposer(
         thresholds=MutationThresholds(min_trades=1, min_win_rate=0.5),
-        freeze=LearningEvolutionFreezePolicy(
-            mode=SystemMode.LIVE, operator_override=False
-        ),
+        freeze=LearningEvolutionFreezePolicy(mode=SystemMode.LIVE, operator_override=False),
     )
     with pytest.raises(LearningEvolutionFrozenError):
         proposer.evaluate(_stats_breaching())

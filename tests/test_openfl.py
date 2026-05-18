@@ -632,10 +632,16 @@ class TestExecutePlanHappy:
         ]
         order_b = list(reversed(order_a))
         r_a, _ = execute_plan(
-            plan=p, contributions=order_a, initial_value=1.0, ts_ns=500,
+            plan=p,
+            contributions=order_a,
+            initial_value=1.0,
+            ts_ns=500,
         )
         r_b, _ = execute_plan(
-            plan=p, contributions=order_b, initial_value=1.0, ts_ns=500,
+            plan=p,
+            contributions=order_b,
+            initial_value=1.0,
+            ts_ns=500,
         )
         assert r_a.digest == r_b.digest
         assert r_a.final_value == r_b.final_value
@@ -652,7 +658,10 @@ class TestExecutePlanHappy:
         finals = set()
         for _ in range(3):
             report, _ = execute_plan(
-                plan=p, contributions=contribs, initial_value=1.0, ts_ns=500,
+                plan=p,
+                contributions=contribs,
+                initial_value=1.0,
+                ts_ns=500,
             )
             digests.add(report.digest)
             finals.add(report.final_value)
@@ -668,7 +677,10 @@ class TestExecutePlanHappy:
             _contrib(0, "c-gamma", 0.0, 20),
         ]
         report, _ = execute_plan(
-            plan=p, contributions=contribs, initial_value=0.0, ts_ns=100,
+            plan=p,
+            contributions=contribs,
+            initial_value=0.0,
+            ts_ns=100,
         )
         gus = [c.as_gradient_update("lr") for c in contribs]
         agg_delta, total = fed_avg_aggregate(gus)

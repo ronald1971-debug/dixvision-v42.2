@@ -42,9 +42,7 @@ def _stm(initial: SystemMode = SystemMode.SAFE) -> StateTransitionManager:
     )
 
 
-def _ratchet_to(
-    stm: StateTransitionManager, target: SystemMode, *, operator: bool = True
-) -> None:
+def _ratchet_to(stm: StateTransitionManager, target: SystemMode, *, operator: bool = True) -> None:
     """Forward-ratchet the FSM step-by-step (legality requires it)."""
 
     chain = (
@@ -107,9 +105,7 @@ def _readings(
 
 def test_observe_quiet_window_is_not_breaching() -> None:
     oracle = DriftCompositeOracle()
-    reading = oracle.observe(
-        ts_ns=1, readings=_readings(model=0.05, exec_=0.10)
-    )
+    reading = oracle.observe(ts_ns=1, readings=_readings(model=0.05, exec_=0.10))
     assert reading.composite == 0.10
     assert reading.breached_components == ()
     assert reading.is_breaching is False
@@ -117,9 +113,7 @@ def test_observe_quiet_window_is_not_breaching() -> None:
 
 def test_observe_max_component_drives_composite() -> None:
     oracle = DriftCompositeOracle()
-    reading = oracle.observe(
-        ts_ns=1, readings=_readings(model=0.05, exec_=0.50, latency=0.20)
-    )
+    reading = oracle.observe(ts_ns=1, readings=_readings(model=0.05, exec_=0.50, latency=0.20))
     assert reading.composite == 0.50
     assert reading.breached_components == ("exec",)
     assert reading.is_breaching is True
@@ -312,9 +306,7 @@ def test_composite_only_breach_triggers_downgrade() -> None:
         DriftComponentReading(component_id="exec", deviation=0.05, threshold=0.50),
     )
 
-    reading, decision = oracle.evaluate_and_downgrade(
-        ts_ns=1_000, readings=readings, stm=stm
-    )
+    reading, decision = oracle.evaluate_and_downgrade(ts_ns=1_000, readings=readings, stm=stm)
 
     assert reading.is_breaching is True
     assert reading.breached_components == ()
@@ -338,9 +330,7 @@ def test_composite_below_oracle_threshold_no_downgrade() -> None:
         DriftComponentReading(component_id="exec", deviation=0.20, threshold=0.30),
     )
 
-    reading, decision = oracle.evaluate_and_downgrade(
-        ts_ns=1_000, readings=readings, stm=stm
-    )
+    reading, decision = oracle.evaluate_and_downgrade(ts_ns=1_000, readings=readings, stm=stm)
 
     assert reading.is_breaching is False
     assert decision is None

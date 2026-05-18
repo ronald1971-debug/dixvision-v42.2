@@ -37,9 +37,7 @@ from evolution_engine.rllib_trainer import (
 )
 
 _MODULE_PATH = (
-    pathlib.Path(__file__).resolve().parent.parent
-    / "evolution_engine"
-    / "rllib_trainer.py"
+    pathlib.Path(__file__).resolve().parent.parent / "evolution_engine" / "rllib_trainer.py"
 )
 
 
@@ -357,9 +355,7 @@ def test_env_seeds_deterministic_across_runs() -> None:
 def test_env_seeds_differ_across_scenarios() -> None:
     env_a = MultiAgentDIXEnv(_scenario(ts_ns=1), _episode_config(), _dynamics(3))
     env_b = MultiAgentDIXEnv(_scenario(ts_ns=2), _episode_config(), _dynamics(3))
-    differing = sum(
-        env_a.seed_for(a) != env_b.seed_for(a) for a in env_a.agents
-    )
+    differing = sum(env_a.seed_for(a) != env_b.seed_for(a) for a in env_a.agents)
     assert differing == len(env_a.agents)
 
 
@@ -374,9 +370,7 @@ def test_env_rejects_invalid_dynamics() -> None:
 
 def test_env_rejects_too_many_agents() -> None:
     with pytest.raises(ValueError, match="MAX_AGENTS|at most"):
-        MultiAgentDIXEnv(
-            _scenario(), _episode_config(), _dynamics(MAX_AGENTS + 1)
-        )
+        MultiAgentDIXEnv(_scenario(), _episode_config(), _dynamics(MAX_AGENTS + 1))
 
 
 def test_env_rejects_empty_agent_id() -> None:
@@ -613,9 +607,7 @@ def test_train_result_rejects_bad_policy_digest() -> None:
         terminal_drawdown_usd=0.0,
         fills_count=2,
     )
-    artifact = MultiAgentPolicyArtifact(
-        agent_id="a", framework="fake", digest="0" * 16
-    )
+    artifact = MultiAgentPolicyArtifact(agent_id="a", framework="fake", digest="0" * 16)
     outcome = RealityOutcome(
         scenario_id=scn.scenario_id,
         seed=1,
@@ -652,6 +644,7 @@ def test_factory_lazy_imports_ray_inside_body() -> None:
     try:
         import ray  # type: ignore[import-not-found]  # noqa: F401
         import ray.rllib.algorithms.ppo  # type: ignore[import-not-found]  # noqa: F401
+
         ray_present = True
     except ImportError:
         ray_present = False
@@ -684,17 +677,15 @@ def test_module_has_no_top_level_ray_import() -> None:
                 assert alias.name not in forbidden_modules, (
                     f"top-level forbidden import: {alias.name}"
                 )
-                assert not any(
-                    alias.name.startswith(f + ".") for f in forbidden_modules
-                ), f"top-level forbidden import: {alias.name}"
+                assert not any(alias.name.startswith(f + ".") for f in forbidden_modules), (
+                    f"top-level forbidden import: {alias.name}"
+                )
         if isinstance(node, ast.ImportFrom):
             mod = node.module or ""
-            assert mod not in forbidden_modules, (
+            assert mod not in forbidden_modules, f"top-level forbidden import-from: {mod}"
+            assert not any(mod.startswith(f + ".") for f in forbidden_modules), (
                 f"top-level forbidden import-from: {mod}"
             )
-            assert not any(
-                mod.startswith(f + ".") for f in forbidden_modules
-            ), f"top-level forbidden import-from: {mod}"
 
 
 def test_module_has_no_top_level_gymnasium_or_torch() -> None:
@@ -704,9 +695,7 @@ def test_module_has_no_top_level_gymnasium_or_torch() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 assert alias.name not in forbidden
-                assert not any(
-                    alias.name.startswith(f + ".") for f in forbidden
-                )
+                assert not any(alias.name.startswith(f + ".") for f in forbidden)
         if isinstance(node, ast.ImportFrom):
             mod = node.module or ""
             assert mod not in forbidden
@@ -719,8 +708,7 @@ def test_module_lazy_imports_ray_only_inside_factory() -> None:
         (
             n
             for n in tree.body
-            if isinstance(n, ast.FunctionDef)
-            and n.name == "rllib_ppo_trainer_factory"
+            if isinstance(n, ast.FunctionDef) and n.name == "rllib_ppo_trainer_factory"
         ),
         None,
     )
@@ -747,9 +735,7 @@ def test_module_has_no_forbidden_stdlib_imports() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 assert alias.name not in forbidden
-                assert not any(
-                    alias.name.startswith(f + ".") for f in forbidden
-                )
+                assert not any(alias.name.startswith(f + ".") for f in forbidden)
         if isinstance(node, ast.ImportFrom):
             mod = node.module or ""
             assert mod not in forbidden

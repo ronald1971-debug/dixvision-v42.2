@@ -136,30 +136,18 @@ class DIXBoxSpace:
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.low):
-            raise ValueError(
-                f"DIXBoxSpace.low must be finite, got {self.low!r}"
-            )
+            raise ValueError(f"DIXBoxSpace.low must be finite, got {self.low!r}")
         if not math.isfinite(self.high):
-            raise ValueError(
-                f"DIXBoxSpace.high must be finite, got {self.high!r}"
-            )
+            raise ValueError(f"DIXBoxSpace.high must be finite, got {self.high!r}")
         if self.low >= self.high:
-            raise ValueError(
-                f"DIXBoxSpace.low must be < high, got {self.low!r} >= "
-                f"{self.high!r}"
-            )
+            raise ValueError(f"DIXBoxSpace.low must be < high, got {self.low!r} >= {self.high!r}")
         if not self.shape:
             raise ValueError("DIXBoxSpace.shape must be non-empty")
         for idx, dim in enumerate(self.shape):
             if not isinstance(dim, int):
-                raise TypeError(
-                    f"DIXBoxSpace.shape[{idx}] must be int, got "
-                    f"{type(dim).__name__}"
-                )
+                raise TypeError(f"DIXBoxSpace.shape[{idx}] must be int, got {type(dim).__name__}")
             if dim <= 0:
-                raise ValueError(
-                    f"DIXBoxSpace.shape[{idx}] must be positive, got {dim!r}"
-                )
+                raise ValueError(f"DIXBoxSpace.shape[{idx}] must be positive, got {dim!r}")
 
     def contains(self, value: tuple[float, ...]) -> bool:
         if not isinstance(value, tuple):
@@ -182,8 +170,7 @@ class DIXBoxSpace:
         """
 
         digest = hashlib.blake2b(
-            f"sample|{DIX_BASE_ENV_VERSION}|{seed}|{self.low}|{self.high}|"
-            f"{self.shape}".encode(),
+            f"sample|{DIX_BASE_ENV_VERSION}|{seed}|{self.low}|{self.high}|{self.shape}".encode(),
             digest_size=8,
         ).digest()
         fraction = (int.from_bytes(digest, "big") % 10_001) / 10_000.0
@@ -204,13 +191,9 @@ class DIXDiscreteSpace:
 
     def __post_init__(self) -> None:
         if not isinstance(self.n, int):
-            raise TypeError(
-                f"DIXDiscreteSpace.n must be int, got {type(self.n).__name__}"
-            )
+            raise TypeError(f"DIXDiscreteSpace.n must be int, got {type(self.n).__name__}")
         if self.n <= 0:
-            raise ValueError(
-                f"DIXDiscreteSpace.n must be positive, got {self.n!r}"
-            )
+            raise ValueError(f"DIXDiscreteSpace.n must be positive, got {self.n!r}")
 
     def contains(self, value: int) -> bool:
         if not isinstance(value, int):
@@ -244,14 +227,10 @@ class DIXBaseObservation:
 
     def __post_init__(self) -> None:
         if self.step_idx < 0:
-            raise ValueError(
-                f"DIXBaseObservation.step_idx must be >= 0, got "
-                f"{self.step_idx!r}"
-            )
+            raise ValueError(f"DIXBaseObservation.step_idx must be >= 0, got {self.step_idx!r}")
         if len(self.state_hash) != 16:
             raise ValueError(
-                f"DIXBaseObservation.state_hash must be 16 hex chars, got "
-                f"{self.state_hash!r}"
+                f"DIXBaseObservation.state_hash must be 16 hex chars, got {self.state_hash!r}"
             )
 
 
@@ -271,10 +250,7 @@ class DIXBaseStepResult:
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.reward):
-            raise ValueError(
-                f"DIXBaseStepResult.reward must be finite, got "
-                f"{self.reward!r}"
-            )
+            raise ValueError(f"DIXBaseStepResult.reward must be finite, got {self.reward!r}")
 
     def info_dict(self) -> dict[str, Any]:
         return dict(self.info)
@@ -347,17 +323,14 @@ class DIXBaseEnv(abc.ABC):
         """Subclass hook — return initial observation payload."""
 
     @abc.abstractmethod
-    def _step_payload(
-        self, action: Any
-    ) -> tuple[Any, float, bool, bool, dict[str, Any]]:
+    def _step_payload(self, action: Any) -> tuple[Any, float, bool, bool, dict[str, Any]]:
         """Subclass hook — return
         ``(payload, reward, terminated, truncated, info_dict)``."""
 
     def _canonical_payload_repr(self, payload: Any) -> str:
         if dataclasses.is_dataclass(payload) and not isinstance(payload, type):
             items = [
-                (field.name, getattr(payload, field.name))
-                for field in dataclasses.fields(payload)
+                (field.name, getattr(payload, field.name)) for field in dataclasses.fields(payload)
             ]
             return "{" + ",".join(f"{k}={v!r}" for k, v in items) + "}"
         return repr(payload)
@@ -369,19 +342,14 @@ class DIXBaseEnv(abc.ABC):
         options: dict[str, Any] | None = None,
     ) -> tuple[DIXBaseObservation, dict[str, Any]]:
         if not isinstance(seed, int):
-            raise TypeError(
-                f"DIXBaseEnv.reset(seed=...) must be int, got "
-                f"{type(seed).__name__}"
-            )
+            raise TypeError(f"DIXBaseEnv.reset(seed=...) must be int, got {type(seed).__name__}")
         self._seed = seed
         self._step_idx = 0
         self._step_call_count = 0
         self._terminated = False
         self._has_reset = True
         payload = self._reset_payload(options=options)
-        state_hash = self._build_state_hash(
-            self._canonical_payload_repr(payload)
-        )
+        state_hash = self._build_state_hash(self._canonical_payload_repr(payload))
         observation = DIXBaseObservation(
             step_idx=self._step_idx,
             payload=payload,
@@ -404,18 +372,13 @@ class DIXBaseEnv(abc.ABC):
         self._step_call_count += 1
         if self._step_call_count > MAX_EPISODE_STEPS:
             raise DIXBaseEpisodeBudgetExceededError(
-                f"DIXBaseEnv exceeded MAX_EPISODE_STEPS="
-                f"{MAX_EPISODE_STEPS!r} without reset"
+                f"DIXBaseEnv exceeded MAX_EPISODE_STEPS={MAX_EPISODE_STEPS!r} without reset"
             )
 
         self._step_idx += 1
-        payload, reward, terminated, truncated, info = self._step_payload(
-            action
-        )
+        payload, reward, terminated, truncated, info = self._step_payload(action)
         self._terminated = bool(terminated or truncated)
-        state_hash = self._build_state_hash(
-            self._canonical_payload_repr(payload)
-        )
+        state_hash = self._build_state_hash(self._canonical_payload_repr(payload))
         observation = DIXBaseObservation(
             step_idx=self._step_idx,
             payload=payload,
@@ -479,9 +442,7 @@ def gymnasium_dix_base_env_factory(*, env: DIXBaseEnv) -> Any:
             obs, info = base.reset(seed=seed or 0, options=options)
             return obs.payload, info
 
-        def step(
-            self, action: Any
-        ) -> tuple[Any, float, bool, bool, dict[str, Any]]:
+        def step(self, action: Any) -> tuple[Any, float, bool, bool, dict[str, Any]]:
             result = base.step(action)
             return (
                 result.observation.payload,

@@ -458,9 +458,7 @@ def test_kg_deserialize_rejects_bad_blob():
 
 
 def test_kg_deserialize_rejects_wrong_version():
-    blob = (
-        b'{"version":"999","nodes":[],"edges":[]}'
-    )
+    blob = b'{"version":"999","nodes":[],"edges":[]}'
     with pytest.raises(KnowledgeGraphError):
         KnowledgeGraph.deserialize(blob)
 
@@ -519,6 +517,7 @@ def test_neo4j_factory_raises_when_missing(monkeypatch):
     # KnowledgeGraphError.
     try:
         import neo4j  # noqa: F401, PLC0415
+
         pytest.skip("neo4j installed; factory error path not exercised here")
     except ImportError:
         with pytest.raises(KnowledgeGraphError):
@@ -668,10 +667,7 @@ def test_ast_no_inline_cypher_in_logic_module():
                 # presence of explicit ``$`` parameter markers which
                 # only the query templates use).
                 if "$" in text:
-                    pytest.fail(
-                        f"inline cypher detected in state.knowledge_graph: "
-                        f"{text[:80]!r}"
-                    )
+                    pytest.fail(f"inline cypher detected in state.knowledge_graph: {text[:80]!r}")
 
 
 def test_ast_query_module_constants_only():
@@ -682,10 +678,7 @@ def test_ast_query_module_constants_only():
             pytest.fail("f-strings forbidden in knowledge_graph_queries")
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
             if node.func.attr in {"format", "format_map"}:
-                pytest.fail(
-                    f"runtime string formatting forbidden in queries: "
-                    f"{ast.dump(node)}"
-                )
+                pytest.fail(f"runtime string formatting forbidden in queries: {ast.dump(node)}")
 
 
 # ---------------------------------------------------------------------------

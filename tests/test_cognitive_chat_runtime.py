@@ -103,8 +103,7 @@ class _RecordingLedger:
         starts empty so the rehydrate is a no-op for these tests."""
 
         return tuple(
-            _RecordedEntry(ts_ns=ts, kind=kind, payload=payload)
-            for ts, kind, payload in self.rows
+            _RecordedEntry(ts_ns=ts, kind=kind, payload=payload) for ts, kind, payload in self.rows
         )
 
 
@@ -112,9 +111,7 @@ class _RecordedEntry:
     """Minimal ``LedgerEntry`` shim — projection only reads ``kind``
     and ``payload``."""
 
-    def __init__(
-        self, *, ts_ns: int, kind: str, payload: Mapping[str, str]
-    ) -> None:
+    def __init__(self, *, ts_ns: int, kind: str, payload: Mapping[str, str]) -> None:
         self.ts_ns = ts_ns
         self.kind = kind
         self.payload = dict(payload)
@@ -450,9 +447,7 @@ def _wire_pr_f_runtime(
     runtime = build_runtime(
         registry=_registry_with("provider-A"),
         ledger_writer=ledger,
-        transport=transport if transport is not None else _RecordingTransport(
-            reply=_PROPOSE_REPLY
-        ),
+        transport=transport if transport is not None else _RecordingTransport(reply=_PROPOSE_REPLY),
         feature_flag=_flag("yes"),
     )
 
@@ -497,9 +492,7 @@ def test_runtime_pr_f_auto_with_no_hazard_auto_approves_proposal() -> None:
     kinds = [row[1] for row in ledger.rows]
     assert "OPERATOR_APPROVAL_PENDING" in kinds
     assert "OPERATOR_APPROVED_SIGNAL" in kinds
-    approved_payload = next(
-        row[2] for row in ledger.rows if row[1] == "OPERATOR_APPROVED_SIGNAL"
-    )
+    approved_payload = next(row[2] for row in ledger.rows if row[1] == "OPERATOR_APPROVED_SIGNAL")
     assert approved_payload["decided_by"] == AUTO_DECIDED_BY_TAG
     assert len(emitted) == 1
     assert emitted[0].symbol == "EURUSD"
@@ -574,12 +567,8 @@ def test_runtime_pr_f_routine_traffic_auto_approves_100x() -> None:
     # Now a hazard fires — next turn stays PENDING.
     hazard["active"] = True
     runtime.turn(_request("hi", thread_id="thread-haz"))
-    approved_after = [
-        row for row in ledger.rows if row[1] == "OPERATOR_APPROVED_SIGNAL"
-    ]
-    pending_after = [
-        row for row in ledger.rows if row[1] == "OPERATOR_APPROVAL_PENDING"
-    ]
+    approved_after = [row for row in ledger.rows if row[1] == "OPERATOR_APPROVED_SIGNAL"]
+    pending_after = [row for row in ledger.rows if row[1] == "OPERATOR_APPROVAL_PENDING"]
     assert len(approved_after) == 100  # unchanged — last turn was not auto-approved
     assert len(pending_after) == 101  # 101st row queued but not approved
     assert len(emitted) == 100

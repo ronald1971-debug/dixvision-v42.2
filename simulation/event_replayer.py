@@ -123,15 +123,9 @@ class EventLogEntry:
 
     def __post_init__(self) -> None:
         if not isinstance(self.ts_ns, int):
-            raise TypeError(
-                "EventLogEntry.ts_ns must be int, "
-                f"got {type(self.ts_ns).__name__}"
-            )
+            raise TypeError(f"EventLogEntry.ts_ns must be int, got {type(self.ts_ns).__name__}")
         if self.ts_ns < 0:
-            raise ValueError(
-                "EventLogEntry.ts_ns must be non-negative, "
-                f"got {self.ts_ns!r}"
-            )
+            raise ValueError(f"EventLogEntry.ts_ns must be non-negative, got {self.ts_ns!r}")
 
 
 # ---------------------------------------------------------------------------
@@ -159,20 +153,14 @@ class ReplayResult:
     def __post_init__(self) -> None:
         if not isinstance(self.scenario_id, str):
             raise TypeError(
-                "ReplayResult.scenario_id must be str, "
-                f"got {type(self.scenario_id).__name__}"
+                f"ReplayResult.scenario_id must be str, got {type(self.scenario_id).__name__}"
             )
         if not self.scenario_id:
             raise ValueError("ReplayResult.scenario_id must be non-empty")
         if not isinstance(self.seed, int):
-            raise TypeError(
-                "ReplayResult.seed must be int, "
-                f"got {type(self.seed).__name__}"
-            )
+            raise TypeError(f"ReplayResult.seed must be int, got {type(self.seed).__name__}")
         if self.seed < 0:
-            raise ValueError(
-                f"ReplayResult.seed must be non-negative, got {self.seed!r}"
-            )
+            raise ValueError(f"ReplayResult.seed must be non-negative, got {self.seed!r}")
         if not isinstance(self.events_dispatched, int):
             raise TypeError(
                 "ReplayResult.events_dispatched must be int, "
@@ -186,14 +174,9 @@ class ReplayResult:
         for name in ("start_ts_ns", "end_ts_ns", "final_clock_ns"):
             value = getattr(self, name)
             if not isinstance(value, int):
-                raise TypeError(
-                    f"ReplayResult.{name} must be int, "
-                    f"got {type(value).__name__}"
-                )
+                raise TypeError(f"ReplayResult.{name} must be int, got {type(value).__name__}")
             if value < 0:
-                raise ValueError(
-                    f"ReplayResult.{name} must be non-negative, got {value!r}"
-                )
+                raise ValueError(f"ReplayResult.{name} must be non-negative, got {value!r}")
         if self.end_ts_ns < self.start_ts_ns:
             raise ValueError(
                 "ReplayResult.end_ts_ns must be >= start_ts_ns, "
@@ -231,10 +214,7 @@ class EventReplayer:
         # methods so input validation is centralised. This still
         # validates the tuple itself so a misuse fails loudly.
         if not isinstance(entries, tuple):
-            raise TypeError(
-                "EventReplayer.entries must be tuple, "
-                f"got {type(entries).__name__}"
-            )
+            raise TypeError(f"EventReplayer.entries must be tuple, got {type(entries).__name__}")
         for index, entry in enumerate(entries):
             if not isinstance(entry, EventLogEntry):
                 raise TypeError(
@@ -255,9 +235,7 @@ class EventReplayer:
     # -- factories -----------------------------------------------------------
 
     @classmethod
-    def from_iterable(
-        cls, entries: Iterable[EventLogEntry]
-    ) -> EventReplayer:
+    def from_iterable(cls, entries: Iterable[EventLogEntry]) -> EventReplayer:
         """Build a replayer from an iterable of
         :class:`EventLogEntry` rows. The iterable is consumed
         eagerly so any validation error is raised before
@@ -268,9 +246,7 @@ class EventReplayer:
         return cls(materialised)
 
     @classmethod
-    def from_pairs(
-        cls, pairs: Iterable[tuple[int, object]]
-    ) -> EventReplayer:
+    def from_pairs(cls, pairs: Iterable[tuple[int, object]]) -> EventReplayer:
         """Build a replayer from an iterable of ``(ts_ns, payload)``
         tuples. Convenience for callers that don't want to construct
         :class:`EventLogEntry` rows themselves; equivalent to
@@ -330,9 +306,7 @@ class EventReplayer:
 
     # -- transformations -----------------------------------------------------
 
-    def slice(
-        self, start_ts_ns: int, end_ts_ns: int
-    ) -> EventReplayer:
+    def slice(self, start_ts_ns: int, end_ts_ns: int) -> EventReplayer:
         """Return a new :class:`EventReplayer` covering only entries
         with ``start_ts_ns <= ts_ns <= end_ts_ns``. Inclusive on both
         ends to mirror nautilus's ``backtest_start`` / ``backtest_end``
@@ -341,29 +315,22 @@ class EventReplayer:
 
         if not isinstance(start_ts_ns, int):
             raise TypeError(
-                "EventReplayer.slice start_ts_ns must be int, "
-                f"got {type(start_ts_ns).__name__}"
+                f"EventReplayer.slice start_ts_ns must be int, got {type(start_ts_ns).__name__}"
             )
         if not isinstance(end_ts_ns, int):
             raise TypeError(
-                "EventReplayer.slice end_ts_ns must be int, "
-                f"got {type(end_ts_ns).__name__}"
+                f"EventReplayer.slice end_ts_ns must be int, got {type(end_ts_ns).__name__}"
             )
         if start_ts_ns < 0:
             raise ValueError(
-                "EventReplayer.slice start_ts_ns must be non-negative, "
-                f"got {start_ts_ns!r}"
+                f"EventReplayer.slice start_ts_ns must be non-negative, got {start_ts_ns!r}"
             )
         if end_ts_ns < start_ts_ns:
             raise ValueError(
                 "EventReplayer.slice end_ts_ns must be >= start_ts_ns, "
                 f"got start={start_ts_ns!r}, end={end_ts_ns!r}"
             )
-        kept = tuple(
-            entry
-            for entry in self._entries
-            if start_ts_ns <= entry.ts_ns <= end_ts_ns
-        )
+        kept = tuple(entry for entry in self._entries if start_ts_ns <= entry.ts_ns <= end_ts_ns)
         return EventReplayer(kept)
 
     # -- replay --------------------------------------------------------------
@@ -391,22 +358,14 @@ class EventReplayer:
 
         if not isinstance(scenario_id, str):
             raise TypeError(
-                "EventReplayer.replay scenario_id must be str, "
-                f"got {type(scenario_id).__name__}"
+                f"EventReplayer.replay scenario_id must be str, got {type(scenario_id).__name__}"
             )
         if not scenario_id:
-            raise ValueError(
-                "EventReplayer.replay scenario_id must be non-empty"
-            )
+            raise ValueError("EventReplayer.replay scenario_id must be non-empty")
         if not isinstance(seed, int):
-            raise TypeError(
-                "EventReplayer.replay seed must be int, "
-                f"got {type(seed).__name__}"
-            )
+            raise TypeError(f"EventReplayer.replay seed must be int, got {type(seed).__name__}")
         if seed < 0:
-            raise ValueError(
-                f"EventReplayer.replay seed must be non-negative, got {seed!r}"
-            )
+            raise ValueError(f"EventReplayer.replay seed must be non-negative, got {seed!r}")
 
         if clock is None:
             clock = TestClock(initial_ts_ns=self.start_ts_ns)
@@ -459,8 +418,7 @@ class EventReplayer:
             )
         if until_ts_ns < 0:
             raise ValueError(
-                "EventReplayer.replay_until until_ts_ns must be non-negative, "
-                f"got {until_ts_ns!r}"
+                f"EventReplayer.replay_until until_ts_ns must be non-negative, got {until_ts_ns!r}"
             )
         return self.slice(0, until_ts_ns).replay(
             scenario_id=scenario_id,

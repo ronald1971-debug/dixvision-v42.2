@@ -83,13 +83,9 @@ class BookLevel:
 
     def __post_init__(self) -> None:
         if not (self.price > 0.0):  # IEEE-754 NaN-safe (PR #234 pattern)
-            raise ValueError(
-                f"BookLevel.price must be > 0 (NaN-safe), got {self.price!r}"
-            )
+            raise ValueError(f"BookLevel.price must be > 0 (NaN-safe), got {self.price!r}")
         if not (self.qty >= 0.0):
-            raise ValueError(
-                f"BookLevel.qty must be >= 0 (NaN-safe), got {self.qty!r}"
-            )
+            raise ValueError(f"BookLevel.qty must be >= 0 (NaN-safe), got {self.qty!r}")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -108,14 +104,10 @@ class BookSnapshot:
     def __post_init__(self) -> None:
         for i in range(1, len(self.bids)):
             if self.bids[i].price > self.bids[i - 1].price:
-                raise ValueError(
-                    "BookSnapshot.bids must be sorted descending by price"
-                )
+                raise ValueError("BookSnapshot.bids must be sorted descending by price")
         for i in range(1, len(self.asks)):
             if self.asks[i].price < self.asks[i - 1].price:
-                raise ValueError(
-                    "BookSnapshot.asks must be sorted ascending by price"
-                )
+                raise ValueError("BookSnapshot.asks must be sorted ascending by price")
         if self.bids and self.asks:
             if self.bids[0].price >= self.asks[0].price:
                 raise ValueError(
@@ -199,10 +191,7 @@ class ConstantBpsSlippage:
 
     def __post_init__(self) -> None:
         if not (self.bps >= 0.0):
-            raise ValueError(
-                f"ConstantBpsSlippage.bps must be >= 0 (NaN-safe), "
-                f"got {self.bps!r}"
-            )
+            raise ValueError(f"ConstantBpsSlippage.bps must be >= 0 (NaN-safe), got {self.bps!r}")
 
     def apply(
         self,
@@ -340,13 +329,11 @@ class SquareRootImpactSlippage:
     def __post_init__(self) -> None:
         if not (self.eta >= 0.0):
             raise ValueError(
-                f"SquareRootImpactSlippage.eta must be >= 0 (NaN-safe), "
-                f"got {self.eta!r}"
+                f"SquareRootImpactSlippage.eta must be >= 0 (NaN-safe), got {self.eta!r}"
             )
         if not (self.adv > 0.0):
             raise ValueError(
-                f"SquareRootImpactSlippage.adv must be > 0 (NaN-safe), "
-                f"got {self.adv!r}"
+                f"SquareRootImpactSlippage.adv must be > 0 (NaN-safe), got {self.adv!r}"
             )
 
     def apply(

@@ -94,8 +94,7 @@ def test_no_top_level_gymnasium_import() -> None:
                 top_level.append(node.module)
     forbidden = {"gymnasium", "gym", "stable_baselines3", "numpy", "torch"}
     assert not (set(top_level) & forbidden), (
-        f"top-level imports leaked forbidden packages: "
-        f"{set(top_level) & forbidden}"
+        f"top-level imports leaked forbidden packages: {set(top_level) & forbidden}"
     )
 
 
@@ -116,9 +115,7 @@ def test_no_runtime_clock_or_io_imports_anywhere() -> None:
         "secrets",
         "uuid",
     }
-    assert not (all_imports & forbidden), (
-        f"forbidden imports: {all_imports & forbidden}"
-    )
+    assert not (all_imports & forbidden), f"forbidden imports: {all_imports & forbidden}"
 
 
 def test_no_engine_cross_imports() -> None:
@@ -133,9 +130,7 @@ def test_no_engine_cross_imports() -> None:
         "registry.",
         "ui.",
     )
-    leaked = {
-        m for m in all_imports if m.startswith(forbidden_prefixes)
-    }
+    leaked = {m for m in all_imports if m.startswith(forbidden_prefixes)}
     # The env is OFFLINE and leaf-pure: it must not import any other
     # engine. core.* imports would be allowed here but currently none
     # are needed.
@@ -146,9 +141,7 @@ def test_value_object_dataclasses_are_frozen_and_slotted() -> None:
     for cls in (Observation, Transition, EpisodeConfig):
         params = cls.__dataclass_params__  # type: ignore[attr-defined]
         assert params.frozen, f"{cls.__name__} must be frozen"
-        assert getattr(cls, "__slots__", None) is not None, (
-            f"{cls.__name__} must declare __slots__"
-        )
+        assert getattr(cls, "__slots__", None) is not None, f"{cls.__name__} must declare __slots__"
 
 
 def test_dixstrategyenv_uses_slots() -> None:
@@ -378,9 +371,7 @@ class _ConstantUpDynamics:
     against drift). HOLD makes 0. Drawdown is always 0.
     """
 
-    def initial_mid_price(
-        self, *, seed: int, config: EpisodeConfig
-    ) -> float:
+    def initial_mid_price(self, *, seed: int, config: EpisodeConfig) -> float:
         return 100.0
 
     def step(
@@ -415,9 +406,7 @@ class _SeededDynamics:
     pin INV-15 (same episode_seed → same per-step seeds → same
     transitions)."""
 
-    def initial_mid_price(
-        self, *, seed: int, config: EpisodeConfig
-    ) -> float:
+    def initial_mid_price(self, *, seed: int, config: EpisodeConfig) -> float:
         return 50.0 + (seed % 7)
 
     def step(
@@ -452,9 +441,7 @@ class _TerminatingDynamics:
     def __init__(self, terminate_after: int) -> None:
         self._terminate_after = terminate_after
 
-    def initial_mid_price(
-        self, *, seed: int, config: EpisodeConfig
-    ) -> float:
+    def initial_mid_price(self, *, seed: int, config: EpisodeConfig) -> float:
         return 100.0
 
     def step(
@@ -537,9 +524,7 @@ def test_reset_rejects_non_episode_config() -> None:
 
 def test_reset_rejects_dynamics_returning_non_positive_initial_mid() -> None:
     class _BadDyn:
-        def initial_mid_price(
-            self, *, seed: int, config: EpisodeConfig
-        ) -> float:
+        def initial_mid_price(self, *, seed: int, config: EpisodeConfig) -> float:
             return -1.0
 
         def step(
@@ -611,9 +596,7 @@ def test_step_coerces_int_action_to_trade_action() -> None:
 
 def test_step_rejects_dynamics_returning_non_transition() -> None:
     class _BadStepDyn:
-        def initial_mid_price(
-            self, *, seed: int, config: EpisodeConfig
-        ) -> float:
+        def initial_mid_price(self, *, seed: int, config: EpisodeConfig) -> float:
             return 100.0
 
         def step(

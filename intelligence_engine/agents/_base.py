@@ -97,9 +97,7 @@ class AgentBase:
         path = (
             Path(registry_path)
             if registry_path is not None
-            else Path(__file__).resolve().parents[2]
-            / "registry"
-            / "agent_state_keys.yaml"
+            else Path(__file__).resolve().parents[2] / "registry" / "agent_state_keys.yaml"
         )
         with path.open(encoding="utf-8") as handle:
             doc = yaml.safe_load(handle) or {}

@@ -41,6 +41,7 @@ Design:
     `enable_psutil_factory` lazy seam (imports psutil INSIDE function body
                             only) returning a sampler that reads live OS state.
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
@@ -55,8 +56,8 @@ NEW_PIP_DEPENDENCIES: tuple[str, ...] = ("psutil",)
 
 DEFAULT_CPU_WARN_PCT: float = 80.0
 DEFAULT_CPU_CRIT_PCT: float = 95.0
-DEFAULT_RSS_WARN_BYTES: int = 1_073_741_824            # 1 GiB
-DEFAULT_RSS_CRIT_BYTES: int = 2_147_483_648            # 2 GiB
+DEFAULT_RSS_WARN_BYTES: int = 1_073_741_824  # 1 GiB
+DEFAULT_RSS_CRIT_BYTES: int = 2_147_483_648  # 2 GiB
 DEFAULT_FD_WARN_COUNT: int = 768
 DEFAULT_FD_CRIT_COUNT: int = 960
 DEFAULT_THREAD_WARN_COUNT: int = 256
@@ -174,9 +175,7 @@ class ProcessMetrics:
         if not isinstance(self.status, str):
             raise TypeError("status must be str")
         if self.status not in ALLOWED_STATUSES:
-            raise ValueError(
-                f"status must be one of {ALLOWED_STATUSES}, got {self.status!r}"
-            )
+            raise ValueError(f"status must be one of {ALLOWED_STATUSES}, got {self.status!r}")
 
 
 # ---------------------------------------------------------------------------
@@ -217,9 +216,7 @@ class ProcessHealth:
 _DEAD_STATUSES: frozenset[str] = frozenset({"zombie", "dead"})
 
 
-def evaluate_metrics(
-    metrics: ProcessMetrics, policy: ProcessHealthPolicy
-) -> ProcessHealth:
+def evaluate_metrics(metrics: ProcessMetrics, policy: ProcessHealthPolicy) -> ProcessHealth:
     """Pure function: snapshot + policy ⇒ deterministic health verdict.
 
     Iteration order over checks is fixed (cpu → rss → fds → threads → status)
@@ -338,9 +335,7 @@ class ProcessMonitor:
 # ---------------------------------------------------------------------------
 
 
-def stdlib_process_monitor_factory(
-    *, policy: ProcessHealthPolicy | None = None
-) -> ProcessMonitor:
+def stdlib_process_monitor_factory(*, policy: ProcessHealthPolicy | None = None) -> ProcessMonitor:
     """Always-available production default (no psutil dependency)."""
     return ProcessMonitor(policy=policy or ProcessHealthPolicy())
 

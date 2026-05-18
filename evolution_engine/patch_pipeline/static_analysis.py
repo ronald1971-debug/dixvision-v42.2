@@ -118,11 +118,7 @@ class StaticAnalysisStage:
             passed=passed,
             detail=(
                 f"{len(findings)} findings, worst="
-                + (
-                    [k.value for k, v in rank.items() if v == worst][0]
-                    if worst >= 0
-                    else "NONE"
-                )
+                + ([k.value for k, v in rank.items() if v == worst][0] if worst >= 0 else "NONE")
             ),
             meta={
                 "findings": str(len(findings)),
@@ -183,15 +179,11 @@ class SemanticASTDiff:
         try:
             before_tree = ast.parse(before)
         except SyntaxError as exc:
-            raise ValueError(
-                f"before source has syntax error: {exc!s}"
-            ) from exc
+            raise ValueError(f"before source has syntax error: {exc!s}") from exc
         try:
             after_tree = ast.parse(after)
         except SyntaxError as exc:
-            raise ValueError(
-                f"after source has syntax error: {exc!s}"
-            ) from exc
+            raise ValueError(f"after source has syntax error: {exc!s}") from exc
         before_syms = _top_level_symbols(before_tree)
         after_syms = _top_level_symbols(after_tree)
         entries: list[ASTDiffEntry] = []
@@ -279,9 +271,7 @@ class ImportGraphExtractor:
         try:
             tree = ast.parse(source)
         except SyntaxError as exc:
-            raise ValueError(
-                f"source has syntax error: {exc!s}"
-            ) from exc
+            raise ValueError(f"source has syntax error: {exc!s}") from exc
         entries: list[ImportEntry] = []
         for node, is_top in _walk_imports(tree):
             loc = f"{getattr(node, 'lineno', 0)}:{getattr(node, 'col_offset', 0)}"
@@ -306,14 +296,10 @@ class ImportGraphExtractor:
                             is_top_level=is_top,
                         )
                     )
-        entries.sort(
-            key=lambda e: (e.module, e.name, e.location, e.is_top_level)
-        )
+        entries.sort(key=lambda e: (e.module, e.name, e.location, e.is_top_level))
         return tuple(entries)
 
-    def forbidden_hits(
-        self, *, source: str
-    ) -> tuple[ImportEntry, ...]:
+    def forbidden_hits(self, *, source: str) -> tuple[ImportEntry, ...]:
         return tuple(
             e
             for e in self.extract(source=source)
@@ -359,9 +345,7 @@ class CrossFunctionCallAnalyzer:
         try:
             tree = ast.parse(source)
         except SyntaxError as exc:
-            raise ValueError(
-                f"source has syntax error: {exc!s}"
-            ) from exc
+            raise ValueError(f"source has syntax error: {exc!s}") from exc
         entries: list[CallEntry] = []
         top_funcs: dict[str, ast.AST] = {}
         for node in tree.body:
@@ -373,10 +357,7 @@ class CrossFunctionCallAnalyzer:
                     callee = self._call_name(child.func)
                     if callee is None:
                         continue
-                    loc = (
-                        f"{getattr(child, 'lineno', 0)}:"
-                        f"{getattr(child, 'col_offset', 0)}"
-                    )
+                    loc = f"{getattr(child, 'lineno', 0)}:{getattr(child, 'col_offset', 0)}"
                     entries.append(
                         CallEntry(
                             caller=caller,
@@ -440,11 +421,7 @@ class PatchSafetyReport:
 
     @property
     def is_safe(self) -> bool:
-        return not (
-            self.boundary_touched
-            or self.forbidden_imports
-            or self.tier_violations
-        )
+        return not (self.boundary_touched or self.forbidden_imports or self.tier_violations)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -504,9 +481,7 @@ class PatchSafetyAnalyzer:
             forbidden_modules=forbidden_modules,
         )
         self._call_analyzer = CrossFunctionCallAnalyzer()
-        self._tier_map: dict[str, str] = (
-            dict(tier_map) if tier_map is not None else {}
-        )
+        self._tier_map: dict[str, str] = dict(tier_map) if tier_map is not None else {}
         if boundary_prefixes is None:
             self._boundary_prefixes = GOVERNANCE_BOUNDARY_PREFIXES
         else:
@@ -525,13 +500,9 @@ class PatchSafetyAnalyzer:
     ) -> PatchSafetyReport:
         if not isinstance(path, str):
             raise TypeError("path must be a str")
-        boundary_touched = tuple(
-            p for p in self._boundary_prefixes if path.startswith(p)
-        )
+        boundary_touched = tuple(p for p in self._boundary_prefixes if path.startswith(p))
         ast_diff = self._ast_diff.diff(before=before, after=after)
-        forbidden_imports = self._import_extractor.forbidden_hits(
-            source=after
-        )
+        forbidden_imports = self._import_extractor.forbidden_hits(source=after)
         tier_violations = self._call_analyzer.runtime_tier_violations(
             source=after,
             tier_map=self._tier_map,
@@ -562,8 +533,7 @@ def tree_sitter_parser_factory() -> Any:
         import tree_sitter_python  # noqa: PLC0415
     except ImportError as exc:  # pragma: no cover - exercised when dep absent
         raise RuntimeError(
-            "tree-sitter / tree-sitter-python is not installed; "
-            "see NEW_PIP_DEPENDENCIES"
+            "tree-sitter / tree-sitter-python is not installed; see NEW_PIP_DEPENDENCIES"
         ) from exc
     language = tree_sitter.Language(tree_sitter_python.language())
     parser = tree_sitter.Parser(language)

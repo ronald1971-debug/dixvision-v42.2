@@ -61,6 +61,4 @@ class RepoEvent:
         if not self.actor:
             raise ValueError("RepoEvent.actor must be non-empty")
         if self.occurred_ts_ns is not None and self.occurred_ts_ns <= 0:
-            raise ValueError(
-                "RepoEvent.occurred_ts_ns must be positive or None"
-            )
+            raise ValueError("RepoEvent.occurred_ts_ns must be positive or None")

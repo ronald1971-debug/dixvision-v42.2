@@ -335,9 +335,7 @@ def test_unknown_status_falls_back_to_failed() -> None:
 
 
 def test_ccxt_exception_classified_into_meta() -> None:
-    fake = _FakeExchange(
-        [RuntimeError("InsufficientFunds: balance too low for BTCUSDT")]
-    )
+    fake = _FakeExchange([RuntimeError("InsufficientFunds: balance too low for BTCUSDT")])
     adapter = BinanceAdapter(exchange=fake, default_qty=0.1)
     adapter.connect()
 

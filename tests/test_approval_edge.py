@@ -139,9 +139,7 @@ def test_approve_rejects_unknown_id() -> None:
 def test_approve_rejects_already_decided_row() -> None:
     edge, _, _ = _make_edge()
     submitted = edge.queue.submit(thread_id="t1", proposal=_proposal())
-    edge.queue.decide(
-        request_id=submitted.request_id, approved=False, decided_by="other"
-    )
+    edge.queue.decide(request_id=submitted.request_id, approved=False, decided_by="other")
     with pytest.raises(ApprovalAlreadyDecidedError):
         edge.approve(
             request_id=submitted.request_id,
@@ -177,9 +175,7 @@ def test_reject_rejects_unknown_id() -> None:
 def test_reject_rejects_already_decided_row() -> None:
     edge, _, _ = _make_edge()
     submitted = edge.queue.submit(thread_id="t1", proposal=_proposal())
-    edge.queue.decide(
-        request_id=submitted.request_id, approved=True, decided_by="other"
-    )
+    edge.queue.decide(request_id=submitted.request_id, approved=True, decided_by="other")
     with pytest.raises(ApprovalAlreadyDecidedError):
         edge.reject(
             request_id=submitted.request_id,
@@ -189,9 +185,7 @@ def test_reject_rejects_already_decided_row() -> None:
 
 def test_approve_emits_sell_side_correctly() -> None:
     edge, emitted, _ = _make_edge()
-    submitted = edge.queue.submit(
-        thread_id="t1", proposal=_proposal(side=ApprovalSideApi.SELL)
-    )
+    submitted = edge.queue.submit(thread_id="t1", proposal=_proposal(side=ApprovalSideApi.SELL))
     _, sig = edge.approve(
         request_id=submitted.request_id,
         decision=ApprovalDecisionRequest(decided_by="op1"),

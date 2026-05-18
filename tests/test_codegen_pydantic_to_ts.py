@@ -28,9 +28,7 @@ from pydantic import BaseModel
 from tools.codegen.pydantic_to_ts import render_models
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
-_GENERATED_TS = (
-    _REPO_ROOT / "dashboard2026" / "src" / "types" / "generated" / "api.ts"
-)
+_GENERATED_TS = _REPO_ROOT / "dashboard2026" / "src" / "types" / "generated" / "api.ts"
 
 
 # Single source of truth for which Pydantic models the dashboard sees.

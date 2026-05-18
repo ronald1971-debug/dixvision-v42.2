@@ -79,13 +79,9 @@ class MacroObservation:
         if not self.series_id:
             raise ValueError("MacroObservation.series_id must be non-empty")
         if not self.observation_date:
-            raise ValueError(
-                "MacroObservation.observation_date must be non-empty"
-            )
+            raise ValueError("MacroObservation.observation_date must be non-empty")
         if self.observed_ts_ns is not None and self.observed_ts_ns <= 0:
-            raise ValueError(
-                "MacroObservation.observed_ts_ns must be positive or None"
-            )
+            raise ValueError("MacroObservation.observed_ts_ns must be positive or None")
 
 
 __all__ = ["MacroObservation"]

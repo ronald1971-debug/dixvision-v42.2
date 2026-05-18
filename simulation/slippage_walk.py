@@ -72,8 +72,7 @@ class SlippageWalkConfig:
     def __post_init__(self) -> None:
         if not 0 < self.max_legs <= 1_000_000:
             raise ValueError(
-                "SlippageWalkConfig.max_legs must be in (0, 1_000_000], "
-                f"got {self.max_legs!r}"
+                f"SlippageWalkConfig.max_legs must be in (0, 1_000_000], got {self.max_legs!r}"
             )
 
 
@@ -109,9 +108,7 @@ def _require_positive_int(meta: dict[str, Any], key: str) -> int:
     return raw
 
 
-def _require_bounded_float(
-    meta: dict[str, Any], key: str, low: float, high: float
-) -> float:
+def _require_bounded_float(meta: dict[str, Any], key: str, low: float, high: float) -> float:
     if key not in meta:
         raise ValueError(f"RealityScenario.meta missing required key {key!r}")
     raw = meta[key]
@@ -122,9 +119,7 @@ def _require_bounded_float(
     # `not low <= v <= high` rejects NaN — IEEE 754 makes every
     # NaN comparison False.
     if not low <= v <= high:
-        raise ValueError(
-            f"meta[{key!r}] must be in [{low}, {high}], got {v!r}"
-        )
+        raise ValueError(f"meta[{key!r}] must be in [{low}, {high}], got {v!r}")
     return v
 
 
@@ -133,9 +128,7 @@ def _require_side(meta: dict[str, Any]) -> str:
         raise ValueError("RealityScenario.meta missing required key 'side'")
     side = meta["side"]
     if side not in (_BUY, _SELL):
-        raise ValueError(
-            f"meta['side'] must be 'buy' or 'sell', got {side!r}"
-        )
+        raise ValueError(f"meta['side'] must be 'buy' or 'sell', got {side!r}")
     return side
 
 
@@ -160,16 +153,9 @@ class SlippageWalk:
         size_usd = _require_positive_float(meta, "order_size_usd")
         num_legs = _require_positive_int(meta, "num_legs")
         if num_legs > cfg.max_legs:
-            raise ValueError(
-                f"meta['num_legs'] {num_legs} exceeds "
-                f"max_legs {cfg.max_legs}"
-            )
-        drift_mean = _require_bounded_float(
-            meta, "per_leg_drift_mean", -0.1, 0.1
-        )
-        drift_std = _require_bounded_float(
-            meta, "per_leg_drift_std", 0.0, 0.5
-        )
+            raise ValueError(f"meta['num_legs'] {num_legs} exceeds max_legs {cfg.max_legs}")
+        drift_mean = _require_bounded_float(meta, "per_leg_drift_mean", -0.1, 0.1)
+        drift_std = _require_bounded_float(meta, "per_leg_drift_std", 0.0, 0.5)
         side = _require_side(meta)
 
         rng = random.Random(f"{seed}:{scenario.scenario_id}")

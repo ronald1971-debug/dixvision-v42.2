@@ -147,7 +147,7 @@ def _line(
 class TestFormatDevLine:
     def test_basic_output(self) -> None:
         out = format_dev_line(_line(fields={"a": 1}), DevFormatConfig())
-        assert out == 'ts_ns=1000 [system/test-engine] INFO hello_world | a=1'
+        assert out == "ts_ns=1000 [system/test-engine] INFO hello_world | a=1"
 
     def test_byte_stable_same_input(self) -> None:
         line = _line(fields={"b": 2, "a": 1})
@@ -388,9 +388,7 @@ class TestDevLogger:
 class TestStdlibFactory:
     def test_returns_dev_logger(self) -> None:
         sink: list[str] = []
-        log = stdlib_dev_logger_factory(
-            engine_id="e", tier="system", text_sink=sink.append
-        )
+        log = stdlib_dev_logger_factory(engine_id="e", tier="system", text_sink=sink.append)
         assert isinstance(log, DevLogger)
         assert log.engine_id == "e"
         assert log.tier == "system"
@@ -427,9 +425,7 @@ class TestLoguruSeam:
     def test_seam_returns_none_or_shim(self) -> None:
         # The seam may return None if loguru is not installed.  When it
         # returns a shim, that shim must expose a callable ``log`` method.
-        result = enable_loguru_dev_logger_factory(
-            engine_id="e", tier="system"
-        )
+        result = enable_loguru_dev_logger_factory(engine_id="e", tier="system")
         assert result is None or callable(getattr(result, "log", None))
 
 
@@ -469,8 +465,7 @@ class TestAstGuardrails:
     def test_no_forbidden_toplevel_imports(self) -> None:
         toplevel = _toplevel_imports(_MODULE_AST)
         assert toplevel.isdisjoint(_FORBIDDEN_TOPLEVEL_IMPORTS), (
-            "forbidden top-level imports: "
-            f"{toplevel & _FORBIDDEN_TOPLEVEL_IMPORTS}"
+            f"forbidden top-level imports: {toplevel & _FORBIDDEN_TOPLEVEL_IMPORTS}"
         )
 
     def test_loguru_only_inside_lazy_seam(self) -> None:
@@ -495,9 +490,7 @@ class TestAstGuardrails:
                     offenders.append((node.lineno, "from loguru import ..."))
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    if alias.name == "loguru" and not (
-                        lo <= node.lineno <= hi
-                    ):
+                    if alias.name == "loguru" and not (lo <= node.lineno <= hi):
                         offenders.append((node.lineno, "import loguru"))
         assert not offenders, f"loguru imported outside lazy seam: {offenders}"
 
@@ -528,9 +521,7 @@ class TestAstGuardrails:
         for node in _MODULE_AST.body:
             if isinstance(node, ast.ImportFrom) and node.module:
                 root = node.module.split(".")[0]
-                assert root not in forbidden_tiers, (
-                    f"B1 violation: imports {node.module}"
-                )
+                assert root not in forbidden_tiers, f"B1 violation: imports {node.module}"
 
     def test_no_wallclock_reads(self) -> None:
         # No call to time.time / time.monotonic / datetime.now / etc.

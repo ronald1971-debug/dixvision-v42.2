@@ -196,9 +196,7 @@ def test_unknown_tool_returns_method_not_found() -> None:
 
 def test_invalid_jsonrpc_version_rejected() -> None:
     server = OpenNewsServer()
-    resp = server.handle_request(
-        {"jsonrpc": "1.0", "id": 1, "method": "initialize"}
-    )
+    resp = server.handle_request({"jsonrpc": "1.0", "id": 1, "method": "initialize"})
     assert resp["error"]["code"] == -32600
 
 
@@ -232,9 +230,7 @@ def test_invalid_top_k_returns_invalid_params() -> None:
 
 def test_serve_stdio_handles_one_request_then_eof() -> None:
     server = OpenNewsServer()
-    stdin = io.BytesIO(
-        (json.dumps(_req("initialize")) + "\n").encode("utf-8")
-    )
+    stdin = io.BytesIO((json.dumps(_req("initialize")) + "\n").encode("utf-8"))
     stdout = io.BytesIO()
     server.serve_stdio(stdin, stdout)
     line = stdout.getvalue().decode("utf-8").strip()

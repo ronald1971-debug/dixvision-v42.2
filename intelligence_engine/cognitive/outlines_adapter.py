@@ -100,18 +100,15 @@ class JsonSchemaField:
     def __post_init__(self) -> None:
         if not isinstance(self.name, str) or not self.name:
             raise OutlinesSchemaError(
-                f"JsonSchemaField.name must be a non-empty str, got "
-                f"{self.name!r}"
+                f"JsonSchemaField.name must be a non-empty str, got {self.name!r}"
             )
         if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", self.name):
             raise OutlinesSchemaError(
-                f"JsonSchemaField.name must match [A-Za-z_][A-Za-z0-9_]*, "
-                f"got {self.name!r}"
+                f"JsonSchemaField.name must match [A-Za-z_][A-Za-z0-9_]*, got {self.name!r}"
             )
         if self.type_ not in _ALLOWED_TYPES:
             raise OutlinesSchemaError(
-                f"JsonSchemaField.type_ must be one of {_ALLOWED_TYPES!r}, "
-                f"got {self.type_!r}"
+                f"JsonSchemaField.type_ must be one of {_ALLOWED_TYPES!r}, got {self.type_!r}"
             )
 
 
@@ -129,8 +126,7 @@ class JsonSchema:
     def __post_init__(self) -> None:
         if not isinstance(self.fields, tuple):
             raise OutlinesSchemaError(
-                f"JsonSchema.fields must be a tuple, got "
-                f"{type(self.fields).__name__}"
+                f"JsonSchema.fields must be a tuple, got {type(self.fields).__name__}"
             )
         if not self.fields:
             raise OutlinesSchemaError("JsonSchema.fields must be non-empty")
@@ -138,13 +134,10 @@ class JsonSchema:
         for f in self.fields:
             if not isinstance(f, JsonSchemaField):
                 raise OutlinesSchemaError(
-                    f"JsonSchema.fields entries must be JsonSchemaField, "
-                    f"got {type(f).__name__}"
+                    f"JsonSchema.fields entries must be JsonSchemaField, got {type(f).__name__}"
                 )
             if f.name in seen:
-                raise OutlinesSchemaError(
-                    f"JsonSchema.fields contains duplicate name {f.name!r}"
-                )
+                raise OutlinesSchemaError(f"JsonSchema.fields contains duplicate name {f.name!r}")
             seen.add(f.name)
 
     def field_names(self) -> tuple[str, ...]:
@@ -188,8 +181,7 @@ def compile_schema_to_regex(schema: JsonSchema) -> re.Pattern[str]:
 
     if not isinstance(schema, JsonSchema):
         raise OutlinesSchemaError(
-            f"compile_schema_to_regex requires JsonSchema, got "
-            f"{type(schema).__name__}"
+            f"compile_schema_to_regex requires JsonSchema, got {type(schema).__name__}"
         )
     parts: list[str] = [r"\{", _WS]
     for i, field in enumerate(schema.fields):
@@ -219,15 +211,11 @@ def match_schema(text: str, schema: JsonSchema) -> dict[str, Any]:
     """
 
     if not isinstance(text, str):
-        raise OutlinesMatchError(
-            f"match_schema text must be str, got {type(text).__name__}"
-        )
+        raise OutlinesMatchError(f"match_schema text must be str, got {type(text).__name__}")
     pattern = compile_schema_to_regex(schema)
     m = pattern.search(text)
     if m is None:
-        raise OutlinesMatchError(
-            "match_schema: text did not contain a JSON object matching schema"
-        )
+        raise OutlinesMatchError("match_schema: text did not contain a JSON object matching schema")
     out: dict[str, Any] = {}
     for field in schema.fields:
         raw = m.group(field.name)
@@ -266,14 +254,9 @@ def enable_outlines_factory(
 
     def _call(schema: JsonSchema, prompt: str) -> dict[str, Any]:
         if not isinstance(schema, JsonSchema):
-            raise OutlinesError(
-                f"outlines schema must be JsonSchema, got "
-                f"{type(schema).__name__}"
-            )
+            raise OutlinesError(f"outlines schema must be JsonSchema, got {type(schema).__name__}")
         if not isinstance(prompt, str):
-            raise OutlinesError(
-                f"outlines prompt must be str, got {type(prompt).__name__}"
-            )
+            raise OutlinesError(f"outlines prompt must be str, got {type(prompt).__name__}")
         text = str(model(prompt))
         return match_schema(text, schema)
 

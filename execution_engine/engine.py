@@ -84,9 +84,7 @@ class ExecutionEngine(RuntimeEngine):
     ) -> None:
         self._adapter: BrokerAdapter = adapter or PaperBroker()
         self._marks: dict[str, float] = {}
-        self.plugin_slots: Mapping[str, Sequence[Plugin]] = dict(
-            plugin_slots or {}
-        )
+        self.plugin_slots: Mapping[str, Sequence[Plugin]] = dict(plugin_slots or {})
         # The AuthorityGuard is constructed lazily so unit tests that
         # only exercise broker plumbing don't need a matrix YAML on
         # disk. ``execute`` materialises the guard on first use
@@ -101,12 +99,8 @@ class ExecutionEngine(RuntimeEngine):
         # duck-typed via ``IntelligenceFeedbackSink`` so the import
         # arrow stays one-way: execution_engine → core.contracts
         # only (B1).
-        self._feedback_collector: FeedbackCollector | None = (
-            feedback_collector
-        )
-        self._intelligence_feedback: IntelligenceFeedbackSink | None = (
-            intelligence_feedback
-        )
+        self._feedback_collector: FeedbackCollector | None = feedback_collector
+        self._intelligence_feedback: IntelligenceFeedbackSink | None = intelligence_feedback
         # P0-2: hazard throttle chain closure. The adapter is the
         # single seam through which observed HazardEvents tighten the
         # hot-path RiskSnapshot via apply_throttle(). Both attributes
@@ -123,9 +117,7 @@ class ExecutionEngine(RuntimeEngine):
         # ``is_trading_unblocked(None)``. The cockpit injects a real
         # policy at boot so production never relies on the migration
         # sentinel.
-        self._development_mode_policy: DevelopmentModePolicy | None = (
-            development_mode_policy
-        )
+        self._development_mode_policy: DevelopmentModePolicy | None = development_mode_policy
 
     @property
     def adapter(self) -> BrokerAdapter:
@@ -274,10 +266,7 @@ class ExecutionEngine(RuntimeEngine):
         # path. The non-blocking ``confidence_floor`` /
         # ``qty_multiplier`` projections are consumed downstream by
         # the hot-path FastExecutor and are not enforced here.
-        if (
-            self._throttle_adapter is not None
-            and self._risk_baseline is not None
-        ):
+        if self._throttle_adapter is not None and self._risk_baseline is not None:
             throttled = self._throttle_adapter.project(
                 snapshot=self._risk_baseline,
                 now_ns=intent.ts_ns,
@@ -305,9 +294,7 @@ class ExecutionEngine(RuntimeEngine):
                 self._feed_learning_loop(intent.signal, throttled_events)
                 return throttled_events
 
-        if current_mode is not None and not effect_for(
-            current_mode
-        ).executions_dispatch:
+        if current_mode is not None and not effect_for(current_mode).executions_dispatch:
             signal = intent.signal
             suppressed = (
                 ExecutionEvent(
@@ -387,10 +374,7 @@ class ExecutionEngine(RuntimeEngine):
         signal: SignalEvent,
         events: Sequence[ExecutionEvent],
     ) -> None:
-        if (
-            self._feedback_collector is None
-            and self._intelligence_feedback is None
-        ):
+        if self._feedback_collector is None and self._intelligence_feedback is None:
             return
         mark = self._marks.get(signal.symbol)
         strategy_id = signal.plugin_chain[0] if signal.plugin_chain else ""

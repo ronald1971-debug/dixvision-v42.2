@@ -93,10 +93,7 @@ CREDENTIAL_BLUEPRINTS: Mapping[str, CredentialBlueprint] = MappingProxyType(
             env_vars=("DEVIN_API_KEY",),
             signup_url="https://app.devin.ai/settings/integrations",
             free_tier=False,
-            notes=(
-                "Routed via Devin MCP. Token from Settings →"
-                " Integrations → API keys."
-            ),
+            notes=("Routed via Devin MCP. Token from Settings → Integrations → API keys."),
         ),
         # ----- News -----
         "reuters": CredentialBlueprint(

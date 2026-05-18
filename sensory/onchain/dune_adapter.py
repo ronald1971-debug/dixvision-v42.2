@@ -156,9 +156,7 @@ def make_results_url(execution_id: str, *, base: str = DUNE_API_BASE) -> str:
     return f"{base.rstrip('/')}/execution/{safe}/results"
 
 
-def make_verify_url(
-    query_id: int = 1, *, base: str = DUNE_API_BASE
-) -> str:
+def make_verify_url(query_id: int = 1, *, base: str = DUNE_API_BASE) -> str:
     """Return the canonical Dune ``GET /query/{id}`` URL.
 
     Used by :mod:`system_engine.credentials.verifiers` as a
@@ -277,9 +275,7 @@ def _parse_observed_ts_ns(raw: object) -> int | None:
     if isinstance(raw, bool):
         return None
     if isinstance(raw, (int, float)):
-        if isinstance(raw, float) and (
-            raw != raw or raw in (float("inf"), float("-inf"))
-        ):
+        if isinstance(raw, float) and (raw != raw or raw in (float("inf"), float("-inf"))):
             return None
         scaled = _scale_epoch_to_ns(float(raw))
         if scaled is None or scaled <= 0:
@@ -388,9 +384,7 @@ def parse_results_payload(
     if not metric:
         raise ValueError("parse_results_payload: metric must be non-empty")
     if not value_field:
-        raise ValueError(
-            "parse_results_payload: value_field must be non-empty"
-        )
+        raise ValueError("parse_results_payload: value_field must be non-empty")
 
     doc = _decode_payload(payload)
     if not isinstance(doc, dict):
@@ -418,9 +412,7 @@ def parse_results_payload(
                 row_asset = raw_asset
         observed_ts_ns: int | None = None
         if observed_ts_field is not None:
-            observed_ts_ns = _parse_observed_ts_ns(
-                entry.get(observed_ts_field)
-            )
+            observed_ts_ns = _parse_observed_ts_ns(entry.get(observed_ts_field))
         try:
             out.append(
                 OnChainMetric(
@@ -492,25 +484,13 @@ class DuneQuerySpec:
         if not self.value_field:
             raise ValueError("DuneQuerySpec.value_field must be non-empty")
         if self.execution_timeout_s <= 0:
-            raise ValueError(
-                "DuneQuerySpec.execution_timeout_s must be positive"
-            )
+            raise ValueError("DuneQuerySpec.execution_timeout_s must be positive")
         if self.poll_interval_s <= 0:
-            raise ValueError(
-                "DuneQuerySpec.poll_interval_s must be positive"
-            )
-        if self.observed_ts_field is not None and not isinstance(
-            self.observed_ts_field, str
-        ):
-            raise TypeError(
-                "DuneQuerySpec.observed_ts_field must be a str or None"
-            )
-        if self.asset_field is not None and not isinstance(
-            self.asset_field, str
-        ):
-            raise TypeError(
-                "DuneQuerySpec.asset_field must be a str or None"
-            )
+            raise ValueError("DuneQuerySpec.poll_interval_s must be positive")
+        if self.observed_ts_field is not None and not isinstance(self.observed_ts_field, str):
+            raise TypeError("DuneQuerySpec.observed_ts_field must be a str or None")
+        if self.asset_field is not None and not isinstance(self.asset_field, str):
+            raise TypeError("DuneQuerySpec.asset_field must be a str or None")
         # Freeze parameters to a sorted-tuple-backed mapping so two
         # specs whose dicts differ only in iteration order serialise
         # to byte-identical request bodies.
@@ -519,9 +499,7 @@ class DuneQuerySpec:
         elif self.parameters == ():
             items = ()
         else:
-            raise TypeError(
-                "DuneQuerySpec.parameters must be a mapping (or empty)"
-            )
+            raise TypeError("DuneQuerySpec.parameters must be a mapping (or empty)")
         # Allowed because frozen=True still permits __post_init__ to
         # rewrite immutable fields via object.__setattr__.
         object.__setattr__(self, "parameters", dict(items))
@@ -538,9 +516,9 @@ def serialize_execute_body(spec: DuneQuerySpec) -> bytes:
         body = {"query_parameters": dict(sorted(spec.parameters.items()))}
     else:
         body = {}
-    return json.dumps(
-        body, sort_keys=True, separators=(",", ":"), ensure_ascii=False
-    ).encode("utf-8")
+    return json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode(
+        "utf-8"
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -647,9 +625,7 @@ class DuneAnalyticsClient:
         if not source:
             raise ValueError("DuneAnalyticsClient: source must be non-empty")
         if not specs:
-            raise ValueError(
-                "DuneAnalyticsClient: at least one DuneQuerySpec required"
-            )
+            raise ValueError("DuneAnalyticsClient: at least one DuneQuerySpec required")
 
         seen: set[int] = set()
         ordered: list[DuneQuerySpec] = []
@@ -732,24 +708,18 @@ class DuneAnalyticsClient:
             return None
         return execution_id
 
-    async def _poll_status(
-        self, execution_id: str, spec: DuneQuerySpec
-    ) -> str | None:
+    async def _poll_status(self, execution_id: str, spec: DuneQuerySpec) -> str | None:
         """Poll status until terminal or timeout.  Returns the final
         state, or ``None`` if the poll loop errored out.
         """
         url = make_status_url(execution_id, base=self._base)
         # Convert ns to seconds — the spec carries seconds and the
         # status counter is ns from the injected clock.
-        deadline_ns = self._clock_ns() + int(
-            spec.execution_timeout_s * 1_000_000_000
-        )
+        deadline_ns = self._clock_ns() + int(spec.execution_timeout_s * 1_000_000_000)
         while True:
             self._polls += 1
             try:
-                raw = await self._fetch(
-                    ("GET", url, self._headers(), None)
-                )
+                raw = await self._fetch(("GET", url, self._headers(), None))
             except Exception as exc:  # noqa: BLE001 - telemetry
                 LOG.warning(
                     "dune: status failed execution_id=%s err=%s",
@@ -801,9 +771,7 @@ class DuneAnalyticsClient:
             source=self._source,
         )
 
-    async def run_query_once(
-        self, spec: DuneQuerySpec
-    ) -> tuple[OnChainMetric, ...]:
+    async def run_query_once(self, spec: DuneQuerySpec) -> tuple[OnChainMetric, ...]:
         """Execute one Dune query end-to-end.
 
         Stages:

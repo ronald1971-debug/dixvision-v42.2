@@ -179,9 +179,7 @@ def _validate_string(*, value: Any, name: str, max_len: int) -> str:
     if not value:
         raise ValueError(f"{name} must be non-empty")
     if len(value) > max_len:
-        raise ValueError(
-            f"{name} exceeds {max_len} characters ({len(value)})"
-        )
+        raise ValueError(f"{name} exceeds {max_len} characters ({len(value)})")
     return value
 
 
@@ -194,20 +192,13 @@ def _validate_payload(payload: Mapping[str, Any]) -> tuple[tuple[str, Any], ...]
     """
 
     if not isinstance(payload, Mapping):
-        raise TypeError(
-            f"payload must be a Mapping, got {type(payload).__name__!r}"
-        )
+        raise TypeError(f"payload must be a Mapping, got {type(payload).__name__!r}")
     if len(payload) > MAX_PAYLOAD_KEYS:
-        raise ValueError(
-            f"payload exceeds MAX_PAYLOAD_KEYS ({len(payload)} > "
-            f"{MAX_PAYLOAD_KEYS})"
-        )
+        raise ValueError(f"payload exceeds MAX_PAYLOAD_KEYS ({len(payload)} > {MAX_PAYLOAD_KEYS})")
     out: list[tuple[str, Any]] = []
     for key in sorted(payload):
         if not isinstance(key, str):
-            raise TypeError(
-                f"payload keys must be str, got {type(key).__name__!r}"
-            )
+            raise TypeError(f"payload keys must be str, got {type(key).__name__!r}")
         if not key:
             raise ValueError("payload keys must be non-empty")
         value = payload[key]
@@ -257,14 +248,8 @@ class PolicyInput:
             raise TypeError("payload must be a tuple of (key, value) pairs")
         seen: set[str] = set()
         for entry in self.payload:
-            if (
-                not isinstance(entry, tuple)
-                or len(entry) != 2
-                or not isinstance(entry[0], str)
-            ):
-                raise TypeError(
-                    "payload entries must be (str, value) tuples"
-                )
+            if not isinstance(entry, tuple) or len(entry) != 2 or not isinstance(entry[0], str):
+                raise TypeError("payload entries must be (str, value) tuples")
             if entry[0] in seen:
                 raise ValueError(f"duplicate payload key: {entry[0]!r}")
             seen.add(entry[0])
@@ -317,13 +302,8 @@ class PolicyTransportResult:
 
     def __post_init__(self) -> None:
         if not isinstance(self.verdict, PolicyVerdict):
-            raise TypeError(
-                f"verdict must be PolicyVerdict, got "
-                f"{type(self.verdict).__name__!r}"
-            )
-        _validate_string(
-            value=self.policy_id, name="policy_id", max_len=128
-        )
+            raise TypeError(f"verdict must be PolicyVerdict, got {type(self.verdict).__name__!r}")
+        _validate_string(value=self.policy_id, name="policy_id", max_len=128)
         _validate_string(
             value=self.rule_path,
             name="rule_path",
@@ -332,21 +312,15 @@ class PolicyTransportResult:
         if not isinstance(self.rejection_code, str):
             raise TypeError("rejection_code must be str")
         if len(self.rejection_code) > MAX_REJECTION_CODE_LEN:
-            raise ValueError(
-                "rejection_code exceeds MAX_REJECTION_CODE_LEN"
-            )
+            raise ValueError("rejection_code exceeds MAX_REJECTION_CODE_LEN")
         if not isinstance(self.summary, str):
             raise TypeError("summary must be str")
         if len(self.summary) > MAX_SUMMARY_LEN:
             raise ValueError("summary exceeds MAX_SUMMARY_LEN")
         if self.verdict is PolicyVerdict.APPROVE and self.rejection_code:
-            raise ValueError(
-                "rejection_code must be empty on APPROVE verdicts"
-            )
+            raise ValueError("rejection_code must be empty on APPROVE verdicts")
         if self.verdict is PolicyVerdict.REJECT and not self.rejection_code:
-            raise ValueError(
-                "rejection_code is required on REJECT verdicts"
-            )
+            raise ValueError("rejection_code is required on REJECT verdicts")
 
 
 @runtime_checkable
@@ -387,9 +361,7 @@ class PolicyRule:
     verdict_on_match: PolicyVerdict = PolicyVerdict.REJECT
 
     def __post_init__(self) -> None:
-        _validate_string(
-            value=self.policy_id, name="policy_id", max_len=128
-        )
+        _validate_string(value=self.policy_id, name="policy_id", max_len=128)
         _validate_string(
             value=self.rule_path,
             name="rule_path",
@@ -398,33 +370,19 @@ class PolicyRule:
         if not callable(self.predicate):
             raise TypeError("predicate must be callable")
         if not isinstance(self.verdict_on_match, PolicyVerdict):
-            raise TypeError(
-                "verdict_on_match must be PolicyVerdict"
-            )
+            raise TypeError("verdict_on_match must be PolicyVerdict")
         if not isinstance(self.rejection_code, str):
             raise TypeError("rejection_code must be str")
         if len(self.rejection_code) > MAX_REJECTION_CODE_LEN:
-            raise ValueError(
-                "rejection_code exceeds MAX_REJECTION_CODE_LEN"
-            )
+            raise ValueError("rejection_code exceeds MAX_REJECTION_CODE_LEN")
         if not isinstance(self.summary, str):
             raise TypeError("summary must be str")
         if len(self.summary) > MAX_SUMMARY_LEN:
             raise ValueError("summary exceeds MAX_SUMMARY_LEN")
-        if (
-            self.verdict_on_match is PolicyVerdict.REJECT
-            and not self.rejection_code
-        ):
-            raise ValueError(
-                "rejection_code required when verdict_on_match=REJECT"
-            )
-        if (
-            self.verdict_on_match is PolicyVerdict.APPROVE
-            and self.rejection_code
-        ):
-            raise ValueError(
-                "rejection_code must be empty when verdict_on_match=APPROVE"
-            )
+        if self.verdict_on_match is PolicyVerdict.REJECT and not self.rejection_code:
+            raise ValueError("rejection_code required when verdict_on_match=REJECT")
+        if self.verdict_on_match is PolicyVerdict.APPROVE and self.rejection_code:
+            raise ValueError("rejection_code must be empty when verdict_on_match=APPROVE")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -449,17 +407,12 @@ class InProcessPolicyTransport:
             raise TypeError("rules must be a tuple of PolicyRule")
         for r in self.rules:
             if not isinstance(r, PolicyRule):
-                raise TypeError(
-                    f"rule must be PolicyRule, got "
-                    f"{type(r).__name__!r}"
-                )
+                raise TypeError(f"rule must be PolicyRule, got {type(r).__name__!r}")
         seen: set[tuple[str, str]] = set()
         for r in self.rules:
             key = (r.policy_id, r.rule_path)
             if key in seen:
-                raise ValueError(
-                    f"duplicate rule {r.policy_id}/{r.rule_path}"
-                )
+                raise ValueError(f"duplicate rule {r.policy_id}/{r.rule_path}")
             seen.add(key)
         _validate_string(
             value=self.default_policy_id,
@@ -474,9 +427,7 @@ class InProcessPolicyTransport:
         if not isinstance(self.default_summary, str):
             raise TypeError("default_summary must be str")
         if len(self.default_summary) > MAX_SUMMARY_LEN:
-            raise ValueError(
-                "default_summary exceeds MAX_SUMMARY_LEN"
-            )
+            raise ValueError("default_summary exceeds MAX_SUMMARY_LEN")
 
     def evaluate(
         self,
@@ -485,16 +436,14 @@ class InProcessPolicyTransport:
     ) -> PolicyTransportResult:
         if not isinstance(policy_input, PolicyInput):
             raise PolicyTransportError(
-                "policy_input must be PolicyInput, got "
-                f"{type(policy_input).__name__!r}"
+                f"policy_input must be PolicyInput, got {type(policy_input).__name__!r}"
             )
         for rule in self.rules:
             try:
                 matched = bool(rule.predicate(policy_input))
             except (TypeError, ValueError, KeyError) as exc:
                 raise PolicyTransportError(
-                    f"predicate {rule.policy_id}/{rule.rule_path} "
-                    f"raised: {exc}"
+                    f"predicate {rule.policy_id}/{rule.rule_path} raised: {exc}"
                 ) from exc
             if matched:
                 return PolicyTransportResult(
@@ -532,9 +481,7 @@ class PolicyDecision:
     def __post_init__(self) -> None:
         if not isinstance(self.verdict, PolicyVerdict):
             raise TypeError("verdict must be PolicyVerdict")
-        _validate_string(
-            value=self.policy_id, name="policy_id", max_len=128
-        )
+        _validate_string(value=self.policy_id, name="policy_id", max_len=128)
         _validate_string(
             value=self.rule_path,
             name="rule_path",
@@ -543,21 +490,15 @@ class PolicyDecision:
         if not isinstance(self.rejection_code, str):
             raise TypeError("rejection_code must be str")
         if len(self.rejection_code) > MAX_REJECTION_CODE_LEN:
-            raise ValueError(
-                "rejection_code exceeds MAX_REJECTION_CODE_LEN"
-            )
+            raise ValueError("rejection_code exceeds MAX_REJECTION_CODE_LEN")
         if not isinstance(self.summary, str):
             raise TypeError("summary must be str")
         if len(self.summary) > MAX_SUMMARY_LEN:
             raise ValueError("summary exceeds MAX_SUMMARY_LEN")
-        _validate_string(
-            value=self.policy_digest, name="policy_digest", max_len=32
-        )
+        _validate_string(value=self.policy_digest, name="policy_digest", max_len=32)
         # Hex digest of BLAKE2b-16 -> 32 hex characters.
         if len(self.policy_digest) != 32:
-            raise ValueError(
-                "policy_digest must be 32 hex characters (BLAKE2b-16)"
-            )
+            raise ValueError("policy_digest must be 32 hex characters (BLAKE2b-16)")
 
 
 # ---------------------------------------------------------------------------
@@ -583,9 +524,7 @@ def _compute_policy_digest(
         },
         "version": OPA_ADAPTER_VERSION,
     }
-    canonical = json.dumps(
-        blob, sort_keys=True, separators=(",", ":")
-    ).encode("utf-8")
+    canonical = json.dumps(blob, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.blake2b(canonical, digest_size=16).hexdigest()
 
 
@@ -607,8 +546,7 @@ class OpaPolicyEvaluator:
     def __post_init__(self) -> None:
         if not isinstance(self.transport, PolicyTransport):
             raise TypeError(
-                "transport must implement PolicyTransport, got "
-                f"{type(self.transport).__name__!r}"
+                f"transport must implement PolicyTransport, got {type(self.transport).__name__!r}"
             )
         _validate_string(
             value=self.fail_closed_code,
@@ -631,19 +569,15 @@ class OpaPolicyEvaluator:
 
         if not isinstance(policy_input, PolicyInput):
             raise TypeError(
-                "policy_input must be PolicyInput, got "
-                f"{type(policy_input).__name__!r}"
+                f"policy_input must be PolicyInput, got {type(policy_input).__name__!r}"
             )
         try:
             result = self.transport.evaluate(policy_input)
         except PolicyTransportError as exc:
-            return self._fail_closed(
-                policy_input=policy_input, reason=str(exc)
-            )
+            return self._fail_closed(policy_input=policy_input, reason=str(exc))
         if not isinstance(result, PolicyTransportResult):
             raise PolicyEvaluationError(
-                "transport returned non-PolicyTransportResult value: "
-                f"{type(result).__name__!r}"
+                f"transport returned non-PolicyTransportResult value: {type(result).__name__!r}"
             )
         digest = _compute_policy_digest(
             policy_input=policy_input,
@@ -658,9 +592,7 @@ class OpaPolicyEvaluator:
             policy_digest=digest,
         )
 
-    def _fail_closed(
-        self, *, policy_input: PolicyInput, reason: str
-    ) -> PolicyDecision:
+    def _fail_closed(self, *, policy_input: PolicyInput, reason: str) -> PolicyDecision:
         truncated = reason[:MAX_SUMMARY_LEN]
         synthetic = PolicyTransportResult(
             verdict=PolicyVerdict.REJECT,
@@ -710,10 +642,7 @@ def to_governance_decision(
     """
 
     if not isinstance(decision, PolicyDecision):
-        raise TypeError(
-            "decision must be PolicyDecision, got "
-            f"{type(decision).__name__!r}"
-        )
+        raise TypeError(f"decision must be PolicyDecision, got {type(decision).__name__!r}")
     if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
         raise TypeError("ts_ns must be int")
     if ts_ns < 0:
@@ -746,9 +675,7 @@ def to_governance_decision(
 # ---------------------------------------------------------------------------
 
 
-def _payload_value(
-    policy_input: PolicyInput, key: str
-) -> Any:
+def _payload_value(policy_input: PolicyInput, key: str) -> Any:
     """Look up a payload value, returning ``None`` if absent."""
 
     for k, v in policy_input.payload:
@@ -855,9 +782,7 @@ def opa_http_transport_factory(
 
     if client is None:
         raise TypeError("client must be an opa-python-client OpaClient")
-    _validate_string(
-        value=policy_package, name="policy_package", max_len=128
-    )
+    _validate_string(value=policy_package, name="policy_package", max_len=128)
     _validate_string(value=decision_key, name="decision_key", max_len=64)
 
     # Lazy import — opa-python-client is optional. The factory is the
@@ -897,9 +822,7 @@ class _OpaClientTransport:
         /,
     ) -> PolicyTransportResult:
         if not isinstance(policy_input, PolicyInput):
-            raise PolicyTransportError(
-                "policy_input must be PolicyInput"
-            )
+            raise PolicyTransportError("policy_input must be PolicyInput")
         try:
             raw = self.client.check_policy_rule(
                 input_data=policy_input.as_payload(),
@@ -907,30 +830,22 @@ class _OpaClientTransport:
                 rule_name="allow",
             )
         except Exception as exc:  # pragma: no cover — defensive
-            raise PolicyTransportError(
-                f"opa client raised: {exc!r}"
-            ) from exc
+            raise PolicyTransportError(f"opa client raised: {exc!r}") from exc
         if not isinstance(raw, Mapping):
             raise PolicyTransportError(
-                "opa client returned non-mapping payload: "
-                f"{type(raw).__name__!r}"
+                f"opa client returned non-mapping payload: {type(raw).__name__!r}"
             )
         verdict_raw = raw.get(self.decision_key)
         if isinstance(verdict_raw, bool):
-            verdict = (
-                PolicyVerdict.APPROVE if verdict_raw else PolicyVerdict.REJECT
-            )
+            verdict = PolicyVerdict.APPROVE if verdict_raw else PolicyVerdict.REJECT
         elif isinstance(verdict_raw, str):
             try:
                 verdict = PolicyVerdict(verdict_raw.upper())
             except ValueError as exc:
-                raise PolicyTransportError(
-                    f"unknown verdict {verdict_raw!r}"
-                ) from exc
+                raise PolicyTransportError(f"unknown verdict {verdict_raw!r}") from exc
         else:
             raise PolicyTransportError(
-                "opa client returned unsupported decision type: "
-                f"{type(verdict_raw).__name__!r}"
+                f"opa client returned unsupported decision type: {type(verdict_raw).__name__!r}"
             )
         rejection_code = ""
         summary = ""

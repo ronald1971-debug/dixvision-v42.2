@@ -129,9 +129,7 @@ def _sanitize_span_name(name: str) -> str:
     if not name:
         raise ValueError("span name must be non-empty")
     if len(name) > MAX_SPAN_NAME_LEN:
-        raise ValueError(
-            f"span name must be ≤ {MAX_SPAN_NAME_LEN} chars, got {len(name)}"
-        )
+        raise ValueError(f"span name must be ≤ {MAX_SPAN_NAME_LEN} chars, got {len(name)}")
     return name
 
 
@@ -143,9 +141,7 @@ def _canonicalise_attributes(
     if not isinstance(attributes, Mapping):
         raise TypeError("attributes must be a mapping")
     if len(attributes) > MAX_ATTRIBUTE_COUNT:
-        raise ValueError(
-            f"attributes must be ≤ {MAX_ATTRIBUTE_COUNT}, got {len(attributes)}"
-        )
+        raise ValueError(f"attributes must be ≤ {MAX_ATTRIBUTE_COUNT}, got {len(attributes)}")
     pairs: list[tuple[str, str | int | float | bool]] = []
     for key in sorted(attributes):
         if not isinstance(key, str):
@@ -308,9 +304,7 @@ class InProcessTracer:
                 self._sampled_out[key] = None
                 return span_id
             if key in self._open:
-                raise TracerError(
-                    f"span already open: trace_id={trace_id} span_id={span_id}"
-                )
+                raise TracerError(f"span already open: trace_id={trace_id} span_id={span_id}")
             self._open[key] = _OpenSpanState(
                 name=sanitized_name,
                 trace_id=trace_id,
@@ -352,13 +346,9 @@ class InProcessTracer:
                 )
             state = self._open.pop(key, None)
             if state is None:
-                raise TracerError(
-                    f"span not open: trace_id={trace_id} span_id={span_id}"
-                )
+                raise TracerError(f"span not open: trace_id={trace_id} span_id={span_id}")
             if end_ts_ns < state.start_ts_ns:
-                raise ValueError(
-                    "end_ts_ns must be ≥ start_ts_ns"
-                )
+                raise ValueError("end_ts_ns must be ≥ start_ts_ns")
             merged = dict(state.attributes)
             if attributes is not None:
                 for k, v in attributes.items():
@@ -463,9 +453,7 @@ class _OtelTracerWrapper:
         with self._lock:
             entry = self._open.pop(key, None)
             if entry is None:
-                raise TracerError(
-                    f"span not open: trace_id={trace_id} span_id={span_id}"
-                )
+                raise TracerError(f"span not open: trace_id={trace_id} span_id={span_id}")
             span, start_ts_ns, name, parent_span_id = entry
             merged: dict[str, Any] = {}
             if attributes is not None:
@@ -517,8 +505,7 @@ def otel_tracer_factory(
             from opentelemetry.sdk.trace import TracerProvider  # noqa: PLC0415
         except ImportError as exc:  # pragma: no cover - exercised when dep absent
             raise TracerError(
-                "opentelemetry-sdk is not installed; "
-                "see NEW_PIP_DEPENDENCIES"
+                "opentelemetry-sdk is not installed; see NEW_PIP_DEPENDENCIES"
             ) from exc
         resource = Resource.create({"service.name": service_name})
         provider = TracerProvider(resource=resource)

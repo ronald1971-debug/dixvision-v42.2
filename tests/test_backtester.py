@@ -148,9 +148,7 @@ class TestAuthorityPins:
         for node in ast.walk(SOURCE_AST):
             if isinstance(node, ast.ImportFrom) and node.module:
                 for prefix in banned_prefixes:
-                    assert not node.module.startswith(prefix), (
-                        f"engine cross-import: {node.module}"
-                    )
+                    assert not node.module.startswith(prefix), f"engine cross-import: {node.module}"
             elif isinstance(node, ast.Import):
                 for alias in node.names:
                     for prefix in banned_prefixes:
@@ -162,9 +160,7 @@ class TestAuthorityPins:
         banned_ctors = {"PatchProposal", "SignalEvent", "GovernanceDecision"}
         for node in ast.walk(SOURCE_AST):
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-                assert node.func.id not in banned_ctors, (
-                    f"banned constructor: {node.func.id}"
-                )
+                assert node.func.id not in banned_ctors, f"banned constructor: {node.func.id}"
 
     def test_pip_dependencies_empty(self) -> None:
         assert NEW_PIP_DEPENDENCIES == ()
@@ -180,47 +176,38 @@ class TestAuthorityPins:
 # ---------------------------------------------------------------------------
 class TestBarValidation:
     def test_valid_bar(self) -> None:
-        Bar(ts_ns=1, symbol="BTCUSDT", open=100.0, high=101.0,
-            low=99.0, close=100.5, volume=5.0)
+        Bar(ts_ns=1, symbol="BTCUSDT", open=100.0, high=101.0, low=99.0, close=100.5, volume=5.0)
 
     def test_negative_ts(self) -> None:
         with pytest.raises(BacktesterError):
-            Bar(ts_ns=-1, symbol="BTCUSDT", open=1.0, high=1.0,
-                low=1.0, close=1.0, volume=0.0)
+            Bar(ts_ns=-1, symbol="BTCUSDT", open=1.0, high=1.0, low=1.0, close=1.0, volume=0.0)
 
     def test_empty_symbol(self) -> None:
         with pytest.raises(BacktesterError):
-            Bar(ts_ns=1, symbol="", open=1.0, high=1.0,
-                low=1.0, close=1.0, volume=0.0)
+            Bar(ts_ns=1, symbol="", open=1.0, high=1.0, low=1.0, close=1.0, volume=0.0)
 
     def test_high_lt_low(self) -> None:
         with pytest.raises(BacktesterError):
-            Bar(ts_ns=1, symbol="X", open=1.0, high=0.5,
-                low=1.0, close=0.5, volume=0.0)
+            Bar(ts_ns=1, symbol="X", open=1.0, high=0.5, low=1.0, close=0.5, volume=0.0)
 
     def test_open_outside_window(self) -> None:
         with pytest.raises(BacktesterError):
-            Bar(ts_ns=1, symbol="X", open=10.0, high=2.0,
-                low=1.0, close=1.5, volume=0.0)
+            Bar(ts_ns=1, symbol="X", open=10.0, high=2.0, low=1.0, close=1.5, volume=0.0)
 
     def test_close_outside_window(self) -> None:
         with pytest.raises(BacktesterError):
-            Bar(ts_ns=1, symbol="X", open=1.5, high=2.0,
-                low=1.0, close=10.0, volume=0.0)
+            Bar(ts_ns=1, symbol="X", open=1.5, high=2.0, low=1.0, close=10.0, volume=0.0)
 
     def test_negative_volume(self) -> None:
         with pytest.raises(BacktesterError):
-            Bar(ts_ns=1, symbol="X", open=1.0, high=1.0,
-                low=1.0, close=1.0, volume=-1.0)
+            Bar(ts_ns=1, symbol="X", open=1.0, high=1.0, low=1.0, close=1.0, volume=-1.0)
 
     def test_nan_open(self) -> None:
         with pytest.raises(BacktesterError):
-            Bar(ts_ns=1, symbol="X", open=float("nan"), high=1.0,
-                low=1.0, close=1.0, volume=0.0)
+            Bar(ts_ns=1, symbol="X", open=float("nan"), high=1.0, low=1.0, close=1.0, volume=0.0)
 
     def test_frozen(self) -> None:
-        bar = Bar(ts_ns=1, symbol="X", open=1.0, high=1.0,
-                  low=1.0, close=1.0, volume=0.0)
+        bar = Bar(ts_ns=1, symbol="X", open=1.0, high=1.0, low=1.0, close=1.0, volume=0.0)
         with pytest.raises(dataclasses.FrozenInstanceError):
             bar.open = 2.0  # type: ignore[misc]
 
@@ -319,7 +306,9 @@ class TestRunBacktest:
         bars = _bars(5)
         cfg = _cfg()
         result = run_backtest(
-            bars=bars, strategy=_HoldOnly(), config=cfg,
+            bars=bars,
+            strategy=_HoldOnly(),
+            config=cfg,
             result_ts_ns=bars[-1].ts_ns,
         )
         assert isinstance(result, BacktestResult)
@@ -334,7 +323,9 @@ class TestRunBacktest:
         bars = _bars(5)
         cfg = _cfg(strategy_id="buy-once")
         result = run_backtest(
-            bars=bars, strategy=_BuyOnceSellOnce(), config=cfg,
+            bars=bars,
+            strategy=_BuyOnceSellOnce(),
+            config=cfg,
             result_ts_ns=bars[-1].ts_ns,
         )
         assert result.metrics.n_trades == 2
@@ -352,7 +343,9 @@ class TestRunBacktest:
         broker = BrokerConfig(initial_cash_usd=10_000.0, commission_rate=0.001)
         cfg = _cfg(broker=broker)
         result = run_backtest(
-            bars=bars, strategy=_BuyOnceSellOnce(), config=cfg,
+            bars=bars,
+            strategy=_BuyOnceSellOnce(),
+            config=cfg,
             result_ts_ns=bars[-1].ts_ns,
         )
         # Each fill carries 1 unit * fill_price * 0.001 commission.
@@ -365,11 +358,15 @@ class TestRunBacktest:
         broker = BrokerConfig(initial_cash_usd=10_000.0, slippage_perc=0.005)
         cfg = _cfg(broker=broker, seed=42)
         r1 = run_backtest(
-            bars=bars, strategy=_BuyOnceSellOnce(), config=cfg,
+            bars=bars,
+            strategy=_BuyOnceSellOnce(),
+            config=cfg,
             result_ts_ns=bars[-1].ts_ns,
         )
         r2 = run_backtest(
-            bars=bars, strategy=_BuyOnceSellOnce(), config=cfg,
+            bars=bars,
+            strategy=_BuyOnceSellOnce(),
+            config=cfg,
             result_ts_ns=bars[-1].ts_ns,
         )
         assert r1.trades == r2.trades
@@ -378,12 +375,14 @@ class TestRunBacktest:
         bars = _bars(5)
         broker = BrokerConfig(initial_cash_usd=10_000.0, slippage_perc=0.005)
         a = run_backtest(
-            bars=bars, strategy=_BuyOnceSellOnce(),
+            bars=bars,
+            strategy=_BuyOnceSellOnce(),
             config=_cfg(broker=broker, seed=1),
             result_ts_ns=bars[-1].ts_ns,
         )
         b = run_backtest(
-            bars=bars, strategy=_BuyOnceSellOnce(),
+            bars=bars,
+            strategy=_BuyOnceSellOnce(),
             config=_cfg(broker=broker, seed=2),
             result_ts_ns=bars[-1].ts_ns,
         )
@@ -394,7 +393,9 @@ class TestRunBacktest:
     def test_equity_curve_monotonic_ts(self) -> None:
         bars = _bars(5)
         result = run_backtest(
-            bars=bars, strategy=_HoldOnly(), config=_cfg(),
+            bars=bars,
+            strategy=_HoldOnly(),
+            config=_cfg(),
             result_ts_ns=bars[-1].ts_ns,
         )
         assert len(result.equity_curve) == 5
@@ -411,7 +412,8 @@ class TestRunBacktest:
                 return OrderRequest(action=OrderAction.HOLD, qty=0.0)
 
         run_backtest(
-            bars=bars, strategy=S(),
+            bars=bars,
+            strategy=S(),
             config=_cfg(history_window=2),
             result_ts_ns=bars[-1].ts_ns,
         )
@@ -420,27 +422,46 @@ class TestRunBacktest:
     def test_empty_bars_rejected(self) -> None:
         with pytest.raises(BacktesterError):
             run_backtest(
-                bars=(), strategy=_HoldOnly(), config=_cfg(),
+                bars=(),
+                strategy=_HoldOnly(),
+                config=_cfg(),
                 result_ts_ns=1,
             )
 
     def test_non_monotonic_bars_rejected(self) -> None:
-        a = Bar(ts_ns=2_000_000_000, symbol="BTCUSDT", open=1.0, high=1.0,
-                low=1.0, close=1.0, volume=0.0)
-        b = Bar(ts_ns=1_000_000_000, symbol="BTCUSDT", open=1.0, high=1.0,
-                low=1.0, close=1.0, volume=0.0)
+        a = Bar(
+            ts_ns=2_000_000_000,
+            symbol="BTCUSDT",
+            open=1.0,
+            high=1.0,
+            low=1.0,
+            close=1.0,
+            volume=0.0,
+        )
+        b = Bar(
+            ts_ns=1_000_000_000,
+            symbol="BTCUSDT",
+            open=1.0,
+            high=1.0,
+            low=1.0,
+            close=1.0,
+            volume=0.0,
+        )
         with pytest.raises(BacktesterError):
             run_backtest(
-                bars=(a, b), strategy=_HoldOnly(), config=_cfg(),
+                bars=(a, b),
+                strategy=_HoldOnly(),
+                config=_cfg(),
                 result_ts_ns=2_000_000_000,
             )
 
     def test_symbol_mismatch_rejected(self) -> None:
-        bar = Bar(ts_ns=1, symbol="ETHUSDT", open=1.0, high=1.0,
-                  low=1.0, close=1.0, volume=0.0)
+        bar = Bar(ts_ns=1, symbol="ETHUSDT", open=1.0, high=1.0, low=1.0, close=1.0, volume=0.0)
         with pytest.raises(BacktesterError):
             run_backtest(
-                bars=(bar,), strategy=_HoldOnly(), config=_cfg(),
+                bars=(bar,),
+                strategy=_HoldOnly(),
+                config=_cfg(),
                 result_ts_ns=1,
             )
 
@@ -456,21 +477,27 @@ class TestRunBacktest:
     def test_strategy_must_return_order_request(self) -> None:
         with pytest.raises(BacktesterError):
             run_backtest(
-                bars=_bars(3), strategy=_BadReturn(), config=_cfg(),
+                bars=_bars(3),
+                strategy=_BadReturn(),
+                config=_cfg(),
                 result_ts_ns=10,
             )
 
     def test_negative_result_ts_rejected(self) -> None:
         with pytest.raises(BacktesterError):
             run_backtest(
-                bars=_bars(3), strategy=_HoldOnly(), config=_cfg(),
+                bars=_bars(3),
+                strategy=_HoldOnly(),
+                config=_cfg(),
                 result_ts_ns=-1,
             )
 
     def test_result_trust_is_external_low(self) -> None:
         bars = _bars(3)
         result = run_backtest(
-            bars=bars, strategy=_HoldOnly(), config=_cfg(),
+            bars=bars,
+            strategy=_HoldOnly(),
+            config=_cfg(),
             result_ts_ns=bars[-1].ts_ns,
         )
         assert result.trust is SignalTrust.EXTERNAL_LOW
@@ -478,7 +505,9 @@ class TestRunBacktest:
     def test_policy_hash_is_blake2b_16(self) -> None:
         bars = _bars(3)
         result = run_backtest(
-            bars=bars, strategy=_HoldOnly(), config=_cfg(),
+            bars=bars,
+            strategy=_HoldOnly(),
+            config=_cfg(),
             result_ts_ns=bars[-1].ts_ns,
         )
         assert re.fullmatch(r"[a-f0-9]{32}", result.policy_hash)
@@ -486,9 +515,9 @@ class TestRunBacktest:
     def test_meta_includes_seed_and_window(self) -> None:
         bars = _bars(3)
         result = run_backtest(
-            bars=bars, strategy=_HoldOnly(),
-            config=_cfg(seed=7, history_window=2,
-                        meta={"note": "x"}),
+            bars=bars,
+            strategy=_HoldOnly(),
+            config=_cfg(seed=7, history_window=2, meta={"note": "x"}),
             result_ts_ns=bars[-1].ts_ns,
         )
         assert result.meta["seed"] == "7"
@@ -502,15 +531,20 @@ class TestRunBacktest:
 class TestInv15Replay:
     def test_three_runs_identical(self) -> None:
         bars = _bars(8)
-        cfg = _cfg(broker=BrokerConfig(
-            initial_cash_usd=10_000.0,
-            commission_rate=0.001,
-            slippage_perc=0.002,
-        ), seed=99)
+        cfg = _cfg(
+            broker=BrokerConfig(
+                initial_cash_usd=10_000.0,
+                commission_rate=0.001,
+                slippage_perc=0.002,
+            ),
+            seed=99,
+        )
         runs = [
             run_backtest(
-                bars=bars, strategy=_BuyOnceSellOnce(),
-                config=cfg, result_ts_ns=bars[-1].ts_ns,
+                bars=bars,
+                strategy=_BuyOnceSellOnce(),
+                config=cfg,
+                result_ts_ns=bars[-1].ts_ns,
             )
             for _ in range(3)
         ]
@@ -519,12 +553,14 @@ class TestInv15Replay:
     def test_different_strategy_id_changes_policy_hash(self) -> None:
         bars = _bars(3)
         a = run_backtest(
-            bars=bars, strategy=_HoldOnly(),
+            bars=bars,
+            strategy=_HoldOnly(),
             config=_cfg(strategy_id="strat-a"),
             result_ts_ns=bars[-1].ts_ns,
         )
         b = run_backtest(
-            bars=bars, strategy=_HoldOnly(),
+            bars=bars,
+            strategy=_HoldOnly(),
             config=_cfg(strategy_id="strat-b"),
             result_ts_ns=bars[-1].ts_ns,
         )

@@ -30,9 +30,7 @@ from learning_engine.analytics.rolling_stats import (
 def _assert_seq_equal(actual: tuple[float, ...], expected: tuple[float, ...]) -> None:
     """NaN-aware element-wise equality for float tuples."""
 
-    assert len(actual) == len(expected), (
-        f"length mismatch: {len(actual)} vs {len(expected)}"
-    )
+    assert len(actual) == len(expected), f"length mismatch: {len(actual)} vs {len(expected)}"
     for i, (a, e) in enumerate(zip(actual, expected, strict=True)):
         if math.isnan(e):
             assert math.isnan(a), f"index {i}: expected NaN, got {a!r}"
@@ -284,20 +282,14 @@ def test_no_top_level_bottleneck_import() -> None:
     src = _module_source().splitlines()
     for line in src:
         if line.startswith(("import bottleneck", "from bottleneck")):
-            raise AssertionError(
-                "bottleneck must be a lazy seam — no top-level import: "
-                f"{line!r}"
-            )
+            raise AssertionError(f"bottleneck must be a lazy seam — no top-level import: {line!r}")
 
 
 def test_no_top_level_numpy_import() -> None:
     src = _module_source().splitlines()
     for line in src:
         if line.startswith(("import numpy", "from numpy")):
-            raise AssertionError(
-                "numpy must be a lazy seam — no top-level import: "
-                f"{line!r}"
-            )
+            raise AssertionError(f"numpy must be a lazy seam — no top-level import: {line!r}")
 
 
 def test_no_forbidden_top_level_imports() -> None:
@@ -321,9 +313,7 @@ def test_no_forbidden_top_level_imports() -> None:
     for line in src:
         for bad in forbidden:
             if line.startswith(bad):
-                raise AssertionError(
-                    f"forbidden top-level import: {line!r}"
-                )
+                raise AssertionError(f"forbidden top-level import: {line!r}")
 
 
 def test_no_typed_event_constructors() -> None:
@@ -337,6 +327,4 @@ def test_no_typed_event_constructors() -> None:
     )
     src = _module_source()
     for ctor in forbidden_ctors:
-        assert ctor not in src, (
-            f"OFFLINE_ONLY module must not construct typed events: {ctor!r}"
-        )
+        assert ctor not in src, f"OFFLINE_ONLY module must not construct typed events: {ctor!r}"

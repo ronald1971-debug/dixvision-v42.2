@@ -94,8 +94,7 @@ class OracleLagConfig:
     def __post_init__(self) -> None:
         if not 0 < self.max_steps <= 1_000_000:
             raise ValueError(
-                "OracleLagConfig.max_steps must be in (0, 1_000_000], "
-                f"got {self.max_steps!r}"
+                f"OracleLagConfig.max_steps must be in (0, 1_000_000], got {self.max_steps!r}"
             )
 
 
@@ -117,9 +116,7 @@ def _require_positive_float(meta: dict[str, Any], key: str) -> float:
     return v
 
 
-def _require_bounded_float(
-    meta: dict[str, Any], key: str, lo: float, hi: float
-) -> float:
+def _require_bounded_float(meta: dict[str, Any], key: str, lo: float, hi: float) -> float:
     if key not in meta:
         raise ValueError(f"RealityScenario.meta missing required key {key!r}")
     raw = meta[key]
@@ -194,14 +191,11 @@ class OracleLag:
         side = _require_side(meta)
         num_steps = _require_positive_int(meta, "num_steps")
         if num_steps > cfg.max_steps:
-            raise ValueError(
-                f"num_steps={num_steps} exceeds max_steps={cfg.max_steps}"
-            )
+            raise ValueError(f"num_steps={num_steps} exceeds max_steps={cfg.max_steps}")
         oracle_lag_steps = _require_non_negative_int(meta, "oracle_lag_steps")
         if oracle_lag_steps > num_steps:
             raise ValueError(
-                f"oracle_lag_steps={oracle_lag_steps} cannot exceed "
-                f"num_steps={num_steps}"
+                f"oracle_lag_steps={oracle_lag_steps} cannot exceed num_steps={num_steps}"
             )
         drift = _require_bounded_float(meta, "per_step_drift", -0.01, 0.01)
         std = _require_bounded_float(meta, "per_step_std", 0.0, 0.1)

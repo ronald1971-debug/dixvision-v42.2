@@ -184,13 +184,10 @@ class BayesianNetworkSpec:
     def __post_init__(self) -> None:
         if not isinstance(self.nodes, tuple):
             raise TypeError(
-                "BayesianNetworkSpec.nodes must be a tuple, got "
-                f"{type(self.nodes).__name__}"
+                f"BayesianNetworkSpec.nodes must be a tuple, got {type(self.nodes).__name__}"
             )
         if not self.nodes:
-            raise ValueError(
-                "BayesianNetworkSpec.nodes must be non-empty"
-            )
+            raise ValueError("BayesianNetworkSpec.nodes must be non-empty")
         if len(self.nodes) > MAX_NODES:
             raise ValueError(
                 f"BayesianNetworkSpec.nodes must have <= "
@@ -199,17 +196,13 @@ class BayesianNetworkSpec:
         for n in self.nodes:
             if not isinstance(n, str) or not n:
                 raise ValueError(
-                    "BayesianNetworkSpec.nodes entries must be "
-                    f"non-empty strings, got {n!r}"
+                    f"BayesianNetworkSpec.nodes entries must be non-empty strings, got {n!r}"
                 )
         if len(set(self.nodes)) != len(self.nodes):
-            raise ValueError(
-                "BayesianNetworkSpec.nodes must be unique"
-            )
+            raise ValueError("BayesianNetworkSpec.nodes must be unique")
         if not isinstance(self.edges, tuple):
             raise TypeError(
-                "BayesianNetworkSpec.edges must be a tuple, got "
-                f"{type(self.edges).__name__}"
+                f"BayesianNetworkSpec.edges must be a tuple, got {type(self.edges).__name__}"
             )
         if len(self.edges) > MAX_EDGES:
             raise ValueError(
@@ -220,39 +213,27 @@ class BayesianNetworkSpec:
         for e in self.edges:
             if not isinstance(e, tuple) or len(e) != 2:
                 raise TypeError(
-                    "BayesianNetworkSpec.edges entries must be "
-                    f"(parent, child) tuples, got {e!r}"
+                    f"BayesianNetworkSpec.edges entries must be (parent, child) tuples, got {e!r}"
                 )
             parent, child = e
             if not isinstance(parent, str) or not parent:
                 raise ValueError(
-                    "BayesianNetworkSpec.edges parent must be a "
-                    f"non-empty string, got {parent!r}"
+                    f"BayesianNetworkSpec.edges parent must be a non-empty string, got {parent!r}"
                 )
             if not isinstance(child, str) or not child:
                 raise ValueError(
-                    "BayesianNetworkSpec.edges child must be a "
-                    f"non-empty string, got {child!r}"
+                    f"BayesianNetworkSpec.edges child must be a non-empty string, got {child!r}"
                 )
             if parent not in node_set:
-                raise ValueError(
-                    f"BayesianNetworkSpec.edges parent {parent!r} "
-                    "not in nodes"
-                )
+                raise ValueError(f"BayesianNetworkSpec.edges parent {parent!r} not in nodes")
             if child not in node_set:
-                raise ValueError(
-                    f"BayesianNetworkSpec.edges child {child!r} "
-                    "not in nodes"
-                )
+                raise ValueError(f"BayesianNetworkSpec.edges child {child!r} not in nodes")
             if parent == child:
                 raise ValueError(
-                    "BayesianNetworkSpec.edges parent and child must "
-                    f"differ, got {e!r}"
+                    f"BayesianNetworkSpec.edges parent and child must differ, got {e!r}"
                 )
         if not self.cpd_digest:
-            raise ValueError(
-                "BayesianNetworkSpec.cpd_digest must be non-empty"
-            )
+            raise ValueError("BayesianNetworkSpec.cpd_digest must be non-empty")
         if len(self.cpd_digest) > MAX_CPD_DIGEST_LEN:
             raise ValueError(
                 "BayesianNetworkSpec.cpd_digest must be <= "
@@ -279,9 +260,7 @@ class BayesianInferenceArguments:
                 f"BayesianInferenceKind, got "
                 f"{type(self.inference_kind).__name__}"
             )
-        if not isinstance(self.random_seed, int) or isinstance(
-            self.random_seed, bool
-        ):
+        if not isinstance(self.random_seed, int) or isinstance(self.random_seed, bool):
             raise TypeError(
                 "BayesianInferenceArguments.random_seed must be "
                 f"int, got {type(self.random_seed).__name__}"
@@ -298,10 +277,7 @@ class BayesianInferenceArguments:
                 f"{type(self.query_variables).__name__}"
             )
         if not self.query_variables:
-            raise ValueError(
-                "BayesianInferenceArguments.query_variables must be "
-                "non-empty"
-            )
+            raise ValueError("BayesianInferenceArguments.query_variables must be non-empty")
         for q in self.query_variables:
             if not isinstance(q, str) or not q:
                 raise ValueError(
@@ -309,15 +285,11 @@ class BayesianInferenceArguments:
                     f"entries must be non-empty strings, got {q!r}"
                 )
         if len(set(self.query_variables)) != len(self.query_variables):
-            raise ValueError(
-                "BayesianInferenceArguments.query_variables must be "
-                "unique"
-            )
+            raise ValueError("BayesianInferenceArguments.query_variables must be unique")
         for k, v in self.evidence.items():
             if not isinstance(k, str) or not k:
                 raise ValueError(
-                    "BayesianInferenceArguments.evidence keys must "
-                    f"be non-empty strings, got {k!r}"
+                    f"BayesianInferenceArguments.evidence keys must be non-empty strings, got {k!r}"
                 )
             if not isinstance(v, str) or not v:
                 raise ValueError(
@@ -346,18 +318,13 @@ class BayesianMarginalResult:
 
     def __post_init__(self) -> None:
         if not self.variable:
-            raise ValueError(
-                "BayesianMarginalResult.variable must be non-empty"
-            )
+            raise ValueError("BayesianMarginalResult.variable must be non-empty")
         if not isinstance(self.states, tuple):
             raise TypeError(
-                "BayesianMarginalResult.states must be a tuple, got "
-                f"{type(self.states).__name__}"
+                f"BayesianMarginalResult.states must be a tuple, got {type(self.states).__name__}"
             )
         if not self.states:
-            raise ValueError(
-                "BayesianMarginalResult.states must be non-empty"
-            )
+            raise ValueError("BayesianMarginalResult.states must be non-empty")
         if len(self.states) > MAX_STATES:
             raise ValueError(
                 f"BayesianMarginalResult.states must have <= "
@@ -366,13 +333,10 @@ class BayesianMarginalResult:
         for s in self.states:
             if not isinstance(s, str) or not s:
                 raise ValueError(
-                    "BayesianMarginalResult.states entries must be "
-                    f"non-empty strings, got {s!r}"
+                    f"BayesianMarginalResult.states entries must be non-empty strings, got {s!r}"
                 )
         if len(set(self.states)) != len(self.states):
-            raise ValueError(
-                "BayesianMarginalResult.states must be unique"
-            )
+            raise ValueError("BayesianMarginalResult.states must be unique")
         if not isinstance(self.probabilities, tuple):
             raise TypeError(
                 "BayesianMarginalResult.probabilities must be a "
@@ -387,21 +351,14 @@ class BayesianMarginalResult:
             )
         for p in self.probabilities:
             if not math.isfinite(p):
-                raise ValueError(
-                    "BayesianMarginalResult.probabilities must be "
-                    f"finite, got {p!r}"
-                )
+                raise ValueError(f"BayesianMarginalResult.probabilities must be finite, got {p!r}")
             if not (0.0 <= p <= 1.0):
                 raise ValueError(
-                    "BayesianMarginalResult.probabilities must be "
-                    f"in [0.0, 1.0], got {p!r}"
+                    f"BayesianMarginalResult.probabilities must be in [0.0, 1.0], got {p!r}"
                 )
         total = math.fsum(self.probabilities)
         if not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-6):
-            raise ValueError(
-                "BayesianMarginalResult.probabilities must sum to "
-                f"1.0, got {total!r}"
-            )
+            raise ValueError(f"BayesianMarginalResult.probabilities must sum to 1.0, got {total!r}")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -417,9 +374,7 @@ class BayesianInferenceResult:
                 f"tuple, got {type(self.marginals).__name__}"
             )
         if not self.marginals:
-            raise ValueError(
-                "BayesianInferenceResult.marginals must be non-empty"
-            )
+            raise ValueError("BayesianInferenceResult.marginals must be non-empty")
         seen: set[str] = set()
         for m in self.marginals:
             if not isinstance(m, BayesianMarginalResult):
@@ -449,22 +404,16 @@ class BayesianInferenceRecord:
     meta: Mapping[str, str]
 
     def __post_init__(self) -> None:
-        if not isinstance(self.ts_ns, int) or isinstance(
-            self.ts_ns, bool
-        ):
+        if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
             raise TypeError(
-                "BayesianInferenceRecord.ts_ns must be int, got "
-                f"{type(self.ts_ns).__name__}"
+                f"BayesianInferenceRecord.ts_ns must be int, got {type(self.ts_ns).__name__}"
             )
         if self.ts_ns < 0:
             raise ValueError(
-                "BayesianInferenceRecord.ts_ns must be non-negative, "
-                f"got {self.ts_ns!r}"
+                f"BayesianInferenceRecord.ts_ns must be non-negative, got {self.ts_ns!r}"
             )
         if not self.analysis_id:
-            raise ValueError(
-                "BayesianInferenceRecord.analysis_id must be non-empty"
-            )
+            raise ValueError("BayesianInferenceRecord.analysis_id must be non-empty")
         if len(self.analysis_id) > MAX_ANALYSIS_ID_LEN:
             raise ValueError(
                 "BayesianInferenceRecord.analysis_id must be <= "
@@ -472,9 +421,7 @@ class BayesianInferenceRecord:
                 f"{len(self.analysis_id)!r}"
             )
         if not self.source:
-            raise ValueError(
-                "BayesianInferenceRecord.source must be non-empty"
-            )
+            raise ValueError("BayesianInferenceRecord.source must be non-empty")
         if not isinstance(self.network, BayesianNetworkSpec):
             raise TypeError(
                 "BayesianInferenceRecord.network must be "
@@ -492,9 +439,7 @@ class BayesianInferenceRecord:
                 "BayesianInferenceRecord.analysis_digest must be a "
                 f"16-hex-char digest, got {self.analysis_digest!r}"
             )
-        if not all(
-            c in "0123456789abcdef" for c in self.analysis_digest
-        ):
+        if not all(c in "0123456789abcdef" for c in self.analysis_digest):
             raise ValueError(
                 "BayesianInferenceRecord.analysis_digest must be "
                 f"lowercase hex, got {self.analysis_digest!r}"
@@ -618,18 +563,11 @@ def _compute_analysis_digest(
     """16-hex-char content hash of the canonical inference summary."""
 
     edges_str = ";".join(f"{p}->{c}" for p, c in network.edges)
-    evidence_pairs = "|".join(
-        f"{k}={v}" for k, v in sorted(arguments.evidence.items())
-    )
-    meta_pairs = "|".join(
-        f"{k}={v}" for k, v in sorted(arguments.meta.items())
-    )
+    evidence_pairs = "|".join(f"{k}={v}" for k, v in sorted(arguments.evidence.items()))
+    meta_pairs = "|".join(f"{k}={v}" for k, v in sorted(arguments.meta.items()))
     marginals_str = ";".join(
         f"{m.variable}="
-        + ",".join(
-            f"{s}:{p!r}"
-            for s, p in zip(m.states, m.probabilities, strict=True)
-        )
+        + ",".join(f"{s}:{p!r}" for s, p in zip(m.states, m.probabilities, strict=True))
         for m in result.marginals
     )
     payload = "|".join(
@@ -696,18 +634,15 @@ class PgmpyBayesianAnalyser:
             )
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
             raise TypeError(
-                "PgmpyBayesianAnalyser.analyse.ts_ns must be int, "
-                f"got {type(ts_ns).__name__}"
+                f"PgmpyBayesianAnalyser.analyse.ts_ns must be int, got {type(ts_ns).__name__}"
             )
         if ts_ns < 0:
             raise BayesianAnalyserConfigError(
-                "PgmpyBayesianAnalyser.analyse.ts_ns must be "
-                f"non-negative, got {ts_ns!r}"
+                f"PgmpyBayesianAnalyser.analyse.ts_ns must be non-negative, got {ts_ns!r}"
             )
         if not analysis_id:
             raise BayesianAnalyserConfigError(
-                "PgmpyBayesianAnalyser.analyse.analysis_id must be "
-                "non-empty"
+                "PgmpyBayesianAnalyser.analyse.analysis_id must be non-empty"
             )
         if len(analysis_id) > MAX_ANALYSIS_ID_LEN:
             raise BayesianAnalyserConfigError(
@@ -720,25 +655,19 @@ class PgmpyBayesianAnalyser:
         for q in arguments.query_variables:
             if q not in node_set:
                 raise BayesianAnalyserConfigError(
-                    f"PgmpyBayesianAnalyser.analyse: query variable "
-                    f"{q!r} not in network nodes"
+                    f"PgmpyBayesianAnalyser.analyse: query variable {q!r} not in network nodes"
                 )
         for e in arguments.evidence:
             if e not in node_set:
                 raise BayesianAnalyserConfigError(
-                    f"PgmpyBayesianAnalyser.analyse: evidence "
-                    f"variable {e!r} not in network nodes"
+                    f"PgmpyBayesianAnalyser.analyse: evidence variable {e!r} not in network nodes"
                 )
         if set(arguments.query_variables) & set(arguments.evidence):
             raise BayesianAnalyserConfigError(
-                "PgmpyBayesianAnalyser.analyse: query_variables and "
-                "evidence must not overlap"
+                "PgmpyBayesianAnalyser.analyse: query_variables and evidence must not overlap"
             )
 
-        cb = (
-            callback if callback is not None
-            else null_bayesian_inference_callback()
-        )
+        cb = callback if callback is not None else null_bayesian_inference_callback()
         if not isinstance(cb, BayesianInferenceCallback):
             raise TypeError(
                 "PgmpyBayesianAnalyser.analyse.callback must "

@@ -57,12 +57,8 @@ def test_ast_diff_kind_string_values() -> None:
 def test_existing_stage_still_aggregates_findings() -> None:
     stage = StaticAnalysisStage(max_severity=FindingSeverity.WARN)
     findings = [
-        StaticAnalysisFinding(
-            rule="R1", severity=FindingSeverity.INFO, location="a.py:1"
-        ),
-        StaticAnalysisFinding(
-            rule="R2", severity=FindingSeverity.WARN, location="a.py:2"
-        ),
+        StaticAnalysisFinding(rule="R1", severity=FindingSeverity.INFO, location="a.py:1"),
+        StaticAnalysisFinding(rule="R2", severity=FindingSeverity.WARN, location="a.py:2"),
     ]
     verdict = stage.evaluate(ts_ns=1, findings=findings)
     assert verdict.passed is True
@@ -125,12 +121,9 @@ def test_semantic_diff_detects_changed_function_body() -> None:
 
 
 def test_semantic_diff_detects_added_class() -> None:
-    entries = SemanticASTDiff().diff(
-        before="", after="class C:\n    pass\n"
-    )
+    entries = SemanticASTDiff().diff(before="", after="class C:\n    pass\n")
     assert any(
-        e.symbol == "C" and e.symbol_kind == "class"
-        and e.kind is ASTDiffKind.ADDED
+        e.symbol == "C" and e.symbol_kind == "class" and e.kind is ASTDiffKind.ADDED
         for e in entries
     )
 
@@ -148,10 +141,7 @@ def test_semantic_diff_detects_changed_class_method() -> None:
             return 2
     """).lstrip()
     entries = diff.diff(before=before, after=after)
-    assert any(
-        e.symbol == "C" and e.kind is ASTDiffKind.CHANGED
-        for e in entries
-    )
+    assert any(e.symbol == "C" and e.kind is ASTDiffKind.CHANGED for e in entries)
 
 
 def test_semantic_diff_empty_when_identical() -> None:
@@ -341,9 +331,7 @@ def test_tier_violation_runtime_safe_calling_offline_only_flagged() -> None:
         pass
     """).lstrip()
     tier_map = {"hot": "RUNTIME_SAFE", "cold": "OFFLINE_ONLY"}
-    violations = CrossFunctionCallAnalyzer().runtime_tier_violations(
-        source=src, tier_map=tier_map
-    )
+    violations = CrossFunctionCallAnalyzer().runtime_tier_violations(source=src, tier_map=tier_map)
     assert len(violations) == 1
     assert violations[0].caller == "hot"
     assert violations[0].callee == "cold"
@@ -358,9 +346,7 @@ def test_tier_violation_offline_only_calling_runtime_safe_ok() -> None:
         pass
     """).lstrip()
     tier_map = {"cold": "OFFLINE_ONLY", "hot": "RUNTIME_SAFE"}
-    violations = CrossFunctionCallAnalyzer().runtime_tier_violations(
-        source=src, tier_map=tier_map
-    )
+    violations = CrossFunctionCallAnalyzer().runtime_tier_violations(source=src, tier_map=tier_map)
     assert violations == ()
 
 
@@ -381,16 +367,15 @@ def test_tier_violation_research_source_is_highest_tier() -> None:
         pass
     """).lstrip()
     tier_map = {"a": "OFFLINE_ONLY", "b": "RESEARCH_SOURCE"}
-    violations = CrossFunctionCallAnalyzer().runtime_tier_violations(
-        source=src, tier_map=tier_map
-    )
+    violations = CrossFunctionCallAnalyzer().runtime_tier_violations(source=src, tier_map=tier_map)
     assert len(violations) == 1
 
 
 def test_tier_violation_rejects_non_mapping() -> None:
     with pytest.raises(TypeError):
         CrossFunctionCallAnalyzer().runtime_tier_violations(
-            source="", tier_map="not-a-mapping"  # type: ignore[arg-type]
+            source="",
+            tier_map="not-a-mapping",  # type: ignore[arg-type]
         )
 
 
@@ -408,9 +393,7 @@ def test_patch_safety_clean_when_no_violations() -> None:
     analyzer = PatchSafetyAnalyzer()
     before = "def f(): pass\n"
     after = "def f(): return 1\n"
-    report = analyzer.analyze(
-        path="utils/helpers.py", before=before, after=after
-    )
+    report = analyzer.analyze(path="utils/helpers.py", before=before, after=after)
     assert report.boundary_touched == ()
     assert report.forbidden_imports == ()
     assert report.tier_violations == ()
@@ -433,9 +416,7 @@ def test_patch_safety_flags_governance_boundary_path() -> None:
 def test_patch_safety_flags_forbidden_imports() -> None:
     analyzer = PatchSafetyAnalyzer(forbidden_modules=("torch",))
     src = "import torch\ndef f(): pass\n"
-    report = analyzer.analyze(
-        path="execution_engine/hot.py", before="", after=src
-    )
+    report = analyzer.analyze(path="execution_engine/hot.py", before="", after=src)
     assert len(report.forbidden_imports) == 1
     assert report.forbidden_imports[0].module == "torch"
     assert report.is_safe is False
@@ -449,9 +430,7 @@ def test_patch_safety_flags_tier_violations() -> None:
         }
     )
     src = "def hot():\n    cold()\ndef cold(): pass\n"
-    report = analyzer.analyze(
-        path="execution_engine/hot.py", before="", after=src
-    )
+    report = analyzer.analyze(path="execution_engine/hot.py", before="", after=src)
     assert len(report.tier_violations) == 1
     assert report.tier_violations[0].caller == "hot"
     assert report.is_safe is False
@@ -469,9 +448,7 @@ def test_patch_safety_combined_violations() -> None:
     def g():
         pass
     """).lstrip()
-    report = analyzer.analyze(
-        path="governance_engine/core.py", before="", after=src
-    )
+    report = analyzer.analyze(path="governance_engine/core.py", before="", after=src)
     assert report.boundary_touched == ("governance_engine/",)
     assert len(report.forbidden_imports) == 1
     assert len(report.tier_violations) == 1
@@ -491,9 +468,7 @@ def test_patch_safety_custom_boundary_prefixes() -> None:
 def test_patch_safety_to_dict_is_canonical() -> None:
     analyzer = PatchSafetyAnalyzer(forbidden_modules=("torch",))
     src = "import torch\ndef f(): pass\n"
-    report = analyzer.analyze(
-        path="x.py", before="", after=src
-    )
+    report = analyzer.analyze(path="x.py", before="", after=src)
     out = report.to_dict()
     assert isinstance(out["forbidden_imports"], list)
     assert out["forbidden_imports"][0]["module"] == "torch"
@@ -506,7 +481,9 @@ def test_patch_safety_rejects_non_str_path() -> None:
     analyzer = PatchSafetyAnalyzer()
     with pytest.raises(TypeError):
         analyzer.analyze(
-            path=None, before="", after=""  # type: ignore[arg-type]
+            path=None,
+            before="",
+            after="",  # type: ignore[arg-type]
         )
 
 
@@ -583,6 +560,7 @@ def test_three_run_byte_identical_calls() -> None:
 # ---------------------------------------------------------------------------
 def test_tree_sitter_parser_factory_raises_when_dep_missing() -> None:
     import sys
+
     saved_ts = sys.modules.pop("tree_sitter", None)
     saved_py = sys.modules.pop("tree_sitter_python", None)
     sys.modules["tree_sitter"] = None  # type: ignore[assignment]
@@ -604,12 +582,7 @@ def test_tree_sitter_parser_factory_raises_when_dep_missing() -> None:
 # AST guards — no top-level tree-sitter import
 # ---------------------------------------------------------------------------
 _THIS = pathlib.Path(__file__).resolve()
-_MODULE = (
-    _THIS.parents[1]
-    / "evolution_engine"
-    / "patch_pipeline"
-    / "static_analysis.py"
-)
+_MODULE = _THIS.parents[1] / "evolution_engine" / "patch_pipeline" / "static_analysis.py"
 
 
 def _module_tree() -> ast.Module:
@@ -652,9 +625,7 @@ def test_tree_sitter_import_confined_to_factory() -> None:
         )
 
 
-def _enclosing_function_name(
-    tree: ast.Module, target: ast.AST
-) -> str | None:
+def _enclosing_function_name(tree: ast.Module, target: ast.AST) -> str | None:
     parents: dict[int, ast.AST] = {}
     for parent in ast.walk(tree):
         for child in ast.iter_child_nodes(parent):
@@ -674,18 +645,15 @@ def test_module_has_no_forbidden_runtime_imports() -> None:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 root = alias.name.split(".")[0]
-                assert root not in forbidden_at_top, (
-                    f"forbidden top-level import: {alias.name}"
-                )
+                assert root not in forbidden_at_top, f"forbidden top-level import: {alias.name}"
         if isinstance(node, ast.ImportFrom):
             module = (node.module or "").split(".")[0]
-            assert module not in forbidden_at_top, (
-                f"forbidden top-level from-import: {node.module}"
-            )
+            assert module not in forbidden_at_top, f"forbidden top-level from-import: {node.module}"
 
 
 def test_module_exports_canonical_symbols() -> None:
     from evolution_engine.patch_pipeline import static_analysis as mod
+
     for symbol in (
         "FindingSeverity",
         "StaticAnalysisFinding",

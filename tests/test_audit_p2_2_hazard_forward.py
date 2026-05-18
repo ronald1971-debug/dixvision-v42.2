@@ -103,7 +103,7 @@ def test_record_forwards_emitted_hazards_into_governance(
         "SystemEngine.process was never invoked from STATE.record; "
         "the AUDIT-P2.2 forwarding wiring regressed"
     )
-    new_kinds = after[len(before):]
+    new_kinds = after[len(before) :]
     assert "HAZARD_AUDIT" in new_kinds, (
         "SystemEngine emitted a HazardEvent but the canonical "
         "ingestion seam did not append a HAZARD_AUDIT audit row "
@@ -141,7 +141,7 @@ def test_record_does_not_repoll_on_hazard_events(
         "would create an unbounded fan-out when multiple sensors "
         "share keys"
     )
-    new_kinds = after[len(before):]
+    new_kinds = after[len(before) :]
     assert new_kinds.count("HAZARD_AUDIT") <= 1, (
         "Recording a HazardEvent should produce at most one "
         "HAZARD_AUDIT ledger row; sensor re-polling regressed"

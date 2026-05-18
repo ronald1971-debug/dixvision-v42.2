@@ -117,9 +117,7 @@ def test_query_request_rejects_bool_limit() -> None:
 def test_query_request_validates_unknown_columns() -> None:
     backend = _backend()
     with pytest.raises(ValueError, match="unknown columns"):
-        backend.execute(
-            QueryRequest(table="trades", columns=("nonexistent_column",))
-        )
+        backend.execute(QueryRequest(table="trades", columns=("nonexistent_column",)))
 
 
 def test_query_request_validates_unknown_filter_columns() -> None:
@@ -141,9 +139,7 @@ def test_query_request_validates_unknown_filter_columns() -> None:
 
 def test_fetch_rows_returns_all_when_no_filter() -> None:
     analytics = _analytics()
-    result = analytics.fetch_rows(
-        QueryRequest(table="trades", columns=("symbol", "pnl_usd"))
-    )
+    result = analytics.fetch_rows(QueryRequest(table="trades", columns=("symbol", "pnl_usd")))
     assert result.row_count() == 5
     assert result.request_columns == ("symbol", "pnl_usd")
 
@@ -163,20 +159,14 @@ def test_fetch_rows_filters_by_equality() -> None:
 
 def test_fetch_rows_orders_deterministically() -> None:
     analytics = _analytics()
-    result_a = analytics.fetch_rows(
-        QueryRequest(table="trades", columns=("symbol", "qty"))
-    )
-    result_b = analytics.fetch_rows(
-        QueryRequest(table="trades", columns=("symbol", "qty"))
-    )
+    result_a = analytics.fetch_rows(QueryRequest(table="trades", columns=("symbol", "qty")))
+    result_b = analytics.fetch_rows(QueryRequest(table="trades", columns=("symbol", "qty")))
     assert result_a.rows == result_b.rows
 
 
 def test_fetch_rows_respects_limit() -> None:
     analytics = _analytics()
-    result = analytics.fetch_rows(
-        QueryRequest(table="trades", columns=("symbol",), limit=2)
-    )
+    result = analytics.fetch_rows(QueryRequest(table="trades", columns=("symbol",), limit=2))
     assert result.row_count() == 2
 
 
@@ -204,9 +194,7 @@ def test_group_by_count_per_symbol() -> None:
         GroupBySpec(
             table="trades",
             group_keys=("symbol",),
-            aggregates=(
-                AggregateSpec(op="count", column="pnl_usd", alias="n"),
-            ),
+            aggregates=(AggregateSpec(op="count", column="pnl_usd", alias="n"),),
         )
     )
     assert result.rows == (("BTC", 2), ("ETH", 2), ("SOL", 1))
@@ -218,9 +206,7 @@ def test_group_by_sum_per_symbol() -> None:
         GroupBySpec(
             table="trades",
             group_keys=("symbol",),
-            aggregates=(
-                AggregateSpec(op="sum", column="pnl_usd", alias="total"),
-            ),
+            aggregates=(AggregateSpec(op="sum", column="pnl_usd", alias="total"),),
         )
     )
     table = {row[0]: row[1] for row in result.rows}
@@ -252,9 +238,7 @@ def test_group_by_with_filter() -> None:
         GroupBySpec(
             table="trades",
             group_keys=("symbol",),
-            aggregates=(
-                AggregateSpec(op="count", column="pnl_usd", alias="n"),
-            ),
+            aggregates=(AggregateSpec(op="count", column="pnl_usd", alias="n"),),
             filters={"side": "BUY"},
         )
     )
@@ -304,9 +288,7 @@ def test_percentile_rejects_unsupported_value() -> None:
     analytics = _analytics()
     request = QueryRequest(table="trades", columns=("pnl_usd",))
     with pytest.raises(ValueError):
-        analytics.percentile(
-            request, column="pnl_usd", percentile=0.75
-        )
+        analytics.percentile(request, column="pnl_usd", percentile=0.75)
 
 
 # ----------------------------------------------------------------------
@@ -320,9 +302,7 @@ def test_fetch_rows_digest_is_deterministic() -> None:
         table="trades",
         columns=("symbol", "side", "qty", "pnl_usd"),
     )
-    digests = {
-        analytics.fetch_rows(request).result_digest for _ in range(3)
-    }
+    digests = {analytics.fetch_rows(request).result_digest for _ in range(3)}
     assert len(digests) == 1
 
 
@@ -336,9 +316,7 @@ def test_group_by_digest_is_deterministic() -> None:
             AggregateSpec(op="sum", column="pnl_usd", alias="total"),
         ),
     )
-    digests = {
-        analytics.group_by(spec).result_digest for _ in range(3)
-    }
+    digests = {analytics.group_by(spec).result_digest for _ in range(3)}
     assert len(digests) == 1
 
 
@@ -346,18 +324,14 @@ def test_digest_changes_when_rows_change() -> None:
     a = LedgerAnalytics(backend=_backend())
     b = LedgerAnalytics(
         backend=InProcessAnalyticsBackend(
-            rows=_rows() + ({"symbol": "DOGE", "side": "BUY",
-                              "qty": 1.0, "pnl_usd": 0.5},)
+            rows=_rows() + ({"symbol": "DOGE", "side": "BUY", "qty": 1.0, "pnl_usd": 0.5},)
         )
     )
     request = QueryRequest(
         table="trades",
         columns=("symbol", "side", "qty", "pnl_usd"),
     )
-    assert (
-        a.fetch_rows(request).result_digest
-        != b.fetch_rows(request).result_digest
-    )
+    assert a.fetch_rows(request).result_digest != b.fetch_rows(request).result_digest
 
 
 # ----------------------------------------------------------------------
@@ -420,15 +394,12 @@ def test_no_runtime_engine_imports() -> None:
         if isinstance(node, ast.ImportFrom) and node.module:
             for prefix in banned:
                 assert not node.module.startswith(prefix), (
-                    f"{prefix} import banned from "
-                    f"learning_engine/analytics/ledger_query.py"
+                    f"{prefix} import banned from learning_engine/analytics/ledger_query.py"
                 )
         if isinstance(node, ast.Import):
             for alias in node.names:
                 for prefix in banned:
-                    assert not alias.name.startswith(prefix), (
-                        f"{prefix} import banned"
-                    )
+                    assert not alias.name.startswith(prefix), f"{prefix} import banned"
 
 
 def test_no_clock_or_random_imports() -> None:
@@ -450,13 +421,9 @@ def test_no_clock_or_random_imports() -> None:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                assert alias.name not in banned, (
-                    f"INV-15 violation: import {alias.name!r}"
-                )
+                assert alias.name not in banned, f"INV-15 violation: import {alias.name!r}"
         if isinstance(node, ast.ImportFrom):
-            assert node.module not in banned, (
-                f"INV-15 violation: from {node.module!r}"
-            )
+            assert node.module not in banned, f"INV-15 violation: from {node.module!r}"
 
 
 def test_no_typed_event_construction() -> None:
@@ -473,6 +440,4 @@ def test_no_typed_event_construction() -> None:
                     f"{func.id}"
                 )
             if isinstance(func, ast.Attribute):
-                assert func.attr not in banned_calls, (
-                    f"B27/B28/INV-71 violation: {func.attr}"
-                )
+                assert func.attr not in banned_calls, f"B27/B28/INV-71 violation: {func.attr}"

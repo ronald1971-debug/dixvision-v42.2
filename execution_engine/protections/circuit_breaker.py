@@ -175,9 +175,7 @@ class CircuitBreakerPolicy:
 
     def policy_digest(self) -> str:
         """BLAKE2b-16 hex digest over ``canonical_text``."""
-        return hashlib.blake2b(
-            self.canonical_text().encode("utf-8"), digest_size=16
-        ).hexdigest()
+        return hashlib.blake2b(self.canonical_text().encode("utf-8"), digest_size=16).hexdigest()
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -262,9 +260,7 @@ class CircuitBreaker:
     def record(self, event: StoplossEvent) -> None:
         """Append one stoploss outcome (FIFO, monotonic in ``ts_ns``)."""
         if self._events and event.ts_ns < self._events[-1].ts_ns:
-            raise ValueError(
-                "ts_ns must be monotonic non-decreasing across recorded events"
-            )
+            raise ValueError("ts_ns must be monotonic non-decreasing across recorded events")
         self._events.append(event)
 
     def record_batch(self, events: Iterable[StoplossEvent]) -> None:

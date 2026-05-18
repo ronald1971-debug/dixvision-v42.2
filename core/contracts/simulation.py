@@ -44,13 +44,9 @@ class RealityScenario:
         if not self.scenario_id:
             raise ValueError("RealityScenario.scenario_id must be non-empty")
         if self.ts_ns <= 0:
-            raise ValueError(
-                f"RealityScenario.ts_ns must be positive, got {self.ts_ns!r}"
-            )
+            raise ValueError(f"RealityScenario.ts_ns must be positive, got {self.ts_ns!r}")
         if not self.initial_state_hash:
-            raise ValueError(
-                "RealityScenario.initial_state_hash must be non-empty"
-            )
+            raise ValueError("RealityScenario.initial_state_hash must be non-empty")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -77,9 +73,7 @@ class RealityOutcome:
         if not self.scenario_id:
             raise ValueError("RealityOutcome.scenario_id must be non-empty")
         if self.seed < 0:
-            raise ValueError(
-                f"RealityOutcome.seed must be non-negative, got {self.seed!r}"
-            )
+            raise ValueError(f"RealityOutcome.seed must be non-negative, got {self.seed!r}")
         if self.terminal_drawdown_usd < 0.0:
             raise ValueError(
                 "RealityOutcome.terminal_drawdown_usd must be non-negative, "
@@ -87,8 +81,7 @@ class RealityOutcome:
             )
         if self.fills_count < 0:
             raise ValueError(
-                "RealityOutcome.fills_count must be non-negative, "
-                f"got {self.fills_count!r}"
+                f"RealityOutcome.fills_count must be non-negative, got {self.fills_count!r}"
             )
         if not self.rule_fired:
             raise ValueError("RealityOutcome.rule_fired must be non-empty")
@@ -118,24 +111,16 @@ class RealitySummary:
             raise ValueError("RealitySummary.scenario_id must be non-empty")
         if self.n_realities <= 0:
             raise ValueError(
-                "RealitySummary.n_realities must be positive, "
-                f"got {self.n_realities!r}"
+                f"RealitySummary.n_realities must be positive, got {self.n_realities!r}"
             )
         if not (0.0 <= self.win_rate <= 1.0):
-            raise ValueError(
-                f"RealitySummary.win_rate must be in [0, 1], "
-                f"got {self.win_rate!r}"
-            )
+            raise ValueError(f"RealitySummary.win_rate must be in [0, 1], got {self.win_rate!r}")
         if self.max_drawdown_usd < 0.0:
             raise ValueError(
                 "RealitySummary.max_drawdown_usd must be non-negative, "
                 f"got {self.max_drawdown_usd!r}"
             )
-        if not (
-            self.pnl_p05_usd
-            <= self.pnl_median_usd
-            <= self.pnl_p95_usd
-        ):
+        if not (self.pnl_p05_usd <= self.pnl_median_usd <= self.pnl_p95_usd):
             raise ValueError(
                 "RealitySummary requires pnl_p05 <= pnl_median <= pnl_p95, "
                 f"got p05={self.pnl_p05_usd!r}, "

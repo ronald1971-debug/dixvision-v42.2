@@ -126,9 +126,7 @@ class WalletBalance:
                 raise ValueError(f"{name} must be finite")
         # The total = free + used invariant is the freqtrade convention.
         # We enforce it here so the reconciler can rely on it.
-        if not math.isclose(
-            self.total, self.free + self.used, abs_tol=INVARIANT_TOTAL_TOLERANCE
-        ):
+        if not math.isclose(self.total, self.free + self.used, abs_tol=INVARIANT_TOTAL_TOLERANCE):
             raise ValueError(
                 f"wallet invariant violated: total={self.total} != "
                 f"free({self.free}) + used({self.used})"
@@ -191,9 +189,7 @@ class ReconciliationPolicy:
         )
 
     def policy_digest(self) -> str:
-        return hashlib.blake2b(
-            self.canonical_text().encode("utf-8"), digest_size=16
-        ).hexdigest()
+        return hashlib.blake2b(self.canonical_text().encode("utf-8"), digest_size=16).hexdigest()
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -265,9 +261,7 @@ def _position_canonical_text(positions: Mapping[str, PositionSnapshot]) -> str:
     parts = []
     for symbol in sorted(positions):
         p = positions[symbol]
-        parts.append(
-            f"{symbol}:pos={p.position!r},collat={p.collateral!r},side={p.side.value}"
-        )
+        parts.append(f"{symbol}:pos={p.position!r},collat={p.collateral!r},side={p.side.value}")
     return "|".join(parts)
 
 
@@ -338,9 +332,7 @@ def reconcile_position(
 ) -> PositionDelta:
     """Reconcile a single per-pair position. Pure function."""
     if expected.symbol != actual.symbol:
-        raise ValueError(
-            f"symbol mismatch: expected={expected.symbol!r} actual={actual.symbol!r}"
-        )
+        raise ValueError(f"symbol mismatch: expected={expected.symbol!r} actual={actual.symbol!r}")
     if expected.side is not actual.side:
         # Side flip is always a HAZARD regardless of magnitude.
         return PositionDelta(
@@ -350,9 +342,7 @@ def reconcile_position(
             absolute_delta=abs(expected.position - actual.position),
             relative_delta=float("inf"),
             severity=DriftSeverity.HAZARD,
-            reason=(
-                f"side flip: expected={expected.side.value} actual={actual.side.value}"
-            ),
+            reason=(f"side flip: expected={expected.side.value} actual={actual.side.value}"),
         )
     abs_delta = abs(expected.position - actual.position)
     rel_delta = _relative(abs(expected.position), abs_delta)
@@ -483,22 +473,15 @@ def reconcile(
                 )
             )
         elif e_pos is not None and a_pos is not None:
-            position_deltas.append(
-                reconcile_position(expected=e_pos, actual=a_pos, policy=pol)
-            )
+            position_deltas.append(reconcile_position(expected=e_pos, actual=a_pos, policy=pol))
 
     # Aggregate verdict — worst-bucket wins; MISSING and HAZARD escalate.
     has_missing = any(
-        d.severity is DriftSeverity.MISSING
-        for d in (*wallet_deltas, *position_deltas)
+        d.severity is DriftSeverity.MISSING for d in (*wallet_deltas, *position_deltas)
     )
-    has_hazard = any(
-        d.severity is DriftSeverity.HAZARD
-        for d in (*wallet_deltas, *position_deltas)
-    )
+    has_hazard = any(d.severity is DriftSeverity.HAZARD for d in (*wallet_deltas, *position_deltas))
     has_warning = any(
-        d.severity is DriftSeverity.WARNING
-        for d in (*wallet_deltas, *position_deltas)
+        d.severity is DriftSeverity.WARNING for d in (*wallet_deltas, *position_deltas)
     )
     if has_missing:
         outcome = ReconciliationOutcome.MISSING_CURRENCY
@@ -513,9 +496,7 @@ def reconcile(
         outcome = ReconciliationOutcome.CONSISTENT
         reason = "all balances and positions within tolerance"
 
-    digest = _snapshot_digest(
-        expected_wallets, actual_wallets, exp_pos, act_pos
-    )
+    digest = _snapshot_digest(expected_wallets, actual_wallets, exp_pos, act_pos)
     merged_meta: Mapping[str, str]
     if meta:
         merged_meta = dict(sorted(meta.items()))

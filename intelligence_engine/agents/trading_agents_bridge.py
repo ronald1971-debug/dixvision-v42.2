@@ -190,19 +190,14 @@ class RoleAnalyst:
 
     def __post_init__(self) -> None:
         if not isinstance(self.role, TradingRole):
-            raise TradingAgentsBridgeError(
-                "RoleAnalyst.role must be a TradingRole enum member"
-            )
+            raise TradingAgentsBridgeError("RoleAnalyst.role must be a TradingRole enum member")
         if not isinstance(self.persona, str):
             raise TradingAgentsBridgeError("RoleAnalyst.persona must be str")
         if not self.persona.strip():
-            raise TradingAgentsBridgeError(
-                "RoleAnalyst.persona must be non-empty"
-            )
+            raise TradingAgentsBridgeError("RoleAnalyst.persona must be non-empty")
         if len(self.persona) > MAX_PERSONA_LEN:
             raise TradingAgentsBridgeError(
-                "RoleAnalyst.persona exceeds "
-                f"MAX_PERSONA_LEN={MAX_PERSONA_LEN}"
+                f"RoleAnalyst.persona exceeds MAX_PERSONA_LEN={MAX_PERSONA_LEN}"
             )
 
 
@@ -223,22 +218,16 @@ class TradingAgentsConfig:
 
     def __post_init__(self) -> None:
         if not isinstance(self.brief, str):
-            raise TradingAgentsBridgeError(
-                "TradingAgentsConfig.brief must be str"
-            )
+            raise TradingAgentsBridgeError("TradingAgentsConfig.brief must be str")
         if not self.brief.strip():
-            raise TradingAgentsBridgeError(
-                "TradingAgentsConfig.brief must be non-empty"
-            )
+            raise TradingAgentsBridgeError("TradingAgentsConfig.brief must be non-empty")
         if len(self.brief) > MAX_BRIEF_LEN:
             raise TradingAgentsBridgeError(
-                "TradingAgentsConfig.brief exceeds "
-                f"MAX_BRIEF_LEN={MAX_BRIEF_LEN}"
+                f"TradingAgentsConfig.brief exceeds MAX_BRIEF_LEN={MAX_BRIEF_LEN}"
             )
         if not isinstance(self.analysts, tuple):
             raise TradingAgentsBridgeError(
-                "TradingAgentsConfig.analysts must be tuple "
-                "(immutable, hashable, order-stable)"
+                "TradingAgentsConfig.analysts must be tuple (immutable, hashable, order-stable)"
             )
         if len(self.analysts) != len(ANALYST_ROLES):
             raise TradingAgentsBridgeError(
@@ -262,8 +251,7 @@ class TradingAgentsConfig:
             )
         if self.portfolio_manager.role is not PORTFOLIO_MANAGER_ROLE:
             raise TradingAgentsBridgeError(
-                "TradingAgentsConfig.portfolio_manager.role must be "
-                f"{PORTFOLIO_MANAGER_ROLE.value}"
+                f"TradingAgentsConfig.portfolio_manager.role must be {PORTFOLIO_MANAGER_ROLE.value}"
             )
 
 
@@ -285,43 +273,28 @@ class RoleAnalysis:
 
     def __post_init__(self) -> None:
         if not isinstance(self.role, TradingRole):
-            raise TradingAgentsBridgeError(
-                "RoleAnalysis.role must be a TradingRole enum member"
-            )
+            raise TradingAgentsBridgeError("RoleAnalysis.role must be a TradingRole enum member")
         if not isinstance(self.text, str):
             raise TradingAgentsBridgeError("RoleAnalysis.text must be str")
         if len(self.text) > MAX_ANALYSIS_TEXT_LEN:
             raise TradingAgentsBridgeError(
-                "RoleAnalysis.text exceeds "
-                f"MAX_ANALYSIS_TEXT_LEN={MAX_ANALYSIS_TEXT_LEN}"
+                f"RoleAnalysis.text exceeds MAX_ANALYSIS_TEXT_LEN={MAX_ANALYSIS_TEXT_LEN}"
             )
         if not isinstance(self.direction, str):
-            raise TradingAgentsBridgeError(
-                "RoleAnalysis.direction must be str"
-            )
+            raise TradingAgentsBridgeError("RoleAnalysis.direction must be str")
         if self.direction not in DIRECTION_LABELS:
             raise TradingAgentsBridgeError(
-                "RoleAnalysis.direction must be one of "
-                f"{sorted(DIRECTION_LABELS)}"
+                f"RoleAnalysis.direction must be one of {sorted(DIRECTION_LABELS)}"
             )
-        if not isinstance(self.confidence, float) or isinstance(
-            self.confidence, bool
-        ):
-            raise TradingAgentsBridgeError(
-                "RoleAnalysis.confidence must be float"
-            )
+        if not isinstance(self.confidence, float) or isinstance(self.confidence, bool):
+            raise TradingAgentsBridgeError("RoleAnalysis.confidence must be float")
         if not (0.0 <= self.confidence <= 1.0):
-            raise TradingAgentsBridgeError(
-                "RoleAnalysis.confidence must be in [0, 1]"
-            )
+            raise TradingAgentsBridgeError("RoleAnalysis.confidence must be in [0, 1]")
         if not isinstance(self.rationale, str):
-            raise TradingAgentsBridgeError(
-                "RoleAnalysis.rationale must be str"
-            )
+            raise TradingAgentsBridgeError("RoleAnalysis.rationale must be str")
         if len(self.rationale) > MAX_RATIONALE_LEN:
             raise TradingAgentsBridgeError(
-                "RoleAnalysis.rationale exceeds "
-                f"MAX_RATIONALE_LEN={MAX_RATIONALE_LEN}"
+                f"RoleAnalysis.rationale exceeds MAX_RATIONALE_LEN={MAX_RATIONALE_LEN}"
             )
 
 
@@ -389,9 +362,7 @@ class RoleSpeaker(Protocol):
 # ---------------------------------------------------------------------------
 
 
-RoleAnalysisExtractor = Callable[
-    [TradingRole, str], tuple[str, float, str]
-]
+RoleAnalysisExtractor = Callable[[TradingRole, str], tuple[str, float, str]]
 """Maps ``(role, text)`` to ``(direction, confidence, rationale)``.
 
 The default extractor (:func:`default_role_analysis_extractor`)
@@ -425,22 +396,16 @@ _RATIONALE_RE: Final[re.Pattern[str]] = re.compile(
 )
 
 
-def default_role_analysis_extractor(
-    role: TradingRole, text: str
-) -> tuple[str, float, str]:
+def default_role_analysis_extractor(role: TradingRole, text: str) -> tuple[str, float, str]:
     """Parse ``DIRECTION:`` / ``CONFIDENCE:`` / ``RATIONALE:`` lines.
 
     Pure function: no clock, no IO, no random. INV-15 byte-identical
     across replays."""
 
     if not isinstance(role, TradingRole):
-        raise TradingAgentsBridgeError(
-            "default_role_analysis_extractor: role must be TradingRole"
-        )
+        raise TradingAgentsBridgeError("default_role_analysis_extractor: role must be TradingRole")
     if not isinstance(text, str):
-        raise TradingAgentsBridgeError(
-            "default_role_analysis_extractor: text must be str"
-        )
+        raise TradingAgentsBridgeError("default_role_analysis_extractor: text must be str")
 
     direction = DEFAULT_DIRECTION
     direction_match = _DIRECTION_RE.search(text)
@@ -490,11 +455,17 @@ def _encode_str(value: str) -> bytes:
 
 def _encode_role_analysis(analysis: RoleAnalysis) -> bytes:
     parts = [
-        b"R", _encode_str(analysis.role.value),
-        b"T", _encode_int(len(analysis.text)), _encode_str(analysis.text),
-        b"D", _encode_str(analysis.direction),
-        b"C", _encode_float(analysis.confidence),
-        b"X", _encode_int(len(analysis.rationale)),
+        b"R",
+        _encode_str(analysis.role.value),
+        b"T",
+        _encode_int(len(analysis.text)),
+        _encode_str(analysis.text),
+        b"D",
+        _encode_str(analysis.direction),
+        b"C",
+        _encode_float(analysis.confidence),
+        b"X",
+        _encode_int(len(analysis.rationale)),
         _encode_str(analysis.rationale),
     ]
     return b"|".join(parts)
@@ -548,9 +519,7 @@ def _validate_speaker(speaker: object) -> None:
 
 def _validate_extractor(extractor: object) -> None:
     if not callable(extractor):
-        raise TradingAgentsBridgeError(
-            "run_trading_agents_committee: extractor must be callable"
-        )
+        raise TradingAgentsBridgeError("run_trading_agents_committee: extractor must be callable")
 
 
 def run_trading_agents_committee(
@@ -578,11 +547,7 @@ def run_trading_agents_committee(
             "run_trading_agents_committee: config must be TradingAgentsConfig"
         )
     _validate_speaker(speaker)
-    parse = (
-        extractor
-        if extractor is not None
-        else default_role_analysis_extractor
-    )
+    parse = extractor if extractor is not None else default_role_analysis_extractor
     _validate_extractor(parse)
 
     analyses: list[RoleAnalysis] = []
@@ -620,17 +585,13 @@ def run_trading_agents_committee(
         prior_analyses=final_analyses,
     )
     if not isinstance(pm_text, str):
-        raise TradingAgentsBridgeError(
-            "speaker reply for portfolio manager must be str"
-        )
+        raise TradingAgentsBridgeError("speaker reply for portfolio manager must be str")
     if len(pm_text) > MAX_ANALYSIS_TEXT_LEN:
         raise TradingAgentsBridgeError(
             "speaker reply for portfolio manager exceeds "
             f"MAX_ANALYSIS_TEXT_LEN={MAX_ANALYSIS_TEXT_LEN}"
         )
-    pm_direction, pm_confidence, pm_rationale = parse(
-        config.portfolio_manager.role, pm_text
-    )
+    pm_direction, pm_confidence, pm_rationale = parse(config.portfolio_manager.role, pm_text)
 
     digest = _compute_proposal_digest(
         brief=config.brief,
@@ -675,9 +636,7 @@ def litellm_role_speaker_factory(
     replayable."""
 
     if not callable(completion):
-        raise TradingAgentsBridgeError(
-            "litellm_role_speaker_factory: completion must be callable"
-        )
+        raise TradingAgentsBridgeError("litellm_role_speaker_factory: completion must be callable")
     if not isinstance(system_prompt_prefix, str):
         raise TradingAgentsBridgeError(
             "litellm_role_speaker_factory: system_prompt_prefix must be str"
@@ -698,10 +657,7 @@ def litellm_role_speaker_factory(
             system_lines: list[str] = []
             if self.system_prompt_prefix:
                 system_lines.append(self.system_prompt_prefix)
-            system_lines.append(
-                f"You play the {analyst.role.value} role in a trading "
-                "committee."
-            )
+            system_lines.append(f"You play the {analyst.role.value} role in a trading committee.")
             system_lines.append(analyst.persona)
             system_lines.append(
                 "When you are done, emit three lines: "
@@ -717,9 +673,7 @@ def litellm_role_speaker_factory(
                 messages.append(
                     {
                         "role": "user",
-                        "content": (
-                            f"{prior.role.value} analyst said: {prior.text}"
-                        ),
+                        "content": (f"{prior.role.value} analyst said: {prior.text}"),
                     }
                 )
             return self.completion(messages=messages)
@@ -788,15 +742,9 @@ _PERSONA_HINTS: Mapping[TradingRole, str] = {
     TradingRole.FUNDAMENTALS: (
         "You analyse fundamentals: earnings, on-chain flows, macro context."
     ),
-    TradingRole.TECHNICAL: (
-        "You analyse technicals: price action, volume, indicators, regime."
-    ),
-    TradingRole.SENTIMENT: (
-        "You analyse sentiment: news tone, social signals, positioning."
-    ),
-    TradingRole.RESEARCHER: (
-        "You synthesise the prior analyses with broader research context."
-    ),
+    TradingRole.TECHNICAL: ("You analyse technicals: price action, volume, indicators, regime."),
+    TradingRole.SENTIMENT: ("You analyse sentiment: news tone, social signals, positioning."),
+    TradingRole.RESEARCHER: ("You synthesise the prior analyses with broader research context."),
     TradingRole.PORTFOLIO_MANAGER: (
         "You are the portfolio manager: weigh all analyses and emit a "
         "single direction with calibrated confidence and rationale."

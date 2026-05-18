@@ -146,11 +146,7 @@ class UniswapXAdapter(LiveAdapterBase):
             else (lambda: wall_ns() // 1_000_000_000)
         )
         self._counter: int = 0
-        self._nonce_provider = (
-            nonce_provider
-            if nonce_provider is not None
-            else self._default_nonce
-        )
+        self._nonce_provider = nonce_provider if nonce_provider is not None else self._default_nonce
         self._client = client
         self._private_key: str | None = None
         self._signer_address: str | None = None
@@ -179,16 +175,10 @@ class UniswapXAdapter(LiveAdapterBase):
             missing.append("DIX_EVM_PRIVATE_KEY_PATH")
         if missing:
             self._state = AdapterState.DISCONNECTED
-            self._detail = (
-                "missing credentials: "
-                + ", ".join(missing)
-                + " — scaffold mode active"
-            )
+            self._detail = "missing credentials: " + ", ".join(missing) + " — scaffold mode active"
             return
         try:
-            self._private_key = self._load_private_key(
-                self._private_key_path
-            )
+            self._private_key = self._load_private_key(self._private_key_path)
         except (OSError, ValueError) as exc:
             self._state = AdapterState.DISCONNECTED
             self._detail = f"private_key_load_failed: {exc!s}"
@@ -198,9 +188,7 @@ class UniswapXAdapter(LiveAdapterBase):
         try:
             from eth_account import Account  # local import keeps test paths clean
 
-            self._signer_address = Account.from_key(
-                self._private_key
-            ).address
+            self._signer_address = Account.from_key(self._private_key).address
         except Exception as exc:  # noqa: BLE001
             self._state = AdapterState.DISCONNECTED
             self._detail = f"signer_init_failed: {exc!s}"
@@ -221,9 +209,7 @@ class UniswapXAdapter(LiveAdapterBase):
             return
         if ok:
             self._state = AdapterState.READY
-            self._detail = (
-                f"signer={self._signer_address} api={self._api_url}"
-            )
+            self._detail = f"signer={self._signer_address} api={self._api_url}"
             self._last_heartbeat_ns = wall_ns()
         else:
             self._state = AdapterState.DEGRADED
@@ -248,9 +234,7 @@ class UniswapXAdapter(LiveAdapterBase):
         mark_price: float,
     ) -> ExecutionEvent:
         if self._client is None or self._private_key is None:
-            return self._reject_with(
-                signal, mark_price, "client_or_signer_missing"
-            )
+            return self._reject_with(signal, mark_price, "client_or_signer_missing")
         token_in = signal.meta.get("token_in") if signal.meta else None
         token_out = signal.meta.get("token_out") if signal.meta else None
         if not token_in or not token_out:
@@ -261,9 +245,7 @@ class UniswapXAdapter(LiveAdapterBase):
             )
         amount_in = self._amount_in_from_signal(signal, mark_price)
         if amount_in <= 0:
-            return self._reject_with(
-                signal, mark_price, "non_positive_amount_in"
-            )
+            return self._reject_with(signal, mark_price, "non_positive_amount_in")
         slippage_bps = self._slippage_bps_from_signal(signal)
 
         # 1. Quote ----------------------------------------------------------
@@ -281,9 +263,7 @@ class UniswapXAdapter(LiveAdapterBase):
         except UniswapXError as exc:
             return self._reject_with(signal, mark_price, str(exc))
         except Exception as exc:  # noqa: BLE001
-            return self._reject_with(
-                signal, mark_price, f"quote_transport_error: {exc!s}"
-            )
+            return self._reject_with(signal, mark_price, f"quote_transport_error: {exc!s}")
 
         # 2. Parse server's order payload + validate vs signal -------------
         # The signature MUST cover the same data the server's
@@ -299,26 +279,13 @@ class UniswapXAdapter(LiveAdapterBase):
                 default_swapper=self._signer_address or "",
             )
         except (KeyError, ValueError, TypeError) as exc:
-            return self._reject_with(
-                signal, mark_price, f"quote_parse_failed: {exc!s}"
-            )
+            return self._reject_with(signal, mark_price, f"quote_parse_failed: {exc!s}")
         if intent.input.token.lower() != token_in.lower():
-            return self._reject_with(
-                signal, mark_price, "quote_input_token_mismatch"
-            )
-        if not any(
-            out.token.lower() == token_out.lower()
-            for out in intent.outputs
-        ):
-            return self._reject_with(
-                signal, mark_price, "quote_output_token_mismatch"
-            )
-        if intent.swapper.lower() != (
-            self._signer_address or ""
-        ).lower():
-            return self._reject_with(
-                signal, mark_price, "quote_swapper_mismatch"
-            )
+            return self._reject_with(signal, mark_price, "quote_input_token_mismatch")
+        if not any(out.token.lower() == token_out.lower() for out in intent.outputs):
+            return self._reject_with(signal, mark_price, "quote_output_token_mismatch")
+        if intent.swapper.lower() != (self._signer_address or "").lower():
+            return self._reject_with(signal, mark_price, "quote_swapper_mismatch")
         typed_data = build_exclusive_dutch_order_typed_data(intent)
 
         # 3. Sign ----------------------------------------------------------
@@ -328,9 +295,7 @@ class UniswapXAdapter(LiveAdapterBase):
                 typed_data=typed_data,
             )
         except Exception as exc:  # noqa: BLE001
-            return self._reject_with(
-                signal, mark_price, f"sign_failed: {exc!s}"
-            )
+            return self._reject_with(signal, mark_price, f"sign_failed: {exc!s}")
         if signed.signer_address != self._signer_address:
             return self._reject_with(
                 signal,
@@ -348,9 +313,7 @@ class UniswapXAdapter(LiveAdapterBase):
         except UniswapXError as exc:
             return self._reject_with(signal, mark_price, str(exc))
         except Exception as exc:  # noqa: BLE001
-            return self._reject_with(
-                signal, mark_price, f"order_transport_error: {exc!s}"
-            )
+            return self._reject_with(signal, mark_price, f"order_transport_error: {exc!s}")
         if not resp.accepted:
             return self._reject_with(
                 signal,
@@ -400,9 +363,7 @@ class UniswapXAdapter(LiveAdapterBase):
         if not raw.startswith("0x"):
             raw = "0x" + raw
         if len(raw) != 66:
-            raise ValueError(
-                f"invalid private key length: {len(raw)} (want 66)"
-            )
+            raise ValueError(f"invalid private key length: {len(raw)} (want 66)")
         return raw
 
     def _default_nonce(self) -> int:
@@ -412,9 +373,7 @@ class UniswapXAdapter(LiveAdapterBase):
         self._counter += 1
         return wall_ns() + self._counter
 
-    def _amount_in_from_signal(
-        self, signal: SignalEvent, mark_price: float
-    ) -> int:
+    def _amount_in_from_signal(self, signal: SignalEvent, mark_price: float) -> int:
         meta_amt = signal.meta.get("amount_in") if signal.meta else None
         if meta_amt is not None:
             try:
@@ -423,15 +382,9 @@ class UniswapXAdapter(LiveAdapterBase):
                 return 0
         # Fall back to USD-notional sizing — the operator can pin
         # ``signal.meta["size_usd"]`` to override the adapter default.
-        size_usd_raw = (
-            signal.meta.get("size_usd") if signal.meta else None
-        )
+        size_usd_raw = signal.meta.get("size_usd") if signal.meta else None
         try:
-            size_usd = (
-                float(size_usd_raw)
-                if size_usd_raw is not None
-                else self._default_size_usd
-            )
+            size_usd = float(size_usd_raw) if size_usd_raw is not None else self._default_size_usd
         except (TypeError, ValueError):
             size_usd = self._default_size_usd
         if mark_price <= 0:

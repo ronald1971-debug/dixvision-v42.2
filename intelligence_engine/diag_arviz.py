@@ -219,12 +219,9 @@ class ArviZPosteriorSpec:
     model_digest: str
 
     def __post_init__(self) -> None:
-        if not isinstance(self.num_chains, int) or isinstance(
-            self.num_chains, bool
-        ):
+        if not isinstance(self.num_chains, int) or isinstance(self.num_chains, bool):
             raise TypeError(
-                "ArviZPosteriorSpec.num_chains must be int, got "
-                f"{type(self.num_chains).__name__}"
+                f"ArviZPosteriorSpec.num_chains must be int, got {type(self.num_chains).__name__}"
             )
         if self.num_chains < MIN_NUM_CHAINS:
             raise ValueError(
@@ -236,45 +233,32 @@ class ArviZPosteriorSpec:
                 "ArviZPosteriorSpec.num_chains must be <= "
                 f"{MAX_NUM_CHAINS!r}, got {self.num_chains!r}"
             )
-        if not isinstance(self.num_draws, int) or isinstance(
-            self.num_draws, bool
-        ):
+        if not isinstance(self.num_draws, int) or isinstance(self.num_draws, bool):
             raise TypeError(
-                "ArviZPosteriorSpec.num_draws must be int, got "
-                f"{type(self.num_draws).__name__}"
+                f"ArviZPosteriorSpec.num_draws must be int, got {type(self.num_draws).__name__}"
             )
         if self.num_draws < MIN_NUM_DRAWS:
             raise ValueError(
-                "ArviZPosteriorSpec.num_draws must be >= "
-                f"{MIN_NUM_DRAWS!r}, got {self.num_draws!r}"
+                f"ArviZPosteriorSpec.num_draws must be >= {MIN_NUM_DRAWS!r}, got {self.num_draws!r}"
             )
         if self.num_draws > MAX_NUM_DRAWS:
             raise ValueError(
-                "ArviZPosteriorSpec.num_draws must be <= "
-                f"{MAX_NUM_DRAWS!r}, got {self.num_draws!r}"
+                f"ArviZPosteriorSpec.num_draws must be <= {MAX_NUM_DRAWS!r}, got {self.num_draws!r}"
             )
-        if not isinstance(self.num_vars, int) or isinstance(
-            self.num_vars, bool
-        ):
+        if not isinstance(self.num_vars, int) or isinstance(self.num_vars, bool):
             raise TypeError(
-                "ArviZPosteriorSpec.num_vars must be int, got "
-                f"{type(self.num_vars).__name__}"
+                f"ArviZPosteriorSpec.num_vars must be int, got {type(self.num_vars).__name__}"
             )
         if self.num_vars < MIN_NUM_VARS:
             raise ValueError(
-                "ArviZPosteriorSpec.num_vars must be >= "
-                f"{MIN_NUM_VARS!r}, got {self.num_vars!r}"
+                f"ArviZPosteriorSpec.num_vars must be >= {MIN_NUM_VARS!r}, got {self.num_vars!r}"
             )
         if self.num_vars > MAX_NUM_VARS:
             raise ValueError(
-                "ArviZPosteriorSpec.num_vars must be <= "
-                f"{MAX_NUM_VARS!r}, got {self.num_vars!r}"
+                f"ArviZPosteriorSpec.num_vars must be <= {MAX_NUM_VARS!r}, got {self.num_vars!r}"
             )
         if not self.model_digest:
-            raise ValueError(
-                "ArviZPosteriorSpec.model_digest must be "
-                "non-empty"
-            )
+            raise ValueError("ArviZPosteriorSpec.model_digest must be non-empty")
         if len(self.model_digest) > MAX_MODEL_DIGEST_LEN:
             raise ValueError(
                 "ArviZPosteriorSpec.model_digest must be <= "
@@ -311,9 +295,7 @@ class ArviZDiagnosticArguments:
                 "be ArviZDiagnosticKind, got "
                 f"{type(self.diagnostic_kind).__name__}"
             )
-        if not isinstance(self.random_seed, int) or isinstance(
-            self.random_seed, bool
-        ):
+        if not isinstance(self.random_seed, int) or isinstance(self.random_seed, bool):
             raise TypeError(
                 "ArviZDiagnosticArguments.random_seed must be "
                 f"int, got {type(self.random_seed).__name__}"
@@ -323,22 +305,18 @@ class ArviZDiagnosticArguments:
                 "ArviZDiagnosticArguments.random_seed must be "
                 f"non-negative, got {self.random_seed!r}"
             )
-        if not isinstance(self.hdi_prob, (int, float)) or isinstance(
-            self.hdi_prob, bool
-        ):
+        if not isinstance(self.hdi_prob, (int, float)) or isinstance(self.hdi_prob, bool):
             raise TypeError(
                 "ArviZDiagnosticArguments.hdi_prob must be "
                 f"float, got {type(self.hdi_prob).__name__}"
             )
         if not math.isfinite(self.hdi_prob):
             raise ValueError(
-                "ArviZDiagnosticArguments.hdi_prob must be "
-                f"finite, got {self.hdi_prob!r}"
+                f"ArviZDiagnosticArguments.hdi_prob must be finite, got {self.hdi_prob!r}"
             )
         if not (0.0 < self.hdi_prob < 1.0):
             raise ValueError(
-                "ArviZDiagnosticArguments.hdi_prob must be in "
-                f"(0.0, 1.0), got {self.hdi_prob!r}"
+                f"ArviZDiagnosticArguments.hdi_prob must be in (0.0, 1.0), got {self.hdi_prob!r}"
             )
         if not isinstance(self.samples, tuple):
             raise TypeError(
@@ -366,13 +344,11 @@ class ArviZDiagnosticArguments:
         for k, v in self.meta.items():
             if not isinstance(k, str) or not k:
                 raise ValueError(
-                    "ArviZDiagnosticArguments.meta keys must be "
-                    f"non-empty strings, got {k!r}"
+                    f"ArviZDiagnosticArguments.meta keys must be non-empty strings, got {k!r}"
                 )
             if not isinstance(v, str) or not v:
                 raise ValueError(
-                    "ArviZDiagnosticArguments.meta values must "
-                    f"be non-empty strings, got {v!r}"
+                    f"ArviZDiagnosticArguments.meta values must be non-empty strings, got {v!r}"
                 )
 
 
@@ -407,13 +383,10 @@ class ArviZVariableSummary:
     def __post_init__(self) -> None:
         if not isinstance(self.name, str):
             raise TypeError(
-                "ArviZVariableSummary.name must be str, got "
-                f"{type(self.name).__name__}"
+                f"ArviZVariableSummary.name must be str, got {type(self.name).__name__}"
             )
         if not self.name:
-            raise ValueError(
-                "ArviZVariableSummary.name must be non-empty"
-            )
+            raise ValueError("ArviZVariableSummary.name must be non-empty")
         if len(self.name) > MAX_VAR_NAME_LEN:
             raise ValueError(
                 "ArviZVariableSummary.name must be <= "
@@ -429,23 +402,14 @@ class ArviZVariableSummary:
             ("ess_tail", self.ess_tail),
             ("r_hat", self.r_hat),
         ):
-            if not isinstance(value, (int, float)) or isinstance(
-                value, bool
-            ):
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
                 raise TypeError(
-                    f"ArviZVariableSummary.{label} must be "
-                    f"float, got {type(value).__name__}"
+                    f"ArviZVariableSummary.{label} must be float, got {type(value).__name__}"
                 )
             if not math.isfinite(value):
-                raise ValueError(
-                    f"ArviZVariableSummary.{label} must be "
-                    f"finite, got {value!r}"
-                )
+                raise ValueError(f"ArviZVariableSummary.{label} must be finite, got {value!r}")
         if self.sd < 0.0:
-            raise ValueError(
-                "ArviZVariableSummary.sd must be non-negative, "
-                f"got {self.sd!r}"
-            )
+            raise ValueError(f"ArviZVariableSummary.sd must be non-negative, got {self.sd!r}")
         if self.hdi_3 > self.hdi_97:
             raise ValueError(
                 "ArviZVariableSummary.hdi_3 must be <= hdi_97, "
@@ -453,19 +417,14 @@ class ArviZVariableSummary:
             )
         if self.ess_bulk < 0.0:
             raise ValueError(
-                "ArviZVariableSummary.ess_bulk must be "
-                f"non-negative, got {self.ess_bulk!r}"
+                f"ArviZVariableSummary.ess_bulk must be non-negative, got {self.ess_bulk!r}"
             )
         if self.ess_tail < 0.0:
             raise ValueError(
-                "ArviZVariableSummary.ess_tail must be "
-                f"non-negative, got {self.ess_tail!r}"
+                f"ArviZVariableSummary.ess_tail must be non-negative, got {self.ess_tail!r}"
             )
         if self.r_hat < 0.0:
-            raise ValueError(
-                "ArviZVariableSummary.r_hat must be "
-                f"non-negative, got {self.r_hat!r}"
-            )
+            raise ValueError(f"ArviZVariableSummary.r_hat must be non-negative, got {self.r_hat!r}")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -484,10 +443,7 @@ class ArviZDiagnosticResult:
                 f"{type(self.variable_summaries).__name__}"
             )
         if not self.variable_summaries:
-            raise ValueError(
-                "ArviZDiagnosticResult.variable_summaries must "
-                "be non-empty"
-            )
+            raise ValueError("ArviZDiagnosticResult.variable_summaries must be non-empty")
         if len(self.variable_summaries) > MAX_NUM_VARS:
             raise ValueError(
                 "ArviZDiagnosticResult.variable_summaries must "
@@ -509,9 +465,7 @@ class ArviZDiagnosticResult:
                     f"{summary.name!r}"
                 )
             seen_names.add(summary.name)
-        if not isinstance(self.num_divergences, int) or isinstance(
-            self.num_divergences, bool
-        ):
+        if not isinstance(self.num_divergences, int) or isinstance(self.num_divergences, bool):
             raise TypeError(
                 "ArviZDiagnosticResult.num_divergences must be "
                 f"int, got {type(self.num_divergences).__name__}"
@@ -536,23 +490,16 @@ class ArviZDiagnosticRecord:
     meta: Mapping[str, str]
 
     def __post_init__(self) -> None:
-        if not isinstance(self.ts_ns, int) or isinstance(
-            self.ts_ns, bool
-        ):
+        if not isinstance(self.ts_ns, int) or isinstance(self.ts_ns, bool):
             raise TypeError(
-                "ArviZDiagnosticRecord.ts_ns must be int, got "
-                f"{type(self.ts_ns).__name__}"
+                f"ArviZDiagnosticRecord.ts_ns must be int, got {type(self.ts_ns).__name__}"
             )
         if self.ts_ns < 0:
             raise ValueError(
-                "ArviZDiagnosticRecord.ts_ns must be "
-                f"non-negative, got {self.ts_ns!r}"
+                f"ArviZDiagnosticRecord.ts_ns must be non-negative, got {self.ts_ns!r}"
             )
         if not self.analysis_id:
-            raise ValueError(
-                "ArviZDiagnosticRecord.analysis_id must be "
-                "non-empty"
-            )
+            raise ValueError("ArviZDiagnosticRecord.analysis_id must be non-empty")
         if len(self.analysis_id) > MAX_ANALYSIS_ID_LEN:
             raise ValueError(
                 "ArviZDiagnosticRecord.analysis_id must be <= "
@@ -560,9 +507,7 @@ class ArviZDiagnosticRecord:
                 f"{len(self.analysis_id)!r}"
             )
         if not self.source:
-            raise ValueError(
-                "ArviZDiagnosticRecord.source must be non-empty"
-            )
+            raise ValueError("ArviZDiagnosticRecord.source must be non-empty")
         if not isinstance(self.spec, ArviZPosteriorSpec):
             raise TypeError(
                 "ArviZDiagnosticRecord.spec must be "
@@ -581,9 +526,7 @@ class ArviZDiagnosticRecord:
                 f"a 16-hex-char digest, got "
                 f"{self.analysis_digest!r}"
             )
-        if not all(
-            c in "0123456789abcdef" for c in self.analysis_digest
-        ):
+        if not all(c in "0123456789abcdef" for c in self.analysis_digest):
             raise ValueError(
                 "ArviZDiagnosticRecord.analysis_digest must be "
                 f"lowercase hex, got {self.analysis_digest!r}"
@@ -710,9 +653,7 @@ def _compute_analysis_digest(
     summary."""
 
     samples_str = ",".join(f"{x!r}" for x in arguments.samples)
-    meta_pairs = "|".join(
-        f"{k}={v}" for k, v in sorted(arguments.meta.items())
-    )
+    meta_pairs = "|".join(f"{k}={v}" for k, v in sorted(arguments.meta.items()))
     summaries_str = ";".join(
         (
             f"{s.name}:mean={s.mean!r}"
@@ -790,18 +731,15 @@ class ArviZDiagnosticAnalyser:
             )
         if not isinstance(ts_ns, int) or isinstance(ts_ns, bool):
             raise TypeError(
-                "ArviZDiagnosticAnalyser.analyse.ts_ns must be "
-                f"int, got {type(ts_ns).__name__}"
+                f"ArviZDiagnosticAnalyser.analyse.ts_ns must be int, got {type(ts_ns).__name__}"
             )
         if ts_ns < 0:
             raise ArviZAnalyserConfigError(
-                "ArviZDiagnosticAnalyser.analyse.ts_ns must be "
-                f"non-negative, got {ts_ns!r}"
+                f"ArviZDiagnosticAnalyser.analyse.ts_ns must be non-negative, got {ts_ns!r}"
             )
         if not analysis_id:
             raise ArviZAnalyserConfigError(
-                "ArviZDiagnosticAnalyser.analyse.analysis_id "
-                "must be non-empty"
+                "ArviZDiagnosticAnalyser.analyse.analysis_id must be non-empty"
             )
         if len(analysis_id) > MAX_ANALYSIS_ID_LEN:
             raise ArviZAnalyserConfigError(
@@ -810,10 +748,7 @@ class ArviZDiagnosticAnalyser:
                 f"{len(analysis_id)!r}"
             )
 
-        cb = (
-            callback if callback is not None
-            else null_arviz_diagnostic_callback()
-        )
+        cb = callback if callback is not None else null_arviz_diagnostic_callback()
         if not isinstance(cb, ArviZDiagnosticCallback):
             raise TypeError(
                 "ArviZDiagnosticAnalyser.analyse.callback must "
@@ -863,9 +798,7 @@ class ArviZDiagnosticAnalyser:
             "num_draws": str(spec.num_draws),
             "num_vars": str(spec.num_vars),
             "sample_count": str(len(arguments.samples)),
-            "variable_summary_count": str(
-                len(result.variable_summaries)
-            ),
+            "variable_summary_count": str(len(result.variable_summaries)),
             "num_divergences": str(result.num_divergences),
         }
         for k, v in sorted(arguments.meta.items()):

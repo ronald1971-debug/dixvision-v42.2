@@ -203,9 +203,7 @@ class CoinDeskRSSFeedRunner:
             # ``start()`` must NOT bypass the idempotency guard and
             # spawn a second pump (mirrors ``FeedRunner.stop``
             # ``ui/feeds/runner.py:168-170``).
-            if self._thread is thread and (
-                thread is None or not thread.is_alive()
-            ):
+            if self._thread is thread and (thread is None or not thread.is_alive()):
                 self._thread = None
         # Mirror ``FeedRunner.stop`` (``ui/feeds/runner.py:171``):
         # return the live status snapshot so callers see real

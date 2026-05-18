@@ -191,9 +191,7 @@ def test_ttl_cache_replay_byte_identical() -> None:
     """INV-15 — same inputs ⇒ same final state across 3 independent runs."""
 
     def run() -> tuple[tuple[str, ...], int]:
-        c: TTLCache[str, int] = TTLCache(
-            policy=TTLPolicy(ttl_ns=500, maxsize=3)
-        )
+        c: TTLCache[str, int] = TTLCache(policy=TTLPolicy(ttl_ns=500, maxsize=3))
         c.set("a", 1, ts_ns=0)
         c.set("b", 2, ts_ns=100)
         c.set("c", 3, ts_ns=200)
@@ -284,9 +282,7 @@ def test_response_cache_defaults() -> None:
 
 
 def test_response_cache_policy_round_trip() -> None:
-    rc: ResponseCache[str, str] = ResponseCache(
-        policy=ResponseCachePolicy(maxsize=7)
-    )
+    rc: ResponseCache[str, str] = ResponseCache(policy=ResponseCachePolicy(maxsize=7))
     assert rc.maxsize == 7
 
 
@@ -435,9 +431,7 @@ def test_cachetools_imported_only_inside_enable_seam() -> None:
 
 
 def test_response_cachetools_imported_only_inside_enable_seam() -> None:
-    seam_imports = _local_imports_in_function(
-        RESP_SRC, "enable_cachetools_response_factory"
-    )
+    seam_imports = _local_imports_in_function(RESP_SRC, "enable_cachetools_response_factory")
     assert "cachetools" in seam_imports
 
 
@@ -455,9 +449,7 @@ def test_no_typed_event_constructors() -> None:
         tree = ast.parse(src)
         for node in ast.walk(tree):
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-                assert node.func.id not in forbidden, (
-                    f"forbidden typed-event ctor: {node.func.id}"
-                )
+                assert node.func.id not in forbidden, f"forbidden typed-event ctor: {node.func.id}"
 
 
 def test_no_runtime_engine_cross_imports() -> None:

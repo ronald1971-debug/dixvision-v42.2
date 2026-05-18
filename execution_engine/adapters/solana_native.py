@@ -84,9 +84,7 @@ _DEFAULT_VENUE: Final[str] = "solana:mainnet-beta"
 # Base58 (Bitcoin alphabet) — used by Solana for pubkeys, signatures,
 # and serialized transactions. Defined inline so the adapter has zero
 # dependency on the ``base58`` package at the stdlib backend.
-_B58_ALPHABET: Final[bytes] = (
-    b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-)
+_B58_ALPHABET: Final[bytes] = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 
 # ---------------------------------------------------------------------------
@@ -296,9 +294,7 @@ class SignedTransaction:
         return bytes(self.signature) + self.transaction.to_message_bytes()
 
 
-_ALLOWED_TX_STATUS: Final[frozenset[str]] = frozenset(
-    {"CONFIRMED", "FAILED", "DROPPED"}
-)
+_ALLOWED_TX_STATUS: Final[frozenset[str]] = frozenset({"CONFIRMED", "FAILED", "DROPPED"})
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -314,9 +310,7 @@ class TxResult:
         if not isinstance(self.signature, str) or not self.signature:
             raise ValueError("signature must be a non-empty str")
         if self.status not in _ALLOWED_TX_STATUS:
-            raise ValueError(
-                f"status must be one of {sorted(_ALLOWED_TX_STATUS)}"
-            )
+            raise ValueError(f"status must be one of {sorted(_ALLOWED_TX_STATUS)}")
         if not isinstance(self.slot, int) or self.slot < 0:
             raise ValueError("slot must be a non-negative int")
         if not isinstance(self.detail, str):
@@ -349,9 +343,7 @@ class SolanaTransport(Protocol):
 
     def get_recent_blockhash(self) -> str: ...
 
-    def send_transaction(
-        self, signed: SignedTransaction
-    ) -> TxResult: ...
+    def send_transaction(self, signed: SignedTransaction) -> TxResult: ...
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -391,9 +383,7 @@ class InProcessSolanaTransport:
 # ---------------------------------------------------------------------------
 
 
-def deterministic_test_signer(
-    message: bytes, handle: KeypairHandle
-) -> bytes:
+def deterministic_test_signer(message: bytes, handle: KeypairHandle) -> bytes:
     """Deterministic ``SolanaSigner`` for tests.
 
     Produces a 64-byte "signature" via two BLAKE2b-32 hashes over
@@ -451,9 +441,7 @@ class SolanaNativeAdapter(LiveAdapterBase):
         transport: SolanaTransport,
         signer: SolanaSigner,
         keypair: KeypairHandle,
-        instruction_builder: Callable[
-            [SignalEvent, float, Pubkey], tuple[Instruction, ...]
-        ],
+        instruction_builder: Callable[[SignalEvent, float, Pubkey], tuple[Instruction, ...]],
         default_qty: float = 0.0,
         name: str = "solana_native",
         venue: str = _DEFAULT_VENUE,
@@ -524,9 +512,7 @@ class SolanaNativeAdapter(LiveAdapterBase):
         """
 
         blockhash = self._transport.get_recent_blockhash()
-        instructions = self._instruction_builder(
-            signal, mark_price, self._keypair.pubkey
-        )
+        instructions = self._instruction_builder(signal, mark_price, self._keypair.pubkey)
         if not isinstance(instructions, tuple):
             raise TypeError("instruction_builder must return a tuple")
         if not instructions:
@@ -543,9 +529,7 @@ class SolanaNativeAdapter(LiveAdapterBase):
             signer_pubkey=self._keypair.pubkey,
         )
         result = self._transport.send_transaction(signed)
-        return _project_tx_result(
-            signal, mark_price, self.venue, result, self._default_qty
-        )
+        return _project_tx_result(signal, mark_price, self.venue, result, self._default_qty)
 
 
 def _project_tx_result(

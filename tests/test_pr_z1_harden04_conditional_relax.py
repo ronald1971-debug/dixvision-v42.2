@@ -92,20 +92,14 @@ def test_unset_env_pre_arms_override_default_true(
 
 
 @pytest.mark.parametrize("value", ["1", "true", "TRUE", "yes", "on"])
-def test_explicit_opt_in_still_true(
-    monkeypatch: pytest.MonkeyPatch, value: str
-) -> None:
+def test_explicit_opt_in_still_true(monkeypatch: pytest.MonkeyPatch, value: str) -> None:
     """Explicit opt-in tokens continue to pre-arm the override."""
 
     assert _reload_server_with_override(monkeypatch, value) is True
 
 
-@pytest.mark.parametrize(
-    "value", ["0", "false", "FALSE", "no", "off", ""]
-)
-def test_explicit_opt_out_returns_false(
-    monkeypatch: pytest.MonkeyPatch, value: str
-) -> None:
+@pytest.mark.parametrize("value", ["0", "false", "FALSE", "no", "off", ""])
+def test_explicit_opt_out_returns_false(monkeypatch: pytest.MonkeyPatch, value: str) -> None:
     """Operators retain the documented re-freeze path.
 
     Setting ``DIXVISION_LEARNING_OVERRIDE`` to any of the recognised
@@ -136,14 +130,10 @@ def test_policy_contract_relax_override_alone_unfreezes() -> None:
     """
 
     for mode in SystemMode:
-        unfrozen = LearningEvolutionFreezePolicy(
-            mode=mode, operator_override=True
-        )
+        unfrozen = LearningEvolutionFreezePolicy(mode=mode, operator_override=True)
         assert unfrozen.is_unfrozen() is True, mode
         assert unfrozen.is_frozen() is False, mode
 
-        frozen = LearningEvolutionFreezePolicy(
-            mode=mode, operator_override=False
-        )
+        frozen = LearningEvolutionFreezePolicy(mode=mode, operator_override=False)
         assert frozen.is_frozen() is True, mode
         assert frozen.is_unfrozen() is False, mode

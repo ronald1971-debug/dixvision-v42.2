@@ -111,30 +111,17 @@ class ScoredObservation:
         if self.ts_ns < 0:
             raise ValueError(f"ts_ns must be >= 0; got {self.ts_ns}")
         if not isinstance(self.symbol, str):
-            raise TypeError(
-                f"symbol must be str; got {type(self.symbol).__name__}"
-            )
+            raise TypeError(f"symbol must be str; got {type(self.symbol).__name__}")
         if not self.symbol:
             raise ValueError("symbol must be non-empty")
-        if not isinstance(self.score, (int, float)) or isinstance(
-            self.score, bool
-        ):
-            raise TypeError(
-                f"score must be float; got {type(self.score).__name__}"
-            )
+        if not isinstance(self.score, (int, float)) or isinstance(self.score, bool):
+            raise TypeError(f"score must be float; got {type(self.score).__name__}")
         if not math.isfinite(float(self.score)):
             raise ValueError(f"score must be finite; got {self.score}")
-        if not isinstance(self.future_return, (int, float)) or isinstance(
-            self.future_return, bool
-        ):
-            raise TypeError(
-                "future_return must be float; got "
-                f"{type(self.future_return).__name__}"
-            )
+        if not isinstance(self.future_return, (int, float)) or isinstance(self.future_return, bool):
+            raise TypeError(f"future_return must be float; got {type(self.future_return).__name__}")
         if not math.isfinite(float(self.future_return)):
-            raise ValueError(
-                f"future_return must be finite; got {self.future_return}"
-            )
+            raise ValueError(f"future_return must be finite; got {self.future_return}")
 
 
 # ---------------------------------------------------------------------------
@@ -187,23 +174,14 @@ class HorizonIC:
     rank_icir: float
 
     def __post_init__(self) -> None:
-        if not isinstance(self.horizon_steps, int) or isinstance(
-            self.horizon_steps, bool
-        ):
-            raise TypeError(
-                "horizon_steps must be int; got "
-                f"{type(self.horizon_steps).__name__}"
-            )
+        if not isinstance(self.horizon_steps, int) or isinstance(self.horizon_steps, bool):
+            raise TypeError(f"horizon_steps must be int; got {type(self.horizon_steps).__name__}")
         if self.horizon_steps <= 0:
-            raise ValueError(
-                f"horizon_steps must be > 0; got {self.horizon_steps}"
-            )
+            raise ValueError(f"horizon_steps must be > 0; got {self.horizon_steps}")
         if self.n_buckets < 0:
             raise ValueError(f"n_buckets must be >= 0; got {self.n_buckets}")
         if self.n_observations < 0:
-            raise ValueError(
-                f"n_observations must be >= 0; got {self.n_observations}"
-            )
+            raise ValueError(f"n_observations must be >= 0; got {self.n_observations}")
         for name, value in (
             ("ic_mean", self.ic_mean),
             ("ic_std", self.ic_std),
@@ -217,9 +195,7 @@ class HorizonIC:
         if self.ic_std < 0.0:
             raise ValueError(f"ic_std must be >= 0; got {self.ic_std}")
         if self.rank_ic_std < 0.0:
-            raise ValueError(
-                f"rank_ic_std must be >= 0; got {self.rank_ic_std}"
-            )
+            raise ValueError(f"rank_ic_std must be >= 0; got {self.rank_ic_std}")
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -241,16 +217,11 @@ class AlphaDecayCurve:
 
     def __post_init__(self) -> None:
         if not isinstance(self.horizons, tuple):
-            raise TypeError(
-                f"horizons must be tuple; got {type(self.horizons).__name__}"
-            )
+            raise TypeError(f"horizons must be tuple; got {type(self.horizons).__name__}")
         prev = -1
         for h in self.horizons:
             if not isinstance(h, HorizonIC):
-                raise TypeError(
-                    "horizons must contain HorizonIC; got "
-                    f"{type(h).__name__}"
-                )
+                raise TypeError(f"horizons must contain HorizonIC; got {type(h).__name__}")
             if h.horizon_steps <= prev:
                 raise ValueError(
                     "horizons must be strictly ascending by horizon_steps; "
@@ -400,9 +371,7 @@ def compute_ic(
         ValueError: If ``horizon_steps <= 0``.
     """
     if not isinstance(horizon_steps, int) or isinstance(horizon_steps, bool):
-        raise TypeError(
-            f"horizon_steps must be int; got {type(horizon_steps).__name__}"
-        )
+        raise TypeError(f"horizon_steps must be int; got {type(horizon_steps).__name__}")
     if horizon_steps <= 0:
         raise ValueError(f"horizon_steps must be > 0; got {horizon_steps}")
 
@@ -411,8 +380,7 @@ def compute_ic(
     for obs in observations:
         if not isinstance(obs, ScoredObservation):
             raise TypeError(
-                "observations must contain ScoredObservation; got "
-                f"{type(obs).__name__}"
+                f"observations must contain ScoredObservation; got {type(obs).__name__}"
             )
         buckets.setdefault(obs.ts_ns, []).append(obs)
         n_obs += 1
@@ -490,23 +458,16 @@ def compute_alpha_decay(
     """
     if not isinstance(observations_by_horizon, Mapping):
         raise TypeError(
-            "observations_by_horizon must be Mapping; got "
-            f"{type(observations_by_horizon).__name__}"
+            f"observations_by_horizon must be Mapping; got {type(observations_by_horizon).__name__}"
         )
     horizons: list[HorizonIC] = []
     for horizon_steps in sorted(observations_by_horizon):
-        if not isinstance(horizon_steps, int) or isinstance(
-            horizon_steps, bool
-        ):
+        if not isinstance(horizon_steps, int) or isinstance(horizon_steps, bool):
             raise TypeError(
-                "observations_by_horizon keys must be int; got "
-                f"{type(horizon_steps).__name__}"
+                f"observations_by_horizon keys must be int; got {type(horizon_steps).__name__}"
             )
         if horizon_steps <= 0:
-            raise ValueError(
-                "observations_by_horizon keys must be > 0; got "
-                f"{horizon_steps}"
-            )
+            raise ValueError(f"observations_by_horizon keys must be > 0; got {horizon_steps}")
         horizons.append(
             compute_ic(
                 observations_by_horizon[horizon_steps],

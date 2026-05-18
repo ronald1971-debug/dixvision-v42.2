@@ -122,9 +122,7 @@ class HummingbotAdapter(LiveAdapterBase):
                 missing.append("gateway_url")
             if self._wallet is None:
                 missing.append("wallet_address")
-            self._detail = (
-                "missing: " + ", ".join(missing) + " — scaffold mode"
-            )
+            self._detail = "missing: " + ", ".join(missing) + " — scaffold mode"
             return
         if self._client is None:
             self._client = HummingbotGatewayClient(
@@ -178,9 +176,7 @@ class HummingbotAdapter(LiveAdapterBase):
         base, quote = self._split_symbol(signal.symbol)
         size = self._size_from_signal(signal, mark_price)
         if size <= 0:
-            return self._reject_with(
-                signal, mark_price, "non_positive_size"
-            )
+            return self._reject_with(signal, mark_price, "non_positive_size")
 
         req = GatewayTradeRequest(
             connector=self._connector,
@@ -202,9 +198,7 @@ class HummingbotAdapter(LiveAdapterBase):
         except GatewayError as exc:
             return self._reject_with(signal, mark_price, str(exc))
         except Exception as exc:  # noqa: BLE001
-            return self._reject_with(
-                signal, mark_price, f"transport_error: {exc!s}"
-            )
+            return self._reject_with(signal, mark_price, f"transport_error: {exc!s}")
 
         if not resp.accepted:
             return self._reject_with(
@@ -248,9 +242,7 @@ class HummingbotAdapter(LiveAdapterBase):
         # Fallback: assume USDC-quoted SPL/ERC20
         return symbol.upper(), "USDC"
 
-    def _size_from_signal(
-        self, signal: SignalEvent, mark_price: float
-    ) -> float:
+    def _size_from_signal(self, signal: SignalEvent, mark_price: float) -> float:
         meta_size = signal.meta.get("size") if signal.meta else None
         if meta_size is not None:
             try:

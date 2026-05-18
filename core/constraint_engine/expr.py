@@ -184,9 +184,7 @@ class _Parser:
         left = self._parse_operand()
         op_tok = self._advance()
         if op_tok[0] != "op":
-            raise ValueError(
-                f"expected comparison operator, got {op_tok[0]!r} ({op_tok[1]!r})"
-            )
+            raise ValueError(f"expected comparison operator, got {op_tok[0]!r} ({op_tok[1]!r})")
         right = self._parse_operand()
         return _Cmp(op_tok[1], left, right)
 
@@ -196,9 +194,7 @@ class _Parser:
             return _Number(float(tok[1]))
         if tok[0] == "ident":
             return _Ident(tok[1])
-        raise ValueError(
-            f"expected operand (number/ident), got {tok[0]!r} ({tok[1]!r})"
-        )
+        raise ValueError(f"expected operand (number/ident), got {tok[0]!r} ({tok[1]!r})")
 
 
 def parse(src: str) -> Expr:
@@ -215,9 +211,7 @@ def parse(src: str) -> Expr:
 _NUMERIC_OPS = {"<", "<=", ">", ">="}
 
 
-def _resolve(
-    operand: _Number | _Ident, facts: Mapping[str, Any], *, numeric_only: bool
-) -> Any:
+def _resolve(operand: _Number | _Ident, facts: Mapping[str, Any], *, numeric_only: bool) -> Any:
     if isinstance(operand, _Number):
         return operand.value
     if operand.name not in facts:
@@ -228,14 +222,10 @@ def _resolve(
     if isinstance(val, (int, float)):
         return float(val)
     if numeric_only:
-        raise TypeError(
-            f"fact {operand.name!r} must be numeric, got {type(val).__name__}"
-        )
+        raise TypeError(f"fact {operand.name!r} must be numeric, got {type(val).__name__}")
     if isinstance(val, str):
         return val
-    raise TypeError(
-        f"fact {operand.name!r} must be numeric or string, got {type(val).__name__}"
-    )
+    raise TypeError(f"fact {operand.name!r} must be numeric or string, got {type(val).__name__}")
 
 
 _OPS = {
@@ -269,9 +259,7 @@ def free_idents(expr: Expr) -> frozenset[str]:
     """Return the set of fact names referenced by ``expr``."""
 
     if isinstance(expr, _Cmp):
-        return frozenset(
-            o.name for o in (expr.left, expr.right) if isinstance(o, _Ident)
-        )
+        return frozenset(o.name for o in (expr.left, expr.right) if isinstance(o, _Ident))
     if isinstance(expr, _Not):
         return free_idents(expr.inner)
     if isinstance(expr, (_And, _Or)):
