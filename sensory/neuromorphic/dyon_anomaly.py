@@ -1,5 +1,7 @@
 """NEUR-02 — Dyon anomaly perception.
 
+SCVS row: SRC-SENSORY-SNN-DYON-001 (registry/data_source_registry.yaml).
+
 Pure function over a fixed-size window of numeric metric samples.
 Emits an :class:`AnomalyPulse` describing how far the most recent
 sample deviates from the window's mean.

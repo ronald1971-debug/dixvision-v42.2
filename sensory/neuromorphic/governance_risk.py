@@ -1,5 +1,7 @@
 """NEUR-03 — Governance-risk perception.
 
+SCVS row: SRC-SENSORY-SNN-GOVERNANCE-001 (registry/data_source_registry.yaml).
+
 Pure function over a window of recent decision-trace observations.
 Emits a :class:`RiskPulse` describing operator-side risk drift —
 e.g. rising rejection rates, hazard density, or

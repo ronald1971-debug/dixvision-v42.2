@@ -1,5 +1,7 @@
 """NEUR-01 — Indira pulse / microstructure signal extractor.
 
+SCVS row: SRC-SENSORY-SNN-INDIRA-001 (registry/data_source_registry.yaml).
+
 Pure function over an observed window of trades. Emits a
 :class:`PulseSignal` describing the directional pulse and its
 normalized intensity.

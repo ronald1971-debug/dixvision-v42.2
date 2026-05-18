@@ -1,5 +1,7 @@
 """WEBLEARN-03 — Curator.
 
+SCVS row: SRC-SENSORY-WEB-AUTOLEARN-001 (registry/data_source_registry.yaml).
+
 The curator is the second filter in the pipeline. Where the AIFilter
 (WEBLEARN-02) decides *relevance* (does the document mention the
 seed's topic at all), the curator decides *admissibility* — whether
