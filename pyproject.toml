@@ -53,6 +53,12 @@ dev = [
     # the canonical Python implementation of EIP-712 typed-data signing
     # used by Uniswap Labs / Foundation tooling.
     "eth-account>=0.13,<1",
+    # CI-speedup — ``pytest-timeout`` fail-fasts on any test that
+    # exceeds the configured budget so a network-blocked WS adapter
+    # or hung asyncio task can no longer pin the GitHub-Actions
+    # ``lint-and-test`` job at the 6-hour default. Dev-only; not
+    # loaded by the runtime tiers.
+    "pytest-timeout>=2.2",
 ]
 evm = [
     "eth-account>=0.13,<1",
@@ -153,6 +159,14 @@ exclude = ["tests*", "rust*", "docs*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# CI-speedup — every individual test gets a 120s wall-clock budget
+# enforced by ``pytest-timeout``. Anything over the budget aborts the
+# test (not the whole run) with a stack trace, so a hung WS / asyncio
+# / network-blocked test can no longer hang the GitHub-Actions runner
+# until the 6-hour default. Local runs that need more time can still
+# pass ``--timeout=600`` (or ``-p no:timeout``) on the CLI to override.
+timeout = 120
+timeout_method = "thread"
 addopts = "-q"
 
 [tool.ruff]

@@ -9,6 +9,10 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    # CI-speedup — bound the whole job at 20 minutes so a hung test
+    # can no longer block the queue at the GitHub-Actions 6-hour
+    # default. The per-test budget lives in [tool.pytest.ini_options].
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -38,4 +42,9 @@ jobs:
         run: python tools/constraint_lint.py
 
       - name: Pytest
+        # The per-test budget configured in
+        # ``[tool.pytest.ini_options]`` (``pytest-timeout``) aborts
+        # any individual test that exceeds 120s, so a hung WS /
+        # asyncio / network-blocked test can no longer pin the job
+        # at the GitHub-Actions 6-hour default.
         run: pytest -q
