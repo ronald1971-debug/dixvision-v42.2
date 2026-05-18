@@ -62,7 +62,13 @@ def test_offline_engine_instantiates(cls):
     # OfflineEngine.schedule must return a non-empty cron string.
     assert eng.schedule()
     status = eng.check_self()
-    assert status.state is HealthState.OK
+    # Phase-6 P1-3 — engine shells default to DEGRADED unless the
+    # harness injects an ``is_active_fn`` that reports the wired loop
+    # is currently unfrozen. The audit flagged returning OK while the
+    # shell is dormant as actively misleading vs. the dormancy
+    # endpoint at ``/api/operator/runtime/dormant``. With no callback
+    # injected, the engine is honestly dormant.
+    assert status.state is HealthState.DEGRADED
 
 
 def test_intelligence_engine_signal_passthrough():
