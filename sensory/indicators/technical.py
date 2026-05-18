@@ -1,5 +1,7 @@
 """Technical indicators (B-05 — pandas-ta canonical adaptation).
 
+SCVS row: SRC-SENSORY-INDICATORS-001 (registry/data_source_registry.yaml).
+
 # ADAPTED FROM: twopirllc/pandas-ta
 # - pandas_ta/momentum/rsi.py         (Wilder RSI)
 # - pandas_ta/momentum/macd.py        (MACD line / signal / histogram)

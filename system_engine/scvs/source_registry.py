@@ -37,6 +37,12 @@ _DEFAULT_LIVENESS_MS_BY_CATEGORY: Mapping[str, int] = {
     "trader": 5 * 60_000,
     "ai": 60_000,
     "synthetic": 0,  # 0 == not liveness-checked
+    # C-4 / P2-2 — local sensory feature extractors (neuromorphic SNNs,
+    # web-autolearn curator, technical indicators). These run on-demand
+    # from the harness rather than emitting heartbeats, so they are not
+    # liveness-checked. The bidirectional-closure lint (SCVS-01 / -02)
+    # still applies once any row sets ``enabled: true``.
+    "sensory": 0,
 }
 
 
@@ -58,6 +64,12 @@ class SourceCategory(StrEnum):
     TRADER = "trader"
     AI = "ai"
     SYNTHETIC = "synthetic"
+    # C-4 / P2-2 — local sensory perimeter (neuromorphic SNNs,
+    # web-autolearn curator, technical indicators). Distinct from
+    # ``synthetic`` (replay buffers) and from the external feed
+    # categories because the producer module lives inside the repo
+    # but is not part of any engine; it is a feature extractor only.
+    SENSORY = "sensory"
 
 
 # Allowed capability tags for ``category: ai`` rows. Chat widgets pick

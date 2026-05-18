@@ -71,7 +71,7 @@ THRESHOLDS: dict[str, dict[str, Any]] = {
     # Percentages — floor: actual_pct must be >= floor.
     "file_coverage_pct_floor": {"kind": "pct_floor", "value": 100},
     "source_coverage_pct_floor": {"kind": "pct_floor", "value": 100},
-    "feature_coverage_pct_floor": {"kind": "pct_floor", "value": 41},
+    "feature_coverage_pct_floor": {"kind": "pct_floor", "value": 42},
     "invariant_coverage_pct_floor": {"kind": "pct_floor", "value": 96},
     # Counts — ceiling: actual_count must be <= ceiling.
     "dead_files_max": {"kind": "count_ceiling", "value": 29},
