@@ -33,7 +33,17 @@ from typing import Any
 
 import yaml
 
-from core.constraint_engine import expr as expr_mod
+# R-4 / Phase-6 audit fix — import the ``expr`` submodule via its
+# fully-qualified module path rather than through the package facade
+# ``from core.constraint_engine import expr``. The latter records a
+# dependency on the ``core.constraint_engine`` package itself, which
+# in turn re-exports from this module, producing a
+# ``core.constraint_engine ↔ core.constraint_engine.compiler`` cycle
+# in the static dependency graph. The direct import below records the
+# leaf module as the dependency and breaks the cycle while preserving
+# byte-identical runtime behaviour (the ``expr_mod`` alias is reused
+# verbatim throughout the rest of this file).
+import core.constraint_engine.expr as expr_mod  # noqa: PLR0402
 from system_engine.authority import AuthorityMatrix, load_authority_matrix
 
 
@@ -134,14 +144,10 @@ class RuleGraph:
 def _expect_keys(body: Mapping[str, Any], required: tuple[str, ...]) -> None:
     missing = [k for k in required if k not in body]
     if missing:
-        raise ValueError(
-            f"constraint_rules: missing required top-level keys: {sorted(missing)!r}"
-        )
+        raise ValueError(f"constraint_rules: missing required top-level keys: {sorted(missing)!r}")
 
 
-def _topo_sort(
-    rules: Mapping[str, tuple[str, ...]], rule_ids: list[str]
-) -> tuple[str, ...]:
+def _topo_sort(rules: Mapping[str, tuple[str, ...]], rule_ids: list[str]) -> tuple[str, ...]:
     """Kahn's algorithm with deterministic ordering by rule id."""
 
     indegree: dict[str, int] = {rid: 0 for rid in rule_ids}
@@ -244,9 +250,7 @@ def compile_rules(
         if deps_raw is None:
             deps_raw = []
         if not isinstance(deps_raw, list):
-            raise ValueError(
-                f"constraint_rules: rule {rid!r} 'depends_on' must be a list"
-            )
+            raise ValueError(f"constraint_rules: rule {rid!r} 'depends_on' must be a list")
         deps = tuple(str(d) for d in deps_raw)
         if rid in deps:
             raise ValueError(f"constraint_rules: rule {rid!r} self-dependency")
@@ -258,15 +262,12 @@ def compile_rules(
         if when_src_raw is not None:
             when_src = str(when_src_raw).strip()
             if not when_src:
-                raise ValueError(
-                    f"constraint_rules: rule {rid!r} has empty 'when' clause"
-                )
+                raise ValueError(f"constraint_rules: rule {rid!r} has empty 'when' clause")
             try:
                 when_ast = expr_mod.parse(when_src)
             except ValueError as e:
                 raise ValueError(
-                    f"constraint_rules: rule {rid!r} has invalid 'when' "
-                    f"expression: {e}"
+                    f"constraint_rules: rule {rid!r} has invalid 'when' expression: {e}"
                 ) from e
             facts = expr_mod.free_idents(when_ast)
 
@@ -292,9 +293,7 @@ def compile_rules(
     for rid, deps in deps_map.items():
         for dep in deps:
             if dep not in by_id:
-                raise ValueError(
-                    f"constraint_rules: rule {rid!r} depends on unknown rule {dep!r}"
-                )
+                raise ValueError(f"constraint_rules: rule {rid!r} depends on unknown rule {dep!r}")
 
     order = _topo_sort(deps_map, list(by_id.keys()))
 
