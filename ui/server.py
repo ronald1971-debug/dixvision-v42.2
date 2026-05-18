@@ -293,6 +293,7 @@ from ui.feeds.tradingview_ideas import (
     TRADINGVIEW_SOURCE_FEED,
     parse_tradingview_idea_payload,
 )
+from ui.feeds_routes import build_feeds_router
 from ui.governance_routes import build_governance_router
 from ui.plugin_routes import (
     PluginRegistry,
@@ -1662,17 +1663,10 @@ class TradingViewAlertIn(BaseModel):
     )
 
 
-class BinanceFeedStartIn(BaseModel):
-    """Optional override for ``POST /api/feeds/binance/start``.
-
-    Empty body uses the runner's configured default symbol set
-    (``ui.feeds.binance_public_ws.DEFAULT_SYMBOLS``: BTCUSDT + ETHUSDT).
-    """
-
-    symbols: list[str] | None = Field(
-        default=None,
-        description="Override symbol list, e.g. ['btcusdt', 'ethusdt', 'solusdt']",
-    )
+# C-2 / P2-4 / R-1 part 2 — :class:`BinanceFeedStartIn` lives in
+# :mod:`ui.feeds_routes` now (alongside the four feed-route families
+# it parameterises). It is re-exported here for any existing test
+# that imported it directly from ``ui.server``.
 
 
 # ---------------------------------------------------------------------------
@@ -1722,6 +1716,14 @@ app.include_router(build_execution_router())
 # the engine wiring; it reads the registrar through this lambda exactly
 # like the dashboard / governance routes do.
 app.include_router(build_runtime_router(lambda: STATE))
+
+
+# C-2 / P2-4 / R-1 part 2 — live data feeds (Binance / CoinDesk /
+# Pump.fun / Raydium) operator surface. Each runner is constructed in
+# ``_State._build_live_feeds`` (the harness owns lifecycle); this router
+# is the thin HTTP projection. URL/method/JSON-shape preserved verbatim
+# from the prior inline handlers.
+app.include_router(build_feeds_router(lambda: STATE))
 
 
 # Wave-Live PR-4 — root URL routes operators to the live SPA. PR #105
@@ -3483,219 +3485,13 @@ async def get_dashboard_stream(request: Request, backfill_only: bool = False) ->
 # ---------------------------------------------------------------------------
 # Live data feeds (SCVS-registered sources)
 # ---------------------------------------------------------------------------
-
-
-def _feed_status_dict(source_id: str) -> dict[str, Any]:
-    status = STATE.binance_feed.status()
-    return {
-        "source_id": source_id,
-        "running": status.running,
-        "url": status.url,
-        "symbols": list(status.symbols),
-        "ticks_received": status.ticks_received,
-        "errors": status.errors,
-        "last_tick_ts_ns": status.last_tick_ts_ns,
-    }
-
-
-@app.post("/api/feeds/binance/start")
-def post_binance_feed_start(
-    body: BinanceFeedStartIn | None = None,
-) -> dict[str, Any]:
-    """Start the read-only Binance public WS pump (SRC-MARKET-BINANCE-001).
-
-    Idempotent — returns the current status if already running. Pass
-    ``{"symbols": ["btcusdt", "ethusdt", "solusdt"]}`` to override the
-    default symbol set for this run.
-    """
-    symbols = body.symbols if body is not None else None
-    try:
-        STATE.binance_feed.start(symbols=symbols)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return {
-        "started": True,
-        "feed": _feed_status_dict("SRC-MARKET-BINANCE-001"),
-    }
-
-
-@app.post("/api/feeds/binance/stop")
-def post_binance_feed_stop() -> dict[str, Any]:
-    """Stop the Binance public WS pump.
-
-    Idempotent — returns the current status if not running.
-    """
-    STATE.binance_feed.stop()
-    return {
-        "stopped": True,
-        "feed": _feed_status_dict("SRC-MARKET-BINANCE-001"),
-    }
-
-
-@app.get("/api/feeds/binance/status")
-def get_binance_feed_status() -> dict[str, Any]:
-    """Return a telemetry snapshot of the Binance public WS pump."""
-    return {"feed": _feed_status_dict("SRC-MARKET-BINANCE-001")}
-
-
-def _coindesk_feed_status_dict() -> dict[str, Any]:
-    status = STATE.coindesk_feed.status()
-    return {
-        "source_id": status.source,
-        "running": status.running,
-        "url": status.url,
-        "items_received": status.items_received,
-        "polls": status.polls,
-        "errors": status.errors,
-        "last_poll_ts_ns": status.last_poll_ts_ns,
-        "last_item_ts_ns": status.last_item_ts_ns,
-    }
-
-
-@app.post("/api/feeds/coindesk/start")
-def post_coindesk_feed_start() -> dict[str, Any]:
-    """Start the read-only CoinDesk RSS pump (SRC-NEWS-COINDESK-001).
-
-    P0-5 — closes the news loop. Each polled :class:`NewsItem` flows
-    through :class:`NewsFanout`, fanning out to a projected
-    :class:`SignalEvent` (intelligence -> execution chain) and any
-    emitted :class:`HazardEvent` (governance throttle / mode FSM).
-    Idempotent.
-    """
-    STATE.coindesk_feed.start()
-    return {
-        "started": True,
-        "feed": _coindesk_feed_status_dict(),
-    }
-
-
-@app.post("/api/feeds/coindesk/stop")
-def post_coindesk_feed_stop() -> dict[str, Any]:
-    """Stop the CoinDesk RSS pump. Idempotent."""
-    STATE.coindesk_feed.stop()
-    return {
-        "stopped": True,
-        "feed": _coindesk_feed_status_dict(),
-    }
-
-
-@app.get("/api/feeds/coindesk/status")
-def get_coindesk_feed_status() -> dict[str, Any]:
-    """Return a telemetry snapshot of the CoinDesk RSS pump."""
-    return {"feed": _coindesk_feed_status_dict()}
-
-
-def _pumpfun_feed_status_dict() -> dict[str, Any]:
-    status = STATE.pumpfun_feed.status()
-    return {
-        "source_id": "SRC-LAUNCH-PUMPFUN-001",
-        "running": status.running,
-        "url": status.url,
-        "launches_received": status.launches_received,
-        "errors": status.errors,
-        "last_launch_ts_ns": status.last_launch_ts_ns,
-    }
-
-
-@app.post("/api/feeds/pumpfun/start")
-def post_pumpfun_feed_start() -> dict[str, Any]:
-    """Start the read-only Pump.fun PumpPortal WS pump (D2).
-
-    Streams new-token mint events from
-    ``wss://pumpportal.fun/api/data`` into the ``recent_launches``
-    ring exposed by ``GET /api/feeds/pumpfun/recent``.
-    """
-    STATE.pumpfun_feed.start()
-    return {
-        "started": True,
-        "feed": _pumpfun_feed_status_dict(),
-    }
-
-
-@app.post("/api/feeds/pumpfun/stop")
-def post_pumpfun_feed_stop() -> dict[str, Any]:
-    """Stop the Pump.fun WS pump. Idempotent."""
-    STATE.pumpfun_feed.stop()
-    return {
-        "stopped": True,
-        "feed": _pumpfun_feed_status_dict(),
-    }
-
-
-@app.get("/api/feeds/pumpfun/status")
-def get_pumpfun_feed_status() -> dict[str, Any]:
-    """Return a telemetry snapshot of the Pump.fun WS pump."""
-    return {"feed": _pumpfun_feed_status_dict()}
-
-
-@app.get("/api/feeds/pumpfun/recent")
-def get_pumpfun_recent(limit: int = 50) -> dict[str, Any]:
-    """Return the most recent Pump.fun launches (newest first)."""
-    cap = max(1, min(int(limit), 200))
-    with STATE.lock:
-        launches = list(STATE.recent_launches)[:cap]
-    return {
-        "launches": launches,
-        "count": len(launches),
-        "feed": _pumpfun_feed_status_dict(),
-    }
-
-
-def _raydium_feed_status_dict() -> dict[str, Any]:
-    status = STATE.raydium_feed.status()
-    return {
-        "source_id": "SRC-POOL-RAYDIUM-001",
-        "running": status.running,
-        "url": status.url,
-        "snapshots_emitted": status.snapshots_emitted,
-        "errors": status.errors,
-        "last_poll_ts_ns": status.last_poll_ts_ns,
-    }
-
-
-@app.post("/api/feeds/raydium/start")
-def post_raydium_feed_start() -> dict[str, Any]:
-    """Start the read-only Raydium AMM pool poller (D2).
-
-    Polls ``https://api.raydium.io/v2/main/pairs`` on a fixed
-    interval and emits one :class:`PoolSnapshot` per pair into the
-    ``recent_pool_snapshots`` ring exposed by
-    ``GET /api/feeds/raydium/recent``.
-    """
-    STATE.raydium_feed.start()
-    return {
-        "started": True,
-        "feed": _raydium_feed_status_dict(),
-    }
-
-
-@app.post("/api/feeds/raydium/stop")
-def post_raydium_feed_stop() -> dict[str, Any]:
-    """Stop the Raydium pool poller. Idempotent."""
-    STATE.raydium_feed.stop()
-    return {
-        "stopped": True,
-        "feed": _raydium_feed_status_dict(),
-    }
-
-
-@app.get("/api/feeds/raydium/status")
-def get_raydium_feed_status() -> dict[str, Any]:
-    """Return a telemetry snapshot of the Raydium pool poller."""
-    return {"feed": _raydium_feed_status_dict()}
-
-
-@app.get("/api/feeds/raydium/recent")
-def get_raydium_recent(limit: int = 100) -> dict[str, Any]:
-    """Return the most recent Raydium pool snapshots (newest first)."""
-    cap = max(1, min(int(limit), 500))
-    with STATE.lock:
-        snaps = list(STATE.recent_pool_snapshots)[:cap]
-    return {
-        "snapshots": snaps,
-        "count": len(snaps),
-        "feed": _raydium_feed_status_dict(),
-    }
+#
+# C-2 / P2-4 / R-1 part 2 — the four feed-route families (Binance,
+# CoinDesk, Pump.fun, Raydium) were extracted to :mod:`ui.feeds_routes`
+# and are mounted on the FastAPI app above via `build_feeds_router`.
+# The runners themselves are still constructed by the harness in
+# :meth:`_State._build_live_feeds` (harness owns lifecycle); only the
+# HTTP projection moved out of this god-object.
 
 
 @app.post("/api/feeds/tradingview/observation")
