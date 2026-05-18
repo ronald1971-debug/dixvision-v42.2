@@ -33,7 +33,17 @@ from typing import Any
 
 import yaml
 
-from core.constraint_engine import expr as expr_mod
+# R-4 / Phase-6 audit fix — import the ``expr`` submodule via its
+# fully-qualified module path rather than through the package facade
+# ``from core.constraint_engine import expr``. The latter records a
+# dependency on the ``core.constraint_engine`` package itself, which
+# in turn re-exports from this module, producing a
+# ``core.constraint_engine ↔ core.constraint_engine.compiler`` cycle
+# in the static dependency graph. The direct import below records the
+# leaf module as the dependency and breaks the cycle while preserving
+# byte-identical runtime behaviour (the ``expr_mod`` alias is reused
+# verbatim throughout the rest of this file).
+import core.constraint_engine.expr as expr_mod  # noqa: PLR0402
 from system_engine.authority import AuthorityMatrix, load_authority_matrix
 
 
