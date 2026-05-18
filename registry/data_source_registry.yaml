@@ -24,7 +24,7 @@
 #   name:      human-readable name                 (string, required)
 #   category:  market | news | social | onchain    (string, required)
 #              | macro | regulatory | dev | alt
-#              | trader | ai | synthetic
+#              | trader | ai | synthetic | sensory
 #   provider:  short provider id                   (string, required)
 #   endpoint:  canonical URL / wss / API root       (string, required)
 #   schema:    fully-qualified contract reference  (string, required)
@@ -352,3 +352,92 @@ sources:
     auth: none
     enabled: false
     critical: false
+
+  # -----------------------------------------------------------------
+  # Sensory — local feature extractors (C-4 / P2-2)
+  #
+  # The sensory perimeter (neuromorphic SNNs, web-autolearn curator,
+  # technical indicators) is registered here so that the SCVS lint can
+  # enforce bidirectional closure once any consumer declares the
+  # corresponding ``source_id`` in its ``consumes.yaml``. Until then
+  # the rows are ``enabled: false`` — purely declarative — and SCVS-01
+  # (unused live source) does not fire.
+  #
+  # The ``endpoint`` field uses the ``local://`` scheme to mark the
+  # producer as in-repo (no network egress, no credential). The
+  # ``schema`` field points at the typed value class emitted by the
+  # sensor so consumers can resolve the contract at import time.
+  # -----------------------------------------------------------------
+  - id: SRC-SENSORY-SNN-INDIRA-001
+    name: "Neuromorphic SNN — Indira pulse signal (NEUR-01)"
+    category: sensory
+    provider: local
+    endpoint: "local://sensory.neuromorphic.indira_signal"
+    schema: "sensory.neuromorphic.contracts.PulseSignal"
+    auth: none
+    enabled: false
+    critical: false
+    notes: >-
+      LIF / SNN feature extractor over a window of MarketTick rows.
+      Producer: sensory.neuromorphic.indira_signal.SNNLifDetector.
+      Output: PulseSignal (polarity + intensity). Frozen weights;
+      runtime-safe (b-14 norse-torch surface). Consumed by
+      intelligence_engine.* via the BeliefState projector.
+  - id: SRC-SENSORY-SNN-DYON-001
+    name: "Neuromorphic SNN — Dyon anomaly pulse (NEUR-02)"
+    category: sensory
+    provider: local
+    endpoint: "local://sensory.neuromorphic.dyon_anomaly"
+    schema: "sensory.neuromorphic.contracts.AnomalyPulse"
+    auth: none
+    enabled: false
+    critical: false
+    notes: >-
+      Z-score-based anomaly detector over a numeric metric window.
+      Producer: sensory.neuromorphic.dyon_anomaly. Output:
+      AnomalyPulse (z_score + severity). Never emits a hazard by
+      itself — escalation policy lives in system_engine.* (Dyon).
+  - id: SRC-SENSORY-SNN-GOVERNANCE-001
+    name: "Neuromorphic SNN — Governance risk pulse (NEUR-03)"
+    category: sensory
+    provider: local
+    endpoint: "local://sensory.neuromorphic.governance_risk"
+    schema: "sensory.neuromorphic.contracts.RiskPulse"
+    auth: none
+    enabled: false
+    critical: false
+    notes: >-
+      STDP-trained SNN over decision-audit-trail features. Producer:
+      sensory.neuromorphic.governance_risk_snn. Output: RiskPulse
+      (risk_kind + risk_score). One input among many for governance
+      decisions; never a sole-gate.
+  - id: SRC-SENSORY-WEB-AUTOLEARN-001
+    name: "Web autolearn curator (WEBLEARN-04)"
+    category: sensory
+    provider: local
+    endpoint: "local://sensory.web_autolearn.curator"
+    schema: "sensory.web_autolearn.contracts.CuratedItem"
+    auth: none
+    enabled: false
+    critical: false
+    notes: >-
+      Crawler -> AI filter -> curator pipeline producing CuratedItem
+      rows. Upstream raw inputs are external sources registered above
+      (Reuters, X, Reddit). This row registers the LOCAL projection.
+      Producer: sensory.web_autolearn.curator. Consumed by the slow-
+      loop learner and the cognitive RAG knowledge index.
+  - id: SRC-SENSORY-INDICATORS-001
+    name: "Technical indicators bank"
+    category: sensory
+    provider: local
+    endpoint: "local://sensory.indicators.technical"
+    schema: "sensory.indicators.technical.IndicatorBank"
+    auth: none
+    enabled: false
+    critical: false
+    notes: >-
+      Pure-Python rolling indicators (RSI / MACD / ATR / ADX / VWAP /
+      OBV / BBANDS / STOCH) computed on demand from a MarketTick
+      window. Producer: sensory.indicators.technical. Consumed by
+      intelligence_engine.* alpha plugins via the BeliefState
+      projector.
