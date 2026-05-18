@@ -1,7 +1,7 @@
 {
   "tree_total_files": 366,
-  "on_disk": 103,
-  "coverage_pct": 28.1,
+  "on_disk": 139,
+  "coverage_pct": 38.0,
   "by_package": {
     ".github": {
       "total": 4,
@@ -45,8 +45,8 @@
     },
     "evolution_engine": {
       "total": 8,
-      "exists": 3,
-      "coverage_pct": 37.5
+      "exists": 6,
+      "coverage_pct": 75.0
     },
     "execution": {
       "total": 7,
@@ -55,8 +55,8 @@
     },
     "execution_engine": {
       "total": 29,
-      "exists": 14,
-      "coverage_pct": 48.3
+      "exists": 17,
+      "coverage_pct": 58.6
     },
     "governance_engine": {
       "total": 25,
@@ -75,18 +75,18 @@
     },
     "intelligence_engine": {
       "total": 54,
-      "exists": 22,
-      "coverage_pct": 40.7
+      "exists": 30,
+      "coverage_pct": 55.6
     },
     "learning_engine": {
       "total": 25,
-      "exists": 6,
-      "coverage_pct": 24.0
+      "exists": 13,
+      "coverage_pct": 52.0
     },
     "registry": {
       "total": 16,
-      "exists": 3,
-      "coverage_pct": 18.8
+      "exists": 6,
+      "coverage_pct": 37.5
     },
     "scripts": {
       "total": 5,
@@ -100,13 +100,13 @@
     },
     "simulation": {
       "total": 23,
-      "exists": 0,
-      "coverage_pct": 0.0
+      "exists": 8,
+      "coverage_pct": 34.8
     },
     "state": {
       "total": 20,
-      "exists": 3,
-      "coverage_pct": 15.0
+      "exists": 7,
+      "coverage_pct": 35.0
     },
     "system_engine": {
       "total": 14,

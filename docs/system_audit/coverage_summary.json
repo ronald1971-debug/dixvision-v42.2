@@ -1,8 +1,12 @@
 {
-  "analyzed": 719,
+  "analyzed": 1245,
   "by_bucket": {
+    ".agents": {
+      "total": 1,
+      "with_findings": 0
+    },
     ".github": {
-      "total": 3,
+      "total": 5,
       "with_findings": 0
     },
     "_root": {
@@ -14,15 +18,15 @@
       "with_findings": 0
     },
     "core": {
-      "total": 37,
-      "with_findings": 18
+      "total": 54,
+      "with_findings": 30
     },
     "dash_meme": {
       "total": 43,
       "with_findings": 0
     },
     "dashboard2026": {
-      "total": 183,
+      "total": 192,
       "with_findings": 0
     },
     "dashboard_backend": {
@@ -30,7 +34,7 @@
       "with_findings": 4
     },
     "docs": {
-      "total": 25,
+      "total": 62,
       "with_findings": 0
     },
     "enforcement": {
@@ -38,67 +42,79 @@
       "with_findings": 0
     },
     "evolution_engine": {
-      "total": 14,
-      "with_findings": 10
+      "total": 35,
+      "with_findings": 27
     },
     "execution_engine": {
-      "total": 28,
-      "with_findings": 15
+      "total": 40,
+      "with_findings": 27
     },
     "governance_engine": {
-      "total": 21,
-      "with_findings": 17
+      "total": 30,
+      "with_findings": 22
     },
     "immutable_core": {
       "total": 2,
       "with_findings": 0
     },
     "intelligence_engine": {
-      "total": 57,
-      "with_findings": 23
+      "total": 105,
+      "with_findings": 52
     },
     "learning_engine": {
-      "total": 9,
-      "with_findings": 6
+      "total": 33,
+      "with_findings": 24
+    },
+    "opponent_model": {
+      "total": 2,
+      "with_findings": 1
     },
     "registry": {
-      "total": 10,
+      "total": 18,
       "with_findings": 0
     },
     "scripts": {
-      "total": 6,
+      "total": 7,
       "with_findings": 1
     },
     "sensory": {
-      "total": 23,
-      "with_findings": 14
+      "total": 36,
+      "with_findings": 26
+    },
+    "simulation": {
+      "total": 25,
+      "with_findings": 23
+    },
+    "simulation_engine": {
+      "total": 3,
+      "with_findings": 2
     },
     "state": {
-      "total": 3,
-      "with_findings": 1
+      "total": 26,
+      "with_findings": 20
     },
     "system": {
       "total": 3,
-      "with_findings": 1
+      "with_findings": 2
     },
     "system_engine": {
-      "total": 45,
-      "with_findings": 18
+      "total": 68,
+      "with_findings": 35
     },
     "tests": {
-      "total": 160,
-      "with_findings": 101
+      "total": 382,
+      "with_findings": 299
     },
     "tools": {
-      "total": 8,
-      "with_findings": 4
+      "total": 25,
+      "with_findings": 17
     },
     "ui": {
-      "total": 24,
-      "with_findings": 17
+      "total": 33,
+      "with_findings": 19
     }
   },
-  "files_with_findings": 250,
-  "orphan_modules": 0,
-  "total_files": 719
+  "files_with_findings": 631,
+  "orphan_modules": 2,
+  "total_files": 1245
 }
