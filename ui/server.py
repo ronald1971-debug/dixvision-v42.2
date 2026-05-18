@@ -299,6 +299,7 @@ from ui.plugin_routes import (
     PluginToggleState,
     build_plugin_router,
 )
+from ui.runtime_routes import build_runtime_router
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -351,9 +352,7 @@ class _State:
         # providers, market feeds, and every other external source.
         # Loaded once at process start; the cognitive router reads this
         # frozen projection (no hot-reload yet — wave-02).
-        self.source_registry: SourceRegistry = load_source_registry(
-            SOURCE_REGISTRY_PATH
-        )
+        self.source_registry: SourceRegistry = load_source_registry(SOURCE_REGISTRY_PATH)
         # P1.1 — close the meta-controller hot-path wiring. PR #48 shipped
         # :class:`MetaControllerHotPath` and PR #49 added the optional
         # ``meta_controller_hot_path=`` slot on :class:`IntelligenceEngine`,
@@ -371,9 +370,7 @@ class _State:
             sizer_path=REGISTRY_DIR / "position_sizer.yaml",
             latency_budget_ns=DEFAULT_LATENCY_BUDGET_NS,
         )
-        self.pressure_config = load_pressure_config(
-            REGISTRY_DIR / "pressure.yaml"
-        )
+        self.pressure_config = load_pressure_config(REGISTRY_DIR / "pressure.yaml")
         self.meta_controller_hot_path = MetaControllerHotPath(
             meta_config=self.meta_controller_config,
             pressure_config=self.pressure_config,
@@ -420,9 +417,7 @@ class _State:
         # ``core.contracts.signal_trust``.
         try:
             self.signal_trust_registry: ExternalSignalTrustRegistry | None = (
-                load_external_signal_trust(
-                    REGISTRY_DIR / "external_signal_trust.yaml"
-                )
+                load_external_signal_trust(REGISTRY_DIR / "external_signal_trust.yaml")
             )
         except FileNotFoundError:
             # Tests / minimal deployments may run without the registry
@@ -498,18 +493,12 @@ class _State:
         # value is invariant). Subsequent operator flips re-read the
         # mode under ``STATE.lock`` from the live
         # ``state_transitions``.
-        self.development_mode_enabled: bool = (
-            os.environ.get("DIXVISION_DEVELOPMENT_MODE", "true")
-            .strip()
-            .lower()
-            in {"1", "true", "yes", "on"}
-        )
-        self.trading_allowed: bool = (
-            os.environ.get("DIXVISION_TRADING_ALLOWED", "false")
-            .strip()
-            .lower()
-            in {"1", "true", "yes", "on"}
-        )
+        self.development_mode_enabled: bool = os.environ.get(
+            "DIXVISION_DEVELOPMENT_MODE", "true"
+        ).strip().lower() in {"1", "true", "yes", "on"}
+        self.trading_allowed: bool = os.environ.get(
+            "DIXVISION_TRADING_ALLOWED", "false"
+        ).strip().lower() in {"1", "true", "yes", "on"}
         # ``mode=None`` here is intentional: the FSM is constructed in
         # ``_build_governance_tier`` which runs *after* this section,
         # so naming the mode literally would violate B31 (mode-effect
@@ -595,9 +584,7 @@ class _State:
         self._ledger_path = resolve_ledger_path()
         ledger_path = self._ledger_path
         ledger = (
-            LedgerAuthorityWriter(db_path=ledger_path)
-            if ledger_path
-            else LedgerAuthorityWriter()
+            LedgerAuthorityWriter(db_path=ledger_path) if ledger_path else LedgerAuthorityWriter()
         )
         self.ledger_writer = ledger
         # AUDIT-P0.3 launcher polish -- print a one-line boot banner so
@@ -607,8 +594,7 @@ class _State:
         # captures it alongside ``Application startup complete``.
         if ledger_path:
             print(
-                f"[ledger] authority ledger mounted: {ledger_path} "
-                f"(SQLite, crash-recoverable)",
+                f"[ledger] authority ledger mounted: {ledger_path} (SQLite, crash-recoverable)",
                 flush=True,
             )
         else:
@@ -637,9 +623,7 @@ class _State:
         if ledger_path:
             from pathlib import Path as _Path
 
-            exposure_db_path: _Path | None = (
-                _Path(ledger_path).with_name("exposure.db")
-            )
+            exposure_db_path: _Path | None = _Path(ledger_path).with_name("exposure.db")
         else:
             exposure_db_path = None
         self.exposure_store = ExposureStore(db_path=exposure_db_path)
@@ -669,9 +653,7 @@ class _State:
         # mutator so the system downgrades to SAFE through the same
         # audited chain every other hazard takes (B32 / GOV-CP-03).
         self.policy_hash_anchor = PolicyHashAnchor(ledger=ledger)
-        self.policy_hash_anchor.bind_session(
-            ts_ns=wall_ns(), requestor="ui_harness_boot"
-        )
+        self.policy_hash_anchor.bind_session(ts_ns=wall_ns(), requestor="ui_harness_boot")
         # Phase-6 P1-3 — the engine shells default to DEGRADED unless
         # an ``is_active_fn`` reports the wired loop is currently
         # unfrozen. The two suppliers below close over
@@ -713,12 +695,9 @@ class _State:
         # throttle chain, and the FSM consent envelopes remain in
         # force — this relaxation governs adaptive mutation only,
         # not order dispatch.
-        self.learning_override_enabled: bool = (
-            os.environ.get("DIXVISION_LEARNING_OVERRIDE", "true")
-            .strip()
-            .lower()
-            in {"1", "true", "yes", "on"}
-        )
+        self.learning_override_enabled: bool = os.environ.get(
+            "DIXVISION_LEARNING_OVERRIDE", "true"
+        ).strip().lower() in {"1", "true", "yes", "on"}
 
         # PR-DEV-A — rebuild the DevelopmentModePolicy with the live
         # FSM mode now that ``state_transitions`` exists. The policy
@@ -733,9 +712,7 @@ class _State:
             trading_allowed=self.trading_allowed,
             mode=self.governance.state_transitions.current_mode(),
         )
-        self.execution.set_development_mode_policy(
-            self.development_mode_policy
-        )
+        self.execution.set_development_mode_policy(self.development_mode_policy)
         # PR-DEV-B — wire a live :class:`LearningGate` into the
         # IntelligenceEngine constructed in ``_build_intelligence_tier``.
         # The supplier closes over ``self`` so every consultation
@@ -749,9 +726,7 @@ class _State:
         # which keeps offline tests that build a bare IntelligenceEngine
         # working unchanged.
         self.intelligence.set_learning_gate(
-            LearningGate(
-                policy_supplier=lambda: self.development_mode_policy
-            )
+            LearningGate(policy_supplier=lambda: self.development_mode_policy)
         )
 
     def _build_event_buffers(self) -> None:
@@ -766,9 +741,7 @@ class _State:
         # snapshot taken at construction time. INV-15 byte-identical
         # replay is preserved by construction: the manager has no
         # per-instance state of its own.
-        self.background_tasks = HarnessBackgroundTaskManager(
-            state_supplier=lambda: self
-        )
+        self.background_tasks = HarnessBackgroundTaskManager(state_supplier=lambda: self)
 
     def _build_dashboard_widgets(self) -> None:
         """P1.2 — ``_State.__init__`` section: dashboard_widgets."""
@@ -838,9 +811,7 @@ class _State:
             registry=self.source_registry,
             ledger_writer=self.governance.ledger,
             transport=build_default_dispatch_transport(),
-            feature_flag=CognitiveChatFeatureFlag(
-                getter=_cognitive_chat_flag_getter
-            ),
+            feature_flag=CognitiveChatFeatureFlag(getter=_cognitive_chat_flag_getter),
         )
 
     def _build_plugin_registry(self) -> None:
@@ -850,13 +821,9 @@ class _State:
         # objects so a lifecycle mutation through the dashboard is
         # observed immediately by the engines on the next tick.
         self.plugin_registry = PluginRegistry(
-            microstructure_plugins=tuple(
-                self.intelligence.microstructure_plugins
-            ),
+            microstructure_plugins=tuple(self.intelligence.microstructure_plugins),
             toggle_state=self.plugin_toggle_state,
-            cognitive_chat_env_enabled=lambda: (
-                CognitiveChatFeatureFlag().enabled
-            ),
+            cognitive_chat_env_enabled=lambda: CognitiveChatFeatureFlag().enabled,
             sensor_array=self.sensor_array,
             adapter_registry=default_adapter_registry(),
             # ``feed_runners`` is bound after the runners are
@@ -931,9 +898,7 @@ class _State:
         # memecoin-tier consumers (LaunchFirehose, BundleDetector,
         # PoolSnapshotPanel, etc.) read from the same buffers.
         self.recent_launches: deque[dict[str, Any]] = deque(maxlen=200)
-        self.recent_pool_snapshots: deque[dict[str, Any]] = deque(
-            maxlen=500
-        )
+        self.recent_pool_snapshots: deque[dict[str, Any]] = deque(maxlen=500)
         self.pumpfun_feed = PumpFunFeedRunner(
             sink=self._ingest_pumpfun_launch_locked,
             clock_ns=wall_ns,
@@ -974,9 +939,7 @@ class _State:
         # and the AST tests under ``tests/test_*_loop.py``).
         self.slow_loop_learner = SlowLoopLearner(
             bounds={
-                "learning_rate": ParameterBounds(
-                    lo=0.0001, hi=1.0, step=0.01, initial=0.05
-                ),
+                "learning_rate": ParameterBounds(lo=0.0001, hi=1.0, step=0.01, initial=0.05),
             },
             freeze_policy=None,
         )
@@ -1016,9 +979,7 @@ class _State:
         self.patch_outcome_feedback = PatchOutcomeFeedback()
         self.mutation_proposer = MutationProposer(freeze=None)
         self.patch_pipeline = PatchPipeline()
-        self.patch_approval_bridge = PatchApprovalBridge(
-            pipeline=self.patch_pipeline
-        )
+        self.patch_approval_bridge = PatchApprovalBridge(pipeline=self.patch_pipeline)
         self.patch_pipeline_orchestrator = PatchPipelineOrchestrator(
             bridge=self.patch_approval_bridge,
         )
@@ -1070,9 +1031,7 @@ class _State:
             )
             mode = self.governance.state_transitions.current_mode()
         effective_override = learning_enabled and development_enabled
-        return LearningEvolutionFreezePolicy(
-            mode=mode, operator_override=effective_override
-        )
+        return LearningEvolutionFreezePolicy(mode=mode, operator_override=effective_override)
 
     def _learning_loop_is_active(self) -> bool:
         """Phase-6 P1-3 — ``True`` iff the live freeze policy is unfrozen.
@@ -1117,9 +1076,7 @@ class _State:
         snapshots = self.patch_outcome_feedback.all_snapshots(ts_ns=ts_ns)
         return tuple(snapshots.values())
 
-    def _structural_evidence_builder(
-        self, proposal: PatchProposal
-    ) -> StageEvidence:
+    def _structural_evidence_builder(self, proposal: PatchProposal) -> StageEvidence:
         """Build :class:`StageEvidence` for one proposal-driven run.
 
         Used only when the structural stats supplier yields proposals
@@ -1451,9 +1408,7 @@ class _State:
                 }
             )
 
-    def _approval_ledger_append(
-        self, kind: str, payload: Mapping[str, str]
-    ) -> None:
+    def _approval_ledger_append(self, kind: str, payload: Mapping[str, str]) -> None:
         """``ApprovalEdge`` ledger-append binding.
 
         Mirrors :func:`build_ledger_append` from the chat runtime
@@ -1522,17 +1477,13 @@ class DevelopmentModeRequest(BaseModel):
         min_length=1,
         max_length=64,
         description=(
-            "Caller identity recorded on the audit row; defaults "
-            "to the dashboard origin."
+            "Caller identity recorded on the audit row; defaults to the dashboard origin."
         ),
     )
     reason: str = Field(
         default="",
         max_length=256,
-        description=(
-            "Free-form rationale; included verbatim in the audit "
-            "ledger payload."
-        ),
+        description=("Free-form rationale; included verbatim in the audit ledger payload."),
     )
 
 
@@ -1561,17 +1512,13 @@ class TradingAllowedRequest(BaseModel):
         min_length=1,
         max_length=64,
         description=(
-            "Caller identity recorded on the audit row; defaults "
-            "to the dashboard origin."
+            "Caller identity recorded on the audit row; defaults to the dashboard origin."
         ),
     )
     reason: str = Field(
         default="",
         max_length=256,
-        description=(
-            "Free-form rationale; included verbatim in the audit "
-            "ledger payload."
-        ),
+        description=("Free-form rationale; included verbatim in the audit ledger payload."),
     )
 
 
@@ -1615,17 +1562,13 @@ class LearningOverrideRequest(BaseModel):
         min_length=1,
         max_length=64,
         description=(
-            "Caller identity recorded on the audit row; defaults "
-            "to the dashboard origin."
+            "Caller identity recorded on the audit row; defaults to the dashboard origin."
         ),
     )
     reason: str = Field(
         default="",
         max_length=256,
-        description=(
-            "Free-form rationale; included verbatim in the audit "
-            "ledger payload."
-        ),
+        description=("Free-form rationale; included verbatim in the audit ledger payload."),
     )
 
 
@@ -1685,9 +1628,7 @@ class TradingViewObservationIn(BaseModel):
     upstream collector feed the same pipeline.
     """
 
-    payload: dict[str, Any] = Field(
-        ..., description="Decoded TradingView envelope (parser input)."
-    )
+    payload: dict[str, Any] = Field(..., description="Decoded TradingView envelope (parser input).")
     ts_ns: int | None = Field(
         default=None,
         description=(
@@ -1779,6 +1720,12 @@ app.include_router(build_governance_router(lambda: STATE))
 # D1 / EXEC-ADAPTERS — operator dashboard surface for live execution
 # adapters (Hummingbot, Pump.fun, UniswapX, …). Read-only JSON.
 app.include_router(build_execution_router())
+# C-2 / P2-4 / R-1 — runtime topology authority operator surface.
+# The four PR-RT-4 endpoints (declared / active / dormant / capability)
+# live under :mod:`ui.runtime_routes`. The route module never touches
+# the engine wiring; it reads the registrar through this lambda exactly
+# like the dashboard / governance routes do.
+app.include_router(build_runtime_router(lambda: STATE))
 
 
 # Wave-Live PR-4 — root URL routes operators to the live SPA. PR #105
@@ -1958,8 +1905,7 @@ def ai_providers(task: str | None = None) -> dict[str, Any]:
         except ValueError as exc:
             raise HTTPException(
                 400,
-                f"unknown task class {task!r};"
-                f" expected one of {[t.value for t in TaskClass]}",
+                f"unknown task class {task!r}; expected one of {[t.value for t in TaskClass]}",
             ) from exc
         providers = select_providers(registry, task_class)
         task_value = task_class.value
@@ -2076,10 +2022,7 @@ def credentials_verify(body: CredentialVerifyIn) -> dict[str, Any]:
     if matching is None:
         raise HTTPException(
             status_code=404,
-            detail=(
-                f"unknown or non-auth-required source_id "
-                f"'{body.source_id}'"
-            ),
+            detail=(f"unknown or non-auth-required source_id '{body.source_id}'"),
         )
 
     result = verify_provider(
@@ -2132,10 +2075,7 @@ def credentials_set(body: CredentialSetIn) -> dict[str, Any]:
     if matching is None:
         raise HTTPException(
             status_code=404,
-            detail=(
-                f"unknown or non-auth-required source_id "
-                f"'{body.source_id}'"
-            ),
+            detail=(f"unknown or non-auth-required source_id '{body.source_id}'"),
         )
     if body.env_var not in matching.env_vars:
         raise HTTPException(
@@ -2455,13 +2395,9 @@ def _source_trust_row(
     """
 
     promotion = STATE.signal_trust_promotions.get(source_id)
-    effective_trust = STATE.signal_trust_promotions.effective_trust(
-        source_id, declared_trust
-    )
+    effective_trust = STATE.signal_trust_promotions.effective_trust(source_id, declared_trust)
     if STATE.signal_trust_registry is not None:
-        effective_cap = STATE.signal_trust_registry.cap_for(
-            source_id, effective_trust
-        )
+        effective_cap = STATE.signal_trust_registry.cap_for(source_id, effective_trust)
     else:
         effective_cap = default_cap_for(effective_trust)
     return SourceTrustRow(
@@ -2471,13 +2407,9 @@ def _source_trust_row(
         declared_cap=declared_cap,
         effective_cap=effective_cap,
         promoted=promotion is not None,
-        promoted_target_trust=(
-            promotion.target_trust.value if promotion is not None else ""
-        ),
+        promoted_target_trust=(promotion.target_trust.value if promotion is not None else ""),
         promoted_ts_ns=promotion.ts_ns if promotion is not None else 0,
-        promoted_requestor=(
-            promotion.requestor if promotion is not None else ""
-        ),
+        promoted_requestor=(promotion.requestor if promotion is not None else ""),
         promoted_reason=promotion.reason if promotion is not None else "",
     )
 
@@ -2557,10 +2489,7 @@ def operator_source_trust_promote(
     if not is_promotable_target(target_trust):
         raise HTTPException(
             status_code=400,
-            detail=(
-                "only EXTERNAL_MED is a valid promotion target; "
-                f"got {target_trust.value}"
-            ),
+            detail=(f"only EXTERNAL_MED is a valid promotion target; got {target_trust.value}"),
         )
     ts_ns = wall_ns()
     payload: dict[str, str] = {
@@ -2677,9 +2606,7 @@ def operator_source_trust_demote(
     )
 
 
-def _project_learning_override(
-    *, enabled: bool, mode: SystemMode
-) -> LearningOverrideResponse:
+def _project_learning_override(*, enabled: bool, mode: SystemMode) -> LearningOverrideResponse:
     """Build a typed response from a snapshotted (enabled, mode) tuple.
 
     Pure projection — no shared-state reads. Callers are responsible
@@ -2690,9 +2617,7 @@ def _project_learning_override(
     source of truth for the ``is_freeze_active`` flag.
     """
 
-    policy = LearningEvolutionFreezePolicy(
-        mode=mode, operator_override=enabled
-    )
+    policy = LearningEvolutionFreezePolicy(mode=mode, operator_override=enabled)
     return LearningOverrideResponse(
         enabled=enabled,
         mode=mode.name,
@@ -2790,12 +2715,8 @@ def operator_learning_override_post(
         # carry the *same* ``flip_ts_ns`` so the offline replay-validator
         # can correlate "who flipped what" (operator row) with "the
         # resulting policy state at that ns" (POLICY_STATE row).
-        policy_after = LearningEvolutionFreezePolicy(
-            mode=mode, operator_override=new_enabled
-        )
-        policy_event = policy_after.to_system_event(
-            ts_ns=flip_ts_ns, source="operator.api"
-        )
+        policy_after = LearningEvolutionFreezePolicy(mode=mode, operator_override=new_enabled)
+        policy_event = policy_after.to_system_event(ts_ns=flip_ts_ns, source="operator.api")
         STATE.governance.ledger.append(
             ts_ns=policy_event.ts_ns,
             kind=policy_event.sub_kind.value,
@@ -2905,9 +2826,7 @@ def operator_development_mode_post(
             trading_allowed=STATE.trading_allowed,
             mode=mode,
         )
-        policy_event = policy_after.to_system_event(
-            ts_ns=flip_ts_ns, source="operator.api"
-        )
+        policy_event = policy_after.to_system_event(ts_ns=flip_ts_ns, source="operator.api")
         STATE.governance.ledger.append(
             ts_ns=policy_event.ts_ns,
             kind=policy_event.sub_kind.value,
@@ -2980,9 +2899,7 @@ def operator_trading_allowed_post(
             trading_allowed=new_enabled,
             mode=mode,
         )
-        policy_event = policy_after.to_system_event(
-            ts_ns=flip_ts_ns, source="operator.api"
-        )
+        policy_event = policy_after.to_system_event(ts_ns=flip_ts_ns, source="operator.api")
         STATE.governance.ledger.append(
             ts_ns=policy_event.ts_ns,
             kind=policy_event.sub_kind.value,
@@ -3007,12 +2924,12 @@ ADMIN_LEARNING_TICK_ENV_VAR = "DIX_LEARNING_DEBUG_TICK"
 def _admin_learning_tick_enabled() -> bool:
     """True iff the env var opts the harness into the debug-tick route."""
 
-    return (
-        os.environ.get(ADMIN_LEARNING_TICK_ENV_VAR, "")
-        .strip()
-        .lower()
-        in {"1", "true", "yes", "on"}
-    )
+    return os.environ.get(ADMIN_LEARNING_TICK_ENV_VAR, "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
 
 def _project_loop_result(result: LoopTickResult) -> dict[str, Any]:
@@ -3067,10 +2984,7 @@ def admin_learning_tick() -> dict[str, Any]:
     if not _admin_learning_tick_enabled():
         raise HTTPException(
             status_code=403,
-            detail=(
-                f"admin learning tick disabled: set "
-                f"{ADMIN_LEARNING_TICK_ENV_VAR}=1 to enable"
-            ),
+            detail=(f"admin learning tick disabled: set {ADMIN_LEARNING_TICK_ENV_VAR}=1 to enable"),
         )
     ts_ns = wall_ns()
     closed = STATE.closed_learning_loop.tick(ts_ns=ts_ns)
@@ -3130,80 +3044,15 @@ def admin_route_inventory() -> dict[str, Any]:
             {
                 "name": domain,
                 "routes": [
-                    {"method": method, "path": path}
-                    for method, path in report.by_domain[domain]
+                    {"method": method, "path": path} for method, path in report.by_domain[domain]
                 ],
             }
         )
     return {
         "domains": domain_payload,
-        "unexpected": [
-            {"method": method, "path": path}
-            for method, path in report.unexpected
-        ],
+        "unexpected": [{"method": method, "path": path} for method, path in report.unexpected],
         "ok": report.ok,
     }
-
-
-@app.get("/api/operator/runtime/topology")
-def operator_runtime_topology() -> dict[str, Any]:
-    """PR-RT-4 — declared runtime topology projection.
-
-    Returns the canonical declared topology (nodes + edges + INV-15
-    digest) as registered at boot by
-    :class:`HarnessRuntimeRegistrar`. Read-only; the declared
-    topology is a frozen constant of the harness build and the
-    response is byte-stable across runs for a given build (driven by
-    the same canonical serialization that backs the INV-15 digest).
-    """
-
-    return STATE.runtime_registrar.declared_topology_view()
-
-
-@app.get("/api/operator/runtime/active")
-def operator_runtime_active() -> dict[str, Any]:
-    """PR-RT-4 — actually-active runtime topology projection.
-
-    Returns the subset of declared nodes whose ``_State`` backing
-    attribute resolved to a non-``None`` instance at boot (i.e.
-    nodes that the harness actually wired in). This is the answer
-    to "what is *actually* running right now?" — the inverse of
-    :func:`operator_runtime_dormant`. Read-only.
-    """
-
-    return STATE.runtime_registrar.active_view()
-
-
-@app.get("/api/operator/runtime/dormant")
-def operator_runtime_dormant() -> dict[str, Any]:
-    """PR-RT-4 — declared-but-dormant runtime topology projection.
-
-    Returns the subset of declared nodes whose ``_State`` backing
-    attribute was ``None`` (or missing) at boot. This is the
-    silent-drift surface — every entry here is a node the
-    architecture declares but the harness did not bring online. The
-    PR-RT-5 ``tools/total_validation.py`` invariant pins this set
-    against an explicit ``DECLARED_BUT_DORMANT`` allow-list so new
-    dormant components cannot accumulate without operator awareness.
-    Read-only.
-    """
-
-    return STATE.runtime_registrar.dormant_view()
-
-
-@app.get("/api/operator/runtime/capability/{tag}")
-def operator_runtime_capability(tag: str) -> dict[str, Any]:
-    """PR-RT-4 — capability → provider resolution.
-
-    Given a capability tag (e.g. ``intelligence.signal``,
-    ``execution.dispatch``, ``learning.closed_loop``), returns the
-    declared providers and which are actually active vs dormant.
-    Surfaces "available-but-unwired" optimizers explicitly: a
-    capability with ``declared=[X]`` but ``active=[]`` is the
-    canonical silent-drift signal. Read-only.
-    """
-
-    return STATE.runtime_registrar.capability_view(tag)
 
 
 def _decision_to_dict(decision: Any) -> dict[str, Any]:
@@ -3450,9 +3299,7 @@ def post_tick(body: TickIn) -> dict[str, Any]:
         "executions": executions_out,
         "meta_ledger": meta_ledger_out,
         "closed_learning": _project_loop_result(closed_loop_result),
-        "structural_evolution": _project_structural_result(
-            structural_loop_result
-        ),
+        "structural_evolution": _project_structural_result(structural_loop_result),
     }
 
 
@@ -3558,9 +3405,7 @@ def post_testing_backtest(body: BacktestRunIn) -> dict[str, Any]:
             "max_dd_pct": metrics.max_dd_pct,
             "win_rate": metrics.win_rate,
             "profit_factor": (
-                None
-                if metrics.profit_factor == float("inf")
-                else metrics.profit_factor
+                None if metrics.profit_factor == float("inf") else metrics.profit_factor
             ),
             "avg_trade_pct": metrics.avg_trade_pct,
             "longest_loss_streak": metrics.longest_loss_streak,
@@ -3624,9 +3469,7 @@ def _sse_event_stream(
 
 
 @app.get("/api/dashboard/stream")
-async def get_dashboard_stream(
-    request: Request, backfill_only: bool = False
-) -> StreamingResponse:
+async def get_dashboard_stream(request: Request, backfill_only: bool = False) -> StreamingResponse:
     """SSE bridge consumed by ``dashboard2026/src/state/realtime.ts``."""
 
     headers = {
@@ -3635,9 +3478,7 @@ async def get_dashboard_stream(
         "X-Accel-Buffering": "no",
     }
     return StreamingResponse(
-        STATE.background_tasks.sse_event_stream(
-            request, backfill_only=backfill_only
-        ),
+        STATE.background_tasks.sse_event_stream(request, backfill_only=backfill_only),
         media_type="text/event-stream",
         headers=headers,
     )
