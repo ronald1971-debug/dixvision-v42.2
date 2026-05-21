@@ -1,8 +1,8 @@
 # DIX VISION v42.2 — BASE runtime dependencies.
 #
-# ────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────[...]
 # AUDIT-P0.1 — ML/research dependency extraction
-# ────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────[...]
 # Heavy ML packages (torch, jax, nengo, tianshou, causalml, …) have
 # been removed from this file.  They were causing ~5 GB installs and
 # 30-minute first-run times on Windows.
@@ -17,9 +17,10 @@
 #   pip install -e ".[memory_tensor]"  qdrant-client
 #   pip install -e ".[parquet]"        pyarrow
 #   pip install -e ".[observability]"  hydra-core / jaeger-client
+#   pip install -e ".[evm]"            eth-account (UniswapX adapter)
 #
 # Base install target: ~100 MB, <2 minutes on a fresh Windows machine.
-# ────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────[...]
 #
 # Pins here must stay in sync with pyproject.toml
 # [project.dependencies] — bump both in the same commit.
