@@ -1,17 +1,28 @@
-# DIX VISION v42.2 — runtime dependencies.
+# DIX VISION v42.2 — BASE runtime dependencies.
 #
-# This file is the auto-install target for the Windows launcher
-# (scripts/windows/start_dixvision.bat) and any other automation
-# that needs the bare minimum to *run* the operator harness.
+# ────────────────────────────────────────────────────────────────────
+# AUDIT-P0.1 — ML/research dependency extraction
+# ────────────────────────────────────────────────────────────────────
+# Heavy ML packages (torch, jax, nengo, tianshou, causalml, …) have
+# been removed from this file.  They were causing ~5 GB installs and
+# 30-minute first-run times on Windows.
 #
-# Pins are deliberately kept identical to the matching extras in
-# pyproject.toml ([project.optional-dependencies] / ui) so the two
-# install paths stay in sync. If you bump a version here, bump it in
-# pyproject.toml in the same commit and vice-versa.
+# Install ONLY what the base operator harness (ui.server) needs at
+# import time — FastAPI, pydantic, websockets, the cognitive layer.
+# Everything else is opt-in through pyproject.toml extras:
 #
-# For development (pytest + ruff + httpx test client), use
-# requirements-dev.txt instead — it pulls in this file plus the dev
-# tooling.
+#   pip install -e ".[neuromorphic]"   torch / snntorch / bindsnet / brian2
+#   pip install -e ".[ml]"             jax / jaxlib / nengo / tianshou
+#   pip install -e ".[causal]"         causalml / dowhy / econml
+#   pip install -e ".[memory_tensor]"  qdrant-client
+#   pip install -e ".[parquet]"        pyarrow
+#   pip install -e ".[observability]"  hydra-core / jaeger-client
+#
+# Base install target: ~100 MB, <2 minutes on a fresh Windows machine.
+# ────────────────────────────────────────────────────────────────────
+#
+# Pins here must stay in sync with pyproject.toml
+# [project.dependencies] — bump both in the same commit.
 
 PyYAML>=6.0
 fastapi>=0.110
@@ -19,26 +30,9 @@ uvicorn>=0.27
 pydantic>=2.0
 websockets>=12.0
 httpx>=0.25
-causalml>=0.15.0
-dowhy>=0.13.1
-econml>=0.15.1
-great_expectations>=0.18.15
-gymnasium>=0.29.1
-hmmlearn>=0.3.2
-jax>=0.5.0
-jaxlib>=0.5.0
-nengo>=4.0.0
-numpyro>=0.15.0
-pgmpy>=0.1.24
-pyro-ppl>=1.9.0
-tianshou>=0.5.1
-torch>=2.3.1
+
 # wave-03 cognitive layer is imported unconditionally by
 # ui.cognitive_chat_runtime (loaded at module-import time by ui.server),
 # so these belong in the base runtime, not the cognitive extras.
-# Promoted from `[cognitive]` extras after PR #85 wired the runtime
-# into ui.server's import graph; without these the Windows launcher
-# fails with `ModuleNotFoundError: No module named 'langchain_core'`
-# before uvicorn can bind the port.
 langchain-core>=0.3,<1
 langgraph>=0.2,<1
