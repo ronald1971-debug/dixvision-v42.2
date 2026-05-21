@@ -79,7 +79,7 @@ ui = [
 # ``NEW_PIP_DEPENDENCIES`` tuple that names the optional deps the
 # adapter falls back to when a factory is constructed. The tuple was
 # documentary-only — nothing in the package metadata let an operator
-# request the adapter’s deps via ``pip install dixvision[<tag>]``. The
+# request the adapter's deps via ``pip install dixvision[<tag>]``. The
 # three extras below close that gap. The adapter source files keep
 # their lazy ``try: import … except ImportError`` pattern (so a base
 # install of ``dixvision`` still imports clean), but the deps are now
