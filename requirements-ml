@@ -1,0 +1,50 @@
+# DIX VISION v42.2 — ML / Research stack (OFFLINE tier only).
+#
+# P0-1 FIX: These dependencies were previously in requirements.txt as BASE
+# deps, causing a ~5 GB first-run install. They are OFFLINE-tier only — never
+# imported at module-load time on the hot path.
+#
+# Install AFTER the base runtime:
+#   pip install -r requirements.txt
+#   pip install -r requirements-ml.txt
+#
+# Or use the pyproject.toml extras which pin identical versions:
+#   pip install -e ".[ml,causal,neuromorphic]"
+#
+# These packages are lazy-imported inside factory functions
+# (NEW_PIP_DEPENDENCIES pattern) and required only when the operator
+# opts into the corresponding offline engine features.
+
+-r requirements.txt
+
+# ── Reinforcement Learning / Strategy Evolution ──────────────────────────────
+tianshou>=0.5.1           # evolution_engine/multi_sandbox/tianshou_sandbox.py
+gymnasium>=0.29.1         # evolution_engine/multi_sandbox/ + FinRL env
+
+# ── Deep Learning (SNN + Policy Distillation) ────────────────────────────────
+torch>=2.3.1              # sensory/neuromorphic/ + learning_engine/policy_distillation.py
+jax>=0.5.0                # intelligence_engine/ offline causal paths
+jaxlib>=0.5.0
+
+# ── Neuromorphic ──────────────────────────────────────────────────────────────
+nengo>=4.0.0              # sensory/neuromorphic/nengo_cognitive.py
+snntorch>=0.7             # sensory/neuromorphic/snntorch_detector.py
+bindsnet>=0.3             # sensory/neuromorphic/governance_risk_snn.py
+brian2>=2.5               # sensory/neuromorphic/neuro_prototype.py (RESEARCH_SOURCE)
+spyketorch>=0.2           # sensory/neuromorphic/spyke_encoder.py
+
+# ── Causal Inference ──────────────────────────────────────────────────────────
+causalml>=0.15.0          # intelligence_engine/causal_uplift.py
+dowhy>=0.13.1             # intelligence_engine/causal_dowhy.py
+econml>=0.15.1            # intelligence_engine/hte_econml.py
+
+# ── Probabilistic Programming ─────────────────────────────────────────────────
+pyro-ppl>=1.9.0           # intelligence_engine/svi_pyro.py
+numpyro>=0.15.0           # intelligence_engine/svi_numpyro.py
+
+# ── Probabilistic Graphical Models ────────────────────────────────────────────
+hmmlearn>=0.3.2           # intelligence_engine/hmm_hmmlearn.py
+pgmpy>=0.1.24             # intelligence_engine/pgm_pgmpy.py
+
+# ── Data Quality / Validation ─────────────────────────────────────────────────
+great_expectations>=0.18.15  # system_engine/data_quality.py
