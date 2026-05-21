@@ -230,7 +230,7 @@ class LearningEvolutionFreezePolicy:
         ts_ns: int,
         *,
         source: str = "governance.policy.freeze",
-    ) -> "SystemEvent":
+    ) -> SystemEvent:
         """Project policy state into a canonical POLICY_STATE SystemEvent.
 
         Args:
@@ -355,7 +355,7 @@ class ExecutionGate:
         ts_ns: int,
         *,
         source: str = "governance.policy.execution_gate",
-    ) -> "SystemEvent":
+    ) -> SystemEvent:
         """Project gate state into a canonical POLICY_STATE SystemEvent."""
         from core.contracts.events import SystemEvent, SystemEventKind
 
@@ -459,7 +459,7 @@ class OperatorMasterDevelopmentMode:
     # ------------------------------------------------------------------
 
     @classmethod
-    def boot(cls, mode: SystemMode) -> "OperatorMasterDevelopmentMode":
+    def boot(cls, mode: SystemMode) -> OperatorMasterDevelopmentMode:
         """Construct the default development-mode posture for *mode*.
 
         Gate 1 open, Gate 2 locked — unless env vars override.
@@ -473,7 +473,7 @@ class OperatorMasterDevelopmentMode:
 
     def unlock_trading(
         self, mode: SystemMode
-    ) -> "OperatorMasterDevelopmentMode":
+    ) -> OperatorMasterDevelopmentMode:
         """Return a new instance with Gate 2 unlocked.
 
         Does NOT mutate in place (dataclass is frozen). The caller must
@@ -490,7 +490,7 @@ class OperatorMasterDevelopmentMode:
 
     def freeze_learning(
         self, mode: SystemMode
-    ) -> "OperatorMasterDevelopmentMode":
+    ) -> OperatorMasterDevelopmentMode:
         """Return a new instance with Gate 1 frozen (emergency stop).
 
         Execution gate is unchanged. Use when the operator needs to
@@ -512,7 +512,7 @@ class OperatorMasterDevelopmentMode:
         ts_ns: int,
         *,
         source: str = "governance.policy.dev_mode",
-    ) -> "tuple[SystemEvent, SystemEvent]":
+    ) -> tuple[SystemEvent, SystemEvent]:
         """Project both gates into a ``(Gate1_event, Gate2_event)`` tuple.
 
         Both events share the same ``ts_ns`` so the offline replay
